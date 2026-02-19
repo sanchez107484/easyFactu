@@ -1,0 +1,46 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# testing
+coverage
+
+# production
+dist
+build
+
+# misc
+.DS_Store
+
+# env
+.env
+.env.local
+.env.production.local
+
+# logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+
+# Tests
+.jest-cache
+
+# IDEs
+.idea
+.vscode
+*.swp
+*.swo
+
+# Prisma
+prisma/migrations/*
+!prisma/migrations/.gitkeep
+
+# Uploads (logos and certificates)
+uploads/
