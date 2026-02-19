@@ -25,6 +25,7 @@ git push -u origin main
 ```
 
 **✅ IMPORTANTE: El .gitignore ya está configurado** para NO subir:
+
 - `node_modules/`
 - `.env` (variables de entorno sensibles)
 - `dist/` y `.next/` (builds)
@@ -43,6 +44,7 @@ git push -u origin main
 3. **Importa tu repositorio** `easyFactura`
 
 4. **Configuración del proyecto:**
+
    ```
    Framework Preset: Next.js
    Root Directory: apps/web
@@ -52,10 +54,12 @@ git push -u origin main
    ```
 
 5. **Variables de entorno:**
+
    ```
    NEXT_PUBLIC_API_URL = https://tu-backend.railway.app/api
    ```
-   *(Añadirás la URL del backend después de desplegarlo)*
+
+   _(Añadirás la URL del backend después de desplegarlo)_
 
 6. **Click en "Deploy"** ✅
 
@@ -140,6 +144,7 @@ CORS_ORIGIN=https://easyfactura-web.vercel.app
 Railway debería detectar automáticamente NestJS, pero verifica:
 
 **Settings del servicio:**
+
 ```
 Build Command: pnpm install && pnpm build
 Start Command: pnpm start:prod
@@ -151,11 +156,13 @@ Root Directory: apps/api
 Después del primer deploy, ejecuta las migraciones:
 
 1. En Railway, ve a tu servicio → **Variables** → añade:
+
    ```
    DATABASE_URL=postgresql://... (la misma que Railway generó)
    ```
 
 2. Desde tu máquina local:
+
    ```bash
    # Copiar la DATABASE_URL de Railway
    # Pegarla en apps/api/.env
@@ -165,6 +172,7 @@ Después del primer deploy, ejecuta las migraciones:
    ```
 
    O desde Railway Shell:
+
    ```bash
    # En Railway → Service → Shell
    cd apps/api
@@ -182,6 +190,7 @@ Después del primer deploy, ejecuta las migraciones:
 1. Ve a tu proyecto en Vercel → **Settings** → **Environment Variables**
 
 2. Actualiza `NEXT_PUBLIC_API_URL`:
+
    ```
    NEXT_PUBLIC_API_URL = https://tu-backend.railway.app/api
    ```
@@ -195,6 +204,7 @@ Después del primer deploy, ejecuta las migraciones:
 ### Actualizar CORS en el backend
 
 En Railway, actualiza la variable `CORS_ORIGIN`:
+
 ```
 CORS_ORIGIN = https://easyfactura-web.vercel.app
 ```
@@ -248,23 +258,26 @@ git push origin develop
 ```
 
 **Configurar en Vercel:**
+
 - Production Branch: `main`
 - Preview Branches: `develop`, `feature/*`
 
 **Configurar en Railway:**
+
 - Railway puede crear servicios separados por branch
 
 ---
 
 ## 📊 7. Costos Estimados
 
-| Servicio | Plan | Costo | Incluye |
-|----------|------|-------|---------|
-| **Vercel** | Hobby | **Gratis** | Bandwidth ilimitado, 100 GB-hrs |
+| Servicio    | Plan  | Costo             | Incluye                         |
+| ----------- | ----- | ----------------- | ------------------------------- |
+| **Vercel**  | Hobby | **Gratis**        | Bandwidth ilimitado, 100 GB-hrs |
 | **Railway** | Trial | **$5/mes gratis** | 500 horas ejecución, PostgreSQL |
-| **Total** | - | **$0/mes** | Suficiente para desarrollo |
+| **Total**   | -     | **$0/mes**        | Suficiente para desarrollo      |
 
 **Para producción real con tráfico:**
+
 - Vercel Pro: $20/mes
 - Railway Starter: $5/mes (luego pago por uso)
 
@@ -273,7 +286,9 @@ git push origin develop
 ## 🐛 8. Troubleshooting
 
 ### Error: "Build failed"
+
 **Solución:**
+
 ```bash
 # Verificar que el build funciona localmente
 pnpm build --filter=@easyfactura/web
@@ -281,13 +296,17 @@ pnpm build --filter=@easyfactura/backend
 ```
 
 ### Error: "DATABASE_URL not found"
+
 **Solución:** Verificar que la variable existe en Railway → Settings → Variables
 
 ### Error: CORS
+
 **Solución:** Verificar que `CORS_ORIGIN` en Railway coincide con la URL de Vercel
 
 ### Frontend muestra "Failed to fetch"
-**Solución:** 
+
+**Solución:**
+
 1. Verificar `NEXT_PUBLIC_API_URL` en Vercel
 2. Verificar que backend responde: `curl https://tu-backend.railway.app/api`
 
@@ -296,10 +315,12 @@ pnpm build --filter=@easyfactura/backend
 ## 📬 9. Compartir con tu Compañero
 
 Simplemente envía:
+
 - **URL del frontend:** `https://easyfactura-web.vercel.app`
 - **Credenciales de prueba** (si creaste un usuario demo)
 
 Tu compañero podrá:
+
 - Registrarse directamente
 - Probar todas las funcionalidades
 - Ver el código en GitHub
@@ -311,6 +332,7 @@ Tu compañero podrá:
 ### Antes de ir a producción real:
 
 1. **Cambiar todos los secretos JWT**
+
    ```bash
    # Generar secretos seguros
    openssl rand -base64 64  # Para JWT_ACCESS_SECRET
