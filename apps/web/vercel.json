@@ -1,12 +1,4 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "buildCommand": "cd ../.. && pnpm build --filter=@easyfactura/web",
-  "installCommand": "pnpm install",
-  "outputDirectory": ".next"
+  "buildCommand": "cd ../.. && turbo build --filter=@easyfactura/web",
+  "installCommand": "pnpm install"
 }
