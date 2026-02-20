@@ -6,6 +6,43 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 let cachedApp: express.Application | null = null;
 
+/**
+ * Compute the list of allowed origins from the FRONTEND_URL env var.
+ * Called both in bootstrap (for NestJS enableCors) and in the handler
+ * (for pre-bootstrap OPTIONS responses and error responses).
+ */
+function getAllowedOrigins(): string[] {
+  return (process.env.FRONTEND_URL ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean)
+    .concat(['http://localhost:3000', 'http://localhost:3001']);
+}
+
+/**
+ * Add CORS headers to any response.
+ * Must be called before res.status().json() so the browser accepts the response.
+ */
+function setCorsHeaders(req: VercelRequest, res: VercelResponse): void {
+  const origin = req.headers.origin as string | undefined;
+  const allowedOrigins = getAllowedOrigins();
+
+  const isAllowed =
+    !origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production';
+
+  res.setHeader(
+    'Access-Control-Allow-Origin',
+    isAllowed && origin ? origin : (allowedOrigins[0] ?? '*'),
+  );
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type,Authorization,X-Requested-With,Accept',
+  );
+  res.setHeader('Access-Control-Max-Age', '86400');
+}
+
 async function bootstrap(): Promise<express.Application> {
   if (cachedApp) {
     return cachedApp;
@@ -51,12 +88,8 @@ async function bootstrap(): Promise<express.Application> {
 
   const reflector = app.get(Reflector);
 
-  // CORS
-  const allowedOrigins = (process.env.FRONTEND_URL ?? '')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean)
-    .concat(['http://localhost:3000', 'http://localhost:3001']);
+  // CORS — uses same origin list as the pre-bootstrap OPTIONS handler
+  const allowedOrigins = getAllowedOrigins();
 
   app.enableCors({
     origin: (origin, callback) => {
@@ -100,18 +133,28 @@ async function bootstrap(): Promise<express.Application> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  // Handle preflight immediately — before bootstrap — so the browser is never
+  // blocked waiting for NestJS to initialise on a cold start.
+  if (req.method === 'OPTIONS') {
+    setCorsHeaders(req, res);
+    res.status(204).end();
+    return;
+  }
+
   try {
     const app = await bootstrap();
     app(req as any, res as any);
   } catch (error) {
     const err = error as Error;
-    // Always log the real error to Vercel function logs
     console.error('[EasyFactura] Bootstrap failed:', err.message, '\n', err.stack);
+
+    // CORS headers are mandatory even on error responses — without them the
+    // browser masks the real error with a generic CORS failure message.
+    setCorsHeaders(req, res);
 
     res.status(500).json({
       statusCode: 500,
       message: 'Service initialization failed',
-      // Show details outside production to aid debugging
       detail: process.env.NODE_ENV !== 'production' ? err.message : 'Check Vercel function logs',
     });
   }
