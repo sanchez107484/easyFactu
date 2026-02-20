@@ -20,17 +20,19 @@ async function bootstrap(): Promise<express.Application> {
     HttpExceptionFilter: new () => unknown;
   };
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { PrismaExceptionFilter } = require('../dist/src/common/filters/prisma-exception.filter') as {
-    PrismaExceptionFilter: new () => unknown;
-  };
+  const { PrismaExceptionFilter } =
+    require('../dist/src/common/filters/prisma-exception.filter') as {
+      PrismaExceptionFilter: new () => unknown;
+    };
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { LoggingInterceptor } = require('../dist/src/common/interceptors/logging.interceptor') as {
     LoggingInterceptor: new () => unknown;
   };
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { TransformInterceptor } = require('../dist/src/common/interceptors/transform.interceptor') as {
-    TransformInterceptor: new () => unknown;
-  };
+  const { TransformInterceptor } =
+    require('../dist/src/common/interceptors/transform.interceptor') as {
+      TransformInterceptor: new () => unknown;
+    };
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { JwtAuthGuard } = require('../dist/src/modules/auth/guards/jwt-auth.guard') as {
     JwtAuthGuard: new (reflector: Reflector) => unknown;
@@ -79,26 +81,17 @@ async function bootstrap(): Promise<express.Application> {
       forbidNonWhitelisted: true,
       transform: true,
       transformOptions: { enableImplicitConversion: true },
-    }),
+    })
   );
 
   // Global filters
-  app.useGlobalFilters(
-    new (PrismaExceptionFilter as any)(),
-    new (HttpExceptionFilter as any)(),
-  );
+  app.useGlobalFilters(new (PrismaExceptionFilter as any)(), new (HttpExceptionFilter as any)());
 
   // Global interceptors
-  app.useGlobalInterceptors(
-    new (LoggingInterceptor as any)(),
-    new (TransformInterceptor as any)(),
-  );
+  app.useGlobalInterceptors(new (LoggingInterceptor as any)(), new (TransformInterceptor as any)());
 
   // Global guards (JWT auth + Roles) — must match main.ts
-  app.useGlobalGuards(
-    new (JwtAuthGuard as any)(reflector),
-    new (RolesGuard as any)(reflector),
-  );
+  app.useGlobalGuards(new (JwtAuthGuard as any)(reflector), new (RolesGuard as any)(reflector));
 
   await app.init();
 
