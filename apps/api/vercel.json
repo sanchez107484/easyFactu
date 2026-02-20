@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "buildCommand": "cd ../.. && pnpm --filter @easyfactura/shared-types run build && pnpm --filter @easyfactura/shared-constants run build && pnpm --filter @easyfactura/shared-validators run build && pnpm --filter @easyfactura/brand-config run build && cd apps/api && pnpm exec nest build",
+  "buildCommand": "pnpm --filter @easyfactura/shared-types --filter @easyfactura/shared-constants --filter @easyfactura/shared-validators --filter @easyfactura/brand-config run build && pnpm exec nest build",
   "installCommand": "pnpm install",
   "functions": {
     "api/index.ts": {
-      "includeFiles": "{dist/**,node_modules/@easyfactura/**}",
+      "includeFiles": "{dist/**,node_modules/.prisma/**,node_modules/@easyfactura/**}",
       "maxDuration": 30,
       "memory": 1024
     }
