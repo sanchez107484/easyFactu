@@ -31,6 +31,34 @@ async function bootstrap() {
 }
 
 export default async (req: Request, res: Response) => {
+  // Handle CORS manually for Vercel serverless
+  const allowedOrigins = [
+    'https://easyfactu-web.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3001',
+  ];
+
+  const origin = req.headers.origin || '';
+  const isAllowedOrigin = allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production';
+
+  if (isAllowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  }
+
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, X-Requested-With, Accept'
+  );
+  res.setHeader('Access-Control-Max-Age', '86400');
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   const server = await bootstrap();
   return server(req, res);
 };
