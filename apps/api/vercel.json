@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "nest build",
+  "buildCommand": "pnpm exec nest build",
   "installCommand": "pnpm install",
   "functions": {
     "api/index.ts": {
