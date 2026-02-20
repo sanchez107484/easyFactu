@@ -1,64 +1,54 @@
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import express, { Request, Response } from 'express';
+import express from 'express';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { AppModule } from '../src/app.module';
 
-let app: express.Application | null = null;
+let cachedApp: express.Application | null = null;
 
 async function bootstrap() {
-  if (app) {
-    return app;
+  if (cachedApp) {
+    return cachedApp;
   }
 
   const expressApp = express();
-  const nestApp = await NestFactory.create(AppModule, new ExpressAdapter(expressApp), {
-    logger: process.env.NODE_ENV === 'production' ? ['error', 'warn'] : ['log', 'error', 'warn'],
+  const adapter = new ExpressAdapter(expressApp);
+
+  const app = await NestFactory.create(AppModule, adapter, {
+    logger:
+      process.env.NODE_ENV === 'production' ? ['error', 'warn'] : ['log', 'error', 'warn', 'debug'],
   });
 
-  // CORS
-  nestApp.enableCors({
-    origin: process.env.FRONTEND_URL || '*',
-    credentials: true,
-  });
-
-  // Global prefix
-  nestApp.setGlobalPrefix('api/v1');
-
-  await nestApp.init();
-
-  app = expressApp;
-  return expressApp;
-}
-
-export default async (req: Request, res: Response) => {
-  // Handle CORS manually for Vercel serverless
+  // CORS configuration
   const allowedOrigins = [
     'https://easyfactu-web.vercel.app',
     'http://localhost:3000',
     'http://localhost:3001',
   ];
 
-  const origin = req.headers.origin || '';
-  const isAllowedOrigin = allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production';
+  app.enableCors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    maxAge: 86400,
+  });
 
-  if (isAllowedOrigin) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
-  }
+  app.setGlobalPrefix('api/v1');
 
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Content-Type, Authorization, X-Requested-With, Accept'
-  );
-  res.setHeader('Access-Control-Max-Age', '86400');
+  await app.init();
 
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
+  cachedApp = expressApp;
+  return expressApp;
+}
 
-  const server = await bootstrap();
-  return server(req, res);
-};
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const app = await bootstrap();
+  app(req as any, res as any);
+}
