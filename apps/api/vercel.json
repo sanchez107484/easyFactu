@@ -4,7 +4,7 @@
   "installCommand": "pnpm install",
   "functions": {
     "api/index.ts": {
-      "includeFiles": ["dist/**", "node_modules/@easyfactura/**"],
+      "includeFiles": "{dist/**,node_modules/@easyfactura/**}",
       "maxDuration": 30,
       "memory": 1024
     }
