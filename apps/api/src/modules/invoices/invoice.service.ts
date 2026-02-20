@@ -7,6 +7,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { QueryInvoiceDto } from './dto/query-invoice.dto';
@@ -69,7 +70,7 @@ export class InvoiceService {
     const total = subtotal + taxTotal - irpfTotal;
 
     // Create invoice with lines in transaction
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Get next number for series
       const nextNumber = series.nextNumber;
 

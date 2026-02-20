@@ -1,6 +1,7 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
+    "ignoreDeprecations": "5.0",
     "module": "commonjs",
     "declaration": true,
     "removeComments": true,
@@ -18,6 +19,8 @@
     "strictBindCallApply": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "types": ["node", "express", "multer"],
     "paths": {
       "@/*": ["src/*"]
     }

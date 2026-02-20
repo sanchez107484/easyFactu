@@ -221,7 +221,7 @@ export class InvoiceSeriesService {
     }
 
     // Create new series for the new year
-    const newSeries = previousYearSeries.map((series) => ({
+    const newSeries = previousYearSeries.map((series: any) => ({
       tenantId,
       code: series.code,
       name: series.name,

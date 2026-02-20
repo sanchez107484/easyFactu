@@ -7,7 +7,7 @@ import { writeFile, unlink, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 
-interface UploadedFile {
+export interface UploadResult {
   url: string;
   path: string;
   size: number;
@@ -55,7 +55,7 @@ export class UploadService {
   /**
    * Upload logo for tenant
    */
-  async uploadLogo(tenantId: string, file: Express.Multer.File): Promise<UploadedFile> {
+  async uploadLogo(tenantId: string, file: Express.Multer.File): Promise<UploadResult> {
     // Validate file
     this.validateLogoFile(file);
 
@@ -91,7 +91,7 @@ export class UploadService {
     tenantId: string,
     file: Express.Multer.File,
     password: string
-  ): Promise<UploadedFile> {
+  ): Promise<UploadResult> {
     // Validate file
     this.validateCertificateFile(file);
 

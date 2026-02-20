@@ -8,6 +8,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { InvoiceSeriesService } from '../invoice-series/invoice-series.service';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
@@ -50,7 +51,7 @@ export class AuthService {
     const emailVerifyToken = randomBytes(32).toString('hex');
 
     // Create tenant, user, and tenantUser relationship in transaction
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Create tenant
       const tenant = await tx.tenant.create({
         data: {
@@ -177,14 +178,18 @@ export class AuthService {
 
     if (dto.tenantId) {
       // User specified a tenant
-      const hasTenant = user.tenantUsers.some((tu) => tu.tenantId === dto.tenantId);
+      const hasTenant = user.tenantUsers.some(
+        (tu: { tenantId: string }) => tu.tenantId === dto.tenantId
+      );
       if (!hasTenant) {
         throw new UnauthorizedException('No tienes acceso a esta empresa');
       }
       activeTenantId = dto.tenantId;
     } else if (user.lastActiveTenantId) {
       // Use last active tenant
-      const hasLastActive = user.tenantUsers.some((tu) => tu.tenantId === user.lastActiveTenantId);
+      const hasLastActive = user.tenantUsers.some(
+        (tu: { tenantId: string }) => tu.tenantId === user.lastActiveTenantId
+      );
       const firstTenant = user.tenantUsers[0];
       if (!firstTenant) {
         throw new UnauthorizedException('No tienes acceso a ninguna empresa');
@@ -199,7 +204,9 @@ export class AuthService {
       activeTenantId = firstTenant.tenantId;
     }
 
-    const activeTenantUser = user.tenantUsers.find((tu) => tu.tenantId === activeTenantId);
+    const activeTenantUser = user.tenantUsers.find(
+      (tu: { tenantId: string }) => tu.tenantId === activeTenantId
+    );
     if (!activeTenantUser) {
       throw new UnauthorizedException('No se encontró la empresa seleccionada');
     }
@@ -230,7 +237,7 @@ export class AuthService {
         emailVerified: user.emailVerified,
         lastActiveTenantId: activeTenantId,
       },
-      tenants: user.tenantUsers.map((tu) => ({
+      tenants: user.tenantUsers.map((tu: any) => ({
         tenant: {
           id: tu.tenant.id,
           businessName: tu.tenant.businessName,
@@ -463,7 +470,7 @@ export class AuthService {
 
     return {
       ...user,
-      tenants: user.tenantUsers.map((tu) => ({
+      tenants: user.tenantUsers.map((tu: any) => ({
         tenant: tu.tenant,
         role: tu.role,
         isOwner: tu.isOwner,
