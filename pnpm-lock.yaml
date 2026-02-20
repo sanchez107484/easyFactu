@@ -360,6 +360,10 @@ importers:
         version: 5.9.3
 
   packages/brand-config:
+    dependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
     devDependencies:
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.18.2
@@ -370,11 +374,12 @@ importers:
       eslint:
         specifier: ^9.18.0
         version: 9.39.2(jiti@2.6.1)
-      typescript:
-        specifier: ^5.7.2
-        version: 5.9.3
 
   packages/shared-constants:
+    dependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
     devDependencies:
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.18.2
@@ -385,11 +390,12 @@ importers:
       eslint:
         specifier: ^9.18.0
         version: 9.39.2(jiti@2.6.1)
-      typescript:
-        specifier: ^5.7.2
-        version: 5.9.3
 
   packages/shared-types:
+    dependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
     devDependencies:
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.18.2
@@ -400,11 +406,12 @@ importers:
       eslint:
         specifier: ^9.18.0
         version: 9.39.2(jiti@2.6.1)
-      typescript:
-        specifier: ^5.7.2
-        version: 5.9.3
 
   packages/shared-validators:
+    dependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
     devDependencies:
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.18.2
@@ -415,9 +422,6 @@ importers:
       eslint:
         specifier: ^9.18.0
         version: 9.39.2(jiti@2.6.1)
-      typescript:
-        specifier: ^5.7.2
-        version: 5.9.3
 
 packages:
 
