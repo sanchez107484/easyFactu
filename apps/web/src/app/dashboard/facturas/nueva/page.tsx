@@ -435,7 +435,7 @@ export default function NuevaFacturaPage() {
                       }
                     >
                       <Plus className="mr-1.5 h-4 w-4" />
-                      Aniadir linea
+                      Añadir linea
                     </Button>
                   </div>
                 </CardHeader>
