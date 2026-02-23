@@ -2,7 +2,9 @@ import axios, { AxiosError } from 'axios';
 import { unwrapApiResponse } from './api-response';
 import { AuthResponse } from '@easyfactura/shared-types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// Strip trailing /v1 if already present (user misconfiguration), then add it once
+const API_URL = API_BASE.replace(/\/v1$/, '') + '/v1';
 
 export const apiClient = axios.create({
   baseURL: API_URL,

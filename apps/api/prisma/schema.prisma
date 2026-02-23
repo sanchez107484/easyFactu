@@ -41,6 +41,7 @@ model Tenant {
   products         Product[]
   invoices         Invoice[]
   invoiceSeries    InvoiceSeries[]
+  invoiceTemplates InvoiceTemplate[]
   verifactuLogs    VerifactuLog[]
 
   @@map("tenants")
@@ -178,6 +179,25 @@ model Product {
 enum ProductType {
   PRODUCT
   SERVICE
+}
+
+// ==================== INVOICE TEMPLATES ====================
+
+model InvoiceTemplate {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String   @default("Plantilla predeterminada")
+  isDefault   Boolean  @default(false) @map("is_default")
+  layout      Json
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([tenantId, isDefault])
+  @@map("invoice_templates")
 }
 
 // ==================== INVOICE SERIES ====================

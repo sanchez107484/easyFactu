@@ -1,15 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -17,50 +19,196 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
-import Link from 'next/link';
+import { ArrowLeft, Plus, Trash2, AlertCircle, Save, CheckCircle } from 'lucide-react';
+import { useCreateInvoice, useConfirmInvoice } from '@/hooks/use-invoices';
+import { useCustomers } from '@/hooks/use-customers';
+import { useDefaultTemplate } from '@/hooks/use-invoice-templates';
+import { useAuthStore } from '@/store/auth-store';
+import {
+  PaymentMethod,
+  Invoice,
+  InvoiceStatus,
+  Customer,
+  InvoiceTemplate,
+} from '@easyfactura/shared-types';
+import { InvoiceTypeModal, InvoiceTypeOption } from '@/components/facturas/InvoiceTypeModal';
+import { ConfirmInvoiceDialog } from '@/components/facturas/ConfirmInvoiceDialog';
+import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
 
-const invoiceLineSchema = z.object({
-  description: z.string().min(1, 'La descripción es obligatoria'),
-  quantity: z.number().min(0.01, 'La cantidad debe ser mayor a 0'),
-  price: z.number().min(0, 'El precio debe ser mayor o igual a 0'),
-  discount: z.number().min(0).max(100).default(0),
-  taxRate: z.number().min(0).max(100),
+// ==================== SCHEMA ====================
+
+const lineSchema = z.object({
+  description: z.string().min(2, 'Minimo 2 caracteres').max(500, 'Maximo 500 caracteres'),
+  quantity: z.number({ invalid_type_error: 'Requerido' }).positive('Debe ser mayor a 0'),
+  unitPrice: z.number({ invalid_type_error: 'Requerido' }).min(0, 'No puede ser negativo'),
+  taxRate: z.number({ invalid_type_error: 'Requerido' }),
+  productId: z.string().optional(),
 });
 
-const invoiceSchema = z.object({
-  customerId: z.string().min(1, 'Debes seleccionar un cliente'),
+const formSchema = z.object({
+  customerId: z.string().min(1, 'Selecciona un cliente'),
   issueDate: z.string().min(1, 'La fecha es obligatoria'),
   dueDate: z.string().optional(),
-  lines: z.array(invoiceLineSchema).min(1, 'Añade al menos una línea'),
-  notes: z.string().optional(),
+  discountPercent: z.number().min(0).max(100).optional(),
+  irpfPercent: z.number().min(0).max(100).optional(),
+  paymentMethod: z.nativeEnum(PaymentMethod).optional(),
+  notes: z.string().max(1000, 'Maximo 1000 caracteres').optional(),
+  lines: z.array(lineSchema).min(1, 'Añade al menos una línea').max(50),
 });
 
-type InvoiceFormData = z.infer<typeof invoiceSchema>;
+type FormData = z.infer<typeof formSchema>;
 
-// Mock customers (TODO: fetch from backend)
-const customers = [
-  { id: '1', name: 'Juan Pérez García' },
-  { id: '2', name: 'María López SL' },
-];
+// ==================== CONSTANTS ====================
+
+const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  [PaymentMethod.BANK_TRANSFER]: 'Transferencia bancaria',
+  [PaymentMethod.DIRECT_DEBIT]: 'Domiciliacion bancaria',
+  [PaymentMethod.CARD]: 'Tarjeta',
+  [PaymentMethod.CASH]: 'Efectivo',
+  [PaymentMethod.PAYPAL]: 'PayPal',
+  [PaymentMethod.OTHER]: 'Otro',
+};
+
+// ==================== HELPERS ====================
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function buildPreviewInvoice(data: Partial<FormData>, customers: Customer[]): Invoice {
+  const today = new Date().toISOString();
+  const lines = data.lines ?? [];
+  const customer = customers.find((c) => c.id === data.customerId);
+
+  const subtotal = round2(
+    lines.reduce((acc, l) => acc + round2((l.quantity ?? 0) * (l.unitPrice ?? 0)), 0),
+  );
+  const discountAmount = data.discountPercent ? round2(subtotal * (data.discountPercent / 100)) : 0;
+  const subtotalAfterDiscount = round2(subtotal - discountAmount);
+  const discFactor = subtotal > 0 ? subtotalAfterDiscount / subtotal : 1;
+
+  const taxTotal = round2(
+    lines.reduce((acc, l) => {
+      const base = round2((l.quantity ?? 0) * (l.unitPrice ?? 0));
+      return acc + round2(base * discFactor * ((l.taxRate ?? 0) / 100));
+    }, 0),
+  );
+  const irpfTotal = data.irpfPercent
+    ? round2(subtotalAfterDiscount * (data.irpfPercent / 100))
+    : null;
+  const total = round2(subtotalAfterDiscount + taxTotal - (irpfTotal ?? 0));
+
+  const previewLines = lines.map((l, i) => {
+    const lineSubtotal = round2((l.quantity ?? 0) * (l.unitPrice ?? 0));
+    return {
+      id: `preview-${i}`,
+      tenantId: '',
+      invoiceId: 'preview',
+      productId: l.productId ?? null,
+      description: l.description || '',
+      quantity: l.quantity ?? 0,
+      unitPrice: l.unitPrice ?? 0,
+      subtotal: lineSubtotal,
+      taxRate: l.taxRate ?? 0,
+      taxAmount: round2(lineSubtotal * ((l.taxRate ?? 0) / 100)),
+      lineTotal: round2(lineSubtotal * (1 + (l.taxRate ?? 0) / 100)),
+      sortOrder: i,
+      createdAt: today,
+      updatedAt: today,
+    };
+  });
+
+  return {
+    id: 'preview',
+    tenantId: '',
+    seriesId: '',
+    customerId: data.customerId ?? '',
+    number: '---',
+    issueDate: data.issueDate || today.split('T')[0],
+    dueDate: data.dueDate ?? null,
+    status: InvoiceStatus.DRAFT,
+    subtotal,
+    discountPercent: data.discountPercent ?? null,
+    discountAmount,
+    taxTotal,
+    irpfPercent: data.irpfPercent ?? null,
+    irpfTotal,
+    total,
+    paymentMethod: data.paymentMethod ?? null,
+    notes: data.notes ?? null,
+    pdfUrl: null,
+    verifactuHash: null,
+    verifactuPrevHash: null,
+    verifactuStatus: null,
+    verifactuQr: null,
+    verifactuSentAt: null,
+    verifactuResponse: null,
+    isRectificative: false,
+    rectifiedInvoiceId: null,
+    rectificationReason: null,
+    createdAt: today,
+    updatedAt: today,
+    customer: customer,
+    lines: previewLines,
+  };
+}
+
+function scrollToField(fieldId: string): void {
+  const el = document.getElementById(`field-${fieldId}`);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const focusable = el.querySelector<HTMLElement>('input, select, textarea');
+  if (focusable) {
+    setTimeout(() => focusable.focus(), 300);
+  }
+}
+
+function buildCreateInput(data: FormData) {
+  return {
+    customerId: data.customerId,
+    issueDate: data.issueDate,
+    dueDate: data.dueDate || undefined,
+    discountPercent: data.discountPercent || undefined,
+    irpfPercent: data.irpfPercent || undefined,
+    paymentMethod: data.paymentMethod,
+    notes: data.notes,
+    lines: data.lines.map((l) => ({
+      description: l.description,
+      quantity: l.quantity,
+      unitPrice: l.unitPrice,
+      taxRate: l.taxRate,
+      productId: l.productId,
+    })),
+  };
+}
+
+// ==================== PAGE ====================
 
 export default function NuevaFacturaPage() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const currentTenant = useAuthStore((s) => s.currentTenant);
 
-  const form = useForm<InvoiceFormData>({
-    resolver: zodResolver(invoiceSchema),
+  const [invoiceType, setInvoiceType] = useState<InvoiceTypeOption | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate | null>(null);
+
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingDraftId, setPendingDraftId] = useState<string | null>(null);
+
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+
+  const { data: customersData, isLoading: loadingCustomers } = useCustomers();
+  const { data: defaultTemplate } = useDefaultTemplate();
+  const createMutation = useCreateInvoice();
+  const confirmMutation = useConfirmInvoice();
+
+  const customers = customersData?.data ?? [];
+  const effectiveTemplate: InvoiceTemplate | null = selectedTemplate ?? defaultTemplate ?? null;
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       issueDate: new Date().toISOString().split('T')[0],
-      lines: [
-        {
-          description: '',
-          quantity: 1,
-          price: 0,
-          discount: 0,
-          taxRate: 21,
-        },
-      ],
+      lines: [{ description: '', quantity: 1, unitPrice: 0, taxRate: 21 }],
     },
   });
 
@@ -69,332 +217,409 @@ export default function NuevaFacturaPage() {
     name: 'lines',
   });
 
-  const lines = form.watch('lines') || [];
+  const watchedValues = form.watch();
+  const previewInvoice = buildPreviewInvoice(watchedValues, customers);
+  const selectedCustomer = customers.find((c) => c.id === watchedValues.customerId);
 
-  // Calculate totals
-  const subtotal = lines.reduce((acc, line) => {
-    const lineTotal = line.quantity * line.price * (1 - line.discount / 100);
-    return acc + lineTotal;
-  }, 0);
+  // ==================== HANDLERS ====================
 
-  const taxBreakdown = lines.reduce(
-    (acc, line) => {
-      const lineSubtotal = line.quantity * line.price * (1 - line.discount / 100);
-      const taxAmount = lineSubtotal * (line.taxRate / 100);
-      const existing = acc.find((t) => t.rate === line.taxRate);
-      if (existing) {
-        existing.base += lineSubtotal;
-        existing.amount += taxAmount;
-      } else {
-        acc.push({ rate: line.taxRate, base: lineSubtotal, amount: taxAmount });
-      }
-      return acc;
-    },
-    [] as Array<{ rate: number; base: number; amount: number }>,
-  );
+  const handleTypeSelect = useCallback((type: InvoiceTypeOption, template?: InvoiceTemplate) => {
+    setInvoiceType(type);
+    if (template) setSelectedTemplate(template);
+  }, []);
 
-  const totalTax = taxBreakdown.reduce((acc, t) => acc + t.amount, 0);
-  const total = subtotal + totalTax;
+  const handlePreviewSectionClick = useCallback((fieldId: string) => {
+    setActiveSection(fieldId);
+    scrollToField(fieldId);
+  }, []);
 
-  const onSubmit = async (data: InvoiceFormData) => {
-    setIsSubmitting(true);
-    try {
-      // TODO: Call API
-      console.log('Create invoice:', data);
-      // await apiClient.post('/invoices', data);
-      // toast.success('Factura creada correctamente');
-      router.push('/dashboard/facturas');
-    } catch (error) {
-      console.error(error);
-      // toast.error('Error al crear la factura');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleSaveDraft = async (data: FormData) => {
+    const invoice = await createMutation.mutateAsync(buildCreateInput(data));
+    router.push(`/dashboard/facturas/${invoice.id}`);
   };
 
+  const handleConfirmClick = async () => {
+    const isValid = await form.trigger();
+    if (!isValid) return;
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmDialogConfirm = async () => {
+    const data = form.getValues();
+
+    let draftId = pendingDraftId;
+    if (!draftId) {
+      const draft = await createMutation.mutateAsync(buildCreateInput(data));
+      draftId = draft.id;
+      setPendingDraftId(draftId);
+    }
+
+    const confirmed = await confirmMutation.mutateAsync(draftId);
+    setShowConfirmDialog(false);
+    router.push(`/dashboard/facturas/${confirmed.id}`);
+  };
+
+  const isSubmitting = createMutation.isPending || confirmMutation.isPending;
+
+  // ==================== RENDER ====================
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/dashboard/facturas">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Nueva factura</h1>
-          <p className="text-muted-foreground">Crea una nueva factura para tu cliente</p>
+    <>
+      <InvoiceTypeModal open={invoiceType === null} onSelect={handleTypeSelect} />
+
+      <ConfirmInvoiceDialog
+        open={showConfirmDialog}
+        onCancel={() => setShowConfirmDialog(false)}
+        onConfirm={handleConfirmDialogConfirm}
+        isPending={isSubmitting}
+        summary={{
+          customerName: selectedCustomer?.name ?? '---',
+          total: previewInvoice.total,
+        }}
+      />
+
+      <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
+        {/* Page header */}
+        <div className="flex items-center justify-between px-6 py-3 border-b bg-background shrink-0">
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard/facturas">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-lg font-bold tracking-tight leading-tight">Nueva factura</h1>
+              <p className="text-xs text-muted-foreground">
+                Guardada como borrador hasta que la confirmes.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={form.handleSubmit(handleSaveDraft)}
+              disabled={isSubmitting}
+            >
+              <Save className="mr-1.5 h-3.5 w-3.5" />
+              {createMutation.isPending ? 'Guardando...' : 'Guardar borrador'}
+            </Button>
+            <Button size="sm" onClick={handleConfirmClick} disabled={isSubmitting}>
+              <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+              Confirmar factura
+            </Button>
+          </div>
         </div>
-      </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Form (Left - 2 columns) */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Customer & Dates */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Datos generales</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Customer */}
-                <div className="space-y-2">
-                  <Label htmlFor="customerId">
-                    Cliente <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={form.watch('customerId')}
-                    onValueChange={(value) => form.setValue('customerId', value)}
+        {/* Split panel */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* LEFT -- Form (60%) */}
+          <div className="w-[60%] overflow-y-auto px-6 py-5 space-y-5 border-r">
+            <form onSubmit={form.handleSubmit(handleSaveDraft)} noValidate>
+              {/* Section: customer + dates + payment */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Datos generales</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Customer */}
+                  <section
+                    id="field-customerId"
+                    className="space-y-2"
+                    onFocus={() => setActiveSection('customerId')}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un cliente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {form.formState.errors.customerId && (
-                    <p className="text-sm text-destructive">
-                      {form.formState.errors.customerId.message}
-                    </p>
-                  )}
-                  <Link
-                    href="/dashboard/clientes/nuevo"
-                    className="text-sm text-primary hover:underline"
-                  >
-                    + Crear nuevo cliente
-                  </Link>
-                </div>
-
-                {/* Dates */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="issueDate">
-                      Fecha emisión <span className="text-destructive">*</span>
+                    <Label>
+                      Cliente <span className="text-destructive">*</span>
                     </Label>
-                    <Input id="issueDate" type="date" {...form.register('issueDate')} />
-                    {form.formState.errors.issueDate && (
+                    {loadingCustomers ? (
+                      <Skeleton className="h-10 w-full" />
+                    ) : (
+                      <Select
+                        value={watchedValues.customerId ?? ''}
+                        onValueChange={(v) =>
+                          form.setValue('customerId', v, { shouldValidate: true })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona un cliente" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {customers.length === 0 && (
+                            <div className="p-3 text-sm text-muted-foreground flex gap-2 items-start">
+                              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                              No tienes clientes activos. Crea uno primero.
+                            </div>
+                          )}
+                          {customers.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.name} -- {c.nif}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {form.formState.errors.customerId && (
                       <p className="text-sm text-destructive">
-                        {form.formState.errors.issueDate.message}
+                        {form.formState.errors.customerId.message}
                       </p>
                     )}
-                  </div>
+                    <Link
+                      href="/dashboard/clientes/nuevo"
+                      className="text-sm text-primary hover:underline"
+                    >
+                      + Crear nuevo cliente
+                    </Link>
+                  </section>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="dueDate">Fecha vencimiento (opcional)</Label>
-                    <Input id="dueDate" type="date" {...form.register('dueDate')} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Lines */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Líneas de factura</CardTitle>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      append({
-                        description: '',
-                        quantity: 1,
-                        price: 0,
-                        discount: 0,
-                        taxRate: 21,
-                      })
-                    }
+                  {/* Dates */}
+                  <section
+                    id="field-issueDate"
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                    onFocus={() => setActiveSection('issueDate')}
                   >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Añadir línea
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {fields.map((field, index) => (
-                  <div key={field.id} className="p-4 border rounded-lg space-y-4 bg-muted/20">
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="font-medium text-sm">Línea {index + 1}</h4>
-                      {fields.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => remove(index)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      )}
-                    </div>
-
-                    {/* Description */}
                     <div className="space-y-2">
-                      <Label>
-                        Descripción <span className="text-destructive">*</span>
+                      <Label htmlFor="issueDate">
+                        Fecha emision <span className="text-destructive">*</span>
                       </Label>
-                      <Textarea
-                        {...form.register(`lines.${index}.description`)}
-                        placeholder="Describe el producto o servicio..."
-                        rows={2}
-                      />
-                      {form.formState.errors.lines?.[index]?.description && (
+                      <Input id="issueDate" type="date" {...form.register('issueDate')} />
+                      {form.formState.errors.issueDate && (
                         <p className="text-sm text-destructive">
-                          {form.formState.errors.lines[index]?.description?.message}
+                          {form.formState.errors.issueDate.message}
                         </p>
                       )}
                     </div>
-
-                    {/* Quantity, Price, Discount */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div className="space-y-2">
-                        <Label>Cantidad</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          {...form.register(`lines.${index}.quantity`, {
-                            valueAsNumber: true,
-                          })}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Precio €</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          {...form.register(`lines.${index}.price`, {
-                            valueAsNumber: true,
-                          })}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Dto. %</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          {...form.register(`lines.${index}.discount`, {
-                            valueAsNumber: true,
-                          })}
-                          placeholder="0"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>IVA %</Label>
-                        <Select
-                          value={form.watch(`lines.${index}.taxRate`)?.toString()}
-                          onValueChange={(value) =>
-                            form.setValue(`lines.${index}.taxRate`, parseFloat(value))
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="0">0%</SelectItem>
-                            <SelectItem value="4">4%</SelectItem>
-                            <SelectItem value="10">10%</SelectItem>
-                            <SelectItem value="21">21%</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="dueDate">Fecha vencimiento</Label>
+                      <Input id="dueDate" type="date" {...form.register('dueDate')} />
                     </div>
+                  </section>
 
-                    {/* Line Total */}
-                    <div className="text-right text-sm">
-                      <span className="text-muted-foreground">Subtotal línea: </span>
-                      <span className="font-semibold">
-                        {(
-                          lines[index].quantity *
-                          lines[index].price *
-                          (1 - lines[index].discount / 100)
-                        ).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+                  {/* Payment method */}
+                  <section
+                    id="field-paymentMethod"
+                    className="space-y-2"
+                    onFocus={() => setActiveSection('paymentMethod')}
+                  >
+                    <Label>Metodo de pago</Label>
+                    <Select
+                      value={watchedValues.paymentMethod ?? ''}
+                      onValueChange={(v) => form.setValue('paymentMethod', v as PaymentMethod)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sin especificar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </section>
+                </CardContent>
+              </Card>
 
-            {/* Notes */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Notas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  {...form.register('notes')}
-                  placeholder="Información adicional para el cliente..."
-                  rows={3}
-                />
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Preview (Right - 1 column) */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Resumen</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Base imponible:</span>
-                      <span className="font-medium">
-                        {subtotal.toLocaleString('es-ES', {
-                          style: 'currency',
-                          currency: 'EUR',
-                        })}
-                      </span>
-                    </div>
-
-                    {taxBreakdown.map((tax) => (
-                      <div key={tax.rate} className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">IVA {tax.rate}%:</span>
-                        <span className="font-medium">
-                          {tax.amount.toLocaleString('es-ES', {
-                            style: 'currency',
-                            currency: 'EUR',
-                          })}
-                        </span>
-                      </div>
-                    ))}
-
-                    <div className="border-t pt-2 flex justify-between">
-                      <span className="font-semibold">Total:</span>
-                      <span className="font-bold text-xl">
-                        {total.toLocaleString('es-ES', {
-                          style: 'currency',
-                          currency: 'EUR',
-                        })}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 space-y-2">
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
-                      {isSubmitting ? 'Guardando...' : 'Guardar factura'}
+              {/* Section: invoice lines */}
+              <Card className="mt-5">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">Lineas de factura</CardTitle>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        append({ description: '', quantity: 1, unitPrice: 0, taxRate: 21 })
+                      }
+                    >
+                      <Plus className="mr-1.5 h-4 w-4" />
+                      Aniadir linea
                     </Button>
-                    <Link href="/dashboard/facturas" className="block">
-                      <Button type="button" variant="outline" className="w-full">
-                        Cancelar
-                      </Button>
-                    </Link>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div id="field-lines-section">
+                    {form.formState.errors.lines?.root && (
+                      <p className="text-sm text-destructive mb-2">
+                        {form.formState.errors.lines.root.message}
+                      </p>
+                    )}
+                    {fields.map((field, index) => {
+                      const line = watchedValues.lines?.[index];
+                      const lineSubtotal = round2((line?.quantity ?? 0) * (line?.unitPrice ?? 0));
+
+                      return (
+                        <div
+                          key={field.id}
+                          className="p-4 border rounded-lg space-y-3 bg-muted/20"
+                          onFocus={() => setActiveSection('lines-section')}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-muted-foreground">
+                              Linea {index + 1}
+                            </span>
+                            {fields.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => remove(index)}
+                                className="h-7 w-7 p-0"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label>
+                              Descripcion <span className="text-destructive">*</span>
+                            </Label>
+                            <Textarea
+                              {...form.register(`lines.${index}.description`)}
+                              placeholder="Producto o servicio..."
+                              rows={2}
+                            />
+                            {form.formState.errors.lines?.[index]?.description && (
+                              <p className="text-xs text-destructive">
+                                {form.formState.errors.lines[index]?.description?.message}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="space-y-1">
+                              <Label>Cantidad</Label>
+                              <Input
+                                type="number"
+                                step="0.0001"
+                                min="0.0001"
+                                {...form.register(`lines.${index}.quantity`, {
+                                  valueAsNumber: true,
+                                })}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label>Precio EUR</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                {...form.register(`lines.${index}.unitPrice`, {
+                                  valueAsNumber: true,
+                                })}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label>IVA %</Label>
+                              <Select
+                                value={form.watch(`lines.${index}.taxRate`)?.toString() ?? '21'}
+                                onValueChange={(v) =>
+                                  form.setValue(`lines.${index}.taxRate`, parseFloat(v), {
+                                    shouldValidate: true,
+                                  })
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="0">0%</SelectItem>
+                                  <SelectItem value="4">4%</SelectItem>
+                                  <SelectItem value="10">10%</SelectItem>
+                                  <SelectItem value="21">21%</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          <div className="text-right text-sm text-muted-foreground">
+                            Subtotal:{' '}
+                            <span className="font-semibold text-foreground">
+                              {lineSubtotal.toLocaleString('es-ES', {
+                                style: 'currency',
+                                currency: 'EUR',
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
-            </div>
+
+              {/* Section: Discounts & IRPF */}
+              <Card className="mt-5">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Descuentos y retenciones</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <section
+                    id="field-discountPercent"
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                    onFocus={() => setActiveSection('discountPercent')}
+                  >
+                    <div className="space-y-2">
+                      <Label htmlFor="discountPercent">Descuento global (%)</Label>
+                      <Input
+                        id="discountPercent"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        placeholder="0"
+                        {...form.register('discountPercent', { valueAsNumber: true })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="irpfPercent">Retencion IRPF (%)</Label>
+                      <Input
+                        id="irpfPercent"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        placeholder="0 (15% general)"
+                        {...form.register('irpfPercent', { valueAsNumber: true })}
+                      />
+                    </div>
+                  </section>
+                </CardContent>
+              </Card>
+
+              {/* Section: Notes */}
+              <Card className="mt-5 mb-5">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Notas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <section id="field-notes" onFocus={() => setActiveSection('notes')}>
+                    <Textarea
+                      {...form.register('notes')}
+                      placeholder="Informacion adicional para el cliente..."
+                      rows={3}
+                    />
+                  </section>
+                </CardContent>
+              </Card>
+            </form>
+          </div>
+
+          {/* RIGHT -- Live preview (40%) */}
+          <div className="w-[40%] flex flex-col overflow-hidden">
+            <LiveInvoicePreview
+              invoice={previewInvoice}
+              template={effectiveTemplate}
+              tenant={currentTenant}
+              activeFieldSection={activeSection}
+              onSectionClick={handlePreviewSectionClick}
+            />
           </div>
         </div>
-      </form>
-    </div>
+      </div>
+    </>
   );
 }

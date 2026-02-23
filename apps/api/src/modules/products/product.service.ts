@@ -43,7 +43,7 @@ export class ProductService {
     }
 
     if (active !== undefined) {
-      where.active = active;
+      where.isActive = active;
     }
 
     const [data, total] = await Promise.all([

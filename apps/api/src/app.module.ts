@@ -10,6 +10,7 @@ import { ProductModule } from './modules/products/product.module';
 import { InvoiceModule } from './modules/invoices/invoice.module';
 import { InvoiceSeriesModule } from './modules/invoice-series/invoice-series.module';
 import { VerifactuModule } from './modules/verifactu/verifactu.module';
+import { InvoiceTemplateModule } from './modules/invoice-templates/invoice-template.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { VerifactuModule } from './modules/verifactu/verifactu.module';
     InvoiceModule,
     InvoiceSeriesModule,
     VerifactuModule,
+    InvoiceTemplateModule,
   ],
   controllers: [],
   providers: [

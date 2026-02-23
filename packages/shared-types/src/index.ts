@@ -288,7 +288,7 @@ export interface QueryCustomersInput {
   limit?: number;
   search?: string;
   type?: CustomerType;
-  isActive?: boolean;
+  active?: boolean;
 }
 
 // ==================== PRODUCT ====================
@@ -378,6 +378,7 @@ export interface InvoiceLine {
   description: string;
   quantity: number;
   unitPrice: number;
+  subtotal: number;
   taxRate: number;
   taxAmount: number;
   lineTotal: number;
@@ -398,9 +399,9 @@ export interface Invoice {
   subtotal: number;
   discountPercent: number | null;
   discountAmount: number | null;
-  taxAmount: number;
+  taxTotal: number;
   irpfPercent: number | null;
-  irpfAmount: number | null;
+  irpfTotal: number | null;
   total: number;
   paymentMethod: PaymentMethod | null;
   notes: string | null;
@@ -493,6 +494,95 @@ export interface QueryVerifactuLogsInput {
   limit?: number;
   invoiceId?: string;
   status?: VerifactuStatus;
+}
+
+// ==================== INVOICE TEMPLATES ====================
+
+export interface InvoiceLayout {
+  version: 1;
+  page: {
+    marginTop: number;
+    marginRight: number;
+    marginBottom: number;
+    marginLeft: number;
+  };
+  typography: {
+    fontFamily: 'helvetica' | 'times-roman' | 'courier';
+    baseFontSize: number;
+  };
+  colors: {
+    primary: string;
+    tableHeader: string;
+    textPrimary: string;
+    textSecondary: string;
+  };
+  logo: {
+    visible: boolean;
+    position: 'top-left' | 'top-right' | 'top-center';
+    widthMm: number;
+  };
+  header: {
+    senderSide: 'left' | 'right';
+    showPhone: boolean;
+    showIban: boolean;
+  };
+  itemsTable: {
+    style: 'grid' | 'lines' | 'minimal';
+    showDiscount: boolean;
+    showReference: boolean;
+  };
+  totals: {
+    showTaxBreakdown: boolean;
+    showIrpf: boolean;
+  };
+  footer: {
+    text: string;
+    showPaymentInfo: boolean;
+    showVerifactuQr: boolean;
+  };
+}
+
+export const DEFAULT_INVOICE_LAYOUT: InvoiceLayout = {
+  version: 1,
+  page: { marginTop: 20, marginRight: 20, marginBottom: 20, marginLeft: 20 },
+  typography: { fontFamily: 'helvetica', baseFontSize: 10 },
+  colors: {
+    primary: '#1a56db',
+    tableHeader: '#f3f4f6',
+    textPrimary: '#111827',
+    textSecondary: '#6b7280',
+  },
+  logo: { visible: true, position: 'top-left', widthMm: 40 },
+  header: { senderSide: 'left', showPhone: true, showIban: false },
+  itemsTable: { style: 'lines', showDiscount: false, showReference: false },
+  totals: { showTaxBreakdown: true, showIrpf: true },
+  footer: {
+    text: 'Gracias por confiar en nosotros.',
+    showPaymentInfo: true,
+    showVerifactuQr: true,
+  },
+};
+
+export interface InvoiceTemplate {
+  id: string;
+  tenantId: string;
+  name: string;
+  isDefault: boolean;
+  layout: InvoiceLayout;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateInvoiceTemplateInput {
+  name?: string;
+  layout: InvoiceLayout;
+  isDefault?: boolean;
+}
+
+export interface UpdateInvoiceTemplateInput {
+  name?: string;
+  isDefault?: boolean;
+  layout?: Partial<InvoiceLayout>;
 }
 
 // ==================== REPORTS ====================

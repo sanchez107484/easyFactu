@@ -33,8 +33,6 @@ type ProductFormData = z.infer<typeof productSchema>;
 
 export default function NuevoProductoPage() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -49,24 +47,15 @@ export default function NuevoProductoPage() {
   const priceWithTax = price * (1 + taxRate / 100);
   const taxAmount = price * (taxRate / 100);
 
+  const createMutation = useCreateProduct();
+
   const onSubmit = async (data: ProductFormData) => {
-    setIsSubmitting(true);
-    try {
-      // TODO: Call API
-      console.log('Create product:', data);
-      // await apiClient.post('/products', data);
-      // toast.success('Producto creado correctamente');
-      router.push('/dashboard/productos');
-    } catch (error) {
-      console.error(error);
-      // toast.error('Error al crear el producto');
-    } finally {
-      setIsSubmitting(false);
-    }
+    await createMutation.mutateAsync(data);
+    router.push('/dashboard/productos');
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl mx-auto">
       <div className="flex items-center gap-4">
         <Link href="/dashboard/productos">
           <Button variant="ghost" size="sm">
@@ -80,9 +69,9 @@ export default function NuevoProductoPage() {
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <Card>
+        <Card className="shadow-lg border-primary/30">
           <CardHeader>
-            <CardTitle>Datos del producto</CardTitle>
+            <CardTitle className="text-xl">Datos del producto</CardTitle>
             <CardDescription>Completa la información del producto o servicio</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -91,18 +80,26 @@ export default function NuevoProductoPage() {
               <Label htmlFor="type">
                 Tipo <span className="text-destructive">*</span>
               </Label>
-              <Select
-                value={form.watch('type')}
-                onValueChange={(value) => form.setValue('type', value as any)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="SERVICE">Servicio</SelectItem>
-                  <SelectItem value="PRODUCT">Producto</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant={form.watch('type') === 'SERVICE' ? 'default' : 'outline'}
+                  className="flex-1"
+                  onClick={() => form.setValue('type', 'SERVICE')}
+                  disabled={createMutation.isPending}
+                >
+                  Servicio
+                </Button>
+                <Button
+                  type="button"
+                  variant={form.watch('type') === 'PRODUCT' ? 'default' : 'outline'}
+                  className="flex-1"
+                  onClick={() => form.setValue('type', 'PRODUCT')}
+                  disabled={createMutation.isPending}
+                >
+                  Producto
+                </Button>
+              </div>
               <p className="text-sm text-muted-foreground">
                 Los productos son bienes físicos, los servicios son prestaciones
               </p>
@@ -117,6 +114,7 @@ export default function NuevoProductoPage() {
                 id="name"
                 {...form.register('name')}
                 placeholder="Ej: Consultoría técnica por hora"
+                disabled={createMutation.isPending}
               />
               {form.formState.errors.name && (
                 <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
@@ -131,6 +129,7 @@ export default function NuevoProductoPage() {
                 {...form.register('description')}
                 placeholder="Describe en qué consiste este producto o servicio..."
                 rows={3}
+                disabled={createMutation.isPending}
               />
               <p className="text-sm text-muted-foreground">
                 Esta descripción aparecerá en las líneas de factura
@@ -141,6 +140,12 @@ export default function NuevoProductoPage() {
             <div className="space-y-2">
               <Label htmlFor="reference">Referencia/Código</Label>
               <Input id="reference" {...form.register('reference')} placeholder="Ej: CONS-001" />
+              <Input
+                id="reference"
+                {...form.register('reference')}
+                placeholder="Ej: CONS-001"
+                disabled={createMutation.isPending}
+              />
               <p className="text-sm text-muted-foreground">
                 Código interno para identificar el producto
               </p>
@@ -160,6 +165,7 @@ export default function NuevoProductoPage() {
                     {...form.register('price', { valueAsNumber: true })}
                     placeholder="0.00"
                     className="pr-10"
+                    disabled={createMutation.isPending}
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                     €
@@ -177,6 +183,7 @@ export default function NuevoProductoPage() {
                 <Select
                   value={form.watch('taxRate')?.toString()}
                   onValueChange={(value) => form.setValue('taxRate', parseFloat(value))}
+                  disabled={createMutation.isPending}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -227,7 +234,7 @@ export default function NuevoProductoPage() {
             </Button>
           </Link>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Guardando...' : 'Guardar producto'}
+            {createMutation.isPending ? 'Guardando...' : 'Guardar producto'}
           </Button>
         </div>
       </form>

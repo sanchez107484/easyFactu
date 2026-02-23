@@ -3,42 +3,56 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Building2, FileText, Users, CreditCard, Shield, Settings, Bell } from 'lucide-react';
+import {
+  Building2,
+  FileText,
+  Users,
+  CreditCard,
+  Shield,
+  Settings,
+  Bell,
+  LayoutTemplate,
+} from 'lucide-react';
 
 const settingsSections = [
   {
     title: 'General',
-    href: '/ajustes',
+    href: '/dashboard/ajustes',
     icon: Settings,
   },
   {
     title: 'Empresa',
-    href: '/ajustes/empresa',
+    href: '/dashboard/ajustes/empresa',
     icon: Building2,
   },
   {
     title: 'Facturación',
-    href: '/ajustes/facturacion',
+    href: '/dashboard/ajustes/facturacion',
     icon: FileText,
   },
   {
+    title: 'Plantilla PDF',
+    href: '/dashboard/ajustes/plantilla',
+    icon: LayoutTemplate,
+  },
+  {
     title: 'Usuarios',
-    href: '/ajustes/usuarios',
+    href: '/dashboard/ajustes/usuarios',
     icon: Users,
   },
   {
     title: 'Plan y Facturación',
-    href: '/ajustes/plan',
+    href: '/dashboard/ajustes/plan',
     icon: CreditCard,
   },
   {
     title: 'Seguridad',
-    href: '/ajustes/seguridad',
+    href: '/dashboard/ajustes/seguridad',
     icon: Shield,
   },
   {
     title: 'Notificaciones',
-    href: '/ajustes/notificaciones',
+    href: '/dashboard/ajustes/notificaciones',
     icon: Bell,
   },
 ];

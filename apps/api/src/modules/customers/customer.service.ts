@@ -9,18 +9,30 @@ export class CustomerService {
   constructor(private prisma: PrismaService) {}
 
   async create(tenantId: string, dto: CreateCustomerDto) {
-    // Check if NIF already exists for this tenant
-    const existing = await this.prisma.customer.findFirst({
-      where: { tenantId, nif: dto.nif },
-    });
-
-    if (existing) {
-      throw new ConflictException('Ya existe un cliente con este NIF/CIF');
+    // Validar NIF usando el validador compartido
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { validateNif } = require('@easyfactura/shared-validators');
+    const nif = dto.nif?.toUpperCase().trim();
+    if (!validateNif(nif)) {
+      throw new ConflictException('El NIF/DNI/NIE no es válido');
     }
 
+    // Check if NIF already exists for this tenant (case-insensitive)
+    const existing = await this.prisma.customer.findFirst({
+      where: {
+        tenantId,
+        nif: { equals: nif, mode: 'insensitive' },
+      },
+    });
+    if (existing) {
+      throw new ConflictException('Ya existe un cliente con este NIF/CIF en tu empresa');
+    }
+
+    // Create customer
     return this.prisma.customer.create({
       data: {
         ...dto,
+        nif,
         tenantId,
       },
     });
@@ -46,7 +58,7 @@ export class CustomerService {
     }
 
     if (active !== undefined) {
-      where.active = active;
+      where.isActive = active;
     }
 
     const [data, total] = await Promise.all([

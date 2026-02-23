@@ -1,8 +1,32 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Header,
+  Res,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiNoContentResponse,
+} from '@nestjs/swagger';
+import { Response } from 'express';
 import { InvoiceService } from './invoice.service';
+import { InvoicePdfService } from '../invoice-templates/pdf/invoice-pdf.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
+import { RectifyInvoiceDto } from './dto/rectify-invoice.dto';
 import { QueryInvoiceDto } from './dto/query-invoice.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
@@ -12,27 +36,46 @@ import { CurrentTenant } from '../../common/decorators/current-tenant.decorator'
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class InvoiceController {
-  constructor(private invoiceService: InvoiceService) {}
+  constructor(
+    private readonly invoiceService: InvoiceService,
+    private readonly pdfService: InvoicePdfService
+  ) {}
 
   @Post()
-  @ApiOperation({ summary: 'Crear factura' })
+  @ApiOperation({ summary: 'Crear factura en borrador' })
   @ApiCreatedResponse({ description: 'Factura creada correctamente' })
   create(@CurrentTenant() tenantId: string, @Body() dto: CreateInvoiceDto) {
     return this.invoiceService.create(tenantId, dto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar facturas' })
+  @ApiOperation({ summary: 'Listar facturas (paginado)' })
   @ApiOkResponse({ description: 'Lista paginada de facturas' })
   findAll(@CurrentTenant() tenantId: string, @Query() query: QueryInvoiceDto) {
     return this.invoiceService.findAll(tenantId, query);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Obtener una factura' })
+  @ApiOperation({ summary: 'Obtener detalle completo de una factura' })
   @ApiOkResponse({ description: 'Factura encontrada' })
   findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.invoiceService.findOne(tenantId, id);
+  }
+
+  @Get(':id/pdf')
+  @ApiOperation({ summary: 'Descargar factura en PDF' })
+  @Header('Content-Type', 'application/pdf')
+  async downloadPdf(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+    @Res() res: Response
+  ) {
+    const [buffer, invoice] = await Promise.all([
+      this.pdfService.generate(tenantId, id),
+      this.invoiceService.findOne(tenantId, id),
+    ]);
+    res.setHeader('Content-Disposition', `inline; filename="factura-${invoice.number}.pdf"`);
+    res.send(buffer);
   }
 
   @Put(':id')
@@ -47,16 +90,43 @@ export class InvoiceController {
   }
 
   @Post(':id/confirm')
-  @ApiOperation({ summary: 'Confirmar factura y enviar a VeriFactu' })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Confirmar factura: asigna número, bloquea y envía a VeriFactu' })
   @ApiOkResponse({ description: 'Factura confirmada correctamente' })
   confirm(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.invoiceService.confirm(tenantId, id);
   }
 
+  @Post(':id/paid')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Marcar factura como cobrada' })
+  @ApiOkResponse({ description: 'Factura marcada como pagada' })
+  markAsPaid(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    return this.invoiceService.markAsPaid(tenantId, id);
+  }
+
+  @Post(':id/duplicate')
+  @ApiOperation({ summary: 'Duplicar factura como borrador' })
+  @ApiCreatedResponse({ description: 'Factura duplicada correctamente' })
+  duplicate(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    return this.invoiceService.duplicate(tenantId, id);
+  }
+
+  @Post(':id/rectify')
+  @ApiOperation({ summary: 'Crear factura rectificativa' })
+  @ApiCreatedResponse({ description: 'Factura rectificativa creada como borrador' })
+  rectify(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: RectifyInvoiceDto
+  ) {
+    return this.invoiceService.rectify(tenantId, id, dto);
+  }
+
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Eliminar factura (solo borradores)' })
-  @ApiOkResponse({ description: 'Factura eliminada correctamente' })
+  @ApiNoContentResponse({ description: 'Factura eliminada correctamente' })
   remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.invoiceService.remove(tenantId, id);
   }
