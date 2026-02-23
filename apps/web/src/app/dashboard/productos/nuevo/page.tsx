@@ -20,11 +20,14 @@ import {
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
+import { useCreateProduct } from '@/hooks/use-products';
+import { ProductType } from '@easyfactura/shared-types';
+
 const productSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio').max(200),
   description: z.string().optional(),
   reference: z.string().optional(),
-  type: z.enum(['PRODUCT', 'SERVICE']),
+  type: z.nativeEnum(ProductType),
   price: z.number().min(0, 'El precio debe ser mayor o igual a 0'),
   taxRate: z.number().min(0).max(100),
 });
@@ -36,7 +39,7 @@ export default function NuevoProductoPage() {
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: {
-      type: 'SERVICE',
+      type: ProductType.SERVICE,
       price: 0,
       taxRate: 21,
     },
@@ -50,7 +53,10 @@ export default function NuevoProductoPage() {
   const createMutation = useCreateProduct();
 
   const onSubmit = async (data: ProductFormData) => {
-    await createMutation.mutateAsync(data);
+    await createMutation.mutateAsync({
+      ...data,
+      unitPrice: data.price,
+    });
     router.push('/dashboard/productos');
   };
 
@@ -83,18 +89,18 @@ export default function NuevoProductoPage() {
               <div className="flex gap-3">
                 <Button
                   type="button"
-                  variant={form.watch('type') === 'SERVICE' ? 'default' : 'outline'}
+                  variant={form.watch('type') === ProductType.SERVICE ? 'default' : 'outline'}
                   className="flex-1"
-                  onClick={() => form.setValue('type', 'SERVICE')}
+                  onClick={() => form.setValue('type', ProductType.SERVICE)}
                   disabled={createMutation.isPending}
                 >
                   Servicio
                 </Button>
                 <Button
                   type="button"
-                  variant={form.watch('type') === 'PRODUCT' ? 'default' : 'outline'}
+                  variant={form.watch('type') === ProductType.PRODUCT ? 'default' : 'outline'}
                   className="flex-1"
-                  onClick={() => form.setValue('type', 'PRODUCT')}
+                  onClick={() => form.setValue('type', ProductType.PRODUCT)}
                   disabled={createMutation.isPending}
                 >
                   Producto
@@ -229,11 +235,11 @@ export default function NuevoProductoPage() {
         {/* Actions */}
         <div className="flex justify-end gap-4 mt-6">
           <Link href="/dashboard/productos">
-            <Button type="button" variant="outline" disabled={isSubmitting}>
+            <Button type="button" variant="outline" disabled={form.formState.isSubmitting}>
               Cancelar
             </Button>
           </Link>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={form.formState.isSubmitting}>
             {createMutation.isPending ? 'Guardando...' : 'Guardar producto'}
           </Button>
         </div>
