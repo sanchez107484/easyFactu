@@ -392,6 +392,14 @@ export interface Invoice {
   tenantId: string;
   seriesId: string;
   customerId: string;
+  /**
+   * ID de la plantilla asociada a la factura (puede ser null si legacy)
+   */
+  templateId?: string | null;
+  /**
+   * Plantilla asociada (opcional, solo si se incluye en el include de Prisma)
+   */
+  template?: InvoiceTemplate | null;
   number: string;
   issueDate: string;
   dueDate: string | null;

@@ -239,7 +239,10 @@ export default function NuevaFacturaPage() {
   };
 
   const handleConfirmClick = async () => {
+    console.log('handleConfirmClick');
+    console.log(form.getValues());
     const isValid = await form.trigger();
+    console.log('Form valid:', isValid);
     if (!isValid) return;
     setShowConfirmDialog(true);
   };
@@ -571,7 +574,9 @@ export default function NuevaFacturaPage() {
                         min="0"
                         max="100"
                         placeholder="0"
-                        {...form.register('discountPercent', { valueAsNumber: true })}
+                        {...form.register('discountPercent', {
+                          setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                        })}
                       />
                     </div>
                     <div className="space-y-2">
@@ -583,7 +588,9 @@ export default function NuevaFacturaPage() {
                         min="0"
                         max="100"
                         placeholder="0 (15% general)"
-                        {...form.register('irpfPercent', { valueAsNumber: true })}
+                        {...form.register('irpfPercent', {
+                          setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                        })}
                       />
                     </div>
                   </section>

@@ -26,6 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+
 import {
   ArrowLeft,
   MoreVertical,
@@ -39,6 +40,9 @@ import {
   FileDown,
 } from 'lucide-react';
 
+import { Label } from '@/components/ui/label';
+import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
+
 import {
   useInvoice,
   useConfirmInvoice,
@@ -48,6 +52,7 @@ import {
   useRectifyInvoice,
 } from '@/hooks/use-invoices';
 import { InvoiceStatus } from '@easyfactura/shared-types';
+import { useInvoiceTemplate, useInvoiceTemplates } from '@/hooks/use-invoice-templates';
 
 // ==================== HELPERS ====================
 
@@ -113,6 +118,16 @@ export default function FacturaDetailPage() {
   const duplicateMutation = useDuplicateInvoice();
   const deleteMutation = useDeleteInvoice();
   const rectifyMutation = useRectifyInvoice();
+
+  // Plantilla asociada
+  // Puede venir como templateId (nuevo) o como template (si se incluye la relación)
+  // Usar type assertion para acceder a campos opcionales que pueden no estar en el tipo Invoice
+  const templateId = (invoice as any)?.templateId;
+  const templateObj = (invoice as any)?.template;
+  const { data: template } = useInvoiceTemplate(templateId ?? templateObj?.id ?? '');
+  // Pasar el objeto Customer como Tenant si los campos existen (para compatibilidad con LiveInvoicePreview)
+  const tenant =
+    invoice?.customer && 'businessName' in invoice.customer ? (invoice.customer as any) : null;
 
   const handleConfirm = async () => {
     await confirmMutation.mutateAsync(id);
@@ -180,30 +195,27 @@ export default function FacturaDetailPage() {
   const canRectify = isConfirmed || isSent || invoice.status === InvoiceStatus.PAID;
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between px-6 py-3 border-b bg-background shrink-0">
+        <div className="flex items-center gap-3">
           <Link href="/dashboard/facturas">
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="icon" className="h-8 w-8">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">{invoice.number}</h1>
-              <Badge variant={STATUS_VARIANT[invoice.status]}>
+            <h1 className="text-lg font-bold tracking-tight leading-tight">
+              Factura {invoice.number}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Estado:{' '}
+              <span className="font-semibold">
                 {STATUS_LABELS[invoice.status] ?? invoice.status}
-              </Badge>
+              </span>
               {invoice.isRectificative && (
-                <Badge variant="outline" className="text-orange-600 border-orange-600">
-                  Rectificativa
-                </Badge>
+                <span className="ml-2 text-orange-600">Rectificativa</span>
               )}
-            </div>
-            <p className="text-muted-foreground">
-              Emitida el {formatDate(invoice.issueDate)}
-              {invoice.dueDate && ` · Vence el ${formatDate(invoice.dueDate)}`}
             </p>
           </div>
         </div>
@@ -211,23 +223,22 @@ export default function FacturaDetailPage() {
         <div className="flex items-center gap-2">
           {isDraft && (
             <Button onClick={handleConfirm} disabled={confirmMutation.isPending}>
-              <CheckCircle2 className="mr-2 h-4 w-4" />
+              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
               {confirmMutation.isPending ? 'Confirmando...' : 'Confirmar'}
             </Button>
           )}
           {canPay && (
             <Button variant="outline" onClick={handlePaid} disabled={paidMutation.isPending}>
-              <CreditCard className="mr-2 h-4 w-4" />
+              <CreditCard className="mr-1.5 h-3.5 w-3.5" />
               {paidMutation.isPending ? 'Procesando...' : 'Marcar pagada'}
             </Button>
           )}
           {!isDraft && (
             <Button variant="outline" onClick={handleDownloadPdf}>
-              <FileDown className="mr-2 h-4 w-4" />
+              <FileDown className="mr-1.5 h-3.5 w-3.5" />
               Descargar PDF
             </Button>
           )}
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon">
@@ -235,14 +246,6 @@ export default function FacturaDetailPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {isDraft && (
-                <DropdownMenuItem asChild>
-                  <Link href={`/dashboard/facturas/${id}/editar`}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Editar
-                  </Link>
-                </DropdownMenuItem>
-              )}
               <DropdownMenuItem onClick={handleDuplicate} disabled={duplicateMutation.isPending}>
                 <Copy className="mr-2 h-4 w-4" />
                 Duplicar
@@ -293,15 +296,17 @@ export default function FacturaDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          {/* Customer */}
+      {/* Split panel: left info, right preview */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* LEFT -- Info (60%) */}
+        <div className="w-[60%] overflow-y-auto px-6 py-5 space-y-5 border-r">
           <Card>
-            <CardHeader>
-              <CardTitle>Cliente</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Datos de factura</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-1">
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Cliente</Label>
                 <p className="font-semibold text-lg">{invoice.customer?.name}</p>
                 <p className="text-muted-foreground">{invoice.customer?.nif}</p>
                 {invoice.customer?.address && (
@@ -316,49 +321,95 @@ export default function FacturaDetailPage() {
                   <p className="text-sm text-muted-foreground">{invoice.customer.email}</p>
                 )}
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Lines */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Líneas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-muted-foreground">
-                      <th className="text-left py-2 font-medium">Descripción</th>
-                      <th className="text-right py-2 font-medium w-20">Cant.</th>
-                      <th className="text-right py-2 font-medium w-28">Precio</th>
-                      <th className="text-right py-2 font-medium w-20">IVA</th>
-                      <th className="text-right py-2 font-medium w-28">Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(invoice.lines ?? []).map((line) => (
-                      <tr key={line.id} className="border-b last:border-0">
-                        <td className="py-3">{line.description}</td>
-                        <td className="py-3 text-right">{line.quantity}</td>
-                        <td className="py-3 text-right">{formatCurrency(line.unitPrice)}</td>
-                        <td className="py-3 text-right">{line.taxRate}%</td>
-                        <td className="py-3 text-right font-medium">
-                          {formatCurrency(line.subtotal)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <Separator className="my-4" />
+              <div className="space-y-2">
+                <Label>Fechas</Label>
+                <p>Emisión: {formatDate(invoice.issueDate)}</p>
+                {invoice.dueDate && <p>Vencimiento: {formatDate(invoice.dueDate)}</p>}
               </div>
-
+              <Separator className="my-4" />
+              <div className="space-y-2">
+                <Label>Líneas</Label>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-muted-foreground">
+                        <th className="text-left py-2 font-medium">Descripción</th>
+                        <th className="text-right py-2 font-medium w-20">Cant.</th>
+                        <th className="text-right py-2 font-medium w-28">Precio</th>
+                        <th className="text-right py-2 font-medium w-20">IVA</th>
+                        <th className="text-right py-2 font-medium w-28">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(invoice.lines ?? []).map((line) => (
+                        <tr key={line.id} className="border-b last:border-0">
+                          <td className="py-3">{line.description}</td>
+                          <td className="py-3 text-right">{line.quantity}</td>
+                          <td className="py-3 text-right">{formatCurrency(line.unitPrice)}</td>
+                          <td className="py-3 text-right">{line.taxRate}%</td>
+                          <td className="py-3 text-right font-medium">
+                            {formatCurrency(line.subtotal)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <Separator className="my-4" />
+              <div className="space-y-2">
+                <Label>Totales</Label>
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Base imponible</span>
+                    <span>{formatCurrency(invoice.subtotal)}</span>
+                  </div>
+                  {invoice.discountPercent != null && invoice.discountPercent > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Descuento ({invoice.discountPercent}%)</span>
+                      <span>−{formatCurrency(invoice.discountAmount ?? 0)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">IVA</span>
+                    <span>{formatCurrency(invoice.taxTotal)}</span>
+                  </div>
+                  {invoice.irpfPercent != null && invoice.irpfPercent > 0 && (
+                    <div className="flex justify-between text-orange-600">
+                      <span>IRPF ({invoice.irpfPercent}%)</span>
+                      <span>−{formatCurrency(invoice.irpfTotal ?? 0)}</span>
+                    </div>
+                  )}
+                  <Separator />
+                  <div className="flex justify-between font-bold text-base">
+                    <span>Total</span>
+                    <span>{formatCurrency(invoice.total)}</span>
+                  </div>
+                  {invoice.series && (
+                    <>
+                      <Separator className="mt-2" />
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <div className="flex justify-between">
+                          <span>Serie</span>
+                          <span>{invoice.series.name}</span>
+                        </div>
+                        {invoice.paymentMethod && (
+                          <div className="flex justify-between">
+                            <span>Pago</span>
+                            <span>{invoice.paymentMethod}</span>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
               {invoice.notes && (
                 <>
                   <Separator className="my-4" />
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase mb-1">
-                      Notas
-                    </p>
+                    <Label>Notas</Label>
                     <p className="text-sm">{invoice.notes}</p>
                   </div>
                 </>
@@ -367,57 +418,15 @@ export default function FacturaDetailPage() {
           </Card>
         </div>
 
-        {/* Totals */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Totales</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Base imponible</span>
-                <span>{formatCurrency(invoice.subtotal)}</span>
-              </div>
-              {invoice.discountPercent != null && invoice.discountPercent > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>Descuento ({invoice.discountPercent}%)</span>
-                  <span>−{formatCurrency(invoice.discountAmount ?? 0)}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">IVA</span>
-                <span>{formatCurrency(invoice.taxTotal)}</span>
-              </div>
-              {invoice.irpfPercent != null && invoice.irpfPercent > 0 && (
-                <div className="flex justify-between text-orange-600">
-                  <span>IRPF ({invoice.irpfPercent}%)</span>
-                  <span>−{formatCurrency(invoice.irpfTotal ?? 0)}</span>
-                </div>
-              )}
-              <Separator />
-              <div className="flex justify-between font-bold text-base">
-                <span>Total</span>
-                <span>{formatCurrency(invoice.total)}</span>
-              </div>
-              {invoice.series && (
-                <>
-                  <Separator className="mt-2" />
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <div className="flex justify-between">
-                      <span>Serie</span>
-                      <span>{invoice.series.name}</span>
-                    </div>
-                    {invoice.paymentMethod && (
-                      <div className="flex justify-between">
-                        <span>Pago</span>
-                        <span>{invoice.paymentMethod}</span>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+        {/* RIGHT -- Live preview (40%) */}
+        <div className="w-[40%] flex flex-col overflow-hidden">
+          <LiveInvoicePreview
+            invoice={invoice}
+            template={template ?? null}
+            tenant={tenant}
+            activeFieldSection={null}
+            onSectionClick={() => {}}
+          />
         </div>
       </div>
 
