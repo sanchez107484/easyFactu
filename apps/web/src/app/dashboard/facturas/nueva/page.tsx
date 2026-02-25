@@ -32,6 +32,13 @@ import {
   InvoiceTemplate,
 } from '@easyfactura/shared-types';
 import { InvoiceTypeModal, InvoiceTypeOption } from '@/components/facturas/InvoiceTypeModal';
+
+// Etiquetas para los tipos de factura
+const INVOICE_TYPE_LABELS: Record<Exclude<InvoiceTypeOption, 'template'>, string> = {
+  standard: 'Factura ordinaria',
+  proforma: 'Factura proforma',
+  simplified: 'Factura simplificada',
+};
 import { ConfirmInvoiceDialog } from '@/components/facturas/ConfirmInvoiceDialog';
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
 
@@ -184,10 +191,12 @@ function buildCreateInput(data: FormData) {
 
 // ==================== PAGE ====================
 
+
 export default function NuevaFacturaPage() {
   const router = useRouter();
   const currentTenant = useAuthStore((s) => s.currentTenant);
 
+  // Estado: tipo de factura y plantilla seleccionada
   const [invoiceType, setInvoiceType] = useState<InvoiceTypeOption | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate | null>(null);
 
@@ -226,7 +235,11 @@ export default function NuevaFacturaPage() {
 
   const handleTypeSelect = useCallback((type: InvoiceTypeOption, template?: InvoiceTemplate) => {
     setInvoiceType(type);
-    if (template) setSelectedTemplate(template);
+    if (type === 'template' && template) {
+      setSelectedTemplate(template);
+    } else {
+      setSelectedTemplate(null);
+    }
     setShowTypeModal(false);
   }, []);
 
@@ -306,7 +319,12 @@ export default function NuevaFacturaPage() {
               className="mr-2"
               onClick={() => setShowTypeModal(true)}
             >
-              Tipo: {invoiceType?.label ?? '---'}
+              Tipo:{' '}
+              {invoiceType === 'template' && selectedTemplate
+                ? `Plantilla: ${selectedTemplate.name}`
+                : invoiceType
+                  ? INVOICE_TYPE_LABELS[invoiceType as Exclude<InvoiceTypeOption, 'template'>]
+                  : '---'}
             </Button>
             <Button
               variant="outline"
