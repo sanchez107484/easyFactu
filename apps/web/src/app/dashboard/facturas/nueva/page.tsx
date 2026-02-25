@@ -191,6 +191,7 @@ export default function NuevaFacturaPage() {
   const [invoiceType, setInvoiceType] = useState<InvoiceTypeOption | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate | null>(null);
 
+  const [showTypeModal, setShowTypeModal] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingDraftId, setPendingDraftId] = useState<string | null>(null);
 
@@ -226,6 +227,7 @@ export default function NuevaFacturaPage() {
   const handleTypeSelect = useCallback((type: InvoiceTypeOption, template?: InvoiceTemplate) => {
     setInvoiceType(type);
     if (template) setSelectedTemplate(template);
+    setShowTypeModal(false);
   }, []);
 
   const handlePreviewSectionClick = useCallback((fieldId: string) => {
@@ -239,10 +241,7 @@ export default function NuevaFacturaPage() {
   };
 
   const handleConfirmClick = async () => {
-    console.log('handleConfirmClick');
-    console.log(form.getValues());
     const isValid = await form.trigger();
-    console.log('Form valid:', isValid);
     if (!isValid) return;
     setShowConfirmDialog(true);
   };
@@ -268,7 +267,8 @@ export default function NuevaFacturaPage() {
 
   return (
     <>
-      <InvoiceTypeModal open={invoiceType === null} onSelect={handleTypeSelect} />
+      {/* Modal para elegir tipo de factura al entrar o al cambiar */}
+      <InvoiceTypeModal open={invoiceType === null || showTypeModal} onSelect={handleTypeSelect} />
 
       <ConfirmInvoiceDialog
         open={showConfirmDialog}
@@ -299,6 +299,15 @@ export default function NuevaFacturaPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Selector de tipo de factura visible */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="mr-2"
+              onClick={() => setShowTypeModal(true)}
+            >
+              Tipo: {invoiceType?.label ?? '---'}
+            </Button>
             <Button
               variant="outline"
               size="sm"

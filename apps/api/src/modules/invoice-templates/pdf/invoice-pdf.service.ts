@@ -7,6 +7,8 @@ import {
   InvoiceTemplate,
   Tenant,
 } from '@easyfactura/shared-types';
+import PDFDocument from 'pdfkit';
+import { readFileSync } from 'fs';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
@@ -85,23 +87,81 @@ export class InvoicePdfService {
     tenant: Tenant
   ): Promise<Buffer> {
     const logoAbsolutePath = this.resolveLogoPath(tenant.logoUrl);
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    const buffers: Buffer[] = [];
+    doc.on('data', buffers.push.bind(buffers));
 
-    // Dynamic imports required: @react-pdf/renderer v4 is ESM-only and cannot
-    // be statically require()'d from a CommonJS NestJS build.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [renderer, { createInvoicePdfElement }] = await Promise.all([
-      import('@react-pdf/renderer') as Promise<any>,
-      import('./invoice-pdf.document'),
-    ]);
+    // Logo
+    if (logoAbsolutePath) {
+      try {
+        const logo = readFileSync(logoAbsolutePath);
+        doc.image(logo, 40, 40, { width: 120 });
+      } catch (e) {
+        // Si el logo no se puede leer, lo ignoramos
+      }
+    }
 
-    const element = createInvoicePdfElement(renderer, {
-      invoice,
-      template,
-      tenant,
-      logoAbsolutePath,
+    // Cabecera empresa
+    doc.fontSize(16).text(tenant.legalName || '', 200, 40, { align: 'right' });
+    doc.fontSize(10).text(tenant.address || '', 200, 60, { align: 'right' });
+    doc.text(`${tenant.postalCode || ''} ${tenant.city || ''}`, 200, 75, { align: 'right' });
+    doc.text(`${tenant.province || ''} (${tenant.country || ''})`, 200, 90, { align: 'right' });
+    doc.text(`NIF: ${tenant.nif || ''}`, 200, 105, { align: 'right' });
+    doc.text(`Email: ${tenant.email || ''}`, 200, 120, { align: 'right' });
+
+    // Datos factura
+    doc.moveDown(2);
+    doc.fontSize(14).text(`Factura Nº: ${invoice.number}`, { align: 'left' });
+    doc.fontSize(10).text(`Fecha emisión: ${invoice.issueDate?.toString().slice(0, 10) || ''}`);
+    if (invoice.dueDate) doc.text(`Fecha vencimiento: ${invoice.dueDate.toString().slice(0, 10)}`);
+
+    // Cliente
+    doc.moveDown(1);
+    doc.fontSize(12).text('Cliente:', { underline: true });
+    doc.fontSize(10).text(invoice.customer?.legalName || '');
+    doc.text(invoice.customer?.address || '');
+    doc.text(`${invoice.customer?.postalCode || ''} ${invoice.customer?.city || ''}`);
+    doc.text(`${invoice.customer?.province || ''} (${invoice.customer?.country || ''})`);
+    doc.text(`NIF: ${invoice.customer?.nif || ''}`);
+    doc.text(`Email: ${invoice.customer?.email || ''}`);
+
+    // Líneas de factura
+    doc.moveDown(1);
+    doc.fontSize(12).text('Conceptos:', { underline: true });
+    doc.fontSize(10);
+    doc.text('Descripción                Cantidad   Precio   IVA   Total', { continued: false });
+    doc.moveDown(0.2);
+    if (Array.isArray(invoice.lines)) {
+      invoice.lines.forEach((line) => {
+        doc.text(
+          `${(line.description || '').padEnd(25).slice(0, 25)}  ${line.quantity?.toString().padStart(3)}   ${line.unitPrice?.toFixed(2).padStart(7)}   ${line.taxRate?.toFixed(0).padStart(2)}%   ${line.lineTotal?.toFixed(2).padStart(7)}`
+        );
+      });
+    }
+
+    // Totales
+    doc.moveDown(1);
+    doc.fontSize(12).text('Totales:', { underline: true });
+    doc.fontSize(10);
+    doc.text(`Subtotal: ${invoice.subtotal?.toFixed(2) || '0.00'} €`);
+    doc.text(`IVA: ${invoice.taxTotal?.toFixed(2) || '0.00'} €`);
+    if (invoice.irpfTotal) doc.text(`IRPF: ${invoice.irpfTotal.toFixed(2)} €`);
+    if (invoice.discountAmount) doc.text(`Descuento: ${invoice.discountAmount.toFixed(2)} €`);
+    doc.text(`Total: ${invoice.total?.toFixed(2) || '0.00'} €`);
+
+    // Notas
+    if (invoice.notes) {
+      doc.moveDown(1);
+      doc.fontSize(10).text(`Notas: ${invoice.notes}`);
+    }
+
+    doc.end();
+    return new Promise<Buffer>((resolve, reject) => {
+      doc.on('end', () => {
+        resolve(Buffer.concat(buffers));
+      });
+      doc.on('error', reject);
     });
-
-    return renderer.renderToBuffer(element) as Promise<Buffer>;
   }
 
   private resolveLogoPath(logoUrl: string | null): string | undefined {

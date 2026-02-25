@@ -37,8 +37,8 @@ import {
   Copy,
   RotateCcw,
   AlertCircle,
-  FileDown,
 } from 'lucide-react';
+import { DownloadInvoiceButton } from '@/components/ui/download-invoice-button';
 
 import { Label } from '@/components/ui/label';
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
@@ -165,11 +165,7 @@ export default function FacturaDetailPage() {
     router.push(`/dashboard/facturas/${rect.id}`);
   };
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-
-  const handleDownloadPdf = () => {
-    window.open(`${API_URL}/v1/invoices/${id}/pdf`, '_blank');
-  };
+  // Descarga profesional PDF
 
   if (isLoading) return <InvoiceDetailSkeleton />;
 
@@ -233,12 +229,7 @@ export default function FacturaDetailPage() {
               {paidMutation.isPending ? 'Procesando...' : 'Marcar pagada'}
             </Button>
           )}
-          {!isDraft && (
-            <Button variant="outline" onClick={handleDownloadPdf}>
-              <FileDown className="mr-1.5 h-3.5 w-3.5" />
-              Descargar PDF
-            </Button>
-          )}
+          {!isDraft && <DownloadInvoiceButton invoiceId={id} variant="outline" size="sm" />}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon">

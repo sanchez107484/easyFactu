@@ -12,7 +12,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { CreditCard, Download, Check, Zap, Building2, Users, FileText, Crown } from 'lucide-react';
+import { CreditCard, Check, Zap, Building2, Users, FileText, Crown } from 'lucide-react';
+import { DownloadInvoiceButton } from '@/components/ui/download-invoice-button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const plans = [
@@ -100,9 +101,7 @@ export default function AjustesPlanPage() {
     toast.success(`Plan ${planName} activado correctamente`);
   };
 
-  const handleDownloadInvoice = (invoiceNumber: string) => {
-    toast.success(`Descargando factura ${invoiceNumber}`);
-  };
+  // Descarga profesional PDF
 
   return (
     <div className="space-y-6">
@@ -234,15 +233,12 @@ export default function AjustesPlanPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      size="sm"
+                    <DownloadInvoiceButton
+                      invoiceId={invoice.id}
                       variant="ghost"
-                      className="gap-2"
-                      onClick={() => handleDownloadInvoice(invoice.number)}
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      Descargar PDF
-                    </Button>
+                      size="sm"
+                      fileName={`Factura-${invoice.number}.pdf`}
+                    />
                   </TableCell>
                 </TableRow>
               ))}

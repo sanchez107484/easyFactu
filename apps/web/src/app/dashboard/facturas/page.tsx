@@ -110,9 +110,8 @@ export default function FacturasPage() {
     setDeleteId(null);
   };
 
-  const handleDuplicate = async (invoice: Invoice) => {
-    const newInvoice = await duplicateMutation.mutateAsync(invoice.id);
-    router.push(`/dashboard/facturas/${newInvoice.id}`);
+  const handleDuplicate = (invoice: Invoice) => {
+    router.push(`/dashboard/facturas/nueva?duplicate=${invoice.id}`);
   };
 
   if (isLoading) {

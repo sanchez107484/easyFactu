@@ -21,6 +21,14 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/invoices/:id/pdf',
+        destination: 'http://localhost:3001/api/v1/invoices/:id/pdf',
+      },
+    ];
+  },
 };
 
 export default nextConfig;
