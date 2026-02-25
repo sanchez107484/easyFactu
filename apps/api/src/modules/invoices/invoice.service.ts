@@ -194,6 +194,7 @@ export class InvoiceService {
   }
 
   async findOne(tenantId: string, id: string) {
+    console.log(`[InvoiceService] findOne called with tenantId=${tenantId}, id=${id}`);
     const invoice = await this.prisma.invoice.findFirst({
       where: { id, tenantId },
       include: {
@@ -211,11 +212,13 @@ export class InvoiceService {
         },
       },
     });
-
     if (!invoice) {
+      console.warn(`[InvoiceService] Factura NO encontrada para id=${id}, tenantId=${tenantId}`);
       throw new NotFoundException('Factura no encontrada');
     }
-
+    console.log(
+      `[InvoiceService] Factura encontrada: id=${invoice.id}, tenantId=${invoice.tenantId}`
+    );
     return invoice;
   }
 

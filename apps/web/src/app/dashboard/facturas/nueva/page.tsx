@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useCallback, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ArrowLeft, Plus, Trash2, AlertCircle, Save, CheckCircle } from 'lucide-react';
-import { useCreateInvoice, useConfirmInvoice } from '@/hooks/use-invoices';
+import { useCreateInvoice, useConfirmInvoice, useInvoice } from '@/hooks/use-invoices';
 import { useCustomers } from '@/hooks/use-customers';
 import { useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useAuthStore } from '@/store/auth-store';
@@ -32,6 +33,8 @@ import {
   InvoiceTemplate,
 } from '@easyfactura/shared-types';
 import { InvoiceTypeModal, InvoiceTypeOption } from '@/components/facturas/InvoiceTypeModal';
+import { ConfirmInvoiceDialog } from '@/components/facturas/ConfirmInvoiceDialog';
+import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
 
 // Etiquetas para los tipos de factura
 const INVOICE_TYPE_LABELS: Record<Exclude<InvoiceTypeOption, 'template'>, string> = {
@@ -39,13 +42,10 @@ const INVOICE_TYPE_LABELS: Record<Exclude<InvoiceTypeOption, 'template'>, string
   proforma: 'Factura proforma',
   simplified: 'Factura simplificada',
 };
-import { ConfirmInvoiceDialog } from '@/components/facturas/ConfirmInvoiceDialog';
-import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
 
 // ==================== SCHEMA ====================
-
 const lineSchema = z.object({
-  description: z.string().min(2, 'Minimo 2 caracteres').max(500, 'Maximo 500 caracteres'),
+  description: z.string().min(2, 'Mínimo 2 caracteres').max(500, 'Máximo 500 caracteres'),
   quantity: z.number({ invalid_type_error: 'Requerido' }).positive('Debe ser mayor a 0'),
   unitPrice: z.number({ invalid_type_error: 'Requerido' }).min(0, 'No puede ser negativo'),
   taxRate: z.number({ invalid_type_error: 'Requerido' }),
@@ -59,17 +59,16 @@ const formSchema = z.object({
   discountPercent: z.number().min(0).max(100).optional(),
   irpfPercent: z.number().min(0).max(100).optional(),
   paymentMethod: z.nativeEnum(PaymentMethod).optional(),
-  notes: z.string().max(1000, 'Maximo 1000 caracteres').optional(),
+  notes: z.string().max(1000, 'Máximo 1000 caracteres').optional(),
   lines: z.array(lineSchema).min(1, 'Añade al menos una línea').max(50),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 // ==================== CONSTANTS ====================
-
 const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   [PaymentMethod.BANK_TRANSFER]: 'Transferencia bancaria',
-  [PaymentMethod.DIRECT_DEBIT]: 'Domiciliacion bancaria',
+  [PaymentMethod.DIRECT_DEBIT]: 'Domiciliación bancaria',
   [PaymentMethod.CARD]: 'Tarjeta',
   [PaymentMethod.CASH]: 'Efectivo',
   [PaymentMethod.PAYPAL]: 'PayPal',
@@ -77,7 +76,6 @@ const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 };
 
 // ==================== HELPERS ====================
-
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
@@ -90,6 +88,7 @@ function buildPreviewInvoice(data: Partial<FormData>, customers: Customer[]): In
   const subtotal = round2(
     lines.reduce((acc, l) => acc + round2((l.quantity ?? 0) * (l.unitPrice ?? 0)), 0),
   );
+
   const discountAmount = data.discountPercent ? round2(subtotal * (data.discountPercent / 100)) : 0;
   const subtotalAfterDiscount = round2(subtotal - discountAmount);
   const discFactor = subtotal > 0 ? subtotalAfterDiscount / subtotal : 1;
@@ -100,9 +99,11 @@ function buildPreviewInvoice(data: Partial<FormData>, customers: Customer[]): In
       return acc + round2(base * discFactor * ((l.taxRate ?? 0) / 100));
     }, 0),
   );
+
   const irpfTotal = data.irpfPercent
     ? round2(subtotalAfterDiscount * (data.irpfPercent / 100))
     : null;
+
   const total = round2(subtotalAfterDiscount + taxTotal - (irpfTotal ?? 0));
 
   const previewLines = lines.map((l, i) => {
@@ -157,7 +158,7 @@ function buildPreviewInvoice(data: Partial<FormData>, customers: Customer[]): In
     updatedAt: today,
     customer: customer,
     lines: previewLines,
-  };
+  } as Invoice;
 }
 
 function scrollToField(fieldId: string): void {
@@ -191,23 +192,27 @@ function buildCreateInput(data: FormData) {
 
 // ==================== PAGE ====================
 
-
 export default function NuevaFacturaPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const duplicateId = searchParams.get('duplicate');
+
   const currentTenant = useAuthStore((s) => s.currentTenant);
 
-  // Estado: tipo de factura y plantilla seleccionada
   const [invoiceType, setInvoiceType] = useState<InvoiceTypeOption | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate | null>(null);
-
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingDraftId, setPendingDraftId] = useState<string | null>(null);
-
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
   const { data: customersData, isLoading: loadingCustomers } = useCustomers();
   const { data: defaultTemplate } = useDefaultTemplate();
+
+  const { data: sourceInvoice, isLoading: loadingSource } = useInvoice(duplicateId ?? '', {
+    enabled: !!duplicateId,
+  });
+
   const createMutation = useCreateInvoice();
   const confirmMutation = useConfirmInvoice();
 
@@ -217,6 +222,8 @@ export default function NuevaFacturaPage() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      customerId: '', // Inicializar vacío explícitamente
+      paymentMethod: undefined,
       issueDate: new Date().toISOString().split('T')[0],
       lines: [{ description: '', quantity: 1, unitPrice: 0, taxRate: 21 }],
     },
@@ -227,12 +234,43 @@ export default function NuevaFacturaPage() {
     name: 'lines',
   });
 
+  // EFECTO: Cargar datos de duplicado
+  useEffect(() => {
+    if (duplicateId && sourceInvoice) {
+      const today = new Date().toISOString().split('T')[0];
+
+      // Sanitizamos los datos para evitar que los nulls rompan los inputs/selects
+      const safeData: FormData = {
+        customerId: sourceInvoice.customerId || '',
+        issueDate: today,
+        dueDate: undefined,
+        // Convertimos nulls a undefined o 0 según corresponda
+        discountPercent: sourceInvoice.discountPercent
+          ? Number(sourceInvoice.discountPercent)
+          : undefined,
+        irpfPercent: sourceInvoice.irpfPercent ? Number(sourceInvoice.irpfPercent) : undefined,
+        paymentMethod: (sourceInvoice.paymentMethod as PaymentMethod) || undefined,
+        notes: sourceInvoice.notes || undefined,
+        lines:
+          sourceInvoice.lines?.map((l) => ({
+            description: l.description || '',
+            quantity: Number(l.quantity) || 1,
+            unitPrice: Number(l.unitPrice) || 0,
+            taxRate: Number(l.taxRate) || 0,
+            productId: l.productId || undefined,
+          })) || [],
+      };
+
+      // Usamos reset para reemplazar todo el formulario
+      form.reset(safeData);
+    }
+  }, [sourceInvoice, duplicateId, form]);
+
   const watchedValues = form.watch();
   const previewInvoice = buildPreviewInvoice(watchedValues, customers);
   const selectedCustomer = customers.find((c) => c.id === watchedValues.customerId);
 
   // ==================== HANDLERS ====================
-
   const handleTypeSelect = useCallback((type: InvoiceTypeOption, template?: InvoiceTemplate) => {
     setInvoiceType(type);
     if (type === 'template' && template) {
@@ -248,39 +286,88 @@ export default function NuevaFacturaPage() {
     scrollToField(fieldId);
   }, []);
 
+  // Función para disparar el submit desde fuera del formulario
+  const triggerSubmit = () => {
+    const submitBtn = document.getElementById('form-submit-trigger');
+    if (submitBtn) {
+      submitBtn.click();
+    } else {
+      // Fallback por si acaso
+      form.handleSubmit(handleSaveDraft, onInvalid)();
+    }
+  };
+
+  const onInvalid = (errors: any) => {
+    console.error('Errores de validación:', errors);
+    const missingFields = [];
+    if (errors.customerId) missingFields.push('Cliente');
+    if (errors.issueDate) missingFields.push('Fecha');
+    if (errors.lines) missingFields.push('Líneas de factura');
+
+    const msg =
+      missingFields.length > 0
+        ? `Faltan campos: ${missingFields.join(', ')}`
+        : 'Revisa los campos obligatorios marcados en rojo';
+
+    toast.error(msg);
+  };
+
   const handleSaveDraft = async (data: FormData) => {
-    const invoice = await createMutation.mutateAsync(buildCreateInput(data));
-    router.push(`/dashboard/facturas/${invoice.id}`);
+    try {
+      const invoice = await createMutation.mutateAsync(buildCreateInput(data));
+      router.push(`/dashboard/facturas/${invoice.id}`);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleConfirmClick = async () => {
+    // Validamos primero
     const isValid = await form.trigger();
-    if (!isValid) return;
+    if (!isValid) {
+      toast.error('Rellena todos los campos obligatorios antes de confirmar.');
+      return;
+    }
     setShowConfirmDialog(true);
   };
 
   const handleConfirmDialogConfirm = async () => {
+    // Aquí volvemos a obtener valores, asumiendo que ya está validado
     const data = form.getValues();
-
     let draftId = pendingDraftId;
-    if (!draftId) {
-      const draft = await createMutation.mutateAsync(buildCreateInput(data));
-      draftId = draft.id;
-      setPendingDraftId(draftId);
-    }
 
-    const confirmed = await confirmMutation.mutateAsync(draftId);
-    setShowConfirmDialog(false);
-    router.push(`/dashboard/facturas/${confirmed.id}`);
+    try {
+      if (!draftId) {
+        const draft = await createMutation.mutateAsync(buildCreateInput(data));
+        draftId = draft.id;
+        setPendingDraftId(draftId);
+      }
+
+      if (draftId) {
+        await confirmMutation.mutateAsync(draftId);
+        setShowConfirmDialog(false);
+        router.push(`/dashboard/facturas/${draftId}`);
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const isSubmitting = createMutation.isPending || confirmMutation.isPending;
 
-  // ==================== RENDER ====================
+  // Estado de carga inicial
+  if (duplicateId && loadingSource) {
+    return (
+      <div className="flex h-[calc(100vh-64px)] items-center justify-center flex-col gap-4">
+        <Skeleton className="h-12 w-12 rounded-full" />
+        <p className="text-muted-foreground animate-pulse">Recuperando datos de la factura...</p>
+      </div>
+    );
+  }
 
+  // ==================== RENDER ====================
   return (
     <>
-      {/* Modal para elegir tipo de factura al entrar o al cambiar */}
       <InvoiceTypeModal open={invoiceType === null || showTypeModal} onSelect={handleTypeSelect} />
 
       <ConfirmInvoiceDialog
@@ -304,15 +391,15 @@ export default function NuevaFacturaPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-lg font-bold tracking-tight leading-tight">Nueva factura</h1>
+              <h1 className="text-lg font-bold tracking-tight leading-tight">
+                {duplicateId ? 'Nueva factura (Duplicada)' : 'Nueva factura'}
+              </h1>
               <p className="text-xs text-muted-foreground">
                 Guardada como borrador hasta que la confirmes.
               </p>
             </div>
           </div>
-
           <div className="flex items-center gap-2">
-            {/* Selector de tipo de factura visible */}
             <Button
               variant="outline"
               size="sm"
@@ -326,15 +413,13 @@ export default function NuevaFacturaPage() {
                   ? INVOICE_TYPE_LABELS[invoiceType as Exclude<InvoiceTypeOption, 'template'>]
                   : '---'}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={form.handleSubmit(handleSaveDraft)}
-              disabled={isSubmitting}
-            >
+
+            {/* BOTÓN SUPERIOR: Llama a triggerSubmit en lugar de handleSubmit directamente */}
+            <Button variant="outline" size="sm" onClick={triggerSubmit} disabled={isSubmitting}>
               <Save className="mr-1.5 h-3.5 w-3.5" />
               {createMutation.isPending ? 'Guardando...' : 'Guardar borrador'}
             </Button>
+
             <Button size="sm" onClick={handleConfirmClick} disabled={isSubmitting}>
               <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
               Confirmar factura
@@ -346,7 +431,15 @@ export default function NuevaFacturaPage() {
         <div className="flex flex-1 overflow-hidden">
           {/* LEFT -- Form (60%) */}
           <div className="w-[60%] overflow-y-auto px-6 py-5 space-y-5 border-r">
-            <form onSubmit={form.handleSubmit(handleSaveDraft)} noValidate>
+            {/* INICIO DEL FORMULARIO */}
+            <form
+              onSubmit={form.handleSubmit(handleSaveDraft, onInvalid)}
+              noValidate
+              className="space-y-5"
+            >
+              {/* TRUCO: Botón oculto para activar el submit nativo desde el header */}
+              <button type="submit" id="form-submit-trigger" className="hidden" />
+
               {/* Section: customer + dates + payment */}
               <Card>
                 <CardHeader className="pb-3">
@@ -366,7 +459,8 @@ export default function NuevaFacturaPage() {
                       <Skeleton className="h-10 w-full" />
                     ) : (
                       <Select
-                        value={watchedValues.customerId ?? ''}
+                        // El || '' es vital para que React no llore por inputs no controlados
+                        value={watchedValues.customerId || ''}
                         onValueChange={(v) =>
                           form.setValue('customerId', v, { shouldValidate: true })
                         }
@@ -410,7 +504,7 @@ export default function NuevaFacturaPage() {
                   >
                     <div className="space-y-2">
                       <Label htmlFor="issueDate">
-                        Fecha emision <span className="text-destructive">*</span>
+                        Fecha emisión <span className="text-destructive">*</span>
                       </Label>
                       <Input id="issueDate" type="date" {...form.register('issueDate')} />
                       {form.formState.errors.issueDate && (
@@ -431,9 +525,9 @@ export default function NuevaFacturaPage() {
                     className="space-y-2"
                     onFocus={() => setActiveSection('paymentMethod')}
                   >
-                    <Label>Metodo de pago</Label>
+                    <Label>Método de pago</Label>
                     <Select
-                      value={watchedValues.paymentMethod ?? ''}
+                      value={watchedValues.paymentMethod || ''}
                       onValueChange={(v) => form.setValue('paymentMethod', v as PaymentMethod)}
                     >
                       <SelectTrigger>
@@ -452,10 +546,10 @@ export default function NuevaFacturaPage() {
               </Card>
 
               {/* Section: invoice lines */}
-              <Card className="mt-5">
+              <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">Lineas de factura</CardTitle>
+                    <CardTitle className="text-base">Líneas de factura</CardTitle>
                     <Button
                       type="button"
                       variant="outline"
@@ -465,7 +559,7 @@ export default function NuevaFacturaPage() {
                       }
                     >
                       <Plus className="mr-1.5 h-4 w-4" />
-                      Añadir linea
+                      Añadir línea
                     </Button>
                   </div>
                 </CardHeader>
@@ -488,7 +582,7 @@ export default function NuevaFacturaPage() {
                         >
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-muted-foreground">
-                              Linea {index + 1}
+                              Línea {index + 1}
                             </span>
                             {fields.length > 1 && (
                               <Button
@@ -502,10 +596,9 @@ export default function NuevaFacturaPage() {
                               </Button>
                             )}
                           </div>
-
                           <div className="space-y-1">
                             <Label>
-                              Descripcion <span className="text-destructive">*</span>
+                              Descripción <span className="text-destructive">*</span>
                             </Label>
                             <Textarea
                               {...form.register(`lines.${index}.description`)}
@@ -518,7 +611,6 @@ export default function NuevaFacturaPage() {
                               </p>
                             )}
                           </div>
-
                           <div className="grid grid-cols-3 gap-3">
                             <div className="space-y-1">
                               <Label>Cantidad</Label>
@@ -564,7 +656,6 @@ export default function NuevaFacturaPage() {
                               </Select>
                             </div>
                           </div>
-
                           <div className="text-right text-sm text-muted-foreground">
                             Subtotal:{' '}
                             <span className="font-semibold text-foreground">
@@ -582,7 +673,7 @@ export default function NuevaFacturaPage() {
               </Card>
 
               {/* Section: Discounts & IRPF */}
-              <Card className="mt-5">
+              <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Descuentos y retenciones</CardTitle>
                 </CardHeader>
@@ -607,7 +698,7 @@ export default function NuevaFacturaPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="irpfPercent">Retencion IRPF (%)</Label>
+                      <Label htmlFor="irpfPercent">Retención IRPF (%)</Label>
                       <Input
                         id="irpfPercent"
                         type="number"
@@ -625,7 +716,7 @@ export default function NuevaFacturaPage() {
               </Card>
 
               {/* Section: Notes */}
-              <Card className="mt-5 mb-5">
+              <Card className="mb-5">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Notas</CardTitle>
                 </CardHeader>
@@ -633,7 +724,7 @@ export default function NuevaFacturaPage() {
                   <section id="field-notes" onFocus={() => setActiveSection('notes')}>
                     <Textarea
                       {...form.register('notes')}
-                      placeholder="Informacion adicional para el cliente..."
+                      placeholder="Información adicional para el cliente..."
                       rows={3}
                     />
                   </section>

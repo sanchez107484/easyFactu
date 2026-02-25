@@ -40,11 +40,13 @@ export function useInvoices(filters: QueryInvoicesInput = {}) {
   });
 }
 
-export function useInvoice(id: string) {
+// ESTA ES LA VERSIÓN CORREGIDA Y UNIFICADA
+export function useInvoice(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: invoiceKeys.detail(id),
     queryFn: () => invoiceApi.getById(id),
-    enabled: Boolean(id),
+    // Si pasamos enabled en las opciones, lo usamos. Si no, verificamos que haya ID.
+    enabled: options?.enabled ?? Boolean(id),
   });
 }
 
