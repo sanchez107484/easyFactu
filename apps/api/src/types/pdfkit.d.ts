@@ -9,6 +9,7 @@ declare module 'pdfkit' {
     text(text: string, x?: number, y?: number, options?: any): this;
     image(src: Buffer | string, x?: number, y?: number, options?: any): this;
     fontSize(size: number): this;
+    font(fontName: string, fontSrc?: string): this;
     moveDown(lines?: number): this;
     end(): void;
     on(event: string, callback: (...args: any[]) => void): this;
