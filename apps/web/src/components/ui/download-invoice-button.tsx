@@ -8,7 +8,7 @@ interface DownloadInvoiceButtonProps {
   fileName?: string;
   className?: string;
   variant?: 'default' | 'outline' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'lg';
 }
 
 export function DownloadInvoiceButton({
@@ -16,7 +16,7 @@ export function DownloadInvoiceButton({
   fileName,
   className,
   variant = 'default',
-  size = 'md',
+  size = 'sm',
 }: DownloadInvoiceButtonProps) {
   const { download } = useDownloadInvoicePdf({ invoiceId, fileName });
 
