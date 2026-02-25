@@ -111,13 +111,13 @@ export class InvoicePdfService {
 
     // Datos factura
     doc.moveDown(2);
-    doc.fontSize(14).text(`Factura Nº: ${invoice.number}`, { align: 'left' });
+    doc.fontSize(14).text(`Factura Nº: ${invoice.number}`, 40, undefined, { align: 'left' });
     doc.fontSize(10).text(`Fecha emisión: ${invoice.issueDate?.toString().slice(0, 10) || ''}`);
     if (invoice.dueDate) doc.text(`Fecha vencimiento: ${invoice.dueDate.toString().slice(0, 10)}`);
 
     // Cliente
     doc.moveDown(1);
-    doc.fontSize(12).text('Cliente:', { underline: true });
+    doc.fontSize(12).font('Helvetica-Bold').text('Cliente:', 40, undefined);
     doc.fontSize(10).text(invoice.customer?.legalName || '');
     doc.text(invoice.customer?.address || '');
     doc.text(`${invoice.customer?.postalCode || ''} ${invoice.customer?.city || ''}`);
@@ -127,9 +127,9 @@ export class InvoicePdfService {
 
     // Líneas de factura
     doc.moveDown(1);
-    doc.fontSize(12).text('Conceptos:', { underline: true });
+    doc.fontSize(12).font('Helvetica-Bold').text('Conceptos:', 40, undefined);
     doc.fontSize(10);
-    doc.text('Descripción                Cantidad   Precio   IVA   Total', { continued: false });
+    doc.text('Descripción                Cantidad   Precio   IVA   Total');
     doc.moveDown(0.2);
     if (Array.isArray(invoice.lines)) {
       invoice.lines.forEach((line) => {
@@ -141,7 +141,7 @@ export class InvoicePdfService {
 
     // Totales
     doc.moveDown(1);
-    doc.fontSize(12).text('Totales:', { underline: true });
+    doc.fontSize(12).font('Helvetica-Bold').text('Totales:', 40, undefined);
     doc.fontSize(10);
     doc.text(`Subtotal: ${invoice.subtotal?.toFixed(2) || '0.00'} €`);
     doc.text(`IVA: ${invoice.taxTotal?.toFixed(2) || '0.00'} €`);
