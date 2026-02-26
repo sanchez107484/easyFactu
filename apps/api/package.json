@@ -7,6 +7,7 @@
   "scripts": {
     "postinstall": "prisma generate --schema=apps/api/prisma/schema.prisma",
     "build": "prisma generate --schema=apps/api/prisma/schema.prisma && nest build",
+    "vercel:build": "pnpm --filter @easyfactura/shared-types --filter @easyfactura/shared-constants --filter @easyfactura/shared-validators --filter @easyfactura/brand-config run build && pnpm --filter @easyfactura/api exec prisma generate --schema=./prisma/schema.prisma && pnpm exec nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "dev": "nest start --watch",
@@ -18,10 +19,10 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-     "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
-     "prisma:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
-     "prisma:migrate:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma",
-     "prisma:studio": "prisma studio --schema=./prisma/schema.prisma",
+    "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
+    "prisma:migrate:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma",
+    "prisma:studio": "prisma studio --schema=./prisma/schema.prisma",
     "prisma:seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
