@@ -41,6 +41,7 @@ import {
   Hash,
 } from 'lucide-react';
 import { DownloadInvoiceButton } from '@/components/ui/download-invoice-button';
+import { Label } from '@/components/ui/label';
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
 import type { PaymentDetails } from '@/components/facturas/LiveInvoicePreview';
 import { getPaymentDetailFields } from '@/lib/payment-method-details';
@@ -48,7 +49,6 @@ import {
   useInvoice,
   useConfirmInvoice,
   useMarkInvoiceAsPaid,
-  useDuplicateInvoice,
   useDeleteInvoice,
   useRectifyInvoice,
 } from '@/hooks/use-invoices';
@@ -212,9 +212,9 @@ export default function FacturaDetailPage() {
   const { data: invoice, isLoading, error } = useInvoice(id);
   const confirmMutation = useConfirmInvoice();
   const paidMutation = useMarkInvoiceAsPaid();
-  const duplicateMutation = useDuplicateInvoice();
   const deleteMutation = useDeleteInvoice();
   const rectifyMutation = useRectifyInvoice();
+  // FIX: useDuplicateInvoice eliminado — duplicar es solo navegar a /nueva?duplicate=ID
 
   const templateId = (invoice as any)?.templateId ?? (invoice as any)?.template?.id ?? '';
   const { data: template } = useInvoiceTemplate(templateId);
@@ -231,9 +231,10 @@ export default function FacturaDetailPage() {
     await paidMutation.mutateAsync(id);
   };
 
-  const handleDuplicate = async () => {
-    const copy = await duplicateMutation.mutateAsync(id);
-    router.push(`/dashboard/facturas/${copy.id}`);
+  // FIX: navegar directamente al formulario de nueva factura con el ID como param
+  // No hace falta llamar al backend — useInvoice en NuevaFacturaPage cargará los datos
+  const handleDuplicate = () => {
+    router.push(`/dashboard/facturas/nueva?duplicate=${id}`);
   };
 
   const handleDelete = async () => {
@@ -278,8 +279,6 @@ export default function FacturaDetailPage() {
     );
   }
 
-  // ==================== STATUS FLAGS ====================
-
   const isDraft = invoice.status === InvoiceStatus.DRAFT;
   const isConfirmed = invoice.status === InvoiceStatus.CONFIRMED;
   const isSent = invoice.status === InvoiceStatus.SENT;
@@ -293,7 +292,7 @@ export default function FacturaDetailPage() {
 
   return (
     <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
-      {/* ── Header minimalista ── */}
+      {/* ── Header ── */}
       <div className="flex items-center justify-between px-6 py-3 border-b bg-background shrink-0">
         <div className="flex items-center gap-2">
           <Link href="/dashboard/facturas">
@@ -311,7 +310,6 @@ export default function FacturaDetailPage() {
           )}
         </div>
 
-        {/* Acciones secundarias en el header */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" className="h-8 w-8">
@@ -319,7 +317,7 @@ export default function FacturaDetailPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleDuplicate} disabled={duplicateMutation.isPending}>
+            <DropdownMenuItem onClick={handleDuplicate}>
               <Copy className="mr-2 h-4 w-4" />
               Duplicar factura
             </DropdownMenuItem>
@@ -380,12 +378,11 @@ export default function FacturaDetailPage() {
 
       {/* ── Split panel ── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* ════ LEFT — Info panel (60%) ════ */}
+        {/* LEFT */}
         <div className="w-[60%] overflow-y-auto border-r">
           <div className="px-6 py-5 space-y-4">
-            {/* ── ZONA A: Hero de estado ── */}
+            {/* ZONA A — Hero de estado */}
             <div className={cn('rounded-xl border p-5', statusCfg.bg, statusCfg.border)}>
-              {/* Estado + importe */}
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
@@ -410,8 +407,6 @@ export default function FacturaDetailPage() {
                     )}
                   </p>
                 </div>
-
-                {/* CTAs principales — contextuales al estado */}
                 <div className="flex flex-col gap-2 items-end shrink-0">
                   {isDraft && (
                     <Button
@@ -438,8 +433,6 @@ export default function FacturaDetailPage() {
                   {!isDraft && <DownloadInvoiceButton invoiceId={id} variant="outline" size="sm" />}
                 </div>
               </div>
-
-              {/* Metadata rápida */}
               <div className="flex items-center gap-4 mt-4 pt-4 border-t border-current/10">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Hash className="h-3 w-3" />
@@ -464,29 +457,25 @@ export default function FacturaDetailPage() {
               </div>
             </div>
 
-            {/* ── ZONA B: Cliente ── */}
+            {/* ZONA B — Cliente */}
             <div className="rounded-xl border bg-card p-5">
               <SectionLabel icon={Building2}>Cliente</SectionLabel>
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-semibold text-base leading-tight">{invoice.customer?.name}</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">{invoice.customer?.nif}</p>
-                  {invoice.customer?.address && (
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {invoice.customer.address}
-                      {invoice.customer.postalCode && `, ${invoice.customer.postalCode}`}
-                      {invoice.customer.city && ` ${invoice.customer.city}`}
-                      {invoice.customer.province && ` (${invoice.customer.province})`}
-                    </p>
-                  )}
-                  {invoice.customer?.email && (
-                    <p className="text-sm text-muted-foreground">{invoice.customer.email}</p>
-                  )}
-                </div>
-              </div>
+              <p className="font-semibold text-base leading-tight">{invoice.customer?.name}</p>
+              <p className="text-sm text-muted-foreground mt-0.5">{invoice.customer?.nif}</p>
+              {invoice.customer?.address && (
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {invoice.customer.address}
+                  {invoice.customer.postalCode && `, ${invoice.customer.postalCode}`}
+                  {invoice.customer.city && ` ${invoice.customer.city}`}
+                  {invoice.customer.province && ` (${invoice.customer.province})`}
+                </p>
+              )}
+              {invoice.customer?.email && (
+                <p className="text-sm text-muted-foreground">{invoice.customer.email}</p>
+              )}
             </div>
 
-            {/* ── ZONA C: Líneas ── */}
+            {/* ZONA C — Líneas + totales */}
             <div className="rounded-xl border bg-card p-5">
               <SectionLabel icon={FileText}>Líneas de factura</SectionLabel>
               <table className="w-full text-sm">
@@ -528,7 +517,6 @@ export default function FacturaDetailPage() {
                 </tbody>
               </table>
 
-              {/* Bloque de totales alineado a la derecha, como una factura real */}
               <div className="mt-4 pt-4 border-t ml-auto w-64 space-y-1.5">
                 <DataRow label="Base imponible" value={formatCurrency(invoice.subtotal)} />
                 {parseNum(invoice.discountPercent) > 0 && (
@@ -560,7 +548,7 @@ export default function FacturaDetailPage() {
               </div>
             </div>
 
-            {/* ── ZONA D: Forma de pago ── */}
+            {/* ZONA D — Forma de pago */}
             {activePaymentMethod && (
               <div className="rounded-xl border bg-card p-5">
                 <SectionLabel icon={Banknote}>Forma de pago</SectionLabel>
@@ -597,7 +585,7 @@ export default function FacturaDetailPage() {
               </div>
             )}
 
-            {/* ── Notas ── */}
+            {/* Notas */}
             {invoice.notes && (
               <div className="rounded-xl border bg-card p-5">
                 <SectionLabel>Notas</SectionLabel>
@@ -605,7 +593,7 @@ export default function FacturaDetailPage() {
               </div>
             )}
 
-            {/* ── VeriFactu ── */}
+            {/* VeriFactu */}
             {(invoice as any).verifactuQr && (
               <div className="rounded-xl border bg-card p-5">
                 <SectionLabel>Verificación VeriFactu</SectionLabel>
@@ -622,7 +610,7 @@ export default function FacturaDetailPage() {
           </div>
         </div>
 
-        {/* ════ RIGHT — Preview (40%) ════ */}
+        {/* RIGHT — Preview */}
         <div className="w-[40%] flex flex-col overflow-hidden">
           <LiveInvoicePreview
             invoice={invoice}
@@ -635,7 +623,7 @@ export default function FacturaDetailPage() {
         </div>
       </div>
 
-      {/* ── Rectify dialog ── */}
+      {/* Rectify dialog */}
       <AlertDialog open={showRectifyDialog} onOpenChange={setShowRectifyDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

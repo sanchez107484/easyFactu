@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Plus, Trash2, AlertCircle, Save, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, AlertCircle, Save, CheckCircle, Copy } from 'lucide-react';
 import { useCreateInvoice, useConfirmInvoice, useInvoice } from '@/hooks/use-invoices';
 import { useCustomers } from '@/hooks/use-customers';
 import { useDefaultTemplate } from '@/hooks/use-invoice-templates';
@@ -63,6 +63,18 @@ const PAYMENT_METHOD_SECTION_LABELS: Record<PaymentMethod | 'BIZUM', string> = {
   BIZUM: 'Datos Bizum',
 };
 
+const EMPTY_DEFAULT_VALUES = {
+  customerId: '',
+  paymentMethod: undefined as PaymentMethod | undefined,
+  paymentDetails: {} as Record<string, string | undefined>,
+  issueDate: new Date().toISOString().split('T')[0],
+  dueDate: undefined as string | undefined,
+  discountPercent: undefined as number | undefined,
+  irpfPercent: undefined as number | undefined,
+  notes: undefined as string | undefined,
+  lines: [{ description: '', quantity: 1, unitPrice: 0, taxRate: 21 }],
+};
+
 // ==================== SCHEMA ====================
 
 const lineSchema = z.object({
@@ -98,14 +110,19 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-// ==================== PAGE ====================
+// ==================== INNER FORM COMPONENT ====================
+// FIX: separamos el formulario en un componente hijo que recibe los defaultValues
+// ya resueltos. Así useForm() se inicializa UNA SOLA VEZ con los datos correctos,
+// evitando el problema de los Select de Radix que no reaccionan a form.reset().
 
-export default function NuevaFacturaPage() {
+interface InvoiceFormProps {
+  defaultValues: FormData;
+  isDuplicate: boolean;
+  sourceNumber?: string;
+}
+
+function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const duplicateId = searchParams.get('duplicateId');
-
-  // FIX: era s.tenant en el fragmento original, la key correcta es currentTenant
   const currentTenant = useAuthStore((s) => s.currentTenant);
 
   const [invoiceType, setInvoiceType] = useState<InvoiceTypeOption | null>(null);
@@ -117,26 +134,17 @@ export default function NuevaFacturaPage() {
 
   const { data: customersData, isLoading: loadingCustomers } = useCustomers();
   const { data: defaultTemplate } = useDefaultTemplate();
-  const { data: sourceInvoice, isLoading: loadingSource } = useInvoice(duplicateId ?? '', {
-    enabled: !!duplicateId,
-  });
-
   const createMutation = useCreateInvoice();
   const confirmMutation = useConfirmInvoice();
 
-  // FIX: tipado explícito para evitar que el array quede como never[] o any[]
   const customers: Customer[] = customersData?.data ?? [];
   const effectiveTemplate: InvoiceTemplate | null = selectedTemplate ?? defaultTemplate ?? null;
 
+  // FIX: useForm se inicializa con los defaultValues ya resueltos (vacíos o del duplicado)
+  // No se llama a form.reset() en ningún efecto posterior
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      customerId: '',
-      paymentMethod: undefined,
-      paymentDetails: {},
-      issueDate: new Date().toISOString().split('T')[0],
-      lines: [{ description: '', quantity: 1, unitPrice: 0, taxRate: 21 }],
-    },
+    defaultValues,
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -144,61 +152,23 @@ export default function NuevaFacturaPage() {
     name: 'lines',
   });
 
-  // EFECTO: Cargar datos de duplicado
-  useEffect(() => {
-    if (duplicateId && sourceInvoice) {
-      const today = new Date().toISOString().split('T')[0];
-
-      const safeData: FormData = {
-        customerId: sourceInvoice.customerId || '',
-        issueDate: today,
-        dueDate: undefined,
-        discountPercent: sourceInvoice.discountPercent
-          ? Number(sourceInvoice.discountPercent)
-          : undefined,
-        irpfPercent: sourceInvoice.irpfPercent ? Number(sourceInvoice.irpfPercent) : undefined,
-        paymentMethod: (sourceInvoice.paymentMethod as PaymentMethod) || undefined,
-        paymentDetails: (sourceInvoice as any).paymentDetails || {},
-        notes: sourceInvoice.notes || undefined,
-        lines:
-          sourceInvoice.lines?.map((l) => ({
-            description: l.description || '',
-            quantity: Number(l.quantity) || 1,
-            unitPrice: Number(l.unitPrice) || 0,
-            taxRate: Number(l.taxRate) || 0,
-            productId: l.productId || undefined,
-          })) || [],
-      };
-
-      form.reset(safeData);
-    }
-  }, [sourceInvoice, duplicateId, form]);
-
   const watchedValues = form.watch();
   const previewInvoice = buildPreviewInvoice(watchedValues, customers);
   const selectedCustomer = customers.find((c) => c.id === watchedValues.customerId);
-
-  // BIZUM no está en el enum de PaymentMethod — se trata aparte como literal string
   const activePaymentMethod = watchedValues.paymentMethod as PaymentMethod | 'BIZUM' | undefined;
 
   // ==================== HANDLERS ====================
 
   const handleTypeSelect = useCallback((type: InvoiceTypeOption, template?: InvoiceTemplate) => {
     setInvoiceType(type);
-    if (type === 'template' && template) {
-      setSelectedTemplate(template);
-    } else {
-      setSelectedTemplate(null);
-    }
+    setSelectedTemplate(type === 'template' && template ? template : null);
     setShowTypeModal(false);
   }, []);
 
   const handlePreviewSectionClick = useCallback((fieldId: string) => {
     setActiveSection(fieldId);
     const el = document.getElementById(`field-${fieldId}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
 
   const triggerSubmit = () => {
@@ -211,18 +181,15 @@ export default function NuevaFacturaPage() {
   };
 
   const onInvalid = (errors: any) => {
-    console.error('Errores de validación:', errors);
     const missingFields: string[] = [];
     if (errors.customerId) missingFields.push('Cliente');
     if (errors.issueDate) missingFields.push('Fecha');
     if (errors.lines) missingFields.push('Líneas de factura');
-
-    const msg =
+    toast.error(
       missingFields.length > 0
         ? `Faltan campos: ${missingFields.join(', ')}`
-        : 'Revisa los campos obligatorios marcados en rojo';
-
-    toast.error(msg);
+        : 'Revisa los campos obligatorios marcados en rojo',
+    );
   };
 
   const handleSaveDraft = async (data: FormData) => {
@@ -246,14 +213,12 @@ export default function NuevaFacturaPage() {
   const handleConfirmDialogConfirm = async () => {
     const data = form.getValues();
     let draftId = pendingDraftId;
-
     try {
       if (!draftId) {
         const draft = await createMutation.mutateAsync(buildCreateInput(data));
         draftId = draft.id;
         setPendingDraftId(draftId);
       }
-
       if (draftId) {
         await confirmMutation.mutateAsync(draftId);
         setShowConfirmDialog(false);
@@ -265,17 +230,6 @@ export default function NuevaFacturaPage() {
   };
 
   const isSubmitting = createMutation.isPending || confirmMutation.isPending;
-
-  // ==================== LOADING STATE ====================
-
-  if (duplicateId && loadingSource) {
-    return (
-      <div className="flex h-[calc(100vh-64px)] items-center justify-center flex-col gap-4">
-        <Skeleton className="h-12 w-12 rounded-full" />
-        <p className="text-muted-foreground animate-pulse">Recuperando datos de la factura...</p>
-      </div>
-    );
-  }
 
   // ==================== RENDER ====================
 
@@ -295,7 +249,7 @@ export default function NuevaFacturaPage() {
       />
 
       <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
-        {/* Page header */}
+        {/* ── Header ── */}
         <div className="flex items-center justify-between px-6 py-3 border-b bg-background shrink-0">
           <div className="flex items-center gap-3">
             <Link href="/dashboard/facturas">
@@ -304,9 +258,7 @@ export default function NuevaFacturaPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-lg font-bold tracking-tight leading-tight">
-                {duplicateId ? 'Nueva factura (Duplicada)' : 'Nueva factura'}
-              </h1>
+              <h1 className="text-lg font-bold tracking-tight leading-tight">Nueva factura</h1>
               <p className="text-xs text-muted-foreground">
                 Guardada como borrador hasta que la confirmes.
               </p>
@@ -326,12 +278,10 @@ export default function NuevaFacturaPage() {
                   ? INVOICE_TYPE_LABELS[invoiceType as Exclude<InvoiceTypeOption, 'template'>]
                   : '---'}
             </Button>
-
             <Button variant="outline" size="sm" onClick={triggerSubmit} disabled={isSubmitting}>
               <Save className="mr-1.5 h-3.5 w-3.5" />
               {createMutation.isPending ? 'Guardando...' : 'Guardar borrador'}
             </Button>
-
             <Button size="sm" onClick={handleConfirmClick} disabled={isSubmitting}>
               <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
               Confirmar factura
@@ -339,16 +289,31 @@ export default function NuevaFacturaPage() {
           </div>
         </div>
 
-        {/* Split panel */}
+        {/* ── Split panel ── */}
         <div className="flex flex-1 overflow-hidden">
           {/* LEFT -- Form (60%) */}
           <div className="w-[60%] overflow-y-auto px-6 py-5 space-y-5 border-r">
+            {/* Banner de duplicado */}
+            {isDuplicate && sourceNumber && (
+              <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/40 px-4 py-3">
+                <Copy className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    Duplicando factura {sourceNumber}
+                  </p>
+                  <p className="text-xs text-blue-600/80 dark:text-blue-400/80 mt-0.5">
+                    Los datos se han copiado de la factura original. La fecha de emisión se ha
+                    actualizado a hoy. Revisa y confirma antes de guardar.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <form
               onSubmit={form.handleSubmit(handleSaveDraft, onInvalid)}
               noValidate
               className="space-y-5"
             >
-              {/* Botón oculto para activar el submit desde el header */}
               <button type="submit" id="form-submit-trigger" className="hidden" />
 
               {/* ── Datos generales ── */}
@@ -429,7 +394,7 @@ export default function NuevaFacturaPage() {
                     </div>
                   </section>
 
-                  {/* Método de pago + detalles contextuales */}
+                  {/* Método de pago */}
                   <section
                     id="field-paymentMethod"
                     className="space-y-3"
@@ -440,8 +405,10 @@ export default function NuevaFacturaPage() {
                       value={activePaymentMethod || ''}
                       onValueChange={(v) => {
                         form.setValue('paymentMethod', v as PaymentMethod);
-                        // Limpiar detalles anteriores al cambiar de método
-                        form.setValue('paymentDetails', {});
+                        // Solo limpiar detalles si cambia el método (no en la carga inicial)
+                        if (v !== defaultValues.paymentMethod) {
+                          form.setValue('paymentDetails', {});
+                        }
                       }}
                     >
                       <SelectTrigger>
@@ -456,14 +423,12 @@ export default function NuevaFacturaPage() {
                       </SelectContent>
                     </Select>
 
-                    {/* Panel de detalles dinámico — solo visible si hay método seleccionado */}
                     {activePaymentMethod && (
                       <div className="rounded-lg border bg-muted/40 p-4 space-y-3">
                         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           {PAYMENT_METHOD_SECTION_LABELS[activePaymentMethod]}
                         </p>
 
-                        {/* Efectivo: solo aviso legal, sin campos */}
                         {activePaymentMethod === PaymentMethod.CASH && (
                           <p className="text-sm text-muted-foreground">
                             💡 Recuerda: la normativa española limita los pagos en efectivo a{' '}
@@ -472,7 +437,6 @@ export default function NuevaFacturaPage() {
                           </p>
                         )}
 
-                        {/* Transferencia bancaria: caso especial por autoformato del IBAN */}
                         {activePaymentMethod === PaymentMethod.BANK_TRANSFER && (
                           <>
                             <div className="space-y-1.5">
@@ -483,8 +447,6 @@ export default function NuevaFacturaPage() {
                                 id="iban"
                                 placeholder="ES91 2100 0418 4502 0005 1332"
                                 className="font-mono text-sm tracking-wider"
-                                // FIX: se usa value+onChange en lugar de register para poder
-                                // aplicar el autoformato en grupos de 4 sin conflicto controlled/uncontrolled
                                 value={watchedValues.paymentDetails?.iban ?? ''}
                                 onChange={(e) => {
                                   const raw = e.target.value.replace(/\s/g, '').toUpperCase();
@@ -520,14 +482,10 @@ export default function NuevaFacturaPage() {
                           </>
                         )}
 
-                        {/* Resto de métodos: renderizado genérico desde getPaymentDetailFields */}
                         {activePaymentMethod !== PaymentMethod.BANK_TRANSFER &&
                           activePaymentMethod !== PaymentMethod.CASH &&
                           getPaymentDetailFields(activePaymentMethod).map((field) => {
-                            // FIX: cast a Path<FormData> — la única forma correcta de tipar
-                            // rutas anidadas dinámicas con react-hook-form
                             const fieldPath = `paymentDetails.${field.key}` as Path<FormData>;
-
                             return (
                               <div key={field.key} className="space-y-1.5">
                                 <Label className="text-sm">
@@ -595,7 +553,6 @@ export default function NuevaFacturaPage() {
                     {fields.map((field, index) => {
                       const line = watchedValues.lines?.[index];
                       const lineSubtotal = round2((line?.quantity ?? 0) * (line?.unitPrice ?? 0));
-
                       return (
                         <div
                           key={field.id}
@@ -769,5 +726,62 @@ export default function NuevaFacturaPage() {
         </div>
       </div>
     </>
+  );
+}
+
+// ==================== PAGE (shell) ====================
+// FIX: la página solo espera a que los datos del duplicado estén listos
+// y luego renderiza el formulario con los defaultValues correctos.
+// Esto garantiza que useForm() se inicialice una sola vez con los datos completos.
+
+export default function NuevaFacturaPage() {
+  const searchParams = useSearchParams();
+  const duplicateId = searchParams.get('duplicate');
+
+  const { data: sourceInvoice, isLoading: loadingSource } = useInvoice(duplicateId ?? '', {
+    enabled: !!duplicateId,
+  });
+
+  // Mientras cargamos la factura a duplicar, mostramos loading
+  if (duplicateId && loadingSource) {
+    return (
+      <div className="flex h-[calc(100vh-64px)] items-center justify-center flex-col gap-4">
+        <Skeleton className="h-12 w-12 rounded-full" />
+        <p className="text-muted-foreground animate-pulse">Cargando datos de la factura...</p>
+      </div>
+    );
+  }
+
+  // FIX: calculamos los defaultValues UNA VEZ aquí, antes de montar InvoiceForm.
+  // De este modo useForm() los recibe en la inicialización, no en un reset posterior.
+  const defaultValues: FormData = sourceInvoice
+    ? {
+        customerId: sourceInvoice.customerId ?? '',
+        issueDate: new Date().toISOString().split('T')[0],
+        dueDate: undefined,
+        discountPercent: sourceInvoice.discountPercent
+          ? Number(sourceInvoice.discountPercent)
+          : undefined,
+        irpfPercent: sourceInvoice.irpfPercent ? Number(sourceInvoice.irpfPercent) : undefined,
+        paymentMethod: (sourceInvoice.paymentMethod as PaymentMethod) ?? undefined,
+        // paymentDetails viene como objeto del backend pero no está en el tipo Invoice
+        paymentDetails: (sourceInvoice as any).paymentDetails ?? {},
+        notes: sourceInvoice.notes || undefined,
+        lines: (sourceInvoice.lines ?? []).map((l) => ({
+          description: l.description ?? '',
+          quantity: Number(l.quantity) || 1,
+          unitPrice: Number(l.unitPrice) || 0,
+          taxRate: Number(l.taxRate) || 0,
+          productId: l.productId ?? undefined,
+        })),
+      }
+    : { ...EMPTY_DEFAULT_VALUES };
+
+  return (
+    <InvoiceForm
+      defaultValues={defaultValues}
+      isDuplicate={!!duplicateId}
+      sourceNumber={sourceInvoice?.number}
+    />
   );
 }

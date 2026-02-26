@@ -47,9 +47,9 @@ import {
   useInvoices,
   useConfirmInvoice,
   useMarkInvoiceAsPaid,
-  useDuplicateInvoice,
   useDeleteInvoice,
 } from '@/hooks/use-invoices';
+// FIX: useDuplicateInvoice eliminado — duplicar es solo navegar a /nueva?duplicate=ID
 import { InvoiceStatus, Invoice } from '@easyfactura/shared-types';
 
 const STATUS_LABELS: Record<InvoiceStatus, string> = {
@@ -92,7 +92,6 @@ export default function FacturasPage() {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Debounced search would be ideal but keep it simple for now
   const { data, isLoading, error, refetch } = useInvoices({
     search: search || undefined,
     status: statusFilter !== 'ALL' ? (statusFilter as InvoiceStatus) : undefined,
@@ -101,7 +100,6 @@ export default function FacturasPage() {
 
   const confirmMutation = useConfirmInvoice();
   const paidMutation = useMarkInvoiceAsPaid();
-  const duplicateMutation = useDuplicateInvoice();
   const deleteMutation = useDeleteInvoice();
 
   const handleDelete = async () => {
@@ -110,6 +108,8 @@ export default function FacturasPage() {
     setDeleteId(null);
   };
 
+  // FIX: sin llamada al backend — navega al formulario con el ID como param
+  // NuevaFacturaPage leerá ?duplicate=ID y pre-rellenará el formulario
   const handleDuplicate = (invoice: Invoice) => {
     router.push(`/dashboard/facturas/nueva?duplicate=${invoice.id}`);
   };
@@ -314,10 +314,7 @@ export default function FacturasPage() {
                                 Marcar como pagada
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem
-                              onClick={() => handleDuplicate(invoice)}
-                              disabled={duplicateMutation.isPending}
-                            >
+                            <DropdownMenuItem onClick={() => handleDuplicate(invoice)}>
                               <Copy className="mr-2 h-4 w-4" />
                               Duplicar
                             </DropdownMenuItem>
@@ -348,9 +345,9 @@ export default function FacturasPage() {
       <AlertDialog open={Boolean(deleteId)} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Â¿Eliminar borrador?</AlertDialogTitle>
+            <AlertDialogTitle>¿Eliminar borrador?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acciÃ³n no se puede deshacer. El borrador se eliminarÃ¡ permanentemente.
+              Esta acción no se puede deshacer. El borrador se eliminará permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -360,7 +357,7 @@ export default function FacturasPage() {
               disabled={deleteMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending ? 'Eliminando...' : 'SÃ­, eliminar'}
+              {deleteMutation.isPending ? 'Eliminando...' : 'Sí, eliminar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
