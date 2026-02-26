@@ -18,24 +18,6 @@ import { InvoiceCalculationService } from './invoice-calculation.service';
 
 const RECTIFIABLE_STATUSES = [InvoiceStatus.CONFIRMED, InvoiceStatus.SENT, InvoiceStatus.PAID];
 
-// Tipo explícito del resultado de findOne para que TypeScript conozca todos los campos
-type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
-  include: {
-    lines: {
-      orderBy: { sortOrder: 'asc' };
-      include: {
-        product: { select: { id: true; name: true; reference: true } };
-      };
-    };
-    customer: true;
-    series: true;
-    verifactuLogs: {
-      orderBy: { createdAt: 'desc' };
-      take: 5;
-    };
-  };
-}>;
-
 @Injectable()
 export class InvoiceService {
   constructor(
@@ -133,8 +115,7 @@ export class InvoiceService {
         irpfPercent: dto.irpfPercent ?? null,
         irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
         total: totals.total,
-        paymentMethod: (dto.paymentMethod ??
-          null) as Prisma.NullableEnumPaymentMethodFieldUpdateOperationsInput | null,
+        paymentMethod: (dto.paymentMethod ?? null) as any,
         notes: dto.notes ?? null,
         paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : undefined,
         lines: {
@@ -210,7 +191,7 @@ export class InvoiceService {
     };
   }
 
-  async findOne(tenantId: string, id: string): Promise<InvoiceWithRelations> {
+  async findOne(tenantId: string, id: string) {
     console.log(`[InvoiceService] findOne called with tenantId=${tenantId}, id=${id}`);
     const invoice = await this.prisma.invoice.findFirst({
       where: { id, tenantId },
@@ -236,7 +217,9 @@ export class InvoiceService {
     console.log(
       `[InvoiceService] Factura encontrada: id=${invoice.id}, tenantId=${invoice.tenantId}`
     );
-    return invoice;
+    // Cast a any para que los métodos que usan el resultado accedan a todos los campos
+    // sin conflictos de tipos entre versiones de Prisma
+    return invoice as any;
   }
 
   async update(tenantId: string, id: string, dto: UpdateInvoiceDto) {
@@ -295,9 +278,7 @@ export class InvoiceService {
           discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
           irpfPercent: dto.irpfPercent !== undefined ? dto.irpfPercent : undefined,
           irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
-          paymentMethod: (dto.paymentMethod !== undefined
-            ? dto.paymentMethod
-            : null) as Prisma.NullableEnumPaymentMethodFieldUpdateOperationsInput | null,
+          paymentMethod: (dto.paymentMethod !== undefined ? dto.paymentMethod : null) as any,
           notes: dto.notes !== undefined ? dto.notes : undefined,
           ...(dto.paymentDetails !== undefined
             ? { paymentDetails: { ...dto.paymentDetails } }
@@ -435,7 +416,7 @@ export class InvoiceService {
         irpfPercent: original.irpfPercent,
         irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
         total: totals.total,
-        paymentMethod: original.paymentMethod,
+        paymentMethod: original.paymentMethod as any,
         ...(paymentDetails != null ? { paymentDetails } : {}),
         notes: original.notes,
         lines: {
@@ -494,7 +475,7 @@ export class InvoiceService {
           subtotal: totals.subtotal,
           taxTotal: totals.taxTotal,
           total: totals.total,
-          paymentMethod: original.paymentMethod,
+          paymentMethod: original.paymentMethod as any,
           ...(paymentDetails != null ? { paymentDetails } : {}),
           lines: {
             create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
