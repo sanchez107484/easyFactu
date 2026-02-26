@@ -119,7 +119,7 @@ export class InvoiceService {
         total: totals.total,
         paymentMethod: dto.paymentMethod ?? null,
         notes: dto.notes ?? null,
-        paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : undefined,
+        paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : null,
         lines: {
           create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
         },
@@ -280,7 +280,7 @@ export class InvoiceService {
           irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
           paymentMethod: dto.paymentMethod !== undefined ? dto.paymentMethod : undefined,
           notes: dto.notes !== undefined ? dto.notes : undefined,
-          paymentDetails: dto.paymentDetails !== undefined ? { ...dto.paymentDetails } : undefined,
+          paymentDetails: dto.paymentDetails !== undefined ? { ...dto.paymentDetails } : null,
           subtotal: totals.subtotal,
           taxTotal: totals.taxTotal,
           total: totals.total,
@@ -418,6 +418,7 @@ export class InvoiceService {
         irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
         total: totals.total,
         paymentMethod: original.paymentMethod,
+        paymentDetails: original.paymentDetails ?? null,
         notes: original.notes,
         lines: {
           create: this.buildLineCreateData(tenantId, lines, totals.lines),
@@ -474,6 +475,7 @@ export class InvoiceService {
           taxTotal: totals.taxTotal,
           total: totals.total,
           paymentMethod: original.paymentMethod,
+          paymentDetails: original.paymentDetails ?? null,
           lines: {
             create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
           },

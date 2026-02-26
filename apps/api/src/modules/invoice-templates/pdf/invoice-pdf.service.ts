@@ -192,6 +192,7 @@ export class InvoicePdfService {
       irpfTotal: null,
       total: 1210,
       paymentMethod: null,
+      paymentDetails: null,
       notes: 'Esta es una factura de ejemplo para previsualizar la plantilla.',
       pdfUrl: null,
       verifactuHash: null,

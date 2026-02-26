@@ -47,6 +47,7 @@ function buildExampleInvoice(tenantId: string): Invoice {
     irpfTotal: null,
     total: 1210,
     paymentMethod: null,
+    paymentDetails: null,
     notes: 'Gracias por su confianza.',
     pdfUrl: null,
     verifactuHash: null,
