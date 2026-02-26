@@ -309,6 +309,7 @@ enum PaymentMethod {
   CASH
   PAYPAL
   OTHER
+  BIZUM
 }
 
 // ==================== INVOICE LINES ====================
