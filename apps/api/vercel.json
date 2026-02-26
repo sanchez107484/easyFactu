@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "pnpm --filter @easyfactura/shared-types --filter @easyfactura/shared-constants --filter @easyfactura/shared-validators --filter @easyfactura/brand-config run build && pnpm exec prisma generate --schema=apps/api/prisma/schema.prisma && pnpm exec nest build",
+  "buildCommand": "pnpm --filter @easyfactura/shared-types --filter @easyfactura/shared-constants --filter @easyfactura/shared-validators --filter @easyfactura/brand-config run build && pnpm --filter @easyfactura/api exec prisma generate --schema=./prisma/schema.prisma && pnpm exec nest build",
   "installCommand": "pnpm install",
   "functions": {
     "api/index.ts": {
