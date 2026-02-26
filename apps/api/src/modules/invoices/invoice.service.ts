@@ -106,7 +106,6 @@ export class InvoiceService {
         tenantId,
         seriesId,
         customerId: dto.customerId,
-        // RULE: Drafts do not have a definitive number yet
         number: 'BORRADOR',
         issueDate: new Date(dto.issueDate),
         dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
@@ -120,6 +119,7 @@ export class InvoiceService {
         total: totals.total,
         paymentMethod: dto.paymentMethod ?? null,
         notes: dto.notes ?? null,
+        paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : undefined,
         lines: {
           create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
         },
@@ -280,6 +280,7 @@ export class InvoiceService {
           irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
           paymentMethod: dto.paymentMethod !== undefined ? dto.paymentMethod : undefined,
           notes: dto.notes !== undefined ? dto.notes : undefined,
+          paymentDetails: dto.paymentDetails !== undefined ? { ...dto.paymentDetails } : undefined,
           subtotal: totals.subtotal,
           taxTotal: totals.taxTotal,
           total: totals.total,

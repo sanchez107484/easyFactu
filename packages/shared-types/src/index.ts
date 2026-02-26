@@ -61,6 +61,7 @@ export enum PaymentMethod {
   CASH = 'CASH',
   PAYPAL = 'PAYPAL',
   OTHER = 'OTHER',
+  BIZUM = 'BIZUM',
 }
 
 // ==================== BASE TYPES ====================
@@ -412,6 +413,7 @@ export interface Invoice {
   irpfTotal: number | null;
   total: number;
   paymentMethod: PaymentMethod | null;
+  paymentDetails: Record<string, any> | null;
   notes: string | null;
   pdfUrl: string | null;
   verifactuHash: string | null;
@@ -448,6 +450,10 @@ export interface CreateInvoiceInput {
   irpfPercent?: number;
   paymentMethod?: PaymentMethod;
   notes?: string;
+  /**
+   * Detalles adicionales del método de pago (según tipo)
+   */
+  paymentDetails?: Record<string, any>;
 }
 
 export interface UpdateInvoiceInput {
@@ -460,6 +466,10 @@ export interface UpdateInvoiceInput {
   irpfPercent?: number;
   paymentMethod?: PaymentMethod;
   notes?: string;
+  /**
+   * Detalles adicionales del método de pago (según tipo)
+   */
+  paymentDetails?: Record<string, any>;
 }
 
 export interface QueryInvoicesInput {

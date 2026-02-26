@@ -7,6 +7,7 @@ import {
   InvoiceTemplate,
   Tenant,
   DEFAULT_INVOICE_LAYOUT,
+  PaymentMethod,
 } from '@easyfactura/shared-types';
 import { HeaderBlock } from '@/components/invoice-preview/blocks/HeaderBlock';
 import { ItemsTableBlock } from '@/components/invoice-preview/blocks/ItemsTableBlock';
@@ -28,6 +29,16 @@ const FONT_FAMILY_MAP: Record<string, string> = {
   courier: 'Courier New, Courier, monospace',
 };
 
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  [PaymentMethod.BANK_TRANSFER]: 'Transferencia bancaria',
+  [PaymentMethod.DIRECT_DEBIT]: 'Domiciliación bancaria',
+  [PaymentMethod.CARD]: 'Tarjeta',
+  [PaymentMethod.CASH]: 'Efectivo',
+  [PaymentMethod.PAYPAL]: 'PayPal',
+  [PaymentMethod.OTHER]: 'Otro',
+  BIZUM: 'Bizum',
+};
+
 // Fallback tenant for preview when tenant data is not yet loaded
 const FALLBACK_TENANT: Tenant = {
   id: '',
@@ -44,6 +55,17 @@ const FALLBACK_TENANT: Tenant = {
   logoUrl: null,
   iban: null,
 } as Tenant;
+
+// ==================== TYPES ====================
+
+export interface PaymentDetails {
+  iban?: string;
+  bic?: string;
+  accountHolder?: string;
+  bizumPhone?: string;
+  paypalEmail?: string;
+  paymentNote?: string;
+}
 
 // ==================== SECTION WRAPPER ====================
 
@@ -122,6 +144,173 @@ function formatDate(dateStr: string): string {
   }
 }
 
+// ==================== PAYMENT DETAILS BLOCK ====================
+
+interface PaymentDetailsBlockProps {
+  invoice: Invoice;
+  paymentDetails?: PaymentDetails;
+  primaryColor: string;
+}
+
+function PaymentDetailsBlock({ invoice, paymentDetails, primaryColor }: PaymentDetailsBlockProps) {
+  const method = invoice.paymentMethod as string | null;
+
+  // No renderizar nada si no hay método seleccionado
+  if (!method) return null;
+
+  const methodLabel = PAYMENT_METHOD_LABELS[method] ?? method;
+  const hasDetails =
+    paymentDetails?.iban ||
+    paymentDetails?.bizumPhone ||
+    paymentDetails?.paypalEmail ||
+    paymentDetails?.paymentNote ||
+    paymentDetails?.accountHolder;
+
+  return (
+    <div
+      style={{
+        borderTop: `1.5px solid #e5e7eb`,
+        paddingTop: '10px',
+        marginTop: '12px',
+      }}
+    >
+      {/* Encabezado de sección */}
+      <p
+        style={{
+          fontSize: '8px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          color: '#6b7280',
+          fontWeight: 600,
+          marginBottom: '6px',
+        }}
+      >
+        Forma de pago
+      </p>
+
+      {/* Método */}
+      <p
+        style={{
+          fontSize: '10px',
+          fontWeight: 700,
+          color: primaryColor,
+          marginBottom: hasDetails ? '6px' : '0',
+        }}
+      >
+        {methodLabel}
+      </p>
+
+      {/* ── Transferencia bancaria ── */}
+      {method === PaymentMethod.BANK_TRANSFER && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {paymentDetails?.iban && (
+            <p
+              style={{
+                fontSize: '11px',
+                fontFamily: 'Courier New, Courier, monospace',
+                letterSpacing: '0.05em',
+                color: '#111827',
+                fontWeight: 600,
+              }}
+            >
+              {paymentDetails.iban}
+            </p>
+          )}
+          {paymentDetails?.accountHolder && (
+            <p style={{ fontSize: '9px', color: '#6b7280' }}>
+              Titular: {paymentDetails.accountHolder}
+            </p>
+          )}
+          {paymentDetails?.bic && (
+            <p
+              style={{
+                fontSize: '9px',
+                color: '#6b7280',
+                fontFamily: 'Courier New, Courier, monospace',
+              }}
+            >
+              BIC/SWIFT: {paymentDetails.bic}
+            </p>
+          )}
+          {!paymentDetails?.iban && (
+            <p style={{ fontSize: '9px', color: '#9ca3af', fontStyle: 'italic' }}>
+              Añade tu IBAN en el formulario
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── Bizum ── */}
+      {method === 'BIZUM' && (
+        <div>
+          {paymentDetails?.bizumPhone ? (
+            <p
+              style={{
+                fontSize: '11px',
+                fontFamily: 'Courier New, Courier, monospace',
+                letterSpacing: '0.05em',
+                color: '#111827',
+                fontWeight: 600,
+              }}
+            >
+              {paymentDetails.bizumPhone}
+            </p>
+          ) : (
+            <p style={{ fontSize: '9px', color: '#9ca3af', fontStyle: 'italic' }}>
+              Añade tu número de teléfono en el formulario
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── PayPal ── */}
+      {method === PaymentMethod.PAYPAL && (
+        <div>
+          {paymentDetails?.paypalEmail ? (
+            <p style={{ fontSize: '10px', color: '#1d4ed8' }}>{paymentDetails.paypalEmail}</p>
+          ) : (
+            <p style={{ fontSize: '9px', color: '#9ca3af', fontStyle: 'italic' }}>
+              Añade tu email o enlace de PayPal en el formulario
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── Domiciliación bancaria ── */}
+      {method === PaymentMethod.DIRECT_DEBIT && (
+        <div>
+          <p style={{ fontSize: '9px', color: '#6b7280' }}>
+            El importe se cargará automáticamente en la cuenta del cliente en la fecha de
+            vencimiento.
+          </p>
+          {paymentDetails?.paymentNote && (
+            <p style={{ fontSize: '9px', color: '#6b7280', marginTop: '2px' }}>
+              Ref. SEPA: {paymentDetails.paymentNote}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── Tarjeta ── */}
+      {method === PaymentMethod.CARD && paymentDetails?.paymentNote && (
+        <p style={{ fontSize: '9px', color: '#6b7280' }}>{paymentDetails.paymentNote}</p>
+      )}
+
+      {/* ── Efectivo ── */}
+      {method === PaymentMethod.CASH && (
+        <p style={{ fontSize: '9px', color: '#6b7280' }}>
+          Límite legal: 1.000 € entre empresarios / 2.500 € con particulares.
+        </p>
+      )}
+
+      {/* ── Otro ── */}
+      {method === PaymentMethod.OTHER && paymentDetails?.paymentNote && (
+        <p style={{ fontSize: '9px', color: '#6b7280' }}>{paymentDetails.paymentNote}</p>
+      )}
+    </div>
+  );
+}
+
 // ==================== MAIN COMPONENT ====================
 
 interface LiveInvoicePreviewProps {
@@ -130,6 +319,7 @@ interface LiveInvoicePreviewProps {
   tenant: Tenant | null;
   activeFieldSection?: string | null;
   onSectionClick: (fieldId: string) => void;
+  paymentDetails?: PaymentDetails;
 }
 
 export function LiveInvoicePreview({
@@ -138,6 +328,7 @@ export function LiveInvoicePreview({
   tenant,
   activeFieldSection = null,
   onSectionClick,
+  paymentDetails,
 }: LiveInvoicePreviewProps) {
   const [scale, setScale] = useState(0.6);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -281,7 +472,21 @@ export function LiveInvoicePreview({
               <TotalsBlock layout={layout} invoice={invoice} />
             </PreviewSection>
 
-            {/* 5 — Notes */}
+            {/* 5 — Payment method + details */}
+            <PreviewSection
+              fieldId="paymentMethod"
+              label="Forma de pago"
+              activeFieldSection={activeFieldSection}
+              onSectionClick={onSectionClick}
+            >
+              <PaymentDetailsBlock
+                invoice={invoice}
+                paymentDetails={paymentDetails}
+                primaryColor={colors.primary}
+              />
+            </PreviewSection>
+
+            {/* 6 — Notes */}
             {invoice.notes && (
               <PreviewSection
                 fieldId="notes"
@@ -295,10 +500,10 @@ export function LiveInvoicePreview({
               </PreviewSection>
             )}
 
-            {/* 6 — Footer */}
+            {/* 7 — Footer */}
             <PreviewSection
-              fieldId="paymentMethod"
-              label="Método de pago y pie"
+              fieldId="footer"
+              label="Pie de página"
               activeFieldSection={activeFieldSection}
               onSectionClick={onSectionClick}
               className="mt-4"

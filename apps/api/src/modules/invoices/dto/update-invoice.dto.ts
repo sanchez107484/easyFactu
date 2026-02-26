@@ -17,7 +17,7 @@ import {
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentMethod } from '@easyfactura/shared-types';
-import { CreateInvoiceLineDto } from './create-invoice.dto';
+import { CreateInvoiceLineDto, PaymentDetailsDto } from './create-invoice.dto';
 
 export class UpdateInvoiceDto {
   @ApiPropertyOptional()
@@ -73,4 +73,13 @@ export class UpdateInvoiceDto {
   @IsString()
   @MaxLength(1000)
   notes?: string;
+
+  @ApiPropertyOptional({
+    type: PaymentDetailsDto,
+    description: 'Detalles adicionales del pago (estructura flexible según método)',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PaymentDetailsDto)
+  paymentDetails?: PaymentDetailsDto;
 }

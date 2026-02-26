@@ -48,6 +48,40 @@ export class CreateInvoiceLineDto {
   taxRate!: number;
 }
 
+import { ValidateIf, IsObject } from 'class-validator';
+
+export class PaymentDetailsDto {
+  @ApiPropertyOptional({ description: 'IBAN para transferencia bancaria' })
+  @IsOptional()
+  @IsString()
+  iban?: string;
+
+  @ApiPropertyOptional({ description: 'BIC/SWIFT para transferencia bancaria' })
+  @IsOptional()
+  @IsString()
+  bic?: string;
+
+  @ApiPropertyOptional({ description: 'Titular de la cuenta bancaria' })
+  @IsOptional()
+  @IsString()
+  accountHolder?: string;
+
+  @ApiPropertyOptional({ description: 'Teléfono Bizum' })
+  @IsOptional()
+  @IsString()
+  bizumPhone?: string;
+
+  @ApiPropertyOptional({ description: 'Email de PayPal' })
+  @IsOptional()
+  @IsString()
+  paypalEmail?: string;
+
+  @ApiPropertyOptional({ description: 'Nota de pago (referencia, etc.)' })
+  @IsOptional()
+  @IsString()
+  paymentNote?: string;
+}
+
 export class CreateInvoiceDto {
   @ApiPropertyOptional({
     description: 'ID de la serie (si no se indica, se usa la serie por defecto)',
@@ -108,4 +142,13 @@ export class CreateInvoiceDto {
   @IsString()
   @MaxLength(1000, { message: 'Las notas no pueden superar los 1000 caracteres' })
   notes?: string;
+
+  @ApiPropertyOptional({
+    type: PaymentDetailsDto,
+    description: 'Detalles adicionales del pago (estructura flexible según método)',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PaymentDetailsDto)
+  paymentDetails?: PaymentDetailsDto;
 }

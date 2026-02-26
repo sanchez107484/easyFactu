@@ -25,25 +25,46 @@ import { useCreateInvoice, useConfirmInvoice, useInvoice } from '@/hooks/use-inv
 import { useCustomers } from '@/hooks/use-customers';
 import { useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useAuthStore } from '@/store/auth-store';
-import {
-  PaymentMethod,
-  Invoice,
-  InvoiceStatus,
-  Customer,
-  InvoiceTemplate,
-} from '@easyfactura/shared-types';
+import { PaymentMethod, Customer, InvoiceTemplate } from '@easyfactura/shared-types';
+import { getPaymentDetailFields } from '@/lib/payment-method-details';
+import { buildPreviewInvoice, buildCreateInput } from '@/lib/invoice-helpers';
+import { round2 } from '@/lib/math';
 import { InvoiceTypeModal, InvoiceTypeOption } from '@/components/facturas/InvoiceTypeModal';
 import { ConfirmInvoiceDialog } from '@/components/facturas/ConfirmInvoiceDialog';
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
+import type { PaymentDetails } from '@/components/facturas/LiveInvoicePreview';
+import { Path } from 'react-hook-form';
 
-// Etiquetas para los tipos de factura
+// ==================== CONSTANTS ====================
+
 const INVOICE_TYPE_LABELS: Record<Exclude<InvoiceTypeOption, 'template'>, string> = {
   standard: 'Factura ordinaria',
   proforma: 'Factura proforma',
   simplified: 'Factura simplificada',
 };
 
+const PAYMENT_METHOD_LABELS: Record<PaymentMethod | 'BIZUM', string> = {
+  [PaymentMethod.BANK_TRANSFER]: 'Transferencia bancaria',
+  [PaymentMethod.DIRECT_DEBIT]: 'Domiciliación bancaria',
+  [PaymentMethod.CARD]: 'Tarjeta',
+  [PaymentMethod.CASH]: 'Efectivo',
+  [PaymentMethod.PAYPAL]: 'PayPal',
+  [PaymentMethod.OTHER]: 'Otro',
+  BIZUM: 'Bizum',
+};
+
+const PAYMENT_METHOD_SECTION_LABELS: Record<PaymentMethod | 'BIZUM', string> = {
+  [PaymentMethod.BANK_TRANSFER]: 'Datos para la transferencia',
+  [PaymentMethod.DIRECT_DEBIT]: 'Domiciliación bancaria',
+  [PaymentMethod.CARD]: 'Pago con tarjeta',
+  [PaymentMethod.CASH]: 'Pago en efectivo',
+  [PaymentMethod.PAYPAL]: 'Datos PayPal',
+  [PaymentMethod.OTHER]: 'Instrucciones de pago',
+  BIZUM: 'Datos Bizum',
+};
+
 // ==================== SCHEMA ====================
+
 const lineSchema = z.object({
   description: z.string().min(2, 'Mínimo 2 caracteres').max(500, 'Máximo 500 caracteres'),
   quantity: z.number({ invalid_type_error: 'Requerido' }).positive('Debe ser mayor a 0'),
@@ -52,6 +73,17 @@ const lineSchema = z.object({
   productId: z.string().optional(),
 });
 
+const paymentDetailsSchema = z
+  .object({
+    iban: z.string().optional(),
+    bic: z.string().optional(),
+    accountHolder: z.string().optional(),
+    bizumPhone: z.string().optional(),
+    paypalEmail: z.string().optional(),
+    paymentNote: z.string().max(300, 'Máximo 300 caracteres').optional(),
+  })
+  .optional();
+
 const formSchema = z.object({
   customerId: z.string().min(1, 'Selecciona un cliente'),
   issueDate: z.string().min(1, 'La fecha es obligatoria'),
@@ -59,156 +91,32 @@ const formSchema = z.object({
   discountPercent: z.number().min(0).max(100).optional(),
   irpfPercent: z.number().min(0).max(100).optional(),
   paymentMethod: z.nativeEnum(PaymentMethod).optional(),
+  paymentDetails: paymentDetailsSchema,
   notes: z.string().max(1000, 'Máximo 1000 caracteres').optional(),
   lines: z.array(lineSchema).min(1, 'Añade al menos una línea').max(50),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-// ==================== CONSTANTS ====================
-const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  [PaymentMethod.BANK_TRANSFER]: 'Transferencia bancaria',
-  [PaymentMethod.DIRECT_DEBIT]: 'Domiciliación bancaria',
-  [PaymentMethod.CARD]: 'Tarjeta',
-  [PaymentMethod.CASH]: 'Efectivo',
-  [PaymentMethod.PAYPAL]: 'PayPal',
-  [PaymentMethod.OTHER]: 'Otro',
-};
-
-// ==================== HELPERS ====================
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}
-
-function buildPreviewInvoice(data: Partial<FormData>, customers: Customer[]): Invoice {
-  const today = new Date().toISOString();
-  const lines = data.lines ?? [];
-  const customer = customers.find((c) => c.id === data.customerId);
-
-  const subtotal = round2(
-    lines.reduce((acc, l) => acc + round2((l.quantity ?? 0) * (l.unitPrice ?? 0)), 0),
-  );
-
-  const discountAmount = data.discountPercent ? round2(subtotal * (data.discountPercent / 100)) : 0;
-  const subtotalAfterDiscount = round2(subtotal - discountAmount);
-  const discFactor = subtotal > 0 ? subtotalAfterDiscount / subtotal : 1;
-
-  const taxTotal = round2(
-    lines.reduce((acc, l) => {
-      const base = round2((l.quantity ?? 0) * (l.unitPrice ?? 0));
-      return acc + round2(base * discFactor * ((l.taxRate ?? 0) / 100));
-    }, 0),
-  );
-
-  const irpfTotal = data.irpfPercent
-    ? round2(subtotalAfterDiscount * (data.irpfPercent / 100))
-    : null;
-
-  const total = round2(subtotalAfterDiscount + taxTotal - (irpfTotal ?? 0));
-
-  const previewLines = lines.map((l, i) => {
-    const lineSubtotal = round2((l.quantity ?? 0) * (l.unitPrice ?? 0));
-    return {
-      id: `preview-${i}`,
-      tenantId: '',
-      invoiceId: 'preview',
-      productId: l.productId ?? null,
-      description: l.description || '',
-      quantity: l.quantity ?? 0,
-      unitPrice: l.unitPrice ?? 0,
-      subtotal: lineSubtotal,
-      taxRate: l.taxRate ?? 0,
-      taxAmount: round2(lineSubtotal * ((l.taxRate ?? 0) / 100)),
-      lineTotal: round2(lineSubtotal * (1 + (l.taxRate ?? 0) / 100)),
-      sortOrder: i,
-      createdAt: today,
-      updatedAt: today,
-    };
-  });
-
-  return {
-    id: 'preview',
-    tenantId: '',
-    seriesId: '',
-    customerId: data.customerId ?? '',
-    number: '---',
-    issueDate: data.issueDate || today.split('T')[0],
-    dueDate: data.dueDate ?? null,
-    status: InvoiceStatus.DRAFT,
-    subtotal,
-    discountPercent: data.discountPercent ?? null,
-    discountAmount,
-    taxTotal,
-    irpfPercent: data.irpfPercent ?? null,
-    irpfTotal,
-    total,
-    paymentMethod: data.paymentMethod ?? null,
-    notes: data.notes ?? null,
-    pdfUrl: null,
-    verifactuHash: null,
-    verifactuPrevHash: null,
-    verifactuStatus: null,
-    verifactuQr: null,
-    verifactuSentAt: null,
-    verifactuResponse: null,
-    isRectificative: false,
-    rectifiedInvoiceId: null,
-    rectificationReason: null,
-    createdAt: today,
-    updatedAt: today,
-    customer: customer,
-    lines: previewLines,
-  } as Invoice;
-}
-
-function scrollToField(fieldId: string): void {
-  const el = document.getElementById(`field-${fieldId}`);
-  if (!el) return;
-  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  const focusable = el.querySelector<HTMLElement>('input, select, textarea');
-  if (focusable) {
-    setTimeout(() => focusable.focus(), 300);
-  }
-}
-
-function buildCreateInput(data: FormData) {
-  return {
-    customerId: data.customerId,
-    issueDate: data.issueDate,
-    dueDate: data.dueDate || undefined,
-    discountPercent: data.discountPercent || undefined,
-    irpfPercent: data.irpfPercent || undefined,
-    paymentMethod: data.paymentMethod,
-    notes: data.notes,
-    lines: data.lines.map((l) => ({
-      description: l.description,
-      quantity: l.quantity,
-      unitPrice: l.unitPrice,
-      taxRate: l.taxRate,
-      productId: l.productId,
-    })),
-  };
-}
-
 // ==================== PAGE ====================
 
 export default function NuevaFacturaPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const duplicateId = searchParams.get('duplicate');
+  const duplicateId = searchParams.get('duplicateId');
 
+  // FIX: era s.tenant en el fragmento original, la key correcta es currentTenant
   const currentTenant = useAuthStore((s) => s.currentTenant);
 
   const [invoiceType, setInvoiceType] = useState<InvoiceTypeOption | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate | null>(null);
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [pendingDraftId, setPendingDraftId] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [pendingDraftId, setPendingDraftId] = useState<string | null>(null);
 
   const { data: customersData, isLoading: loadingCustomers } = useCustomers();
   const { data: defaultTemplate } = useDefaultTemplate();
-
   const { data: sourceInvoice, isLoading: loadingSource } = useInvoice(duplicateId ?? '', {
     enabled: !!duplicateId,
   });
@@ -216,14 +124,16 @@ export default function NuevaFacturaPage() {
   const createMutation = useCreateInvoice();
   const confirmMutation = useConfirmInvoice();
 
-  const customers = customersData?.data ?? [];
+  // FIX: tipado explícito para evitar que el array quede como never[] o any[]
+  const customers: Customer[] = customersData?.data ?? [];
   const effectiveTemplate: InvoiceTemplate | null = selectedTemplate ?? defaultTemplate ?? null;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      customerId: '', // Inicializar vacío explícitamente
+      customerId: '',
       paymentMethod: undefined,
+      paymentDetails: {},
       issueDate: new Date().toISOString().split('T')[0],
       lines: [{ description: '', quantity: 1, unitPrice: 0, taxRate: 21 }],
     },
@@ -239,17 +149,16 @@ export default function NuevaFacturaPage() {
     if (duplicateId && sourceInvoice) {
       const today = new Date().toISOString().split('T')[0];
 
-      // Sanitizamos los datos para evitar que los nulls rompan los inputs/selects
       const safeData: FormData = {
         customerId: sourceInvoice.customerId || '',
         issueDate: today,
         dueDate: undefined,
-        // Convertimos nulls a undefined o 0 según corresponda
         discountPercent: sourceInvoice.discountPercent
           ? Number(sourceInvoice.discountPercent)
           : undefined,
         irpfPercent: sourceInvoice.irpfPercent ? Number(sourceInvoice.irpfPercent) : undefined,
         paymentMethod: (sourceInvoice.paymentMethod as PaymentMethod) || undefined,
+        paymentDetails: (sourceInvoice as any).paymentDetails || {},
         notes: sourceInvoice.notes || undefined,
         lines:
           sourceInvoice.lines?.map((l) => ({
@@ -261,7 +170,6 @@ export default function NuevaFacturaPage() {
           })) || [],
       };
 
-      // Usamos reset para reemplazar todo el formulario
       form.reset(safeData);
     }
   }, [sourceInvoice, duplicateId, form]);
@@ -270,7 +178,11 @@ export default function NuevaFacturaPage() {
   const previewInvoice = buildPreviewInvoice(watchedValues, customers);
   const selectedCustomer = customers.find((c) => c.id === watchedValues.customerId);
 
+  // BIZUM no está en el enum de PaymentMethod — se trata aparte como literal string
+  const activePaymentMethod = watchedValues.paymentMethod as PaymentMethod | 'BIZUM' | undefined;
+
   // ==================== HANDLERS ====================
+
   const handleTypeSelect = useCallback((type: InvoiceTypeOption, template?: InvoiceTemplate) => {
     setInvoiceType(type);
     if (type === 'template' && template) {
@@ -283,23 +195,24 @@ export default function NuevaFacturaPage() {
 
   const handlePreviewSectionClick = useCallback((fieldId: string) => {
     setActiveSection(fieldId);
-    scrollToField(fieldId);
+    const el = document.getElementById(`field-${fieldId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   }, []);
 
-  // Función para disparar el submit desde fuera del formulario
   const triggerSubmit = () => {
     const submitBtn = document.getElementById('form-submit-trigger');
     if (submitBtn) {
-      submitBtn.click();
+      (submitBtn as HTMLButtonElement).click();
     } else {
-      // Fallback por si acaso
       form.handleSubmit(handleSaveDraft, onInvalid)();
     }
   };
 
   const onInvalid = (errors: any) => {
     console.error('Errores de validación:', errors);
-    const missingFields = [];
+    const missingFields: string[] = [];
     if (errors.customerId) missingFields.push('Cliente');
     if (errors.issueDate) missingFields.push('Fecha');
     if (errors.lines) missingFields.push('Líneas de factura');
@@ -322,7 +235,6 @@ export default function NuevaFacturaPage() {
   };
 
   const handleConfirmClick = async () => {
-    // Validamos primero
     const isValid = await form.trigger();
     if (!isValid) {
       toast.error('Rellena todos los campos obligatorios antes de confirmar.');
@@ -332,7 +244,6 @@ export default function NuevaFacturaPage() {
   };
 
   const handleConfirmDialogConfirm = async () => {
-    // Aquí volvemos a obtener valores, asumiendo que ya está validado
     const data = form.getValues();
     let draftId = pendingDraftId;
 
@@ -355,7 +266,8 @@ export default function NuevaFacturaPage() {
 
   const isSubmitting = createMutation.isPending || confirmMutation.isPending;
 
-  // Estado de carga inicial
+  // ==================== LOADING STATE ====================
+
   if (duplicateId && loadingSource) {
     return (
       <div className="flex h-[calc(100vh-64px)] items-center justify-center flex-col gap-4">
@@ -366,6 +278,7 @@ export default function NuevaFacturaPage() {
   }
 
   // ==================== RENDER ====================
+
   return (
     <>
       <InvoiceTypeModal open={invoiceType === null || showTypeModal} onSelect={handleTypeSelect} />
@@ -414,7 +327,6 @@ export default function NuevaFacturaPage() {
                   : '---'}
             </Button>
 
-            {/* BOTÓN SUPERIOR: Llama a triggerSubmit en lugar de handleSubmit directamente */}
             <Button variant="outline" size="sm" onClick={triggerSubmit} disabled={isSubmitting}>
               <Save className="mr-1.5 h-3.5 w-3.5" />
               {createMutation.isPending ? 'Guardando...' : 'Guardar borrador'}
@@ -431,22 +343,21 @@ export default function NuevaFacturaPage() {
         <div className="flex flex-1 overflow-hidden">
           {/* LEFT -- Form (60%) */}
           <div className="w-[60%] overflow-y-auto px-6 py-5 space-y-5 border-r">
-            {/* INICIO DEL FORMULARIO */}
             <form
               onSubmit={form.handleSubmit(handleSaveDraft, onInvalid)}
               noValidate
               className="space-y-5"
             >
-              {/* TRUCO: Botón oculto para activar el submit nativo desde el header */}
+              {/* Botón oculto para activar el submit desde el header */}
               <button type="submit" id="form-submit-trigger" className="hidden" />
 
-              {/* Section: customer + dates + payment */}
+              {/* ── Datos generales ── */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Datos generales</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Customer */}
+                  {/* Cliente */}
                   <section
                     id="field-customerId"
                     className="space-y-2"
@@ -459,7 +370,6 @@ export default function NuevaFacturaPage() {
                       <Skeleton className="h-10 w-full" />
                     ) : (
                       <Select
-                        // El || '' es vital para que React no llore por inputs no controlados
                         value={watchedValues.customerId || ''}
                         onValueChange={(v) =>
                           form.setValue('customerId', v, { shouldValidate: true })
@@ -477,7 +387,7 @@ export default function NuevaFacturaPage() {
                           )}
                           {customers.map((c) => (
                             <SelectItem key={c.id} value={c.id}>
-                              {c.name} -- {c.nif}
+                              {c.name} — {c.nif}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -496,7 +406,7 @@ export default function NuevaFacturaPage() {
                     </Link>
                   </section>
 
-                  {/* Dates */}
+                  {/* Fechas */}
                   <section
                     id="field-issueDate"
                     className="grid grid-cols-1 sm:grid-cols-2 gap-4"
@@ -519,16 +429,20 @@ export default function NuevaFacturaPage() {
                     </div>
                   </section>
 
-                  {/* Payment method */}
+                  {/* Método de pago + detalles contextuales */}
                   <section
                     id="field-paymentMethod"
-                    className="space-y-2"
+                    className="space-y-3"
                     onFocus={() => setActiveSection('paymentMethod')}
                   >
                     <Label>Método de pago</Label>
                     <Select
-                      value={watchedValues.paymentMethod || ''}
-                      onValueChange={(v) => form.setValue('paymentMethod', v as PaymentMethod)}
+                      value={activePaymentMethod || ''}
+                      onValueChange={(v) => {
+                        form.setValue('paymentMethod', v as PaymentMethod);
+                        // Limpiar detalles anteriores al cambiar de método
+                        form.setValue('paymentDetails', {});
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Sin especificar" />
@@ -541,11 +455,119 @@ export default function NuevaFacturaPage() {
                         ))}
                       </SelectContent>
                     </Select>
+
+                    {/* Panel de detalles dinámico — solo visible si hay método seleccionado */}
+                    {activePaymentMethod && (
+                      <div className="rounded-lg border bg-muted/40 p-4 space-y-3">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          {PAYMENT_METHOD_SECTION_LABELS[activePaymentMethod]}
+                        </p>
+
+                        {/* Efectivo: solo aviso legal, sin campos */}
+                        {activePaymentMethod === PaymentMethod.CASH && (
+                          <p className="text-sm text-muted-foreground">
+                            💡 Recuerda: la normativa española limita los pagos en efectivo a{' '}
+                            <strong>1.000 €</strong> entre empresarios y autónomos (2.500 € con
+                            particulares).
+                          </p>
+                        )}
+
+                        {/* Transferencia bancaria: caso especial por autoformato del IBAN */}
+                        {activePaymentMethod === PaymentMethod.BANK_TRANSFER && (
+                          <>
+                            <div className="space-y-1.5">
+                              <Label htmlFor="iban" className="text-sm">
+                                IBAN
+                              </Label>
+                              <Input
+                                id="iban"
+                                placeholder="ES91 2100 0418 4502 0005 1332"
+                                className="font-mono text-sm tracking-wider"
+                                // FIX: se usa value+onChange en lugar de register para poder
+                                // aplicar el autoformato en grupos de 4 sin conflicto controlled/uncontrolled
+                                value={watchedValues.paymentDetails?.iban ?? ''}
+                                onChange={(e) => {
+                                  const raw = e.target.value.replace(/\s/g, '').toUpperCase();
+                                  const formatted = raw.match(/.{1,4}/g)?.join(' ') ?? raw;
+                                  form.setValue('paymentDetails.iban', formatted, {
+                                    shouldDirty: true,
+                                  });
+                                }}
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1.5">
+                                <Label className="text-sm">Titular de la cuenta</Label>
+                                <Input
+                                  placeholder="Nombre Apellidos / Empresa S.L."
+                                  {...form.register('paymentDetails.accountHolder')}
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-sm">
+                                  BIC/SWIFT{' '}
+                                  <span className="text-muted-foreground font-normal">
+                                    (pagos internacionales)
+                                  </span>
+                                </Label>
+                                <Input
+                                  placeholder="CAIXESBBXXX"
+                                  className="font-mono text-sm"
+                                  {...form.register('paymentDetails.bic')}
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
+
+                        {/* Resto de métodos: renderizado genérico desde getPaymentDetailFields */}
+                        {activePaymentMethod !== PaymentMethod.BANK_TRANSFER &&
+                          activePaymentMethod !== PaymentMethod.CASH &&
+                          getPaymentDetailFields(activePaymentMethod).map((field) => {
+                            // FIX: cast a Path<FormData> — la única forma correcta de tipar
+                            // rutas anidadas dinámicas con react-hook-form
+                            const fieldPath = `paymentDetails.${field.key}` as Path<FormData>;
+
+                            return (
+                              <div key={field.key} className="space-y-1.5">
+                                <Label className="text-sm">
+                                  {field.label}
+                                  {field.helperText && (
+                                    <span className="text-muted-foreground font-normal ml-1">
+                                      {field.helperText}
+                                    </span>
+                                  )}
+                                </Label>
+                                {field.type === 'textarea' ? (
+                                  <Textarea
+                                    placeholder={field.placeholder}
+                                    rows={2}
+                                    {...form.register(fieldPath)}
+                                  />
+                                ) : (
+                                  <Input
+                                    type={
+                                      field.type === 'email'
+                                        ? 'email'
+                                        : field.type === 'tel'
+                                          ? 'tel'
+                                          : 'text'
+                                    }
+                                    placeholder={field.placeholder}
+                                    className={field.inputProps?.className}
+                                    {...form.register(fieldPath)}
+                                  />
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
                   </section>
                 </CardContent>
               </Card>
 
-              {/* Section: invoice lines */}
+              {/* ── Líneas de factura ── */}
               <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -672,7 +694,7 @@ export default function NuevaFacturaPage() {
                 </CardContent>
               </Card>
 
-              {/* Section: Discounts & IRPF */}
+              {/* ── Descuentos y retenciones ── */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Descuentos y retenciones</CardTitle>
@@ -715,7 +737,7 @@ export default function NuevaFacturaPage() {
                 </CardContent>
               </Card>
 
-              {/* Section: Notes */}
+              {/* ── Notas ── */}
               <Card className="mb-5">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Notas</CardTitle>
@@ -741,6 +763,7 @@ export default function NuevaFacturaPage() {
               tenant={currentTenant}
               activeFieldSection={activeSection}
               onSectionClick={handlePreviewSectionClick}
+              paymentDetails={watchedValues.paymentDetails as PaymentDetails | undefined}
             />
           </div>
         </div>

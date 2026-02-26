@@ -251,6 +251,7 @@ model Invoice {
   total               Decimal        @db.Decimal(12, 2)
   paymentMethod       PaymentMethod? @map("payment_method")
   notes               String?        @db.Text
+  paymentDetails      Json?          @map("payment_details")
 
   templateId          String?        @map("template_id")
   pdfUrl              String?        @map("pdf_url")
