@@ -6,7 +6,7 @@
   forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, InvoiceStatus as PrismaInvoiceStatus } from '@prisma/client';
 import { CreateInvoiceDto, CreateInvoiceLineDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { RectifyInvoiceDto } from './dto/rectify-invoice.dto';
@@ -17,6 +17,24 @@ import { InvoiceNumberService } from './invoice-number.service';
 import { InvoiceCalculationService } from './invoice-calculation.service';
 
 const RECTIFIABLE_STATUSES = [InvoiceStatus.CONFIRMED, InvoiceStatus.SENT, InvoiceStatus.PAID];
+
+// Tipo explícito del resultado de findOne para que TypeScript conozca todos los campos
+type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
+  include: {
+    lines: {
+      orderBy: { sortOrder: 'asc' };
+      include: {
+        product: { select: { id: true; name: true; reference: true } };
+      };
+    };
+    customer: true;
+    series: true;
+    verifactuLogs: {
+      orderBy: { createdAt: 'desc' };
+      take: 5;
+    };
+  };
+}>;
 
 @Injectable()
 export class InvoiceService {
@@ -63,7 +81,7 @@ export class InvoiceService {
       where: { id: customerId, tenantId, isActive: true },
     });
     if (!customer) {
-      throw new NotFoundException('Cliente no encontrado o no estÃ¡ activo');
+      throw new NotFoundException('Cliente no encontrado o no está activo');
     }
     return customer;
   }
@@ -87,14 +105,12 @@ export class InvoiceService {
   // ==================== PUBLIC CRUD ====================
 
   async create(tenantId: string, dto: CreateInvoiceDto) {
-    // Validate all references in parallel; resolveSeriesId falls back to default series
     const [seriesId] = await Promise.all([
       this.resolveSeriesId(tenantId, dto.seriesId),
       this.validateCustomer(tenantId, dto.customerId),
       this.validateProductIds(tenantId, dto.lines),
     ]);
 
-    // RULE: totals are ALWAYS calculated in the backend
     const totals = this.calculationService.calculateTotals(
       dto.lines,
       dto.discountPercent,
@@ -109,7 +125,7 @@ export class InvoiceService {
         number: 'BORRADOR',
         issueDate: new Date(dto.issueDate),
         dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
-        status: InvoiceStatus.DRAFT,
+        status: PrismaInvoiceStatus.DRAFT,
         subtotal: totals.subtotal,
         discountPercent: dto.discountPercent ?? null,
         discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
@@ -117,7 +133,8 @@ export class InvoiceService {
         irpfPercent: dto.irpfPercent ?? null,
         irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
         total: totals.total,
-        paymentMethod: dto.paymentMethod ?? null,
+        paymentMethod: (dto.paymentMethod ??
+          null) as Prisma.NullableEnumPaymentMethodFieldUpdateOperationsInput | null,
         notes: dto.notes ?? null,
         paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : undefined,
         lines: {
@@ -193,7 +210,7 @@ export class InvoiceService {
     };
   }
 
-  async findOne(tenantId: string, id: string) {
+  async findOne(tenantId: string, id: string): Promise<InvoiceWithRelations> {
     console.log(`[InvoiceService] findOne called with tenantId=${tenantId}, id=${id}`);
     const invoice = await this.prisma.invoice.findFirst({
       where: { id, tenantId },
@@ -278,7 +295,9 @@ export class InvoiceService {
           discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
           irpfPercent: dto.irpfPercent !== undefined ? dto.irpfPercent : undefined,
           irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
-          paymentMethod: dto.paymentMethod !== undefined ? dto.paymentMethod : null,
+          paymentMethod: (dto.paymentMethod !== undefined
+            ? dto.paymentMethod
+            : null) as Prisma.NullableEnumPaymentMethodFieldUpdateOperationsInput | null,
           notes: dto.notes !== undefined ? dto.notes : undefined,
           ...(dto.paymentDetails !== undefined
             ? { paymentDetails: { ...dto.paymentDetails } }
@@ -308,7 +327,7 @@ export class InvoiceService {
 
     if (invoice.status !== InvoiceStatus.DRAFT) {
       throw new ConflictException(
-        'La factura ya estÃ¡ confirmada. Una vez confirmada es irreversible.'
+        'La factura ya está confirmada. Una vez confirmada es irreversible.'
       );
     }
 
@@ -316,29 +335,25 @@ export class InvoiceService {
 
     const confirmedInvoice = await this.prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
-        // 1. Assign correlative number atomically (row-level lock via UPDATE)
         const invoiceNumber = await this.invoiceNumberService.generateNextNumber(
           tenantId,
           invoice.seriesId,
           tx
         );
 
-        // 2. Recalculate totals (never trust draft values after potential edits)
         const totals = this.calculationService.calculateTotals(
           lines,
           invoice.discountPercent ? Number(invoice.discountPercent) : undefined,
           invoice.irpfPercent ? Number(invoice.irpfPercent) : undefined
         );
 
-        // 3. Replace lines with freshly calculated values
         await tx.invoiceLine.deleteMany({ where: { invoiceId: id } });
 
-        // 4. Update: assign number + recalculated totals + status
         return tx.invoice.update({
           where: { id },
           data: {
             number: invoiceNumber,
-            status: InvoiceStatus.CONFIRMED,
+            status: PrismaInvoiceStatus.CONFIRMED,
             subtotal: totals.subtotal,
             discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
             taxTotal: totals.taxTotal,
@@ -358,7 +373,6 @@ export class InvoiceService {
       { isolationLevel: 'Serializable' }
     );
 
-    // 5. Trigger VeriFactu processing asynchronously
     this.verifactuService.processInvoice(tenantId, id).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       console.error(`[VeriFactu] Error processing invoice ${id}: ${message}`);
@@ -379,7 +393,7 @@ export class InvoiceService {
 
     return this.prisma.invoice.update({
       where: { id },
-      data: { status: InvoiceStatus.PAID },
+      data: { status: PrismaInvoiceStatus.PAID },
       include: {
         lines: { orderBy: { sortOrder: 'asc' } },
         customer: true,
@@ -403,6 +417,8 @@ export class InvoiceService {
       original.irpfPercent ? Number(original.irpfPercent) : undefined
     );
 
+    const paymentDetails = original.paymentDetails;
+
     return this.prisma.invoice.create({
       data: {
         tenantId,
@@ -411,7 +427,7 @@ export class InvoiceService {
         number: 'BORRADOR',
         issueDate: new Date(),
         dueDate: null,
-        status: InvoiceStatus.DRAFT,
+        status: PrismaInvoiceStatus.DRAFT,
         subtotal: totals.subtotal,
         discountPercent: original.discountPercent,
         discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
@@ -419,10 +435,8 @@ export class InvoiceService {
         irpfPercent: original.irpfPercent,
         irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
         total: totals.total,
-        paymentMethod: original.paymentMethod ?? null,
-        ...(original.paymentDetails !== undefined && original.paymentDetails !== null
-          ? { paymentDetails: original.paymentDetails }
-          : {}),
+        paymentMethod: original.paymentMethod,
+        ...(paymentDetails != null ? { paymentDetails } : {}),
         notes: original.notes,
         lines: {
           create: this.buildLineCreateData(tenantId, lines, totals.lines),
@@ -458,10 +472,12 @@ export class InvoiceService {
 
     const totals = this.calculationService.calculateTotals(dto.lines);
 
+    const paymentDetails = original.paymentDetails;
+
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.invoice.update({
         where: { id },
-        data: { status: InvoiceStatus.RECTIFIED },
+        data: { status: PrismaInvoiceStatus.RECTIFIED },
       });
 
       return tx.invoice.create({
@@ -471,17 +487,15 @@ export class InvoiceService {
           customerId: original.customerId,
           number: 'BORRADOR',
           issueDate: new Date(),
-          status: InvoiceStatus.DRAFT,
+          status: PrismaInvoiceStatus.DRAFT,
           isRectificative: true,
           rectifiedInvoiceId: id,
           rectificationReason: dto.rectificationReason,
           subtotal: totals.subtotal,
           taxTotal: totals.taxTotal,
           total: totals.total,
-          paymentMethod: original.paymentMethod ?? null,
-          ...(original.paymentDetails !== undefined && original.paymentDetails !== null
-            ? { paymentDetails: original.paymentDetails }
-            : {}),
+          paymentMethod: original.paymentMethod,
+          ...(paymentDetails != null ? { paymentDetails } : {}),
           lines: {
             create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
           },
