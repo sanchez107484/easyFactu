@@ -5,8 +5,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "postinstall": "prisma generate --schema=apps/api/prisma/schema.prisma",
-    "build": "prisma generate --schema=apps/api/prisma/schema.prisma && nest build",
+    "build": "prisma generate --schema=./prisma/schema.prisma && nest build",
     "vercel:build": "pnpm --filter @easyfactura/shared-types --filter @easyfactura/shared-constants --filter @easyfactura/shared-validators --filter @easyfactura/brand-config run build && pnpm --filter @easyfactura/api exec prisma generate --schema=./prisma/schema.prisma && pnpm exec nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
