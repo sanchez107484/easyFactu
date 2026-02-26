@@ -6,7 +6,7 @@
   forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma, PaymentMethod as PrismaPaymentMethod } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { CreateInvoiceDto, CreateInvoiceLineDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { RectifyInvoiceDto } from './dto/rectify-invoice.dto';
@@ -117,8 +117,7 @@ export class InvoiceService {
         irpfPercent: dto.irpfPercent ?? null,
         irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
         total: totals.total,
-        paymentMethod:
-          dto.paymentMethod !== undefined ? (dto.paymentMethod as PrismaPaymentMethod) : null,
+        paymentMethod: dto.paymentMethod ?? null,
         notes: dto.notes ?? null,
         paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : undefined,
         lines: {
@@ -279,13 +278,9 @@ export class InvoiceService {
           discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
           irpfPercent: dto.irpfPercent !== undefined ? dto.irpfPercent : undefined,
           irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
-          paymentMethod:
-            dto.paymentMethod !== undefined
-              ? (dto.paymentMethod as PrismaPaymentMethod)
-              : undefined,
-          notes: dto.notes !== undefined ? { set: dto.notes } : undefined,
-          paymentDetails:
-            dto.paymentDetails !== undefined ? { set: { ...dto.paymentDetails } } : undefined,
+          paymentMethod: dto.paymentMethod !== undefined ? dto.paymentMethod : undefined,
+          notes: dto.notes !== undefined ? dto.notes : undefined,
+          paymentDetails: dto.paymentDetails !== undefined ? { ...dto.paymentDetails } : undefined,
           subtotal: totals.subtotal,
           taxTotal: totals.taxTotal,
           total: totals.total,
