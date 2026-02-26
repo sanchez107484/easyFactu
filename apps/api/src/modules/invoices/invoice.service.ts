@@ -278,9 +278,10 @@ export class InvoiceService {
           discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
           irpfPercent: dto.irpfPercent !== undefined ? dto.irpfPercent : undefined,
           irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
-          paymentMethod: dto.paymentMethod !== undefined ? dto.paymentMethod : undefined,
-          notes: dto.notes !== undefined ? dto.notes : undefined,
-          paymentDetails: dto.paymentDetails !== undefined ? { ...dto.paymentDetails } : undefined,
+          paymentMethod: dto.paymentMethod !== undefined ? { set: dto.paymentMethod } : undefined,
+          notes: dto.notes !== undefined ? { set: dto.notes } : undefined,
+          paymentDetails:
+            dto.paymentDetails !== undefined ? { set: { ...dto.paymentDetails } } : undefined,
           subtotal: totals.subtotal,
           taxTotal: totals.taxTotal,
           total: totals.total,
