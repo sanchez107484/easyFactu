@@ -278,9 +278,11 @@ export class InvoiceService {
           discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
           irpfPercent: dto.irpfPercent !== undefined ? dto.irpfPercent : undefined,
           irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
-          paymentMethod: dto.paymentMethod !== undefined ? dto.paymentMethod : undefined,
+          paymentMethod: dto.paymentMethod !== undefined ? dto.paymentMethod : null,
           notes: dto.notes !== undefined ? dto.notes : undefined,
-          paymentDetails: dto.paymentDetails !== undefined ? { ...dto.paymentDetails } : undefined,
+          ...(dto.paymentDetails !== undefined
+            ? { paymentDetails: { ...dto.paymentDetails } }
+            : {}),
           subtotal: totals.subtotal,
           taxTotal: totals.taxTotal,
           total: totals.total,
@@ -417,8 +419,10 @@ export class InvoiceService {
         irpfPercent: original.irpfPercent,
         irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
         total: totals.total,
-        paymentMethod: original.paymentMethod,
-        paymentDetails: original.paymentDetails ?? undefined,
+        paymentMethod: original.paymentMethod ?? null,
+        ...(original.paymentDetails !== undefined && original.paymentDetails !== null
+          ? { paymentDetails: original.paymentDetails }
+          : {}),
         notes: original.notes,
         lines: {
           create: this.buildLineCreateData(tenantId, lines, totals.lines),
@@ -474,8 +478,10 @@ export class InvoiceService {
           subtotal: totals.subtotal,
           taxTotal: totals.taxTotal,
           total: totals.total,
-          paymentMethod: original.paymentMethod,
-          paymentDetails: original.paymentDetails ?? undefined,
+          paymentMethod: original.paymentMethod ?? null,
+          ...(original.paymentDetails !== undefined && original.paymentDetails !== null
+            ? { paymentDetails: original.paymentDetails }
+            : {}),
           lines: {
             create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
           },
