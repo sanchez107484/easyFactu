@@ -34,6 +34,7 @@ import { ConfirmInvoiceDialog } from '@/components/facturas/ConfirmInvoiceDialog
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
 import type { PaymentDetails } from '@/components/facturas/LiveInvoicePreview';
 import { Path } from 'react-hook-form';
+import { QuickCreateCustomerModal } from '@/components/clientes/QuickCreateCustomerModal';
 
 // ==================== CONSTANTS ====================
 
@@ -131,6 +132,7 @@ function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormPr
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [pendingDraftId, setPendingDraftId] = useState<string | null>(null);
+  const [showQuickClient, setShowQuickClient] = useState(false);
 
   const { data: customersData, isLoading: loadingCustomers } = useCustomers();
   const { data: defaultTemplate } = useDefaultTemplate();
@@ -236,6 +238,15 @@ function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormPr
   return (
     <>
       <InvoiceTypeModal open={invoiceType === null || showTypeModal} onSelect={handleTypeSelect} />
+
+      <QuickCreateCustomerModal
+        open={showQuickClient}
+        onClose={() => setShowQuickClient(false)}
+        onCustomerReady={(customer) => {
+          form.setValue('customerId', customer.id, { shouldValidate: true });
+          setShowQuickClient(false);
+        }}
+      />
 
       <ConfirmInvoiceDialog
         open={showConfirmDialog}
@@ -363,12 +374,13 @@ function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormPr
                         {form.formState.errors.customerId.message}
                       </p>
                     )}
-                    <Link
-                      href="/dashboard/clientes/nuevo"
-                      className="text-sm text-primary hover:underline"
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickClient(true)}
+                      className="text-sm text-primary hover:underline bg-transparent border-0 p-0 cursor-pointer"
                     >
                       + Crear nuevo cliente
-                    </Link>
+                    </button>
                   </section>
 
                   {/* Fechas */}

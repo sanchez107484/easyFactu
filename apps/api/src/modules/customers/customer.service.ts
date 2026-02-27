@@ -61,6 +61,11 @@ export class CustomerService {
       where.isActive = active;
     }
 
+    // Búsqueda exacta por NIF (para detección de duplicados en el frontend)
+    if (query.nif) {
+      where.nif = { equals: query.nif.toUpperCase().trim(), mode: 'insensitive' };
+    }
+
     const [data, total] = await Promise.all([
       this.prisma.customer.findMany({
         where,

@@ -290,6 +290,7 @@ export interface QueryCustomersInput {
   search?: string;
   type?: CustomerType;
   active?: boolean;
+  nif?: string;
 }
 
 // ==================== PRODUCT ====================

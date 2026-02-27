@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,9 +28,12 @@ import {
   Globe,
   AlertCircle,
   CheckCircle2,
+  UserCheck,
+  ArrowRight,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useCreateCustomer } from '@/hooks/use-customers';
+import { useCreateCustomer, useCustomerByNif } from '@/hooks/use-customers';
 
 // ==================== TYPES & CONSTANTS ====================
 
@@ -191,7 +194,11 @@ export default function NuevoClientePage() {
   });
 
   const selectedType = form.watch('type');
+  const watchedNif = form.watch('nif') ?? '';
   const currentTypeOption = TYPE_OPTIONS.find((o) => o.value === selectedType) ?? TYPE_OPTIONS[0]!;
+
+  // Detección de NIF duplicado en tiempo real
+  const { existingCustomer, isSearching } = useCustomerByNif(watchedNif);
 
   const handleTypeSelect = useCallback(
     (type: CustomerType) => {
@@ -210,13 +217,15 @@ export default function NuevoClientePage() {
   );
 
   const onSubmit = async (data: FormData) => {
+    // Bloqueamos el submit si el NIF ya existe — el banner ya informa al usuario
+    if (existingCustomer) return;
     await createMutation.mutateAsync(buildCreateInput(data));
     router.push('/dashboard/clientes');
   };
 
   return (
     <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
-      {/* ── Header — idéntico al resto de páginas ── */}
+      {/* ── Header ── */}
       <div className="flex items-center justify-between px-6 py-3 border-b bg-background shrink-0">
         <div className="flex items-center gap-2">
           <Link href="/dashboard/clientes">
@@ -237,9 +246,16 @@ export default function NuevoClientePage() {
           <Button
             size="sm"
             onClick={form.handleSubmit(onSubmit)}
-            disabled={createMutation.isPending}
+            disabled={createMutation.isPending || !!existingCustomer}
           >
-            {createMutation.isPending ? 'Guardando...' : 'Guardar cliente'}
+            {createMutation.isPending ? (
+              <>
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              'Guardar cliente'
+            )}
           </Button>
         </div>
       </div>
@@ -247,7 +263,7 @@ export default function NuevoClientePage() {
       {/* ── Contenido scrollable ── */}
       <div className="flex-1 overflow-y-auto px-6 py-6">
         <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-5">
-          {/* ── FILA 1: Tipo de cliente — ancho completo ── */}
+          {/* ── FILA 1: Tipo de cliente ── */}
           <div className="rounded-xl border bg-card p-5">
             <SectionLabel icon={User}>Tipo de cliente</SectionLabel>
             <div className="grid grid-cols-4 gap-3">
@@ -293,7 +309,7 @@ export default function NuevoClientePage() {
             </div>
           </div>
 
-          {/* ── FILA 2: Identificación + Contacto — grid 2 columnas ── */}
+          {/* ── FILA 2: Identificación + Contacto ── */}
           <div className="grid grid-cols-2 gap-5">
             {/* Identificación fiscal */}
             <div className="rounded-xl border bg-card p-5">
@@ -331,29 +347,71 @@ export default function NuevoClientePage() {
                   </div>
                 )}
 
+                {/* NIF con spinner de búsqueda */}
                 <div className="space-y-2">
                   <Label htmlFor="nif">
                     {currentTypeOption.nifLabel} <span className="text-destructive">*</span>
                   </Label>
-                  <Input
-                    id="nif"
-                    {...form.register('nif', {
-                      onChange: (e) => {
-                        if (!currentTypeOption.isIntracommunity) {
-                          e.target.value = e.target.value.toUpperCase();
-                        }
-                      },
-                    })}
-                    placeholder={currentTypeOption.nifPlaceholder}
-                    className={cn(
-                      !currentTypeOption.isIntracommunity && 'uppercase font-mono tracking-wider',
+                  <div className="relative">
+                    <Input
+                      id="nif"
+                      {...form.register('nif', {
+                        onChange: (e) => {
+                          if (!currentTypeOption.isIntracommunity) {
+                            e.target.value = e.target.value.toUpperCase();
+                          }
+                        },
+                      })}
+                      placeholder={currentTypeOption.nifPlaceholder}
+                      className={cn(
+                        'pr-8',
+                        !currentTypeOption.isIntracommunity && 'uppercase font-mono tracking-wider',
+                      )}
+                      maxLength={currentTypeOption.isIntracommunity ? 20 : 9}
+                      autoComplete="off"
+                    />
+                    {isSearching && (
+                      <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                     )}
-                    maxLength={currentTypeOption.isIntracommunity ? 20 : 9}
-                    autoComplete="off"
-                  />
+                  </div>
                   <p className="text-xs text-muted-foreground">{currentTypeOption.nifHint}</p>
                   <FieldError message={form.formState.errors.nif?.message} />
                 </div>
+
+                {/* Banner de duplicado — aparece inline dentro de la card */}
+                {existingCustomer && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 p-4">
+                    <div className="flex items-start gap-3">
+                      <UserCheck className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                          Este NIF ya existe en tu cartera
+                        </p>
+                        <div className="mt-2 rounded-md bg-white/60 dark:bg-black/20 border border-amber-200/50 dark:border-amber-700/50 p-3 space-y-0.5">
+                          <p className="text-sm font-medium">{existingCustomer.name}</p>
+                          <p className="text-xs text-muted-foreground font-mono">
+                            {existingCustomer.nif}
+                          </p>
+                          {existingCustomer.email && (
+                            <p className="text-xs text-muted-foreground">
+                              {existingCustomer.email}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="mt-3 w-full border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40"
+                          onClick={() => router.push(`/dashboard/clientes/${existingCustomer.id}`)}
+                        >
+                          <ArrowRight className="h-3.5 w-3.5 mr-1.5" />
+                          Ver ficha del cliente
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -386,11 +444,10 @@ export default function NuevoClientePage() {
             </div>
           </div>
 
-          {/* ── FILA 3: Dirección fiscal — ancho completo con campos en grid ── */}
+          {/* ── FILA 3: Dirección fiscal ── */}
           <div className="rounded-xl border bg-card p-5">
             <SectionLabel icon={Globe}>Dirección fiscal</SectionLabel>
             <div className="grid grid-cols-12 gap-4">
-              {/* Calle — ocupa 6 columnas */}
               <div className="col-span-6 space-y-2">
                 <Label htmlFor="address">Calle y número</Label>
                 <Input
@@ -401,7 +458,6 @@ export default function NuevoClientePage() {
                 />
               </div>
 
-              {/* CP — 2 columnas */}
               {!currentTypeOption.isIntracommunity && (
                 <div className="col-span-2 space-y-2">
                   <Label htmlFor="postalCode">C. Postal</Label>
@@ -416,7 +472,6 @@ export default function NuevoClientePage() {
                 </div>
               )}
 
-              {/* Ciudad — 4 columnas (o 6 si intracomunitario) */}
               <div
                 className={cn(
                   'space-y-2',
@@ -432,7 +487,6 @@ export default function NuevoClientePage() {
                 />
               </div>
 
-              {/* Provincia — 4 columnas (solo España) */}
               {!currentTypeOption.isIntracommunity && (
                 <div className="col-span-4 space-y-2">
                   <Label>Provincia</Label>
@@ -454,7 +508,6 @@ export default function NuevoClientePage() {
                 </div>
               )}
 
-              {/* País — 2 columnas */}
               <div
                 className={cn(
                   'space-y-2',
@@ -483,7 +536,7 @@ export default function NuevoClientePage() {
             </div>
           </div>
 
-          {/* ── FILA 4: Notas — ancho completo ── */}
+          {/* ── FILA 4: Notas ── */}
           <div className="rounded-xl border bg-card p-5">
             <SectionLabel>Notas internas</SectionLabel>
             <Textarea

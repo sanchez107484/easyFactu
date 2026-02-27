@@ -1,15 +1,19 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { AxiosError } from 'axios';
 import { customerApi } from '@/lib/api/customer-api';
 import { seriesApi } from '@/lib/api/series-api';
 import {
+  Customer,
   QueryCustomersInput,
   CreateCustomerInput,
   UpdateCustomerInput,
 } from '@easyfactura/shared-types';
+
+// ==================== HELPERS ====================
 
 function getApiErrorMessage(error: unknown): string {
   if (error instanceof AxiosError) {
@@ -20,10 +24,17 @@ function getApiErrorMessage(error: unknown): string {
   return 'Ha ocurrido un error inesperado. Inténtalo de nuevo.';
 }
 
-export function useCustomers(filters: QueryCustomersInput = {}) {
+// ==================== CUSTOMERS ====================
+
+export function useCustomers(
+  filters: QueryCustomersInput = {},
+  options?: { enabled?: boolean; staleTime?: number },
+) {
   return useQuery({
     queryKey: ['customers', 'list', filters],
     queryFn: () => customerApi.getAll({ ...filters, limit: 100 }),
+    enabled: options?.enabled ?? true,
+    staleTime: options?.staleTime,
   });
 }
 
@@ -81,6 +92,56 @@ export function useDeleteCustomer() {
     },
   });
 }
+
+// ==================== NIF DUPLICATE DETECTION ====================
+
+const NIF_DEBOUNCE_MS = 600;
+const NIF_MIN_LENGTH = 7;
+
+interface UseCustomerByNifResult {
+  existingCustomer: Customer | null;
+  isSearching: boolean;
+}
+
+/**
+ * Busca un cliente por NIF con debounce de 600ms.
+ * No lanza ninguna query si el NIF tiene menos de 7 caracteres.
+ *
+ * @param nif  - NIF a buscar (se normaliza internamente: uppercase, sin espacios ni puntos)
+ * @param skip - desactiva la búsqueda (útil en modo edición del propio cliente)
+ */
+export function useCustomerByNif(nif: string, skip = false): UseCustomerByNifResult {
+  const [debouncedNif, setDebouncedNif] = useState('');
+
+  const cleanNif = nif
+    .toUpperCase()
+    .trim()
+    .replace(/[\s.-]/g, '');
+
+  useEffect(() => {
+    if (skip || cleanNif.length < NIF_MIN_LENGTH) {
+      setDebouncedNif('');
+      return;
+    }
+    const timer = setTimeout(() => setDebouncedNif(cleanNif), NIF_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [cleanNif, skip]);
+
+  const { data, isFetching } = useCustomers(
+    { nif: debouncedNif, limit: 1 },
+    {
+      enabled: !!debouncedNif && !skip,
+      staleTime: 30_000,
+    },
+  );
+
+  return {
+    existingCustomer: data?.data?.[0] ?? null,
+    isSearching: isFetching && !!debouncedNif,
+  };
+}
+
+// ==================== INVOICE SERIES ====================
 
 export function useInvoiceSeries(year?: number) {
   const currentYear = year ?? new Date().getFullYear();

@@ -20,4 +20,9 @@ export class QueryCustomerDto extends PaginationDto {
   @Transform(({ value }) => value === true || value === 'true')
   @IsBoolean()
   active?: boolean;
+
+  @ApiPropertyOptional({ description: 'Buscar por NIF exacto' })
+  @IsOptional()
+  @IsString()
+  nif?: string;
 }
