@@ -1,7 +1,7 @@
 import { IsEmail, IsString, MinLength, MaxLength, Matches, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsValidNif } from '../../../common/validators/is-valid-nif.validator';
-import { AccountType } from '@prisma/client';
+import { AccountType } from '@easyfactura/shared-types';
 
 export class RegisterDto {
   @ApiProperty({ example: 'juan@example.com' })

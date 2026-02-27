@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { apiClient, setAccessToken, setRefreshToken, clearTokens } from '@/lib/api-client';
 import { unwrapApiResponse } from '@/lib/api-response';
-import type { User, Tenant } from '@easyfactura/shared-types';
+import type { User, Tenant, AccountType } from '@easyfactura/shared-types';
 
 // Definir localmente hasta que se resuelva la cache de VSCode
 const TenantUserRole = {
@@ -12,15 +12,6 @@ const TenantUserRole = {
 } as const;
 
 type TenantUserRole = (typeof TenantUserRole)[keyof typeof TenantUserRole];
-
-const AccountType = {
-  INDIVIDUAL: 'INDIVIDUAL',
-  BUSINESS: 'BUSINESS',
-  AGENCY: 'AGENCY',
-  COLLABORATIVE: 'COLLABORATIVE',
-} as const;
-
-type AccountType = (typeof AccountType)[keyof typeof AccountType];
 
 interface TenantWithRole {
   tenant: Tenant;

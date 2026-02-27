@@ -29,16 +29,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-
-// Definir localmente hasta que se resuelva la cache de VSCode
-const AccountType = {
-  INDIVIDUAL: 'INDIVIDUAL',
-  BUSINESS: 'BUSINESS',
-  AGENCY: 'AGENCY',
-  COLLABORATIVE: 'COLLABORATIVE',
-} as const;
-
-type AccountType = (typeof AccountType)[keyof typeof AccountType];
+import { AccountType } from '@easyfactura/shared-types';
 
 const registerSchema = z.object({
   firstName: z.string().min(2, 'Mínimo 2 caracteres'),
@@ -51,7 +42,7 @@ const registerSchema = z.object({
     .regex(/[0-9]/, 'Debe contener al menos un número'),
   businessName: z.string().min(3, 'Mínimo 3 caracteres'),
   nif: z.string().min(9, 'NIF/CIF inválido'),
-  accountType: z.enum(['INDIVIDUAL', 'BUSINESS', 'AGENCY', 'COLLABORATIVE'], {
+  accountType: z.nativeEnum(AccountType, {
     required_error: 'Selecciona el tipo de cuenta',
   }),
 });
@@ -72,7 +63,7 @@ export default function RegisterPage() {
       password: '',
       businessName: '',
       nif: '',
-      accountType: 'INDIVIDUAL',
+      accountType: AccountType.INDIVIDUAL, // Valor por defecto para el tipo de cuenta
     },
   });
 

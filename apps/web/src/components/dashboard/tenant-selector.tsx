@@ -15,16 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-
-// Definir localmente hasta que se resuelva la cache de VSCode
-const AccountType = {
-  INDIVIDUAL: 'INDIVIDUAL',
-  BUSINESS: 'BUSINESS',
-  AGENCY: 'AGENCY',
-  COLLABORATIVE: 'COLLABORATIVE',
-} as const;
-
-type AccountType = (typeof AccountType)[keyof typeof AccountType];
+import { AccountType } from '@easyfactura/shared-types';
 
 const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   [AccountType.INDIVIDUAL]: 'Autónomo Individual',
