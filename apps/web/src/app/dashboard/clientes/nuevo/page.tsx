@@ -27,11 +27,7 @@ import {
   Building2,
   Globe,
   AlertCircle,
-  MapPin,
-  Phone,
-  Mail,
-  FileText,
-  BadgeCheck,
+  CheckCircle2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCreateCustomer } from '@/hooks/use-customers';
@@ -58,7 +54,7 @@ const TYPE_OPTIONS: TypeOption[] = [
     value: CustomerType.INDIVIDUAL,
     label: 'Particular',
     description: 'Persona física sin actividad económica',
-    icon: <User className="h-4 w-4" />,
+    icon: <User className="h-5 w-5" />,
     nifLabel: 'DNI / NIE',
     nifPlaceholder: '12345678Z',
     nifHint: 'DNI (8 dígitos + letra) o NIE (X/Y/Z + 7 dígitos + letra)',
@@ -70,7 +66,7 @@ const TYPE_OPTIONS: TypeOption[] = [
     value: CustomerType.SELF_EMPLOYED,
     label: 'Autónomo',
     description: 'Trabajador por cuenta propia',
-    icon: <Briefcase className="h-4 w-4" />,
+    icon: <Briefcase className="h-5 w-5" />,
     nifLabel: 'NIF / DNI',
     nifPlaceholder: '12345678Z',
     nifHint: 'DNI (8 dígitos + letra) o NIE (X/Y/Z + 7 dígitos + letra)',
@@ -82,19 +78,19 @@ const TYPE_OPTIONS: TypeOption[] = [
     value: CustomerType.COMPANY,
     label: 'Empresa',
     description: 'S.L., S.A. u otras formas societarias',
-    icon: <Building2 className="h-4 w-4" />,
+    icon: <Building2 className="h-5 w-5" />,
     nifLabel: 'CIF',
     nifPlaceholder: 'B12345678',
     nifHint: 'CIF de la sociedad (una letra + 7 dígitos)',
     showLegalName: true,
-    legalNameLabel: 'Razón social (nombre legal)',
+    legalNameLabel: 'Razón social',
     isIntracommunity: false,
   },
   {
     value: CustomerType.INTRACOMMUNITY,
     label: 'Intracomunitario',
     description: 'Empresa o particular de la UE',
-    icon: <Globe className="h-4 w-4" />,
+    icon: <Globe className="h-5 w-5" />,
     nifLabel: 'NIF intracomunitario',
     nifPlaceholder: 'DE123456789',
     nifHint: 'Número de IVA intracomunitario del país de origen',
@@ -173,8 +169,8 @@ function SectionLabel({ icon: Icon, children }: { icon?: any; children: React.Re
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <p className="flex items-center gap-1.5 text-xs text-destructive mt-1.5">
-      <AlertCircle className="h-3 w-3 shrink-0" />
+    <p className="flex items-center gap-1.5 text-sm text-destructive mt-1.5">
+      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
       {message}
     </p>
   );
@@ -219,8 +215,8 @@ export default function NuevoClientePage() {
   };
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-64px)]">
-      {/* ── Header — mismo patrón que el resto de páginas ── */}
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
+      {/* ── Header — idéntico al resto de páginas ── */}
       <div className="flex items-center justify-between px-6 py-3 border-b bg-background shrink-0">
         <div className="flex items-center gap-2">
           <Link href="/dashboard/clientes">
@@ -232,7 +228,6 @@ export default function NuevoClientePage() {
           <span className="text-muted-foreground/40">/</span>
           <span className="text-sm font-medium">Nuevo cliente</span>
         </div>
-
         <div className="flex items-center gap-2">
           <Link href="/dashboard/clientes">
             <Button variant="outline" size="sm" disabled={createMutation.isPending}>
@@ -249,59 +244,62 @@ export default function NuevoClientePage() {
         </div>
       </div>
 
-      {/* ── Contenido ── */}
-      <div className="flex-1 overflow-y-auto">
-        <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
-          <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
-            {/* ── SECCIÓN 1: Tipo de cliente ── */}
-            <div className="rounded-xl border bg-card p-5">
-              <SectionLabel icon={BadgeCheck}>Tipo de cliente</SectionLabel>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {TYPE_OPTIONS.map((option) => {
-                  const isSelected = selectedType === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => handleTypeSelect(option.value)}
+      {/* ── Contenido scrollable ── */}
+      <div className="flex-1 overflow-y-auto px-6 py-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-5">
+          {/* ── FILA 1: Tipo de cliente — ancho completo ── */}
+          <div className="rounded-xl border bg-card p-5">
+            <SectionLabel icon={User}>Tipo de cliente</SectionLabel>
+            <div className="grid grid-cols-4 gap-3">
+              {TYPE_OPTIONS.map((option) => {
+                const isSelected = selectedType === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleTypeSelect(option.value)}
+                    className={cn(
+                      'relative flex items-start gap-3 p-4 rounded-lg border-2 text-left transition-all',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      isSelected
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border bg-background hover:border-primary/40 hover:bg-muted/30',
+                    )}
+                  >
+                    <div
                       className={cn(
-                        'relative flex flex-col items-center gap-2 p-3 rounded-lg border-2 text-center transition-all',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        'p-2 rounded-md shrink-0 mt-0.5',
                         isSelected
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border bg-background hover:border-primary/40 hover:bg-muted/30',
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground',
                       )}
                     >
-                      <div
-                        className={cn(
-                          'p-2 rounded-md',
-                          isSelected
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-muted-foreground',
+                      {option.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-semibold text-sm">{option.label}</p>
+                        {isSelected && (
+                          <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
                         )}
-                      >
-                        {option.icon}
                       </div>
-                      <div>
-                        <p className="text-xs font-semibold leading-tight">{option.label}</p>
-                        <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 hidden sm:block">
-                          {option.description}
-                        </p>
-                      </div>
-                      {isSelected && (
-                        <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
+                        {option.description}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
+          </div>
 
-            {/* ── SECCIÓN 2: Identificación fiscal ── */}
+          {/* ── FILA 2: Identificación + Contacto — grid 2 columnas ── */}
+          <div className="grid grid-cols-2 gap-5">
+            {/* Identificación fiscal */}
             <div className="rounded-xl border bg-card p-5">
-              <SectionLabel icon={FileText}>Identificación fiscal</SectionLabel>
+              <SectionLabel icon={Building2}>Identificación fiscal</SectionLabel>
               <div className="space-y-4">
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label htmlFor="name">
                     Nombre comercial <span className="text-destructive">*</span>
                   </Label>
@@ -319,7 +317,7 @@ export default function NuevoClientePage() {
                 </div>
 
                 {currentTypeOption.showLegalName && (
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <Label htmlFor="legalName">{currentTypeOption.legalNameLabel}</Label>
                     <Input
                       id="legalName"
@@ -333,7 +331,7 @@ export default function NuevoClientePage() {
                   </div>
                 )}
 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label htmlFor="nif">
                     {currentTypeOption.nifLabel} <span className="text-destructive">*</span>
                   </Label>
@@ -347,7 +345,9 @@ export default function NuevoClientePage() {
                       },
                     })}
                     placeholder={currentTypeOption.nifPlaceholder}
-                    className={cn(!currentTypeOption.isIntracommunity && 'uppercase font-mono')}
+                    className={cn(
+                      !currentTypeOption.isIntracommunity && 'uppercase font-mono tracking-wider',
+                    )}
                     maxLength={currentTypeOption.isIntracommunity ? 20 : 9}
                     autoComplete="off"
                   />
@@ -357,11 +357,11 @@ export default function NuevoClientePage() {
               </div>
             </div>
 
-            {/* ── SECCIÓN 3: Contacto ── */}
+            {/* Contacto */}
             <div className="rounded-xl border bg-card p-5">
-              <SectionLabel icon={Mail}>Contacto</SectionLabel>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
+              <SectionLabel icon={Briefcase}>Información de contacto</SectionLabel>
+              <div className="space-y-4">
+                <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
@@ -372,7 +372,7 @@ export default function NuevoClientePage() {
                   />
                   <FieldError message={form.formState.errors.email?.message} />
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <Label htmlFor="phone">Teléfono</Label>
                   <Input
                     id="phone"
@@ -384,126 +384,114 @@ export default function NuevoClientePage() {
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* ── SECCIÓN 4: Dirección ── */}
-            <div className="rounded-xl border bg-card p-5">
-              <SectionLabel icon={MapPin}>Dirección fiscal</SectionLabel>
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="address">Calle y número</Label>
+          {/* ── FILA 3: Dirección fiscal — ancho completo con campos en grid ── */}
+          <div className="rounded-xl border bg-card p-5">
+            <SectionLabel icon={Globe}>Dirección fiscal</SectionLabel>
+            <div className="grid grid-cols-12 gap-4">
+              {/* Calle — ocupa 6 columnas */}
+              <div className="col-span-6 space-y-2">
+                <Label htmlFor="address">Calle y número</Label>
+                <Input
+                  id="address"
+                  {...form.register('address')}
+                  placeholder="Calle Principal, 123, 2°A"
+                  autoComplete="street-address"
+                />
+              </div>
+
+              {/* CP — 2 columnas */}
+              {!currentTypeOption.isIntracommunity && (
+                <div className="col-span-2 space-y-2">
+                  <Label htmlFor="postalCode">C. Postal</Label>
                   <Input
-                    id="address"
-                    {...form.register('address')}
-                    placeholder="Calle Principal, 123, 2°A"
-                    autoComplete="street-address"
+                    id="postalCode"
+                    {...form.register('postalCode')}
+                    placeholder="28001"
+                    maxLength={5}
+                    autoComplete="postal-code"
                   />
+                  <FieldError message={form.formState.errors.postalCode?.message} />
                 </div>
+              )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  {!currentTypeOption.isIntracommunity && (
-                    <div className="space-y-1.5">
-                      <Label htmlFor="postalCode">Código postal</Label>
-                      <Input
-                        id="postalCode"
-                        {...form.register('postalCode')}
-                        placeholder="28001"
-                        maxLength={5}
-                        autoComplete="postal-code"
-                      />
-                      <FieldError message={form.formState.errors.postalCode?.message} />
-                    </div>
-                  )}
-                  <div
-                    className={cn(
-                      'space-y-1.5',
-                      currentTypeOption.isIntracommunity && 'col-span-2',
-                    )}
-                  >
-                    <Label htmlFor="city">Ciudad</Label>
-                    <Input
-                      id="city"
-                      {...form.register('city')}
-                      placeholder="Madrid"
-                      autoComplete="address-level2"
-                    />
-                  </div>
-                </div>
-
-                {!currentTypeOption.isIntracommunity ? (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label>Provincia</Label>
-                      <Select
-                        value={form.watch('province') ?? ''}
-                        onValueChange={(v) => form.setValue('province', v)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona provincia" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {PROVINCES.map((p) => (
-                            <SelectItem key={p.code} value={p.name}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="country">País</Label>
-                      <Input
-                        id="country"
-                        {...form.register('country')}
-                        placeholder="ES"
-                        maxLength={2}
-                        className="uppercase"
-                        readOnly
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="country">
-                      País <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="country"
-                      {...form.register('country')}
-                      placeholder="DE"
-                      maxLength={2}
-                      className="uppercase w-24"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Código ISO 3166-1 alpha-2 (ej: FR, DE, IT)
-                    </p>
-                    <FieldError message={form.formState.errors.country?.message} />
-                  </div>
+              {/* Ciudad — 4 columnas (o 6 si intracomunitario) */}
+              <div
+                className={cn(
+                  'space-y-2',
+                  currentTypeOption.isIntracommunity ? 'col-span-6' : 'col-span-4',
                 )}
+              >
+                <Label htmlFor="city">Ciudad</Label>
+                <Input
+                  id="city"
+                  {...form.register('city')}
+                  placeholder="Madrid"
+                  autoComplete="address-level2"
+                />
+              </div>
+
+              {/* Provincia — 4 columnas (solo España) */}
+              {!currentTypeOption.isIntracommunity && (
+                <div className="col-span-4 space-y-2">
+                  <Label>Provincia</Label>
+                  <Select
+                    value={form.watch('province') ?? ''}
+                    onValueChange={(v) => form.setValue('province', v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona provincia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROVINCES.map((p) => (
+                        <SelectItem key={p.code} value={p.name}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* País — 2 columnas */}
+              <div
+                className={cn(
+                  'space-y-2',
+                  currentTypeOption.isIntracommunity ? 'col-span-6' : 'col-span-2',
+                )}
+              >
+                <Label htmlFor="country">
+                  País
+                  {currentTypeOption.isIntracommunity && (
+                    <span className="text-destructive"> *</span>
+                  )}
+                </Label>
+                <Input
+                  id="country"
+                  {...form.register('country')}
+                  placeholder={currentTypeOption.isIntracommunity ? 'DE' : 'ES'}
+                  maxLength={2}
+                  className="uppercase"
+                  readOnly={!currentTypeOption.isIntracommunity}
+                />
+                {currentTypeOption.isIntracommunity && (
+                  <p className="text-xs text-muted-foreground">Código ISO alpha-2</p>
+                )}
+                <FieldError message={form.formState.errors.country?.message} />
               </div>
             </div>
+          </div>
 
-            {/* ── SECCIÓN 5: Notas internas ── */}
-            <div className="rounded-xl border bg-card p-5">
-              <SectionLabel icon={FileText}>Notas internas</SectionLabel>
-              <Textarea
-                {...form.register('notes')}
-                placeholder="Información adicional sobre este cliente (no aparece en facturas)..."
-                rows={3}
-              />
-              <FieldError message={form.formState.errors.notes?.message} />
-            </div>
-
-            {/* ── Botones mobile — visibles solo en pantallas pequeñas ── */}
-            <div className="flex items-center justify-end gap-3 pt-2 pb-8 sm:hidden">
-              <Link href="/dashboard/clientes">
-                <Button type="button" variant="outline" disabled={createMutation.isPending}>
-                  Cancelar
-                </Button>
-              </Link>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? 'Guardando...' : 'Guardar cliente'}
-              </Button>
-            </div>
+          {/* ── FILA 4: Notas — ancho completo ── */}
+          <div className="rounded-xl border bg-card p-5">
+            <SectionLabel>Notas internas</SectionLabel>
+            <Textarea
+              {...form.register('notes')}
+              placeholder="Información adicional sobre este cliente (no aparece en las facturas)..."
+              rows={3}
+            />
+            <FieldError message={form.formState.errors.notes?.message} />
           </div>
         </form>
       </div>
