@@ -17,9 +17,10 @@ export class CreateCustomerDto {
   @MaxLength(100, { message: 'La razón social no puede superar los 100 caracteres' })
   legalName?: string;
 
-  @ApiProperty({ enum: CustomerType, description: 'Tipo de cliente' })
+  @ApiPropertyOptional({ enum: CustomerType, description: 'Tipo de cliente' })
+  @IsOptional()
   @IsEnum(CustomerType, { message: 'Tipo de cliente no válido' })
-  type!: CustomerType;
+  type?: CustomerType;
 
   @ApiProperty({ description: 'NIF/CIF/NIE del cliente (según tipo)' })
   @IsString()

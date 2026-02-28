@@ -49,9 +49,9 @@ export interface QuickCreateCustomerModalProps {
 
 const quickSchema = z
   .object({
-    type: z.nativeEnum(CustomerType),
     name: z.string().min(2, 'Mínimo 2 caracteres').max(100),
     nif: z.string().min(1, 'El NIF/CIF es obligatorio'),
+    type: z.nativeEnum(CustomerType).optional(),
     email: z.string().email('Email no válido').optional().or(z.literal('')),
   })
   .superRefine((data, ctx) => {
