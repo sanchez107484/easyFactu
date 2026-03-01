@@ -481,6 +481,8 @@ export interface QueryInvoicesInput {
   customerId?: string;
   fromDate?: string;
   toDate?: string;
+  sortBy?: 'number' | 'issueDate' | 'total' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface ConfirmInvoiceInput {

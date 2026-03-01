@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { invoiceApi, RectifyInvoiceInput } from '@/lib/api/invoice-api';
 import {
+  Invoice,
   QueryInvoicesInput,
   CreateInvoiceInput,
   UpdateInvoiceInput,
@@ -37,6 +38,40 @@ export function useInvoices(filters: QueryInvoicesInput = {}) {
   return useQuery({
     queryKey: invoiceKeys.list(filters),
     queryFn: () => invoiceApi.getAll(filters),
+  });
+}
+
+/**
+ * Obtiene TODAS las facturas del tenant paginando automáticamente (máx 100 por página).
+ * Útil para calcular KPIs en el dashboard donde se necesitan todos los registros.
+ */
+async function fetchAllInvoices(
+  filters: Omit<QueryInvoicesInput, 'page' | 'limit'>,
+): Promise<Invoice[]> {
+  const PAGE_SIZE = 100;
+  const first = await invoiceApi.getAll({ ...filters, page: 1, limit: PAGE_SIZE });
+  const allInvoices: Invoice[] = [...first.data];
+  const totalPages = first.meta.totalPages;
+
+  if (totalPages > 1) {
+    const remaining = await Promise.all(
+      Array.from({ length: totalPages - 1 }, (_, i) =>
+        invoiceApi.getAll({ ...filters, page: i + 2, limit: PAGE_SIZE }),
+      ),
+    );
+    for (const page of remaining) {
+      allInvoices.push(...page.data);
+    }
+  }
+
+  return allInvoices;
+}
+
+export function useAllInvoices(filters: Omit<QueryInvoicesInput, 'page' | 'limit'> = {}) {
+  return useQuery({
+    queryKey: ['invoices', 'all', filters],
+    queryFn: () => fetchAllInvoices(filters),
+    staleTime: 30_000, // 30s — datos del dashboard no necesitan refresh inmediato
   });
 }
 
