@@ -109,7 +109,7 @@ const formSchema = z
   .object({
     name: z.string().min(2, 'Mínimo 2 caracteres').max(100, 'Máximo 100 caracteres'),
     nif: z.string().min(1, 'El NIF/CIF es obligatorio'),
-    type: z.nativeEnum(CustomerType).optional(),
+    type: z.nativeEnum(CustomerType),
     legalName: z.string().max(100, 'Máximo 100 caracteres').optional().or(z.literal('')),
     email: z.string().email('Formato de email no válido').optional().or(z.literal('')),
     phone: z.string().max(20, 'Máximo 20 caracteres').optional().or(z.literal('')),

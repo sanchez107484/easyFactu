@@ -116,6 +116,7 @@ const formSchema = z
       .refine((val) => validateNif(val).isValid, {
         message: 'NIF/CIF no válido',
       }),
+    legalName: z.string().max(100, 'Máximo 100 caracteres').optional(),
     email: z.string().email('Formato de email no válido').optional(),
     phone: z.string().optional(),
     address: z.string().max(200).optional(),
