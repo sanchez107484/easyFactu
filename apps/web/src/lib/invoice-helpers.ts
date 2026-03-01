@@ -92,6 +92,7 @@ export function buildPreviewInvoice(
     irpfTotal,
     total,
     paymentMethod: data.paymentMethod ?? null,
+    paymentDetails: data.paymentDetails ?? null,
     notes: data.notes ?? null,
     pdfUrl: null,
     verifactuHash: null,
