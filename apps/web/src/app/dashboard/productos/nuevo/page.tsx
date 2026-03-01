@@ -75,6 +75,12 @@ export default function NuevoProductoPage() {
   const taxAmount = unitPrice * (taxRate / 100);
   const pvp = unitPrice + taxAmount;
   const selectedType = form.watch('type');
+  const watchedUnit = form.watch('unit') || '';
+
+  const UNIT_SUGGESTIONS =
+    selectedType === ProductType.SERVICE
+      ? ['Hora', 'Sesión', 'Día', 'Proyecto', 'Mes', 'Consulta']
+      : ['Ud.', 'kg', 'm', 'm²', 'l', 'Caja', 'Pack'];
 
   const createMutation = useCreateProduct();
 
@@ -109,7 +115,6 @@ export default function NuevoProductoPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main form */}
           <div className="lg:col-span-2 space-y-6">
-
             {/* Seccion 1: Tipo */}
             <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b bg-muted/30">
@@ -203,10 +208,15 @@ export default function NuevoProductoPage() {
 
                 {/* Descripcion */}
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-sm font-medium flex items-center gap-2">
+                  <Label
+                    htmlFor="description"
+                    className="text-sm font-medium flex items-center gap-2"
+                  >
                     <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                     Descripcion{' '}
-                    <span className="text-xs text-muted-foreground font-normal">(opcional - aparecer en la factura)</span>
+                    <span className="text-xs text-muted-foreground font-normal">
+                      (opcional - aparecer en la factura)
+                    </span>
                   </Label>
                   <Textarea
                     id="description"
@@ -221,7 +231,10 @@ export default function NuevoProductoPage() {
                 {/* Referencia + Unidad */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="reference" className="text-sm font-medium flex items-center gap-2">
+                    <Label
+                      htmlFor="reference"
+                      className="text-sm font-medium flex items-center gap-2"
+                    >
                       <Hash className="h-3.5 w-3.5 text-muted-foreground" />
                       Referencia / Codigo{' '}
                       <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
@@ -240,11 +253,36 @@ export default function NuevoProductoPage() {
                       Unidad de medida{' '}
                       <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
                     </Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {UNIT_SUGGESTIONS.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() =>
+                            form.setValue(
+                              'unit',
+                              s.toLowerCase() !== watchedUnit.toLowerCase() ? s : '',
+                            )
+                          }
+                          disabled={createMutation.isPending}
+                          className={cn(
+                            'text-xs px-2.5 py-1 rounded-full border transition-all',
+                            watchedUnit.toLowerCase() === s.toLowerCase()
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground bg-background',
+                          )}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
                     <Input
                       id="unit"
                       {...form.register('unit')}
                       placeholder={
-                        selectedType === ProductType.SERVICE ? 'hora, proyecto, mes...' : 'ud., kg, caja...'
+                        selectedType === ProductType.SERVICE
+                          ? 'O escribe la unidad: hora, proyecto...'
+                          : 'O escribe la unidad: ud., kg, caja...'
                       }
                       disabled={createMutation.isPending}
                       className="h-11"
@@ -265,9 +303,13 @@ export default function NuevoProductoPage() {
               <div className="p-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="unitPrice" className="text-sm font-medium flex items-center gap-2">
+                    <Label
+                      htmlFor="unitPrice"
+                      className="text-sm font-medium flex items-center gap-2"
+                    >
                       <Euro className="h-3.5 w-3.5 text-muted-foreground" />
-                      Precio sin IVA <span className="text-destructive">*</span>
+                      {watchedUnit ? `Precio por ${watchedUnit}` : 'Precio sin IVA'}{' '}
+                      <span className="text-destructive">*</span>
                     </Label>
                     <div className="relative">
                       <Input
@@ -377,9 +419,8 @@ export default function NuevoProductoPage() {
                 Para que sirve el catalogo
               </p>
               <p className="text-amber-700 dark:text-amber-400">
-                Guarda aqui tus servicios y productos habituales. La proxima vez que hagas
-                una factura, podras anadirlos con un solo clic sin tener que escribir nada
-                a mano.
+                Guarda aqui tus servicios y productos habituales. La proxima vez que hagas una
+                factura, podras anadirlos con un solo clic sin tener que escribir nada a mano.
               </p>
             </div>
           </div>

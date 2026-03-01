@@ -28,7 +28,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { ArrowLeft, Package, Wrench, Euro, Tag, FileText, Hash, Ruler, AlertCircle, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Package,
+  Wrench,
+  Euro,
+  Tag,
+  FileText,
+  Hash,
+  Ruler,
+  AlertCircle,
+  Trash2,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useProduct, useUpdateProduct, useDeleteProduct } from '@/hooks/use-products';
 import { ProductType } from '@easyfactura/shared-types';
@@ -127,6 +138,12 @@ export default function EditarProductoPage() {
   const taxAmount = unitPrice * (taxRate / 100);
   const pvp = unitPrice + taxAmount;
   const selectedType = form.watch('type');
+  const watchedUnit = form.watch('unit') || '';
+
+  const UNIT_SUGGESTIONS =
+    selectedType === ProductType.SERVICE
+      ? ['Hora', 'Sesión', 'Día', 'Proyecto', 'Mes', 'Consulta']
+      : ['Ud.', 'kg', 'm', 'm²', 'l', 'Caja', 'Pack'];
 
   const onSubmit = async (data: ProductFormData) => {
     await updateMutation.mutateAsync({
@@ -164,7 +181,9 @@ export default function EditarProductoPage() {
             Puede que haya sido eliminado o que no tengas permisos para editarlo.
           </p>
           <Link href="/dashboard/productos">
-            <Button variant="outline" className="mt-2">Volver al catálogo</Button>
+            <Button variant="outline" className="mt-2">
+              Volver al catálogo
+            </Button>
           </Link>
         </div>
       </div>
@@ -190,7 +209,11 @@ export default function EditarProductoPage() {
         </div>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
               <Trash2 className="h-4 w-4 mr-1.5" />
               Eliminar
             </Button>
@@ -220,7 +243,6 @@ export default function EditarProductoPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main form */}
           <div className="lg:col-span-2 space-y-6">
-
             {/* Sección 1: Tipo */}
             <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b bg-muted/30">
@@ -258,14 +280,21 @@ export default function EditarProductoPage() {
                             <Icon className="h-5 w-5" />
                           </div>
                           <div>
-                            <p className={cn('font-semibold text-sm', active ? 'text-primary' : 'text-foreground')}>
+                            <p
+                              className={cn(
+                                'font-semibold text-sm',
+                                active ? 'text-primary' : 'text-foreground',
+                              )}
+                            >
                               {label}
                             </p>
                             <p className="text-xs text-muted-foreground">{description}</p>
                           </div>
                         </div>
                         <p className="text-xs text-muted-foreground pl-[52px]">{tip}</p>
-                        {active && <div className="absolute top-3 right-3 h-2.5 w-2.5 rounded-full bg-primary" />}
+                        {active && (
+                          <div className="absolute top-3 right-3 h-2.5 w-2.5 rounded-full bg-primary" />
+                        )}
                       </button>
                     );
                   })}
@@ -290,7 +319,11 @@ export default function EditarProductoPage() {
                   <Input
                     id="name"
                     {...form.register('name')}
-                    placeholder={selectedType === ProductType.SERVICE ? 'Ej: Consultoría técnica mensual' : 'Ej: Camiseta algodón talla M'}
+                    placeholder={
+                      selectedType === ProductType.SERVICE
+                        ? 'Ej: Consultoría técnica mensual'
+                        : 'Ej: Camiseta algodón talla M'
+                    }
                     disabled={updateMutation.isPending}
                     className="h-11 text-base"
                   />
@@ -300,10 +333,15 @@ export default function EditarProductoPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-sm font-medium flex items-center gap-2">
+                  <Label
+                    htmlFor="description"
+                    className="text-sm font-medium flex items-center gap-2"
+                  >
                     <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                     Descripción{' '}
-                    <span className="text-xs text-muted-foreground font-normal">(opcional — aparecerá en la factura)</span>
+                    <span className="text-xs text-muted-foreground font-normal">
+                      (opcional — aparecerá en la factura)
+                    </span>
                   </Label>
                   <Textarea
                     id="description"
@@ -317,12 +355,21 @@ export default function EditarProductoPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="reference" className="text-sm font-medium flex items-center gap-2">
+                    <Label
+                      htmlFor="reference"
+                      className="text-sm font-medium flex items-center gap-2"
+                    >
                       <Hash className="h-3.5 w-3.5 text-muted-foreground" />
                       Referencia / Código{' '}
                       <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
                     </Label>
-                    <Input id="reference" {...form.register('reference')} placeholder="Ej: SERV-001" disabled={updateMutation.isPending} className="h-11" />
+                    <Input
+                      id="reference"
+                      {...form.register('reference')}
+                      placeholder="Ej: SERV-001"
+                      disabled={updateMutation.isPending}
+                      className="h-11"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="unit" className="text-sm font-medium flex items-center gap-2">
@@ -330,10 +377,37 @@ export default function EditarProductoPage() {
                       Unidad de medida{' '}
                       <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
                     </Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {UNIT_SUGGESTIONS.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() =>
+                            form.setValue(
+                              'unit',
+                              s.toLowerCase() !== watchedUnit.toLowerCase() ? s : '',
+                            )
+                          }
+                          disabled={updateMutation.isPending}
+                          className={cn(
+                            'text-xs px-2.5 py-1 rounded-full border transition-all',
+                            watchedUnit.toLowerCase() === s.toLowerCase()
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground bg-background',
+                          )}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
                     <Input
                       id="unit"
                       {...form.register('unit')}
-                      placeholder={selectedType === ProductType.SERVICE ? 'hora, proyecto, mes…' : 'ud., kg, caja…'}
+                      placeholder={
+                        selectedType === ProductType.SERVICE
+                          ? 'O escribe la unidad: hora, proyecto...'
+                          : 'O escribe la unidad: ud., kg, caja...'
+                      }
                       disabled={updateMutation.isPending}
                       className="h-11"
                     />
@@ -353,9 +427,13 @@ export default function EditarProductoPage() {
               <div className="p-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="unitPrice" className="text-sm font-medium flex items-center gap-2">
+                    <Label
+                      htmlFor="unitPrice"
+                      className="text-sm font-medium flex items-center gap-2"
+                    >
                       <Euro className="h-3.5 w-3.5 text-muted-foreground" />
-                      Precio sin IVA <span className="text-destructive">*</span>
+                      {watchedUnit ? `Precio por ${watchedUnit}` : 'Precio sin IVA'}{' '}
+                      <span className="text-destructive">*</span>
                     </Label>
                     <div className="relative">
                       <Input
@@ -373,7 +451,9 @@ export default function EditarProductoPage() {
                       </span>
                     </div>
                     {form.formState.errors.unitPrice && (
-                      <p className="text-xs text-destructive">{form.formState.errors.unitPrice.message}</p>
+                      <p className="text-xs text-destructive">
+                        {form.formState.errors.unitPrice.message}
+                      </p>
                     )}
                   </div>
                   <div className="space-y-2">
@@ -390,11 +470,15 @@ export default function EditarProductoPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {TAX_RATES.map((t) => (
-                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                          <SelectItem key={t.value} value={t.value}>
+                            {t.label}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">La mayoría de autónomos usan el 21%</p>
+                    <p className="text-xs text-muted-foreground">
+                      La mayoría de autónomos usan el 21%
+                    </p>
                   </div>
                 </div>
               </div>
@@ -428,15 +512,26 @@ export default function EditarProductoPage() {
                       {pvp.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Precio final con todos los impuestos</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Precio final con todos los impuestos
+                  </p>
                 </div>
               </div>
               <div className="px-5 pb-5 space-y-2 border-t pt-4">
-                <Button type="submit" disabled={updateMutation.isPending} className="w-full h-11 font-semibold">
+                <Button
+                  type="submit"
+                  disabled={updateMutation.isPending}
+                  className="w-full h-11 font-semibold"
+                >
                   {updateMutation.isPending ? 'Guardando…' : 'Guardar cambios'}
                 </Button>
                 <Link href={`/dashboard/productos/${id}`} className="block">
-                  <Button type="button" variant="ghost" disabled={updateMutation.isPending} className="w-full">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={updateMutation.isPending}
+                    className="w-full"
+                  >
                     Cancelar
                   </Button>
                 </Link>
@@ -444,9 +539,12 @@ export default function EditarProductoPage() {
             </div>
 
             <div className="rounded-xl border border-dashed bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 px-4 py-4 text-xs leading-relaxed">
-              <p className="font-semibold text-blue-800 dark:text-blue-300 mb-1.5">¿Qué pasa si cambio el precio?</p>
+              <p className="font-semibold text-blue-800 dark:text-blue-300 mb-1.5">
+                ¿Qué pasa si cambio el precio?
+              </p>
               <p className="text-blue-700 dark:text-blue-400">
-                Los cambios solo afectan a las facturas nuevas. Las facturas ya creadas no se modifican.
+                Los cambios solo afectan a las facturas nuevas. Las facturas ya creadas no se
+                modifican.
               </p>
             </div>
           </div>

@@ -41,7 +41,12 @@ interface ReadOnlyFieldProps {
   placeholder?: string;
 }
 
-function ReadOnlyField({ label, value, icon: Icon, placeholder = 'No especificado' }: ReadOnlyFieldProps) {
+function ReadOnlyField({
+  label,
+  value,
+  icon: Icon,
+  placeholder = 'No especificado',
+}: ReadOnlyFieldProps) {
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium flex items-center gap-2">
@@ -49,9 +54,11 @@ function ReadOnlyField({ label, value, icon: Icon, placeholder = 'No especificad
         {label}
       </p>
       <div className="h-11 flex items-center px-3 rounded-lg border bg-muted/30 text-sm">
-        {value
-          ? value
-          : <span className="text-muted-foreground italic text-xs">{placeholder}</span>}
+        {value ? (
+          value
+        ) : (
+          <span className="text-muted-foreground italic text-xs">{placeholder}</span>
+        )}
       </div>
     </div>
   );
@@ -132,7 +139,9 @@ export default function VerProductoPage() {
             Puede que haya sido eliminado o que no exista.
           </p>
           <Link href="/dashboard/productos">
-            <Button variant="outline" className="mt-2">Volver al catálogo</Button>
+            <Button variant="outline" className="mt-2">
+              Volver al catálogo
+            </Button>
           </Link>
         </div>
       </div>
@@ -217,7 +226,6 @@ export default function VerProductoPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
         <div className="lg:col-span-2 space-y-6">
-
           {/* Sección 1: Tipo */}
           <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b bg-muted/30">
@@ -242,9 +250,7 @@ export default function VerProductoPage() {
                       key={type}
                       className={cn(
                         'relative flex flex-col gap-2 rounded-xl border-2 p-5',
-                        active
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border opacity-40',
+                        active ? 'border-primary bg-primary/5' : 'border-border opacity-40',
                       )}
                     >
                       <div className="flex items-center gap-3">
@@ -259,14 +265,21 @@ export default function VerProductoPage() {
                           <Icon className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className={cn('font-semibold text-sm', active ? 'text-primary' : 'text-foreground')}>
+                          <p
+                            className={cn(
+                              'font-semibold text-sm',
+                              active ? 'text-primary' : 'text-foreground',
+                            )}
+                          >
                             {label}
                           </p>
                           <p className="text-xs text-muted-foreground">{description}</p>
                         </div>
                       </div>
                       <p className="text-xs text-muted-foreground pl-[52px]">{tip}</p>
-                      {active && <div className="absolute top-3 right-3 h-2.5 w-2.5 rounded-full bg-primary" />}
+                      {active && (
+                        <div className="absolute top-3 right-3 h-2.5 w-2.5 rounded-full bg-primary" />
+                      )}
                     </div>
                   );
                 })}
@@ -283,21 +296,24 @@ export default function VerProductoPage() {
               </p>
             </div>
             <div className="p-6 space-y-5">
-              <ReadOnlyField
-                label="Nombre"
-                value={product.name}
-                icon={Tag}
-              />
+              <ReadOnlyField label="Nombre" value={product.name} icon={Tag} />
 
               <div className="space-y-2">
                 <p className="text-sm font-medium flex items-center gap-2">
                   <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                   Descripción
                 </p>
-                <div className={cn('min-h-[4.5rem] px-3 py-2.5 rounded-lg border bg-muted/30 text-sm', !product.description && 'flex items-center')}>
-                  {product.description
-                    ? <p className="whitespace-pre-wrap">{product.description}</p>
-                    : <span className="text-muted-foreground italic text-xs">Sin descripción</span>}
+                <div
+                  className={cn(
+                    'min-h-[4.5rem] px-3 py-2.5 rounded-lg border bg-muted/30 text-sm',
+                    !product.description && 'flex items-center',
+                  )}
+                >
+                  {product.description ? (
+                    <p className="whitespace-pre-wrap">{product.description}</p>
+                  ) : (
+                    <span className="text-muted-foreground italic text-xs">Sin descripción</span>
+                  )}
                 </div>
               </div>
 
@@ -328,7 +344,7 @@ export default function VerProductoPage() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium flex items-center gap-2">
                     <Euro className="h-3.5 w-3.5 text-muted-foreground" />
-                    Precio sin IVA
+                    {product.unit ? `Precio por ${product.unit}` : 'Precio sin IVA'}
                   </p>
                   <div className="h-11 flex items-center px-3 rounded-lg border bg-muted/30 text-sm font-medium tabular-nums">
                     {unitPrice.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
@@ -371,7 +387,9 @@ export default function VerProductoPage() {
                     {pvp.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Precio final con todos los impuestos</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Precio final con todos los impuestos
+                </p>
               </div>
             </div>
             <div className="px-5 pb-5 space-y-2 border-t pt-4">

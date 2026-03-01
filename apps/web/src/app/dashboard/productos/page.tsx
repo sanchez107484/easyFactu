@@ -50,7 +50,10 @@ const PRODUCT_TYPE_FILTERS = [
   { value: ProductType.SERVICE, label: 'Servicios' },
 ];
 
-const TYPE_CONFIG: Record<ProductType, { label: string; icon: React.ElementType; color: string; bg: string; border: string }> = {
+const TYPE_CONFIG: Record<
+  ProductType,
+  { label: string; icon: React.ElementType; color: string; bg: string; border: string }
+> = {
   [ProductType.PRODUCT]: {
     label: 'Producto',
     icon: Package,
@@ -75,13 +78,20 @@ function formatCurrency(amount: number) {
 
 function getProductSortValue(product: Product, key: string): string | number {
   switch (key) {
-    case 'name': return product.name;
-    case 'reference': return product.reference ?? '';
-    case 'type': return product.type;
-    case 'unitPrice': return product.unitPrice;
-    case 'taxRate': return product.taxRate;
-    case 'pvp': return product.unitPrice * (1 + product.taxRate / 100);
-    default: return '';
+    case 'name':
+      return product.name;
+    case 'reference':
+      return product.reference ?? '';
+    case 'type':
+      return product.type;
+    case 'unitPrice':
+      return product.unitPrice;
+    case 'taxRate':
+      return product.taxRate;
+    case 'pvp':
+      return product.unitPrice * (1 + product.taxRate / 100);
+    default:
+      return '';
   }
 }
 
@@ -92,10 +102,14 @@ function ProductTypeBadge({ type }: { type: ProductType }) {
   if (!cfg) return null;
   const Icon = cfg.icon;
   return (
-    <span className={cn(
-      'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
-      cfg.bg, cfg.border, cfg.color,
-    )}>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+        cfg.bg,
+        cfg.border,
+        cfg.color,
+      )}
+    >
       <Icon className="h-3 w-3 shrink-0" />
       {cfg.label}
     </span>
@@ -188,7 +202,9 @@ export default function ProductosPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Productos y servicios</h1>
           <p className="text-sm text-muted-foreground">
-            {isLoading ? 'Cargando...' : `${total} elemento${total !== 1 ? 's' : ''} en el catálogo`}
+            {isLoading
+              ? 'Cargando...'
+              : `${total} elemento${total !== 1 ? 's' : ''} en el catálogo`}
           </p>
         </div>
         <Link href="/dashboard/productos/nuevo">
@@ -274,7 +290,10 @@ export default function ProductosPage() {
                   variant="outline"
                   size="sm"
                   className="mt-4"
-                  onClick={() => { setSearch(''); setTypeFilter('ALL'); }}
+                  onClick={() => {
+                    setSearch('');
+                    setTypeFilter('ALL');
+                  }}
                 >
                   Limpiar filtros
                 </Button>
@@ -284,12 +303,56 @@ export default function ProductosPage() {
                 <table className="w-full">
                   <thead className="border-b bg-muted/40">
                     <tr>
-                      <SortableHeader label="Nombre" sortKey="name" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="px-6" />
-                      <SortableHeader label="Referencia" sortKey="reference" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="hidden md:table-cell" />
-                      <SortableHeader label="Tipo" sortKey="type" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="hidden sm:table-cell" />
-                      <SortableHeader label="Precio base" sortKey="unitPrice" currentKey={sortKey} direction={sortDir} onSort={handleSort} align="right" />
-                      <SortableHeader label="IVA" sortKey="taxRate" currentKey={sortKey} direction={sortDir} onSort={handleSort} align="right" className="hidden lg:table-cell" />
-                      <SortableHeader label="PVP" sortKey="pvp" currentKey={sortKey} direction={sortDir} onSort={handleSort} align="right" className="hidden lg:table-cell" />
+                      <SortableHeader
+                        label="Nombre"
+                        sortKey="name"
+                        currentKey={sortKey}
+                        direction={sortDir}
+                        onSort={handleSort}
+                        className="px-6"
+                      />
+                      <SortableHeader
+                        label="Referencia"
+                        sortKey="reference"
+                        currentKey={sortKey}
+                        direction={sortDir}
+                        onSort={handleSort}
+                        className="hidden md:table-cell"
+                      />
+                      <SortableHeader
+                        label="Tipo"
+                        sortKey="type"
+                        currentKey={sortKey}
+                        direction={sortDir}
+                        onSort={handleSort}
+                        className="hidden sm:table-cell"
+                      />
+                      <SortableHeader
+                        label="Precio base"
+                        sortKey="unitPrice"
+                        currentKey={sortKey}
+                        direction={sortDir}
+                        onSort={handleSort}
+                        align="right"
+                      />
+                      <SortableHeader
+                        label="IVA"
+                        sortKey="taxRate"
+                        currentKey={sortKey}
+                        direction={sortDir}
+                        onSort={handleSort}
+                        align="right"
+                        className="hidden lg:table-cell"
+                      />
+                      <SortableHeader
+                        label="PVP"
+                        sortKey="pvp"
+                        currentKey={sortKey}
+                        direction={sortDir}
+                        onSort={handleSort}
+                        align="right"
+                        className="hidden lg:table-cell"
+                      />
                       <th className="px-4 py-3" />
                     </tr>
                   </thead>
@@ -307,13 +370,17 @@ export default function ProductosPage() {
                                 {product.name}
                               </Link>
                               {product.description && (
-                                <p className="text-xs text-muted-foreground truncate max-w-[240px] mt-0.5">{product.description}</p>
+                                <p className="text-xs text-muted-foreground truncate max-w-[240px] mt-0.5">
+                                  {product.description}
+                                </p>
                               )}
                             </div>
                           </td>
                           <td className="px-4 py-3 hidden md:table-cell">
                             {product.reference ? (
-                              <span className="font-mono text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5">{product.reference}</span>
+                              <span className="font-mono text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5">
+                                {product.reference}
+                              </span>
                             ) : (
                               <span className="text-muted-foreground text-sm">-</span>
                             )}
@@ -333,7 +400,11 @@ export default function ProductosPage() {
                           <td className="px-4 py-3">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -377,7 +448,8 @@ export default function ProductosPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar producto?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se eliminara <strong>{deleteName}</strong> permanentemente. Esta accion no se puede deshacer.
+              Se eliminara <strong>{deleteName}</strong> permanentemente. Esta accion no se puede
+              deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

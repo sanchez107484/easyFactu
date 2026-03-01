@@ -1,15 +1,8 @@
 import { Invoice, InvoiceStatus, Customer, PaymentMethod } from '@easyfactura/shared-types';
 import { round2 } from '@/lib/math';
+import { ExtendedLineData, stripLineMetaFields } from '@/lib/invoice-line-types';
 
 // ==================== TYPES ====================
-
-interface InvoiceLine {
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  taxRate: number;
-  productId?: string;
-}
 
 export interface InvoiceFormData {
   customerId: string;
@@ -20,7 +13,7 @@ export interface InvoiceFormData {
   paymentMethod?: PaymentMethod;
   paymentDetails?: Record<string, string | undefined>;
   notes?: string;
-  lines: InvoiceLine[];
+  lines: ExtendedLineData[];
 }
 
 // ==================== buildPreviewInvoice ====================
@@ -59,14 +52,17 @@ export function buildPreviewInvoice(
   const total = round2(subtotalAfterDiscount + taxTotal - (irpfTotal ?? 0));
 
   const previewLines = lines.map((l, i) => {
-    const lineSubtotal = round2((l.quantity ?? 0) * (l.unitPrice ?? 0));
+    // _hideQty: true = no mostrar cantidad en la vista previa (servicios y libre sin qty)
+    const hideQty = l._mode === 'service' || (l._mode !== 'product' && l._hideQty !== false);
+    const effectiveQty = l.quantity ?? 1;
+    const lineSubtotal = round2(effectiveQty * (l.unitPrice ?? 0));
     return {
       id: `preview-${i}`,
       tenantId: '',
       invoiceId: 'preview',
       productId: l.productId ?? null,
       description: l.description || '',
-      quantity: l.quantity ?? 0,
+      quantity: effectiveQty,
       unitPrice: l.unitPrice ?? 0,
       subtotal: lineSubtotal,
       taxRate: l.taxRate ?? 0,
@@ -75,6 +71,7 @@ export function buildPreviewInvoice(
       sortOrder: i,
       createdAt: today,
       updatedAt: today,
+      _hideQty: hideQty,
     };
   });
 
@@ -129,12 +126,15 @@ export function buildCreateInput(data: InvoiceFormData) {
     paymentMethod: data.paymentMethod,
     paymentDetails: data.paymentDetails,
     notes: data.notes,
-    lines: data.lines.map((l) => ({
-      description: l.description,
-      quantity: l.quantity,
-      unitPrice: l.unitPrice,
-      taxRate: l.taxRate,
-      productId: l.productId,
-    })),
+    lines: data.lines.map((l) => {
+      const clean = stripLineMetaFields(l);
+      return {
+        description: clean.description,
+        quantity: clean.quantity,
+        unitPrice: clean.unitPrice,
+        taxRate: clean.taxRate,
+        productId: clean.productId,
+      };
+    }),
   };
 }

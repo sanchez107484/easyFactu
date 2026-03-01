@@ -20,7 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Plus, Trash2, AlertCircle, Save, CheckCircle, Copy } from 'lucide-react';
+import { ArrowLeft, Plus, AlertCircle, Save, CheckCircle, Copy } from 'lucide-react';
+import { InvoiceLineItem } from '@/components/facturas/InvoiceLineItem';
+import { extendedLineSchema, EMPTY_LINE, ExtendedLineData } from '@/lib/invoice-line-types';
 import { useCreateInvoice, useConfirmInvoice, useInvoice } from '@/hooks/use-invoices';
 import { useCustomers } from '@/hooks/use-customers';
 import { useDefaultTemplate } from '@/hooks/use-invoice-templates';
@@ -74,18 +76,10 @@ const EMPTY_DEFAULT_VALUES = {
   discountPercent: undefined as number | undefined,
   irpfPercent: undefined as number | undefined,
   notes: undefined as string | undefined,
-  lines: [{ description: '', quantity: 1, unitPrice: 0, taxRate: 21 }],
+  lines: [{ ...EMPTY_LINE }] as ExtendedLineData[],
 };
 
 // ==================== SCHEMA ====================
-
-const lineSchema = z.object({
-  description: z.string().min(2, 'Mínimo 2 caracteres').max(500, 'Máximo 500 caracteres'),
-  quantity: z.number({ invalid_type_error: 'Requerido' }).positive('Debe ser mayor a 0'),
-  unitPrice: z.number({ invalid_type_error: 'Requerido' }).min(0, 'No puede ser negativo'),
-  taxRate: z.number({ invalid_type_error: 'Requerido' }),
-  productId: z.string().optional(),
-});
 
 const paymentDetailsSchema = z
   .object({
@@ -107,7 +101,7 @@ const formSchema = z.object({
   paymentMethod: z.nativeEnum(PaymentMethod).optional(),
   paymentDetails: paymentDetailsSchema,
   notes: z.string().max(1000, 'Máximo 1000 caracteres').optional(),
-  lines: z.array(lineSchema).min(1, 'Añade al menos una línea').max(50),
+  lines: z.array(extendedLineSchema).min(1, 'Añade al menos una línea').max(50),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -150,10 +144,15 @@ function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormPr
     defaultValues,
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, swap } = useFieldArray({
     control: form.control,
     name: 'lines',
   });
+
+  const handleDuplicateLine = (index: number) => {
+    const line = form.getValues(`lines.${index}`);
+    append({ ...line });
+  };
 
   const watchedValues = form.watch();
   const previewInvoice = buildPreviewInvoice(watchedValues, customers);
@@ -547,9 +546,7 @@ function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormPr
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        append({ description: '', quantity: 1, unitPrice: 0, taxRate: 21 })
-                      }
+                      onClick={() => append({ ...EMPTY_LINE })}
                     >
                       <Plus className="mr-1.5 h-4 w-4" />
                       Añadir línea
@@ -563,122 +560,19 @@ function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormPr
                         {form.formState.errors.lines.root.message}
                       </p>
                     )}
-                    {fields.map((field, index) => {
-                      const line = watchedValues.lines?.[index];
-                      const lineSubtotal = round2((line?.quantity ?? 0) * (line?.unitPrice ?? 0));
-                      return (
-                        <div
-                          key={field.id}
-                          className="p-4 border rounded-lg space-y-3 bg-muted/20"
-                          onFocus={() => setActiveSection('lines-section')}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-muted-foreground">
-                              Línea {index + 1}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <ProductPickerButton
-                                selectedProductId={form.watch(`lines.${index}.productId`)}
-                                onSelect={(selection) => {
-                                  form.setValue(
-                                    `lines.${index}.description`,
-                                    selection.description,
-                                    { shouldValidate: true },
-                                  );
-                                  form.setValue(`lines.${index}.unitPrice`, selection.unitPrice, {
-                                    shouldValidate: true,
-                                  });
-                                  form.setValue(`lines.${index}.taxRate`, selection.taxRate, {
-                                    shouldValidate: true,
-                                  });
-                                  form.setValue(`lines.${index}.productId`, selection.productId);
-                                }}
-                              />
-                              {fields.length > 1 && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => remove(index)}
-                                  className="h-7 w-7 p-0"
-                                >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <Label>
-                              Descripción <span className="text-destructive">*</span>
-                            </Label>
-                            <Textarea
-                              {...form.register(`lines.${index}.description`)}
-                              placeholder="Producto o servicio..."
-                              rows={2}
-                            />
-                            {form.formState.errors.lines?.[index]?.description && (
-                              <p className="text-xs text-destructive">
-                                {form.formState.errors.lines[index]?.description?.message}
-                              </p>
-                            )}
-                          </div>
-                          <div className="grid grid-cols-3 gap-3">
-                            <div className="space-y-1">
-                              <Label>Cantidad</Label>
-                              <Input
-                                type="number"
-                                step="0.0001"
-                                min="0.0001"
-                                {...form.register(`lines.${index}.quantity`, {
-                                  valueAsNumber: true,
-                                })}
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label>Precio EUR</Label>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                {...form.register(`lines.${index}.unitPrice`, {
-                                  valueAsNumber: true,
-                                })}
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label>IVA %</Label>
-                              <Select
-                                value={form.watch(`lines.${index}.taxRate`)?.toString() ?? '21'}
-                                onValueChange={(v) =>
-                                  form.setValue(`lines.${index}.taxRate`, parseFloat(v), {
-                                    shouldValidate: true,
-                                  })
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="0">0%</SelectItem>
-                                  <SelectItem value="4">4%</SelectItem>
-                                  <SelectItem value="10">10%</SelectItem>
-                                  <SelectItem value="21">21%</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                          <div className="text-right text-sm text-muted-foreground">
-                            Subtotal:{' '}
-                            <span className="font-semibold text-foreground">
-                              {lineSubtotal.toLocaleString('es-ES', {
-                                style: 'currency',
-                                currency: 'EUR',
-                              })}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {fields.map((field, index) => (
+                      <InvoiceLineItem
+                        key={field.id}
+                        form={form}
+                        index={index}
+                        totalLines={fields.length}
+                        onRemove={() => remove(index)}
+                        onDuplicate={() => handleDuplicateLine(index)}
+                        onMoveUp={() => swap(index, index - 1)}
+                        onMoveDown={() => swap(index, index + 1)}
+                        onFocus={() => setActiveSection('lines-section')}
+                      />
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -806,6 +700,8 @@ export default function NuevaFacturaPage() {
           unitPrice: Number(l.unitPrice) || 0,
           taxRate: Number(l.taxRate) || 0,
           productId: l.productId ?? undefined,
+          _mode: 'custom' as const,
+          _hideQty: false,
         })),
       }
     : { ...EMPTY_DEFAULT_VALUES };
