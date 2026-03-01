@@ -330,7 +330,7 @@ export function LiveInvoicePreview({
   onSectionClick,
   paymentDetails,
 }: LiveInvoicePreviewProps) {
-  const [scale, setScale] = useState(0.6);
+  const [scale, setScale] = useState(1.0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const layout = (template?.layout ?? DEFAULT_INVOICE_LAYOUT) as InvoiceLayout;

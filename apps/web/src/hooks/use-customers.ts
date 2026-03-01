@@ -8,6 +8,7 @@ import { customerApi } from '@/lib/api/customer-api';
 import { seriesApi } from '@/lib/api/series-api';
 import {
   Customer,
+  PaginatedResponse,
   QueryCustomersInput,
   CreateCustomerInput,
   UpdateCustomerInput,
@@ -51,7 +52,20 @@ export function useCreateCustomer() {
 
   return useMutation({
     mutationFn: (data: CreateCustomerInput) => customerApi.create(data),
-    onSuccess: () => {
+    onSuccess: (newCustomer) => {
+      // Add immediately to all cached list pages so Selects show the new customer right away
+      queryClient.setQueriesData<PaginatedResponse<Customer>>(
+        { queryKey: ['customers', 'list'] },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            data: [newCustomer, ...old.data],
+            meta: { ...old.meta, total: old.meta.total + 1 },
+          };
+        },
+      );
+      // Also invalidate so the server state is eventually reconciled
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast.success('Cliente creado correctamente');
     },

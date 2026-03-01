@@ -149,8 +149,8 @@ export function InvoiceTypeModal({ open, onSelect }: InvoiceTypeModalProps) {
   return (
     <Dialog open={open}>
       <DialogContent
-        className="sm:max-w-md"
-        // Prevent closing by clicking backdrop — user must choose a type
+        className="sm:max-w-md [&>button:last-child]:hidden"
+        // Prevent closing by clicking backdrop or Escape — user must choose a type
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
