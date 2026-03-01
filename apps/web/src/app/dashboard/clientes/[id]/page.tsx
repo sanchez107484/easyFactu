@@ -43,11 +43,11 @@ import {
   TrendingUp,
   Receipt,
   Clock,
-  ArrowUp,
-  ArrowDown,
-  ArrowUpDown,
-  X,
 } from 'lucide-react';
+import { useSortTable, sortData } from '@/hooks/use-sort-table';
+import { SortableHeader } from '@/components/common/sortable-header';
+import { InvoiceStatusBadge } from '@/components/common/invoice-status-badge';
+import { InvoiceStatusFilterPills } from '@/components/common/invoice-status-filter-pills';
 import { CustomerType, InvoiceStatus, Customer, Invoice } from '@easyfactura/shared-types';
 import { useCustomer, useDeleteCustomer } from '@/hooks/use-customers';
 import { useInvoices } from '@/hooks/use-invoices';
@@ -81,134 +81,21 @@ const TYPE_CONFIG: Record<
   },
 };
 
-const STATUS_CONFIG: Record<
-  InvoiceStatus,
-  { label: string; color: string; bg: string; border: string; dot: string }
-> = {
-  [InvoiceStatus.DRAFT]: {
-    label: 'Borrador',
-    color: 'text-zinc-600 dark:text-zinc-400',
-    bg: 'bg-zinc-50 dark:bg-zinc-900/50',
-    border: 'border-zinc-200 dark:border-zinc-800',
-    dot: 'bg-zinc-400',
-  },
-  [InvoiceStatus.CONFIRMED]: {
-    label: 'Confirmada',
-    color: 'text-blue-600 dark:text-blue-400',
-    bg: 'bg-blue-50 dark:bg-blue-950/40',
-    border: 'border-blue-200 dark:border-blue-800',
-    dot: 'bg-blue-500',
-  },
-  [InvoiceStatus.SENT]: {
-    label: 'Enviada',
-    color: 'text-amber-600 dark:text-amber-400',
-    bg: 'bg-amber-50 dark:bg-amber-950/40',
-    border: 'border-amber-200 dark:border-amber-800',
-    dot: 'bg-amber-500',
-  },
-  [InvoiceStatus.PAID]: {
-    label: 'Pagada',
-    color: 'text-emerald-600 dark:text-emerald-400',
-    bg: 'bg-emerald-50 dark:bg-emerald-950/40',
-    border: 'border-emerald-200 dark:border-emerald-800',
-    dot: 'bg-emerald-500',
-  },
-  [InvoiceStatus.RECTIFIED]: {
-    label: 'Rectificada',
-    color: 'text-orange-600 dark:text-orange-400',
-    bg: 'bg-orange-50 dark:bg-orange-950/40',
-    border: 'border-orange-200 dark:border-orange-800',
-    dot: 'bg-orange-500',
-  },
-};
+// ==================== SORTING ====================
 
-// ==================== SORTING & FILTERING ====================
-
-const STATUS_FILTERS = [
-  { value: 'ALL', label: 'Todas' },
-  { value: InvoiceStatus.DRAFT, label: 'Borradores' },
-  { value: InvoiceStatus.CONFIRMED, label: 'Confirmadas' },
-  { value: InvoiceStatus.SENT, label: 'Enviadas' },
-  { value: InvoiceStatus.PAID, label: 'Pagadas' },
-  { value: InvoiceStatus.RECTIFIED, label: 'Rectificadas' },
-];
-
-type SortDir = 'asc' | 'desc';
-
-function SortableHeader({
-  label,
-  sortKey,
-  currentKey,
-  direction,
-  onSort,
-  className,
-  align = 'left',
-}: {
-  label: string;
-  sortKey: string;
-  currentKey: string;
-  direction: SortDir;
-  onSort: (key: string) => void;
-  className?: string;
-  align?: 'left' | 'right';
-}) {
-  const active = sortKey === currentKey;
-  return (
-    <th
-      className={cn(
-        'py-3 font-medium',
-        align === 'right' ? 'px-4 text-right' : 'px-4 text-left',
-        className,
-      )}
-    >
-      <button
-        onClick={() => onSort(sortKey)}
-        className={cn(
-          'inline-flex items-center gap-1 transition-colors select-none',
-          active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
-        )}
-      >
-        {label}
-        {active ? (
-          direction === 'asc' ? (
-            <ArrowUp className="h-3 w-3" />
-          ) : (
-            <ArrowDown className="h-3 w-3" />
-          )
-        ) : (
-          <ArrowUpDown className="h-3 w-3 opacity-40" />
-        )}
-      </button>
-    </th>
-  );
-}
-
-function sortInvoices(list: Invoice[], key: string, dir: SortDir): Invoice[] {
-  return [...list].sort((a, b) => {
-    let aVal: string | number = '';
-    let bVal: string | number = '';
-    switch (key) {
-      case 'number':
-        aVal = a.number ?? '';
-        bVal = b.number ?? '';
-        break;
-      case 'issueDate':
-        aVal = a.issueDate ?? '';
-        bVal = b.issueDate ?? '';
-        break;
-      case 'total':
-        aVal = Number(a.total);
-        bVal = Number(b.total);
-        break;
-      case 'status':
-        aVal = a.status;
-        bVal = b.status;
-        break;
-    }
-    if (aVal < bVal) return dir === 'asc' ? -1 : 1;
-    if (aVal > bVal) return dir === 'asc' ? 1 : -1;
-    return 0;
-  });
+function getInvoiceSortValue(invoice: Invoice, key: string): string | number {
+  switch (key) {
+    case 'number':
+      return invoice.number ?? '';
+    case 'issueDate':
+      return invoice.issueDate ?? '';
+    case 'total':
+      return Number(invoice.total);
+    case 'status':
+      return invoice.status;
+    default:
+      return '';
+  }
 }
 
 // ==================== HELPERS ====================
@@ -308,24 +195,6 @@ function PageSkeleton() {
   );
 }
 
-function InvoiceStatusBadge({ status }: { status: InvoiceStatus }) {
-  const cfg = STATUS_CONFIG[status];
-  if (!cfg) return null;
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
-        cfg.bg,
-        cfg.border,
-        cfg.color,
-      )}
-    >
-      <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', cfg.dot)} />
-      {cfg.label}
-    </span>
-  );
-}
-
 // ==================== PAGE ====================
 
 export default function ClienteDetailPage() {
@@ -335,17 +204,7 @@ export default function ClienteDetailPage() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState<string>('ALL');
-  const [sortKey, setSortKey] = useState<string>('issueDate');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
-
-  function handleSort(key: string) {
-    if (key === sortKey) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
-      setSortDir('desc');
-    }
-  }
+  const { sortKey, sortDir, handleSort } = useSortTable('issueDate', 'desc');
 
   const { data: customer, isLoading: loadingCustomer, isError } = useCustomer(id);
   const { data: invoicesData, isLoading: loadingInvoices } = useInvoices({
@@ -356,12 +215,13 @@ export default function ClienteDetailPage() {
 
   const invoices: Invoice[] = invoicesData?.data ?? [];
 
-  const filteredInvoices = sortInvoices(
+  const filteredInvoices = sortData(
     invoiceStatusFilter === 'ALL'
       ? invoices
       : invoices.filter((inv) => inv.status === invoiceStatusFilter),
     sortKey,
     sortDir,
+    getInvoiceSortValue,
   );
 
   // ── Stats ──────────────────────────────────────────────
@@ -511,7 +371,15 @@ export default function ClienteDetailPage() {
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Datos del cliente</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Datos del cliente</CardTitle>
+                <Link href={`/dashboard/clientes/${id}/editar`}>
+                  <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs">
+                    <Edit className="h-3 w-3" />
+                    Editar
+                  </Button>
+                </Link>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {customer.email && (
@@ -578,40 +446,11 @@ export default function ClienteDetailPage() {
             <CardContent className="p-0">
               {/* Filter pills */}
               {!loadingInvoices && invoices.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 px-6 pt-4 pb-3 border-b">
-                  {STATUS_FILTERS.map((f) => (
-                    <button
-                      key={f.value}
-                      onClick={() => setInvoiceStatusFilter(f.value)}
-                      className={cn(
-                        'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors',
-                        invoiceStatusFilter === f.value
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-background text-muted-foreground border-border hover:border-foreground/30 hover:text-foreground',
-                      )}
-                    >
-                      {f.value !== 'ALL' && (
-                        <span
-                          className={cn(
-                            'mr-1 h-1.5 w-1.5 rounded-full',
-                            invoiceStatusFilter === f.value
-                              ? 'bg-primary-foreground'
-                              : STATUS_CONFIG[f.value as InvoiceStatus]?.dot,
-                          )}
-                        />
-                      )}
-                      {f.label}
-                    </button>
-                  ))}
-                  {invoiceStatusFilter !== 'ALL' && (
-                    <button
-                      onClick={() => setInvoiceStatusFilter('ALL')}
-                      className="inline-flex items-center gap-1 rounded-full border border-dashed px-2.5 py-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <X className="h-3 w-3" />
-                      Limpiar
-                    </button>
-                  )}
+                <div className="px-6 pt-4 pb-3 border-b">
+                  <InvoiceStatusFilterPills
+                    value={invoiceStatusFilter}
+                    onChange={setInvoiceStatusFilter}
+                  />
                 </div>
               )}
               {loadingInvoices ? (

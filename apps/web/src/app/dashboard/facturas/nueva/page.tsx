@@ -32,6 +32,7 @@ import { round2 } from '@/lib/math';
 import { InvoiceTypeModal, InvoiceTypeOption } from '@/components/facturas/InvoiceTypeModal';
 import { ConfirmInvoiceDialog } from '@/components/facturas/ConfirmInvoiceDialog';
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
+import { ProductPickerButton } from '@/components/facturas/ProductPickerButton';
 import type { PaymentDetails } from '@/components/facturas/LiveInvoicePreview';
 import { Path } from 'react-hook-form';
 import { QuickCreateCustomerModal } from '@/components/clientes/QuickCreateCustomerModal';
@@ -575,17 +576,36 @@ function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormPr
                             <span className="text-sm font-medium text-muted-foreground">
                               Línea {index + 1}
                             </span>
-                            {fields.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => remove(index)}
-                                className="h-7 w-7 p-0"
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            )}
+                            <div className="flex items-center gap-2">
+                              <ProductPickerButton
+                                selectedProductId={form.watch(`lines.${index}.productId`)}
+                                onSelect={(selection) => {
+                                  form.setValue(
+                                    `lines.${index}.description`,
+                                    selection.description,
+                                    { shouldValidate: true },
+                                  );
+                                  form.setValue(`lines.${index}.unitPrice`, selection.unitPrice, {
+                                    shouldValidate: true,
+                                  });
+                                  form.setValue(`lines.${index}.taxRate`, selection.taxRate, {
+                                    shouldValidate: true,
+                                  });
+                                  form.setValue(`lines.${index}.productId`, selection.productId);
+                                }}
+                              />
+                              {fields.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => remove(index)}
+                                  className="h-7 w-7 p-0"
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
                           <div className="space-y-1">
                             <Label>

@@ -29,7 +29,7 @@ export class ProductService {
   }
 
   async findAll(tenantId: string, query: QueryProductDto) {
-    const { page = 1, limit = 20, search, active } = query;
+    const { page = 1, limit = 20, search, active, type } = query;
     const skip = (page - 1) * limit;
 
     const where: any = { tenantId };
@@ -40,6 +40,10 @@ export class ProductService {
         { description: { contains: search, mode: 'insensitive' } },
         { reference: { contains: search, mode: 'insensitive' } },
       ];
+    }
+
+    if (type) {
+      where.type = type;
     }
 
     if (active !== undefined) {

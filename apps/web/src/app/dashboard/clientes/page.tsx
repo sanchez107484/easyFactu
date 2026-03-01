@@ -44,6 +44,23 @@ import {
 } from 'lucide-react';
 import { CustomerType, Customer } from '@easyfactura/shared-types';
 import { useCustomers, useDeleteCustomer } from '@/hooks/use-customers';
+import { useSortTable, sortData } from '@/hooks/use-sort-table';
+import { SortableHeader } from '@/components/common/sortable-header';
+
+function getCustomerSortValue(customer: Customer, key: string): string | number {
+  switch (key) {
+    case 'name':
+      return customer.name;
+    case 'nif':
+      return customer.nif;
+    case 'city':
+      return customer.city ?? '';
+    case 'type':
+      return customer.type;
+    default:
+      return '';
+  }
+}
 
 // ==================== CONSTANTS ====================
 
@@ -167,6 +184,7 @@ export default function ClientesPage() {
   const [typeFilter, setTypeFilter] = useState<CustomerType | 'ALL'>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ACTIVE');
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const { sortKey, sortDir, handleSort } = useSortTable('name', 'asc');
 
   // Query params para el hook
   const queryParams: Record<string, any> = {};
@@ -193,8 +211,8 @@ export default function ClientesPage() {
           c.city?.toLowerCase().includes(term),
       );
     }
-    return result;
-  }, [allCustomers, search, typeFilter]);
+    return sortData(result, sortKey, sortDir, getCustomerSortValue);
+  }, [allCustomers, search, typeFilter, sortKey, sortDir]);
 
   const isFiltered = search.trim().length > 0 || typeFilter !== 'ALL' || statusFilter !== 'ACTIVE';
 
@@ -331,18 +349,42 @@ export default function ClientesPage() {
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="border-b bg-muted/50">
+                  <thead className="border-b bg-muted/40">
                     <tr>
-                      <th className="p-4 text-left text-sm font-medium">Nombre</th>
-                      <th className="p-4 text-left text-sm font-medium">NIF</th>
-                      <th className="p-4 text-left text-sm font-medium hidden md:table-cell">
+                      <SortableHeader
+                        label="Nombre"
+                        sortKey="name"
+                        currentKey={sortKey}
+                        direction={sortDir}
+                        onSort={handleSort}
+                        className="px-4"
+                      />
+                      <SortableHeader
+                        label="NIF"
+                        sortKey="nif"
+                        currentKey={sortKey}
+                        direction={sortDir}
+                        onSort={handleSort}
+                      />
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground hidden md:table-cell">
                         Email
                       </th>
-                      <th className="p-4 text-left text-sm font-medium hidden lg:table-cell">
-                        Ciudad
-                      </th>
-                      <th className="p-4 text-left text-sm font-medium">Tipo</th>
-                      <th className="p-4 text-right text-sm font-medium">Acciones</th>
+                      <SortableHeader
+                        label="Ciudad"
+                        sortKey="city"
+                        currentKey={sortKey}
+                        direction={sortDir}
+                        onSort={handleSort}
+                        className="hidden lg:table-cell"
+                      />
+                      <SortableHeader
+                        label="Tipo"
+                        sortKey="type"
+                        currentKey={sortKey}
+                        direction={sortDir}
+                        onSort={handleSort}
+                      />
+                      <th className="px-4 py-3" />
                     </tr>
                   </thead>
                   <tbody className="divide-y">

@@ -4,15 +4,26 @@ import {
   IsBoolean,
   IsOptional,
   IsIn,
+  IsEnum,
   Min,
   MinLength,
   MaxLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ProductType } from '@prisma/client';
 
 const VALID_TAX_RATES = [0, 4, 10, 21] as const;
 
 export class CreateProductDto {
+  @ApiPropertyOptional({
+    enum: ProductType,
+    default: ProductType.SERVICE,
+    description: 'Tipo: producto físico o servicio',
+  })
+  @IsOptional()
+  @IsEnum(ProductType, { message: 'El tipo debe ser PRODUCT o SERVICE' })
+  type?: ProductType;
+
   @ApiProperty({ description: 'Nombre del producto o servicio' })
   @IsString()
   @MinLength(1, { message: 'El nombre es obligatorio' })
@@ -46,6 +57,12 @@ export class CreateProductDto {
   @IsString()
   @MaxLength(50, { message: 'La referencia no puede superar los 50 caracteres' })
   reference?: string;
+
+  @ApiPropertyOptional({ description: 'Unidad de medida (hora, ud., kg…)', default: 'unidad' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50, { message: 'La unidad no puede superar los 50 caracteres' })
+  unit?: string;
 
   @ApiPropertyOptional({ description: 'Estado del producto', default: true })
   @IsOptional()

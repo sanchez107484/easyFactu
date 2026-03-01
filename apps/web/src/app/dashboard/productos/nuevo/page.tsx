@@ -1,6 +1,5 @@
-'use client';
+﻿'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,7 +7,6 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -17,22 +15,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Package, Wrench } from 'lucide-react';
 import Link from 'next/link';
-
 import { useCreateProduct } from '@/hooks/use-products';
 import { ProductType } from '@easyfactura/shared-types';
+import { cn } from '@/lib/utils';
 
 const productSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio').max(200),
   description: z.string().optional(),
   reference: z.string().optional(),
+  unit: z.string().optional(),
   type: z.nativeEnum(ProductType),
-  price: z.number().min(0, 'El precio debe ser mayor o igual a 0'),
+  unitPrice: z
+    .number({ invalid_type_error: 'Introduce un precio válido' })
+    .min(0, 'El precio no puede ser negativo'),
   taxRate: z.number().min(0).max(100),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
+
+const TAX_RATES = [
+  { value: '0', label: '0% — Exento' },
+  { value: '4', label: '4% — Superreducido' },
+  { value: '10', label: '10% — Reducido' },
+  { value: '21', label: '21% — General' },
+];
 
 export default function NuevoProductoPage() {
   const router = useRouter();
@@ -40,80 +48,86 @@ export default function NuevoProductoPage() {
     resolver: zodResolver(productSchema),
     defaultValues: {
       type: ProductType.SERVICE,
-      price: 0,
+      unitPrice: 0,
       taxRate: 21,
     },
   });
 
-  const price = form.watch('price') || 0;
+  const unitPrice = form.watch('unitPrice') || 0;
   const taxRate = form.watch('taxRate') || 0;
-  const priceWithTax = price * (1 + taxRate / 100);
-  const taxAmount = price * (taxRate / 100);
+  const taxAmount = unitPrice * (taxRate / 100);
+  const pvp = unitPrice + taxAmount;
 
   const createMutation = useCreateProduct();
 
   const onSubmit = async (data: ProductFormData) => {
     await createMutation.mutateAsync({
       ...data,
-      unitPrice: data.price,
+      description: data.description || undefined,
+      reference: data.reference || undefined,
+      unit: data.unit || undefined,
     });
     router.push('/dashboard/productos');
   };
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
-      <div className="flex items-center gap-4">
+    <div className="h-[calc(100vh-5rem)] flex flex-col">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-5">
         <Link href="/dashboard/productos">
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Nuevo producto</h1>
-          <p className="text-muted-foreground">Añade un producto o servicio a tu catálogo</p>
+          <h1 className="text-xl font-bold tracking-tight">Nuevo producto / servicio</h1>
+          <p className="text-xs text-muted-foreground">Añade un elemento a tu catálogo</p>
         </div>
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <Card className="shadow-lg border-primary/30">
-          <CardHeader>
-            <CardTitle className="text-xl">Datos del producto</CardTitle>
-            <CardDescription>Completa la información del producto o servicio</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-y-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 pb-4">
+          {/* ── Main form — single card ── */}
+          <div className="lg:col-span-2 rounded-xl border bg-card shadow-sm p-5 space-y-4">
             {/* Tipo */}
             <div className="space-y-2">
-              <Label htmlFor="type">
-                Tipo <span className="text-destructive">*</span>
-              </Label>
-              <div className="flex gap-3">
-                <Button
-                  type="button"
-                  variant={form.watch('type') === ProductType.SERVICE ? 'default' : 'outline'}
-                  className="flex-1"
-                  onClick={() => form.setValue('type', ProductType.SERVICE)}
-                  disabled={createMutation.isPending}
-                >
-                  Servicio
-                </Button>
-                <Button
-                  type="button"
-                  variant={form.watch('type') === ProductType.PRODUCT ? 'default' : 'outline'}
-                  className="flex-1"
-                  onClick={() => form.setValue('type', ProductType.PRODUCT)}
-                  disabled={createMutation.isPending}
-                >
-                  Producto
-                </Button>
+              <Label className="text-sm font-semibold">¿Qué vas a añadir?</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {([ProductType.SERVICE, ProductType.PRODUCT] as const).map((t) => {
+                  const active = form.watch('type') === t;
+                  const Icon = t === ProductType.SERVICE ? Wrench : Package;
+                  const label = t === ProductType.SERVICE ? 'Servicio' : 'Producto';
+                  const sub =
+                    t === ProductType.SERVICE
+                      ? 'Consultoría, diseño, desarrollo…'
+                      : 'Artículo o bien físico';
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => form.setValue('type', t)}
+                      disabled={createMutation.isPending}
+                      className={cn(
+                        'flex items-center gap-3 rounded-lg border-2 px-4 py-3 text-left transition-all',
+                        active
+                          ? 'border-primary bg-primary/5 text-primary'
+                          : 'border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground',
+                      )}
+                    >
+                      <Icon className="h-5 w-5 shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold">{label}</p>
+                        <p className="text-xs font-normal opacity-70">{sub}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-              <p className="text-sm text-muted-foreground">
-                Los productos son bienes físicos, los servicios son prestaciones
-              </p>
             </div>
 
             {/* Nombre */}
-            <div className="space-y-2">
-              <Label htmlFor="name">
+            <div className="space-y-1.5">
+              <Label htmlFor="name" className="text-sm font-semibold">
                 Nombre <span className="text-destructive">*</span>
               </Label>
               <Input
@@ -121,127 +135,167 @@ export default function NuevoProductoPage() {
                 {...form.register('name')}
                 placeholder="Ej: Consultoría técnica por hora"
                 disabled={createMutation.isPending}
+                className="h-10"
+                autoFocus
               />
               {form.formState.errors.name && (
-                <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+                <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>
               )}
             </div>
 
             {/* Descripción */}
-            <div className="space-y-2">
-              <Label htmlFor="description">Descripción</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="description" className="text-sm">
+                Descripción{' '}
+                <span className="text-muted-foreground font-normal">
+                  (opcional — aparecerá en la factura)
+                </span>
+              </Label>
               <Textarea
                 id="description"
                 {...form.register('description')}
-                placeholder="Describe en qué consiste este producto o servicio..."
-                rows={3}
+                placeholder="Detalla en qué consiste…"
+                rows={2}
                 disabled={createMutation.isPending}
+                className="resize-none"
               />
-              <p className="text-sm text-muted-foreground">
-                Esta descripción aparecerá en las líneas de factura
-              </p>
             </div>
 
-            {/* Referencia */}
-            <div className="space-y-2">
-              <Label htmlFor="reference">Referencia/Código</Label>
-              <Input id="reference" {...form.register('reference')} placeholder="Ej: CONS-001" />
-              <Input
-                id="reference"
-                {...form.register('reference')}
-                placeholder="Ej: CONS-001"
-                disabled={createMutation.isPending}
-              />
-              <p className="text-sm text-muted-foreground">
-                Código interno para identificar el producto
-              </p>
+            {/* Referencia + Unidad */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="reference" className="text-sm">
+                  Referencia / Código{' '}
+                  <span className="text-muted-foreground font-normal">(opcional)</span>
+                </Label>
+                <Input
+                  id="reference"
+                  {...form.register('reference')}
+                  placeholder="Ej: CONS-001"
+                  disabled={createMutation.isPending}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="unit" className="text-sm">
+                  Unidad de medida{' '}
+                  <span className="text-muted-foreground font-normal">(opcional)</span>
+                </Label>
+                <Input
+                  id="unit"
+                  {...form.register('unit')}
+                  placeholder="hora, ud., kg…"
+                  disabled={createMutation.isPending}
+                />
+              </div>
             </div>
 
-            {/* Precio e IVA */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="price">
-                  Precio (sin IVA) <span className="text-destructive">*</span>
+            {/* Precio + IVA */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="unitPrice" className="text-sm font-semibold">
+                  Precio sin IVA <span className="text-destructive">*</span>
                 </Label>
                 <div className="relative">
                   <Input
-                    id="price"
+                    id="unitPrice"
                     type="number"
                     step="0.01"
-                    {...form.register('price', { valueAsNumber: true })}
+                    min="0"
+                    {...form.register('unitPrice', { valueAsNumber: true })}
                     placeholder="0.00"
-                    className="pr-10"
+                    className="pr-8 h-10"
                     disabled={createMutation.isPending}
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                     €
                   </span>
                 </div>
-                {form.formState.errors.price && (
-                  <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>
+                {form.formState.errors.unitPrice && (
+                  <p className="text-xs text-destructive">
+                    {form.formState.errors.unitPrice.message}
+                  </p>
                 )}
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="taxRate">
-                  IVA (%) <span className="text-destructive">*</span>
+              <div className="space-y-1.5">
+                <Label htmlFor="taxRate" className="text-sm font-semibold">
+                  IVA <span className="text-destructive">*</span>
                 </Label>
                 <Select
-                  value={form.watch('taxRate')?.toString()}
-                  onValueChange={(value) => form.setValue('taxRate', parseFloat(value))}
+                  value={String(form.watch('taxRate') ?? 21)}
+                  onValueChange={(v) => form.setValue('taxRate', parseFloat(v))}
                   disabled={createMutation.isPending}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="taxRate" className="h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="0">0% (Exento)</SelectItem>
-                    <SelectItem value="4">4% (Superreducido)</SelectItem>
-                    <SelectItem value="10">10% (Reducido)</SelectItem>
-                    <SelectItem value="21">21% (General)</SelectItem>
+                    {TAX_RATES.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>
+                        {t.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
+          </div>
 
-            {/* Preview de cálculo */}
-            <Card className="bg-muted/50">
-              <CardContent className="pt-6">
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Precio base:</span>
-                    <span className="font-medium">
-                      {price.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">IVA ({taxRate}%):</span>
-                    <span className="font-medium">
-                      {taxAmount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
-                    </span>
-                  </div>
-                  <div className="border-t pt-2 flex justify-between">
-                    <span className="font-semibold">PVP final:</span>
-                    <span className="font-semibold text-lg">
-                      {priceWithTax.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
-                    </span>
-                  </div>
+          {/* ── Sidebar ── */}
+          <div className="flex flex-col gap-4">
+            {/* Price preview */}
+            <div className="rounded-xl border bg-card shadow-sm p-5">
+              <p className="text-xs font-semibold mb-4 text-muted-foreground uppercase tracking-wide">
+                Vista previa del precio
+              </p>
+              <div className="space-y-2.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Precio base</span>
+                  <span className="font-medium tabular-nums">
+                    {unitPrice.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
-          </CardContent>
-        </Card>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">IVA ({taxRate}%)</span>
+                  <span className="font-medium tabular-nums">
+                    {taxAmount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                  </span>
+                </div>
+                <div className="border-t pt-2.5 flex justify-between items-baseline">
+                  <span className="font-bold">Total al cliente</span>
+                  <span className="text-2xl font-extrabold tabular-nums text-primary">
+                    {pvp.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-        {/* Actions */}
-        <div className="flex justify-end gap-4 mt-6">
-          <Link href="/dashboard/productos">
-            <Button type="button" variant="outline" disabled={form.formState.isSubmitting}>
-              Cancelar
-            </Button>
-          </Link>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {createMutation.isPending ? 'Guardando...' : 'Guardar producto'}
-          </Button>
+            {/* Tip */}
+            <div className="rounded-xl border border-dashed bg-muted/30 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
+              💡 <strong>Consejo:</strong> Guarda tus productos y servicios habituales aquí para
+              añadirlos rápidamente a tus facturas con un solo clic.
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col gap-2">
+              <Button
+                type="submit"
+                disabled={createMutation.isPending}
+                className="w-full h-11 text-base font-semibold"
+              >
+                {createMutation.isPending ? 'Guardando…' : '✓ Guardar en el catálogo'}
+              </Button>
+              <Link href="/dashboard/productos" className="w-full">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={createMutation.isPending}
+                  className="w-full"
+                >
+                  Cancelar
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
       </form>
     </div>
