@@ -51,7 +51,7 @@ const quickSchema = z
   .object({
     name: z.string().min(2, 'Mínimo 2 caracteres').max(100),
     nif: z.string().min(1, 'El NIF/CIF es obligatorio'),
-    type: z.nativeEnum(CustomerType).optional(),
+    type: z.nativeEnum(CustomerType),
     email: z.string().email('Email no válido').optional().or(z.literal('')),
   })
   .superRefine((data, ctx) => {
@@ -210,11 +210,7 @@ export function QuickCreateCustomerModal({
       name: data.name.trim(),
       nif: data.nif.trim().toUpperCase(),
       email: data.email?.trim() || undefined,
-      address: '',
-      postalCode: '',
-      city: '',
-      province: '',
-      country: data.type === CustomerType.INTRACOMMUNITY ? '' : 'ES',
+      country: data.type === CustomerType.INTRACOMMUNITY ? undefined : 'ES',
     };
 
     const newCustomer = await createMutation.mutateAsync(input);
