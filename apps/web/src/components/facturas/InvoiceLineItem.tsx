@@ -309,18 +309,16 @@ export function InvoiceLineItem({
             <div className="relative">
               <Input
                 type="number"
-                step="0.0001"
+                step="0.1"
                 min={mode === 'product' ? '1' : '0'}
                 placeholder="Cant."
-                className="w-[72px] text-sm h-9 pr-1"
+                className="w-[96px] text-sm h-9 pr-1"
                 value={
                   mode === 'product'
                     ? (line.quantity ?? 1)
                     : line._hideQty
                       ? ''
-                      : line.quantity === 1 && qtyIsOptional
-                        ? ''
-                        : (line.quantity ?? '')
+                      : (line.quantity ?? '')
                 }
                 onChange={(e) => {
                   const val = e.target.value;

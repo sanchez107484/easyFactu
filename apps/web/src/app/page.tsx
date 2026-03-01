@@ -227,7 +227,7 @@ export default function HomePage() {
             <nav className="flex items-center gap-4">
               {isAuthenticated ? (
                 <Link href="/dashboard">
-                  <Button>Ir al Dashboard</Button>
+                  <Button>Ir a Inicio</Button>
                 </Link>
               ) : (
                 <>
@@ -279,7 +279,7 @@ export default function HomePage() {
                 {isAuthenticated && (
                   <Link href="/dashboard">
                     <Button size="lg">
-                      Ir al Dashboard
+                      Ir a Inicio
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
