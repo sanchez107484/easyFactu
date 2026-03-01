@@ -753,6 +753,7 @@ function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormPr
               activeFieldSection={activeSection}
               onSectionClick={handlePreviewSectionClick}
               paymentDetails={watchedValues.paymentDetails as PaymentDetails | undefined}
+              invoiceType={invoiceType}
             />
           </div>
         </div>

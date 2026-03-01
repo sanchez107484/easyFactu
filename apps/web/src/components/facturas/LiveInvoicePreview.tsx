@@ -320,6 +320,15 @@ interface LiveInvoicePreviewProps {
   activeFieldSection?: string | null;
   onSectionClick: (fieldId: string) => void;
   paymentDetails?: PaymentDetails;
+  /** 'standard' | 'proforma' | 'simplified' | 'template' | null */
+  invoiceType?: string | null;
+}
+
+function resolveDocumentTitle(isRectificative: boolean, invoiceType?: string | null): string {
+  if (isRectificative) return 'FACTURA RECTIFICATIVA';
+  if (invoiceType === 'proforma') return 'FACTURA PROFORMA';
+  if (invoiceType === 'simplified') return 'FACTURA SIMPLIFICADA';
+  return 'FACTURA';
 }
 
 export function LiveInvoicePreview({
@@ -329,6 +338,7 @@ export function LiveInvoicePreview({
   activeFieldSection = null,
   onSectionClick,
   paymentDetails,
+  invoiceType,
 }: LiveInvoicePreviewProps) {
   const [scale, setScale] = useState(1.0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -427,7 +437,7 @@ export function LiveInvoicePreview({
                 className="font-bold mb-3"
                 style={{ fontSize: `${typography.baseFontSize + 8}px`, color: colors.primary }}
               >
-                {invoice.isRectificative ? 'FACTURA RECTIFICATIVA' : 'FACTURA'}
+                {resolveDocumentTitle(invoice.isRectificative ?? false, invoiceType)}
               </h1>
               <div className="flex gap-8">
                 <div>

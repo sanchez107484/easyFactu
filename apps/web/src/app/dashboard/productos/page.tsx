@@ -13,6 +13,7 @@ import {
   Wrench,
   MoreVertical,
   Edit,
+  Eye,
   Trash2,
   AlertCircle,
   X,
@@ -299,7 +300,12 @@ export default function ProductosPage() {
                         <tr key={product.id} className="group hover:bg-muted/30 transition-colors">
                           <td className="px-6 py-3">
                             <div className="min-w-0">
-                              <p className="text-sm font-medium truncate max-w-[240px]">{product.name}</p>
+                              <Link
+                                href={`/dashboard/productos/${product.id}`}
+                                className="text-sm font-medium truncate max-w-[240px] hover:underline hover:text-primary block"
+                              >
+                                {product.name}
+                              </Link>
                               {product.description && (
                                 <p className="text-xs text-muted-foreground truncate max-w-[240px] mt-0.5">{product.description}</p>
                               )}
@@ -332,6 +338,12 @@ export default function ProductosPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/dashboard/productos/${product.id}`}>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    Ver detalle
+                                  </Link>
+                                </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
                                   <Link href={`/dashboard/productos/${product.id}/editar`}>
                                     <Edit className="mr-2 h-4 w-4" />
