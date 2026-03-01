@@ -260,10 +260,10 @@ export interface CreateCustomerInput {
   nif: string;
   email?: string;
   phone?: string;
-  address: string;
-  postalCode: string;
-  city: string;
-  province: string;
+  address?: string;
+  postalCode?: string;
+  city?: string;
+  province?: string;
   country?: string;
   notes?: string;
 }
