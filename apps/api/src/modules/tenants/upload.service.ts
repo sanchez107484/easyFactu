@@ -201,7 +201,8 @@ export class UploadService {
     });
 
     if (tenant?.logoUrl) {
-      const filepath = join(process.cwd(), 'public', tenant.logoUrl);
+      const relativePath = tenant.logoUrl.replace(/^\/uploads\//, '');
+      const filepath = join(this.uploadDir, relativePath);
       try {
         if (existsSync(filepath)) {
           await unlink(filepath);
@@ -220,7 +221,8 @@ export class UploadService {
     });
 
     if (tenant?.certificateUrl) {
-      const filepath = join(process.cwd(), 'public', tenant.certificateUrl);
+      const relativePath = tenant.certificateUrl.replace(/^\/uploads\//, '');
+      const filepath = join(this.uploadDir, relativePath);
       try {
         if (existsSync(filepath)) {
           await unlink(filepath);

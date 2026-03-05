@@ -26,6 +26,7 @@ import {
 import { PROVINCES } from '@easyfactura/shared-constants';
 import { AccountType } from '@easyfactura/shared-types';
 import { BancarioSection } from '@/components/ajustes/BancarioSection';
+import { resolveUrl } from '@/lib/utils';
 
 // ==================== SCHEMAS ====================
 
@@ -98,6 +99,9 @@ export default function AjustesEmpresaPage() {
     uploadLogo.mutate(file);
     e.target.value = '';
   }
+
+  // ── Logo URL resuelta ─────────────────────────────────────────────────────
+  const logoUrl = resolveUrl(tenant?.logoUrl);
 
   // ── Skeleton ──────────────────────────────────────────────────────────────
   if (isLoading) {
@@ -280,12 +284,8 @@ export default function AjustesEmpresaPage() {
           <CardContent>
             <div className="flex items-center gap-4">
               <div className="h-20 w-20 rounded-lg border-2 border-dashed bg-muted flex items-center justify-center overflow-hidden shrink-0">
-                {tenant?.logoUrl ? (
-                  <img
-                    src={tenant.logoUrl}
-                    alt="Logo empresa"
-                    className="h-full w-full object-contain"
-                  />
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Logo empresa" className="h-full w-full object-contain" />
                 ) : (
                   <ImageIcon className="h-7 w-7 text-muted-foreground" />
                 )}

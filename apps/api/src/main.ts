@@ -20,8 +20,9 @@ async function bootstrap() {
   const reflector = app.get(Reflector);
 
   // Serve static files (uploads)
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-    prefix: '/uploads/',
+  // process.cwd() must match the uploadDir used in UploadService
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/api/v1/uploads/',
   });
 
   // Security
