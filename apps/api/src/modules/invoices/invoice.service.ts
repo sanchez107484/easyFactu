@@ -87,11 +87,18 @@ export class InvoiceService {
   // ==================== PUBLIC CRUD ====================
 
   async create(tenantId: string, dto: CreateInvoiceDto) {
-    const [seriesId] = await Promise.all([
+    const [seriesId, customer] = await Promise.all([
       this.resolveSeriesId(tenantId, dto.seriesId),
       this.validateCustomer(tenantId, dto.customerId),
       this.validateProductIds(tenantId, dto.lines),
     ]);
+
+    const isProforma = dto.invoiceType === 'proforma';
+    const invoiceStatus = isProforma ? PrismaInvoiceStatus.PROFORMA : PrismaInvoiceStatus.DRAFT;
+    // Proformas don't get a legal invoice number — keeping them null avoids the
+    // @@unique([tenantId, number]) constraint when the same customer has multiple proformas.
+    // The UI derives the display label "ClienteName - Proforma" from invoice data.
+    const invoiceNumber = null;
 
     const totals = this.calculationService.calculateTotals(
       dto.lines,
@@ -104,10 +111,10 @@ export class InvoiceService {
         tenantId,
         seriesId,
         customerId: dto.customerId,
-        number: null,
+        number: invoiceNumber,
         issueDate: new Date(dto.issueDate),
         dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
-        status: PrismaInvoiceStatus.DRAFT,
+        status: invoiceStatus,
         invoiceType: dto.invoiceType ?? 'standard',
         subtotal: totals.subtotal,
         discountPercent: dto.discountPercent ?? null,
@@ -226,7 +233,7 @@ export class InvoiceService {
   async update(tenantId: string, id: string, dto: UpdateInvoiceDto) {
     const invoice = await this.findOne(tenantId, id);
 
-    if (invoice.status !== InvoiceStatus.DRAFT) {
+    if (invoice.status !== InvoiceStatus.DRAFT && invoice.status !== InvoiceStatus.PROFORMA) {
       throw new ConflictException(
         'No se puede editar una factura confirmada. Crea una factura rectificativa si necesitas corregirla.'
       );
@@ -272,6 +279,8 @@ export class InvoiceService {
         data: {
           customerId,
           seriesId,
+          // Auto-correct status if a proforma was erroneously saved as DRAFT
+          ...(invoice.invoiceType === 'proforma' ? { status: PrismaInvoiceStatus.PROFORMA } : {}),
           issueDate: dto.issueDate ? new Date(dto.issueDate) : undefined,
           dueDate:
             dto.dueDate !== undefined ? (dto.dueDate ? new Date(dto.dueDate) : null) : undefined,
@@ -501,7 +510,7 @@ export class InvoiceService {
   async remove(tenantId: string, id: string) {
     const invoice = await this.findOne(tenantId, id);
 
-    if (invoice.status !== InvoiceStatus.DRAFT) {
+    if (invoice.status !== InvoiceStatus.DRAFT && invoice.status !== InvoiceStatus.PROFORMA) {
       throw new ConflictException(
         'No se puede eliminar una factura confirmada. Crea una factura rectificativa.'
       );
@@ -521,15 +530,41 @@ export class InvoiceService {
       );
     }
 
-    if (invoice.status !== InvoiceStatus.DRAFT) {
-      throw new ConflictException(
-        'Solo se pueden convertir facturas proforma que est\u00e9n en estado borrador'
-      );
-    }
+    const lines = invoice.lines as unknown as CreateInvoiceLineDto[];
+    const totals = this.calculationService.calculateTotals(
+      lines,
+      invoice.discountPercent ? Number(invoice.discountPercent) : undefined,
+      invoice.irpfPercent ? Number(invoice.irpfPercent) : undefined
+    );
 
-    return this.prisma.invoice.update({
-      where: { id },
-      data: { invoiceType: 'standard' },
+    const paymentDetails = invoice.paymentDetails;
+
+    // Crear una factura nueva (borrador estándar) con los datos de la proforma.
+    // La proforma original queda intacta — el autónomo puede seguir consultándola.
+    return this.prisma.invoice.create({
+      data: {
+        tenantId,
+        seriesId: invoice.seriesId,
+        customerId: invoice.customerId,
+        number: null,
+        issueDate: new Date(),
+        dueDate: invoice.dueDate ?? null,
+        status: PrismaInvoiceStatus.DRAFT,
+        invoiceType: 'standard',
+        subtotal: totals.subtotal,
+        discountPercent: invoice.discountPercent,
+        discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
+        taxTotal: totals.taxTotal,
+        irpfPercent: invoice.irpfPercent,
+        irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+        total: totals.total,
+        paymentMethod: invoice.paymentMethod as any,
+        ...(paymentDetails != null ? { paymentDetails } : {}),
+        notes: invoice.notes,
+        lines: {
+          create: this.buildLineCreateData(tenantId, lines, totals.lines),
+        },
+      },
       include: {
         lines: { orderBy: { sortOrder: 'asc' } },
         customer: true,

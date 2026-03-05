@@ -12,6 +12,13 @@ export const INVOICE_STATUS_CONFIG: Record<
     border: 'border-zinc-200 dark:border-zinc-800',
     dot: 'bg-zinc-400',
   },
+  [InvoiceStatus.PROFORMA]: {
+    label: 'Proforma',
+    color: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-50 dark:bg-amber-950/40',
+    border: 'border-amber-200 dark:border-amber-800',
+    dot: 'bg-amber-500',
+  },
   [InvoiceStatus.CONFIRMED]: {
     label: 'Confirmada',
     color: 'text-blue-600 dark:text-blue-400',

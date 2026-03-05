@@ -294,6 +294,7 @@ model Invoice {
 
 enum InvoiceStatus {
   DRAFT
+  PROFORMA
   CONFIRMED
   SENT
   PAID

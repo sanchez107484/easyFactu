@@ -39,6 +39,7 @@ export enum SeriesType {
 
 export enum InvoiceStatus {
   DRAFT = 'DRAFT',
+  PROFORMA = 'PROFORMA',
   CONFIRMED = 'CONFIRMED',
   SENT = 'SENT',
   PAID = 'PAID',

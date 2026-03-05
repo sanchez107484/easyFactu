@@ -80,6 +80,13 @@ const STATUS_CONFIG: Record<
     border: 'border-zinc-200 dark:border-zinc-800',
     dot: 'bg-zinc-400',
   },
+  [InvoiceStatus.PROFORMA]: {
+    label: 'Proforma',
+    color: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-50 dark:bg-amber-950/40',
+    border: 'border-amber-200 dark:border-amber-800',
+    dot: 'bg-amber-500',
+  },
   [InvoiceStatus.CONFIRMED]: {
     label: 'Confirmada',
     color: 'text-blue-600 dark:text-blue-400',
@@ -249,8 +256,9 @@ export default function FacturaDetailPage() {
   };
 
   const handleConvertToOfficial = async () => {
-    await convertMutation.mutateAsync(id);
+    const newInvoice = await convertMutation.mutateAsync(id);
     setShowConvertModal(false);
+    router.push(`/dashboard/facturas/nueva?edit=${newInvoice.id}`);
   };
 
   const handleRectify = async () => {
@@ -290,14 +298,17 @@ export default function FacturaDetailPage() {
     );
   }
 
-  const isDraft = invoice.status === InvoiceStatus.DRAFT;
+  const isDraft =
+    invoice.status === InvoiceStatus.DRAFT || invoice.status === InvoiceStatus.PROFORMA;
   const isConfirmed = invoice.status === InvoiceStatus.CONFIRMED;
   const isSent = invoice.status === InvoiceStatus.SENT;
   const canPay = isConfirmed || isSent;
   const canRectify = isConfirmed || isSent || invoice.status === InvoiceStatus.PAID;
   const isProforma = (invoice as any).invoiceType === 'proforma';
 
-  const statusCfg = STATUS_CONFIG[invoice.status] ?? STATUS_CONFIG[InvoiceStatus.DRAFT];
+  const statusCfg = isProforma
+    ? STATUS_CONFIG[InvoiceStatus.PROFORMA]
+    : (STATUS_CONFIG[invoice.status] ?? STATUS_CONFIG[InvoiceStatus.DRAFT]);
   const series = (invoice as any).series;
 
   // ==================== RENDER ====================
@@ -314,7 +325,9 @@ export default function FacturaDetailPage() {
           </Link>
           <span className="text-sm text-muted-foreground">Facturas</span>
           <span className="text-muted-foreground/40">/</span>
-          <span className="text-sm font-medium">{invoice.number ?? 'Borrador'}</span>
+          <span className="text-sm font-medium">
+            {isProforma ? 'Proforma' : (invoice.number ?? 'Borrador')}
+          </span>
           {invoice.isRectificative && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400 font-medium">
               Rectificativa
@@ -341,7 +354,7 @@ export default function FacturaDetailPage() {
             {isDraft && (
               <DropdownMenuItem onClick={() => router.push(`/dashboard/facturas/nueva?edit=${id}`)}>
                 <Pencil className="mr-2 h-4 w-4" />
-                Editar borrador
+                {isProforma ? 'Editar proforma' : 'Editar borrador'}
               </DropdownMenuItem>
             )}
             {isDraft && isProforma && (
@@ -376,15 +389,17 @@ export default function FacturaDetailPage() {
                       className="text-destructive focus:text-destructive"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Eliminar borrador
+                      {isProforma ? 'Eliminar proforma' : 'Eliminar borrador'}
                     </DropdownMenuItem>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>¿Eliminar borrador?</AlertDialogTitle>
+                      <AlertDialogTitle>
+                        {isProforma ? '¿Eliminar proforma?' : '¿Eliminar borrador?'}
+                      </AlertDialogTitle>
                       <AlertDialogDescription>
-                        Esta acción no se puede deshacer. El borrador será eliminado
-                        permanentemente.
+                        Esta acción no se puede deshacer.{' '}
+                        {isProforma ? 'La proforma' : 'El borrador'} será eliminado permanentemente.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -445,7 +460,7 @@ export default function FacturaDetailPage() {
                       className="min-w-[160px]"
                     >
                       <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                      Editar borrador
+                      {isProforma ? 'Editar proforma' : 'Editar borrador'}
                     </Button>
                   )}
                   {isDraft && isProforma && (

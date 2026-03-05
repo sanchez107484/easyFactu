@@ -6,6 +6,7 @@ import { INVOICE_STATUS_CONFIG } from './invoice-status-badge';
 export const INVOICE_STATUS_FILTERS = [
   { value: 'ALL', label: 'Todas' },
   { value: InvoiceStatus.DRAFT, label: 'Borradores' },
+  { value: InvoiceStatus.PROFORMA, label: 'Proformas' },
   { value: InvoiceStatus.CONFIRMED, label: 'Confirmadas' },
   { value: InvoiceStatus.SENT, label: 'Enviadas' },
   { value: InvoiceStatus.PAID, label: 'Pagadas' },

@@ -87,6 +87,7 @@ function isOverdue(invoice: Invoice): boolean {
   if (invoice.status === InvoiceStatus.PAID || invoice.status === InvoiceStatus.RECTIFIED)
     return false;
   if (invoice.status === InvoiceStatus.DRAFT) return false;
+  if (invoice.status === InvoiceStatus.PROFORMA) return false;
   return new Date(invoice.dueDate) < new Date();
 }
 
@@ -155,6 +156,8 @@ export default function FacturasPage() {
     search: search || undefined,
     status: statusFilter !== 'ALL' ? (statusFilter as InvoiceStatus) : undefined,
     limit: 100,
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
   });
 
   const confirmMutation = useConfirmInvoice();
@@ -354,7 +357,11 @@ export default function FacturasPage() {
                               href={`/dashboard/facturas/${invoice.id}`}
                               className="font-mono text-sm font-medium hover:text-primary transition-colors"
                             >
-                              {invoice.status === InvoiceStatus.DRAFT ? (
+                              {(invoice as any).invoiceType === 'proforma' ? (
+                                <span className="text-muted-foreground font-normal">
+                                  {invoice.customer?.name ?? '—'} &mdash; PROFORMA
+                                </span>
+                              ) : invoice.status === InvoiceStatus.DRAFT ? (
                                 <span className="text-muted-foreground font-normal">
                                   {invoice.customer?.name ?? '—'} &mdash; BORRADOR
                                 </span>
@@ -417,7 +424,13 @@ export default function FacturasPage() {
                             {formatCurrency(Number(invoice.total))}
                           </td>
                           <td className="px-4 py-3">
-                            <InvoiceStatusBadge status={invoice.status} />
+                            <InvoiceStatusBadge
+                              status={
+                                (invoice as any).invoiceType === 'proforma'
+                                  ? InvoiceStatus.PROFORMA
+                                  : invoice.status
+                              }
+                            />
                           </td>
                           <td className="px-4 py-3 text-right">
                             <DropdownMenu>

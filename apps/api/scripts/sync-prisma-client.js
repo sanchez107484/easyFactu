@@ -8,7 +8,9 @@ const fs = require('fs');
 const path = require('path');
 
 const prismaClientPkg = require.resolve('@prisma/client/package.json');
-const storeNodeModules = path.dirname(path.dirname(prismaClientPkg)); // .pnpm/…/node_modules/
+// package.json is at: …/node_modules/@prisma/client/package.json
+// We need to go up 3 levels to reach the node_modules/ directory.
+const storeNodeModules = path.dirname(path.dirname(path.dirname(prismaClientPkg)));
 const dst = path.join(storeNodeModules, '.prisma', 'client');
 const src = path.join(__dirname, '..', 'node_modules', '.prisma', 'client');
 
@@ -17,5 +19,8 @@ if (!fs.existsSync(src)) {
   process.exit(1);
 }
 
-fs.cpSync(src, dst, { recursive: true, force: true });
+// Skip native binaries — they are version-specific and locked by the running
+// server process. Only JS/TS/schema files need to be updated after generate.
+const filter = (srcPath) => !srcPath.endsWith('.node');
+fs.cpSync(src, dst, { recursive: true, force: true, filter });
 console.log('[sync-prisma] Synced Prisma client to pnpm store:', dst);
