@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -31,29 +31,47 @@ type NotificationSettings = {
   };
 };
 
+const STORAGE_KEY = 'easyfactura_notification_settings';
+
+const DEFAULT_SETTINGS: NotificationSettings = {
+  email: {
+    invoiceCreated: true,
+    invoicePaid: true,
+    invoiceOverdue: true,
+    verifactuError: true,
+    weeklyReport: false,
+    monthlyReport: true,
+  },
+  browser: {
+    invoiceCreated: false,
+    invoicePaid: true,
+    invoiceOverdue: true,
+    verifactuError: true,
+  },
+  mobile: {
+    invoiceCreated: false,
+    invoicePaid: true,
+    invoiceOverdue: true,
+    verifactuError: true,
+  },
+};
+
+function loadSettings(): NotificationSettings {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
+  } catch {
+    // ignore parse errors
+  }
+  return DEFAULT_SETTINGS;
+}
+
 export default function AjustesNotificacionesPage() {
-  const [settings, setSettings] = useState<NotificationSettings>({
-    email: {
-      invoiceCreated: true,
-      invoicePaid: true,
-      invoiceOverdue: true,
-      verifactuError: true,
-      weeklyReport: false,
-      monthlyReport: true,
-    },
-    browser: {
-      invoiceCreated: false,
-      invoicePaid: true,
-      invoiceOverdue: true,
-      verifactuError: true,
-    },
-    mobile: {
-      invoiceCreated: false,
-      invoicePaid: true,
-      invoiceOverdue: true,
-      verifactuError: true,
-    },
-  });
+  const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_SETTINGS);
+
+  useEffect(() => {
+    setSettings(loadSettings());
+  }, []);
 
   const handleToggle = (category: keyof NotificationSettings, key: string, value: boolean) => {
     setSettings((prev) => ({
@@ -66,6 +84,7 @@ export default function AjustesNotificacionesPage() {
   };
 
   const handleSave = () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     toast.success('Preferencias de notificaciones guardadas');
   };
 

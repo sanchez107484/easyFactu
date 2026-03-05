@@ -1,77 +1,66 @@
 'use client';
 
-import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Save, Shield, Key, Smartphone, Monitor, Trash2, AlertTriangle } from 'lucide-react';
+import { Key, Smartphone, Monitor, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { authApi } from '@/lib/api/auth-api';
 
-const mockSessions = [
-  {
-    id: '1',
-    device: 'Windows PC - Chrome',
-    location: 'Madrid, España',
-    ip: '83.45.123.45',
-    lastActive: '2026-02-19T12:30:00Z',
-    current: true,
-  },
-  {
-    id: '2',
-    device: 'iPhone 14 - Safari',
-    location: 'Barcelona, España',
-    ip: '192.168.1.100',
-    lastActive: '2026-02-18T20:15:00Z',
-    current: false,
-  },
-  {
-    id: '3',
-    device: 'MacBook Pro - Chrome',
-    location: 'Valencia, España',
-    ip: '91.120.45.67',
-    lastActive: '2026-02-17T09:45:00Z',
-    current: false,
-  },
-];
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Introduce tu contraseña actual'),
+    newPassword: z
+      .string()
+      .min(8, 'Mínimo 8 caracteres')
+      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Debe contener mayúsculas, minúsculas y números'),
+    confirmPassword: z.string().min(1, 'Confirma tu nueva contraseña'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Las contraseñas no coinciden',
+    path: ['confirmPassword'],
+  });
+
+type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
 export default function AjustesSeguridadPage() {
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [sessions] = useState(mockSessions);
+  const form = useForm<ChangePasswordFormData>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: { currentPassword: '', newPassword: '', confirmPassword: '' },
+  });
 
-  const handleChangePassword = () => {
-    toast.success('Contraseña actualizada correctamente');
-  };
+  const changePassword = useMutation({
+    mutationFn: (data: { currentPassword: string; newPassword: string }) =>
+      authApi.changePassword(data),
+    onSuccess: () => {
+      toast.success('Contraseña actualizada correctamente');
+      form.reset();
+    },
+    onError: (error: unknown) => {
+      const msg =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        'Error al cambiar la contraseña';
+      toast.error(msg);
+    },
+  });
 
-  const handleEnable2FA = () => {
-    setTwoFactorEnabled(!twoFactorEnabled);
-    toast.success(
-      twoFactorEnabled
-        ? 'Autenticación en dos pasos desactivada'
-        : 'Autenticación en dos pasos activada',
-    );
-  };
-
-  const handleCloseSession = (deviceName: string) => {
-    toast.success(`Sesión cerrada en ${deviceName}`);
-  };
-
-  const handleCloseAllSessions = () => {
-    toast.success('Se han cerrado todas las sesiones excepto la actual');
-  };
+  function onSubmit(data: ChangePasswordFormData) {
+    changePassword.mutate({
+      currentPassword: data.currentPassword,
+      newPassword: data.newPassword,
+    });
+  }
 
   return (
     <div className="space-y-6">
+      {/* Cambiar contraseña */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -80,178 +69,95 @@ export default function AjustesSeguridadPage() {
           </CardTitle>
           <CardDescription>Actualiza tu contraseña de acceso</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="current-password">Contraseña actual</Label>
-            <Input id="current-password" type="password" />
-          </div>
-
-          <div>
-            <Label htmlFor="new-password">Nueva contraseña</Label>
-            <Input id="new-password" type="password" />
-            <p className="mt-1 text-sm text-muted-foreground">
-              Mínimo 8 caracteres, incluye mayúsculas, números y símbolos
-            </p>
-          </div>
-
-          <div>
-            <Label htmlFor="confirm-password">Confirmar nueva contraseña</Label>
-            <Input id="confirm-password" type="password" />
-          </div>
-
-          <div className="flex justify-end pt-4">
-            <Button onClick={handleChangePassword} className="gap-2">
-              <Save className="h-4 w-4" />
-              Cambiar contraseña
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Smartphone className="h-5 w-5" />
-            Autenticación en Dos Pasos (2FA)
-          </CardTitle>
-          <CardDescription>Añade una capa extra de seguridad a tu cuenta</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Alert>
-            <Shield className="h-4 w-4" />
-            <AlertDescription>
-              {twoFactorEnabled ? (
-                <>
-                  <strong>La autenticación en dos pasos está activada.</strong> Tu cuenta está
-                  protegida con un código adicional al iniciar sesión.
-                </>
-              ) : (
-                <>
-                  <strong>Protege tu cuenta.</strong> Activa la autenticación en dos pasos para
-                  mayor seguridad.
-                </>
-              )}
-            </AlertDescription>
-          </Alert>
-
-          <div className="flex items-center justify-between rounded-lg border p-4">
+        <CardContent>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <h4 className="font-medium">
-                Estado: {twoFactorEnabled ? 'Activada' : 'Desactivada'}
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                Requiere código de verificación al iniciar sesión
-              </p>
+              <Label htmlFor="currentPassword">Contraseña actual *</Label>
+              <Input id="currentPassword" type="password" {...form.register('currentPassword')} />
+              {form.formState.errors.currentPassword && (
+                <p className="mt-1 text-xs text-destructive">
+                  {form.formState.errors.currentPassword.message}
+                </p>
+              )}
             </div>
-            <Button variant={twoFactorEnabled ? 'outline' : 'default'} onClick={handleEnable2FA}>
-              {twoFactorEnabled ? 'Desactivar' : 'Activar 2FA'}
-            </Button>
-          </div>
 
-          {twoFactorEnabled && (
-            <div className="space-y-2 rounded-lg border p-4">
-              <h4 className="font-medium">Aplicaciones configuradas</h4>
-              <p className="flex items-center gap-2 text-sm">
-                <Smartphone className="h-4 w-4" />
-                Google Authenticator - ••••••42
+            <div>
+              <Label htmlFor="newPassword">Nueva contraseña *</Label>
+              <Input id="newPassword" type="password" {...form.register('newPassword')} />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Mínimo 8 caracteres, incluye mayúsculas, minúsculas y números
               </p>
-              <Button variant="outline" size="sm" className="mt-2">
-                Cambiar aplicación
+              {form.formState.errors.newPassword && (
+                <p className="mt-1 text-xs text-destructive">
+                  {form.formState.errors.newPassword.message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="confirmPassword">Confirmar nueva contraseña *</Label>
+              <Input id="confirmPassword" type="password" {...form.register('confirmPassword')} />
+              {form.formState.errors.confirmPassword && (
+                <p className="mt-1 text-xs text-destructive">
+                  {form.formState.errors.confirmPassword.message}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button type="submit" disabled={changePassword.isPending} className="gap-2">
+                {changePassword.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                Cambiar contraseña
               </Button>
             </div>
-          )}
+          </form>
         </CardContent>
       </Card>
 
+      {/* 2FA - Próximamente */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Monitor className="h-5 w-5" />
-            Sesiones Activas
-          </CardTitle>
-          <CardDescription>Dispositivos con acceso a tu cuenta</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex justify-end">
-            <Button variant="outline" className="gap-2" onClick={handleCloseAllSessions}>
-              <Trash2 className="h-4 w-4" />
-              Cerrar todas las sesiones
-            </Button>
-          </div>
-
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Dispositivo</TableHead>
-                <TableHead>Ubicación</TableHead>
-                <TableHead>IP</TableHead>
-                <TableHead>Último acceso</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sessions.map((session) => (
-                <TableRow key={session.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Monitor className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{session.device}</span>
-                      {session.current && (
-                        <Badge variant="default" className="ml-2">
-                          Actual
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm">{session.location}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{session.ip}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {new Date(session.lastActive).toLocaleString('es-ES')}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {!session.current && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="gap-2 text-destructive"
-                        onClick={() => handleCloseSession(session.device)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Cerrar sesión
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-destructive">
-            <AlertTriangle className="h-5 w-5" />
-            Zona de Peligro
-          </CardTitle>
-          <CardDescription>Acciones irreversibles sobre tu cuenta</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between rounded-lg border border-destructive/50 bg-destructive/5 p-4">
+          <div className="flex items-start justify-between">
             <div>
-              <h4 className="font-medium">Eliminar cuenta</h4>
-              <p className="text-sm text-muted-foreground">
-                Elimina permanentemente tu cuenta y todos tus datos
-              </p>
+              <CardTitle className="flex items-center gap-2">
+                <Smartphone className="h-5 w-5" />
+                Autenticación en Dos Pasos
+              </CardTitle>
+              <CardDescription>Añade una capa extra de seguridad a tu cuenta</CardDescription>
             </div>
-            <Button variant="destructive">Eliminar cuenta</Button>
+            <Badge variant="secondary">Próximamente</Badge>
           </div>
-
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
+        </CardHeader>
+        <CardContent>
+          <Alert>
+            <Smartphone className="h-4 w-4" />
             <AlertDescription>
-              <strong>¡Advertencia!</strong> Esta acción no se puede deshacer. Se eliminarán todas
-              tus facturas, clientes, productos y configuración de forma permanente.
+              Pronto podrás activar la autenticación en dos pasos mediante una aplicación como
+              Google Authenticator o Authy.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+
+      {/* Sesiones - Próximamente */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Monitor className="h-5 w-5" />
+                Sesiones Activas
+              </CardTitle>
+              <CardDescription>Dispositivos con acceso a tu cuenta</CardDescription>
+            </div>
+            <Badge variant="secondary">Próximamente</Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Alert>
+            <Monitor className="h-4 w-4" />
+            <AlertDescription>
+              Pronto podrás ver y cerrar las sesiones activas en todos tus dispositivos.
             </AlertDescription>
           </Alert>
         </CardContent>

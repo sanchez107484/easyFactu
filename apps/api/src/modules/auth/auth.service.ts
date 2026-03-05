@@ -57,10 +57,10 @@ export class AuthService {
         data: {
           businessName: dto.businessName,
           nif: dto.nif,
-          address: 'Pendiente',
-          postalCode: '00000',
-          city: 'Pendiente',
-          province: 'Pendiente',
+          address: '',
+          postalCode: '',
+          city: '',
+          province: '',
           email: dto.email,
           setupCompleted: false,
           accountType: dto.accountType,
@@ -476,6 +476,31 @@ export class AuthService {
         isOwner: tu.isOwner,
       })),
     };
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, passwordHash: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isCurrentPasswordValid) {
+      throw new UnauthorizedException('La contraseña actual no es correcta');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+
+    return { message: 'Contraseña actualizada correctamente' };
   }
 
   private async generateTokens(userId: string, email: string, tenantId: string) {

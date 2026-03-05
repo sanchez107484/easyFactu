@@ -35,7 +35,7 @@ const settingsSections = [
     href: '/dashboard/ajustes/plantilla',
     icon: LayoutTemplate,
   },
-  {
+  /*  {
     title: 'Usuarios',
     href: '/dashboard/ajustes/usuarios',
     icon: Users,
@@ -44,17 +44,18 @@ const settingsSections = [
     title: 'Plan y Facturación',
     href: '/dashboard/ajustes/plan',
     icon: CreditCard,
-  },
+  }, */
+  /*
   {
     title: 'Seguridad',
     href: '/dashboard/ajustes/seguridad',
     icon: Shield,
   },
-  {
+   {
     title: 'Notificaciones',
     href: '/dashboard/ajustes/notificaciones',
     icon: Bell,
-  },
+  }, */
 ];
 
 export default function AjustesLayout({ children }: { children: React.ReactNode }) {

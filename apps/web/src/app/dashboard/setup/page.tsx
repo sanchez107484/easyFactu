@@ -30,6 +30,7 @@ import { SetupStepper } from '@/components/setup-stepper';
 import { brandConfig } from '@easyfactura/brand-config';
 import { Building2, Upload, FileText, CreditCard, Check } from 'lucide-react';
 import { validateNif, validateIban } from '@easyfactura/shared-validators';
+import { PROVINCES } from '@easyfactura/shared-constants';
 
 const STEPS = [
   { id: 1, title: 'Empresa', description: 'Datos básicos' },
@@ -300,9 +301,20 @@ export default function SetupPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Provincia *</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Madrid" {...field} />
-                          </FormControl>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecciona una provincia" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {PROVINCES.map((p) => (
+                                <SelectItem key={p.code} value={p.name}>
+                                  {p.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}

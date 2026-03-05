@@ -1,0 +1,104 @@
+'use client';
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { AxiosError } from 'axios';
+import { tenantApi } from '@/lib/api/tenant-api';
+import { UpdateTenantInput } from '@easyfactura/shared-types';
+
+export const tenantKeys = {
+  all: ['tenant'] as const,
+  detail: () => [...tenantKeys.all, 'detail'] as const,
+};
+
+function getApiErrorMessage(error: unknown): string {
+  if (error instanceof AxiosError) {
+    const message = error.response?.data?.message;
+    if (typeof message === 'string') return message;
+    if (Array.isArray(message)) return message[0];
+  }
+  return 'Ha ocurrido un error inesperado. Inténtalo de nuevo.';
+}
+
+export function useTenant() {
+  return useQuery({
+    queryKey: tenantKeys.detail(),
+    queryFn: () => tenantApi.get(),
+  });
+}
+
+export function useUpdateTenant() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: UpdateTenantInput) => tenantApi.update(data),
+    onSuccess: (updatedTenant) => {
+      queryClient.setQueryData(tenantKeys.detail(), updatedTenant);
+      toast.success('Datos de la empresa actualizados');
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useUploadTenantLogo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => tenantApi.uploadLogo(file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tenantKeys.all });
+      toast.success('Logo actualizado correctamente');
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useDeleteTenantLogo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => tenantApi.deleteLogo(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tenantKeys.all });
+      toast.success('Logo eliminado correctamente');
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useUploadCertificate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ file, password }: { file: File; password: string }) =>
+      tenantApi.uploadCertificate(file, password),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tenantKeys.all });
+      toast.success('Certificado digital instalado correctamente');
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useDeleteCertificate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => tenantApi.deleteCertificate(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tenantKeys.all });
+      toast.success('Certificado eliminado correctamente');
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
