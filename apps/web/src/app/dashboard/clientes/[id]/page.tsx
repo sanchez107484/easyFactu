@@ -360,7 +360,7 @@ export default function ClienteDetailPage() {
           icon={Clock}
           label="Última factura"
           value={lastInvoice ? formatDate(lastInvoice.issueDate) : '—'}
-          sub={lastInvoice ? lastInvoice.number : 'Sin facturas aún'}
+          sub={lastInvoice ? (lastInvoice.number ?? undefined) : 'Sin facturas aún'}
           color="bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400"
         />
       </div>
