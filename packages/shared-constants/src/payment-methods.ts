@@ -2,19 +2,6 @@ import { PaymentMethod } from '@easyfactura/shared-types';
 
 export { PaymentMethod };
 
-/**
- * Payment methods for invoices
- */
-export const PAYMENT_METHODS = {
-  BANK_TRANSFER: 'BANK_TRANSFER',
-  DIRECT_DEBIT: 'DIRECT_DEBIT',
-  CARD: 'CARD',
-  CASH: 'CASH',
-  PAYPAL: 'PAYPAL',
-  OTHER: 'OTHER',
-  BIZUM: 'BIZUM',
-} as const;
-
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   [PaymentMethod.BANK_TRANSFER]: 'Transferencia bancaria',
   [PaymentMethod.DIRECT_DEBIT]: 'Domiciliación bancaria',

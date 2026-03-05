@@ -47,6 +47,7 @@ import { ProductPickerButton } from '@/components/facturas/ProductPickerButton';
 import type { PaymentDetails } from '@/components/facturas/LiveInvoicePreview';
 import { Path } from 'react-hook-form';
 import { QuickCreateCustomerModal } from '@/components/clientes/QuickCreateCustomerModal';
+import { DueDatePicker } from '@/components/facturas/DueDatePicker';
 
 // ==================== CONSTANTS ====================
 
@@ -87,7 +88,10 @@ const formSchema = z.object({
   dueDate: z.string().optional(),
   discountPercent: z.number().min(0).max(100).optional(),
   irpfPercent: z.number().min(0).max(100).optional(),
-  paymentMethod: z.nativeEnum(PaymentMethod).optional(),
+  paymentMethod: z
+    .nativeEnum(PaymentMethod, { invalid_type_error: 'Método de pago no válido' })
+    .optional()
+    .refine((v): boolean => v !== undefined, { message: 'El método de pago es obligatorio' }),
   paymentDetails: paymentDetailsSchema,
   notes: z.string().max(1000, 'Máximo 1000 caracteres').optional(),
   lines: z.array(extendedLineSchema).min(1, 'Añade al menos una línea').max(50),
@@ -159,7 +163,7 @@ function InvoiceForm({
   const watchedValues = form.watch();
   const previewInvoice = buildPreviewInvoice(watchedValues, customers);
   const selectedCustomer = customers.find((c) => c.id === watchedValues.customerId);
-  const activePaymentMethod = watchedValues.paymentMethod as PaymentMethod | 'BIZUM' | undefined;
+  const activePaymentMethod = watchedValues.paymentMethod as PaymentMethod | undefined;
 
   // ==================== HANDLERS ====================
 
@@ -187,6 +191,7 @@ function InvoiceForm({
   const onInvalid = (errors: any) => {
     const missingFields: string[] = [];
     if (errors.customerId) missingFields.push('Cliente');
+    if (errors.paymentMethod) missingFields.push('Método de pago');
     if (errors.issueDate) missingFields.push('Fecha');
     if (errors.lines) missingFields.push('Líneas de factura');
     toast.error(
@@ -479,8 +484,12 @@ function InvoiceForm({
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="dueDate">Fecha vencimiento</Label>
-                      <Input id="dueDate" type="date" {...form.register('dueDate')} />
+                      <Label>Fecha vencimiento</Label>
+                      <DueDatePicker
+                        issueDate={watchedValues.issueDate}
+                        value={watchedValues.dueDate}
+                        onChange={(date) => form.setValue('dueDate', date, { shouldDirty: true })}
+                      />
                     </div>
                   </section>
 
@@ -490,19 +499,25 @@ function InvoiceForm({
                     className="space-y-3"
                     onFocus={() => setActiveSection('paymentMethod')}
                   >
-                    <Label>Método de pago</Label>
+                    <Label>
+                      Método de pago <span className="text-destructive">*</span>
+                    </Label>
                     <Select
                       value={activePaymentMethod || ''}
                       onValueChange={(v) => {
-                        form.setValue('paymentMethod', v as PaymentMethod);
+                        form.setValue('paymentMethod', v as PaymentMethod, {
+                          shouldValidate: true,
+                        });
                         // Solo limpiar detalles si cambia el método (no en la carga inicial)
                         if (v !== defaultValues.paymentMethod) {
                           form.setValue('paymentDetails', {});
                         }
                       }}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sin especificar" />
+                      <SelectTrigger
+                        className={form.formState.errors.paymentMethod ? 'border-destructive' : ''}
+                      >
+                        <SelectValue placeholder="Selecciona un método" />
                       </SelectTrigger>
                       <SelectContent>
                         {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
@@ -512,6 +527,11 @@ function InvoiceForm({
                         ))}
                       </SelectContent>
                     </Select>
+                    {form.formState.errors.paymentMethod && (
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.paymentMethod.message}
+                      </p>
+                    )}
 
                     {activePaymentMethod && (
                       <div className="rounded-lg border bg-muted/40 p-4 space-y-3">

@@ -7,6 +7,7 @@ import {
   IsArray,
   IsEnum,
   IsIn,
+  IsNotEmpty,
   ValidateNested,
   ArrayMinSize,
   ArrayMaxSize,
@@ -121,10 +122,10 @@ export class CreateInvoiceDto {
   @Max(100)
   irpfPercent?: number;
 
-  @ApiPropertyOptional({ enum: PaymentMethod, description: 'Método de pago' })
-  @IsOptional()
+  @ApiProperty({ enum: PaymentMethod, description: 'Método de pago' })
+  @IsNotEmpty({ message: 'El método de pago es obligatorio' })
   @IsEnum(PaymentMethod, { message: 'Método de pago no válido' })
-  paymentMethod?: PaymentMethod;
+  paymentMethod!: PaymentMethod;
 
   @ApiProperty({
     type: [CreateInvoiceLineDto],
