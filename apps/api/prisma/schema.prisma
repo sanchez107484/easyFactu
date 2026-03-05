@@ -1,6 +1,6 @@
 generator client {
   provider      = "prisma-client-js"
-  //output        = "../node_modules/.prisma/client"
+  output        = "../node_modules/.prisma/client"
   binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x"]
 }
 
@@ -239,7 +239,7 @@ model Invoice {
   tenantId            String         @map("tenant_id")
   seriesId            String         @map("series_id")
   customerId          String         @map("customer_id")
-  number              String
+  number              String?
   issueDate           DateTime       @map("issue_date") @db.Date
   dueDate             DateTime?      @map("due_date") @db.Date
   status              InvoiceStatus  @default(DRAFT)
@@ -253,6 +253,8 @@ model Invoice {
   paymentMethod       PaymentMethod? @map("payment_method")
   notes               String?        @db.Text
   paymentDetails      Json?          @map("payment_details")
+
+  invoiceType         String?        @default("standard") @map("invoice_type")
 
   templateId          String?        @map("template_id")
   pdfUrl              String?        @map("pdf_url")
@@ -277,7 +279,11 @@ model Invoice {
   lines               InvoiceLine[]
   verifactuLogs       VerifactuLog[]
 
-  @@unique([tenantId, number])
+  // Uniqueness on (tenantId, number) is enforced via a raw partial unique index
+  // (WHERE number IS NOT NULL) defined in migration 20260304220000_fix_invoice_number_partial_unique.
+  // This allows multiple DRAFT invoices (number = null) per tenant while preventing duplicate
+  // confirmed invoice numbers. Do NOT add @@unique here — Prisma would create a full unique index.
+  @@index([tenantId, number], map: "invoices_tenant_id_number_idx")
   @@index([tenantId])
   @@index([tenantId, issueDate])
   @@index([tenantId, status])

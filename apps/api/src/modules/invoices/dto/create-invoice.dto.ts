@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsArray,
   IsEnum,
+  IsIn,
   ValidateNested,
   ArrayMinSize,
   ArrayMaxSize,
@@ -151,4 +152,16 @@ export class CreateInvoiceDto {
   @ValidateNested()
   @Type(() => PaymentDetailsDto)
   paymentDetails?: PaymentDetailsDto;
+
+  @ApiPropertyOptional({
+    enum: ['standard', 'proforma', 'simplified'],
+    description: "Tipo de documento: 'standard' | 'proforma' | 'simplified'",
+    default: 'standard',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['standard', 'proforma', 'simplified'], {
+    message: "El tipo de factura debe ser 'standard', 'proforma' o 'simplified'",
+  })
+  invoiceType?: string;
 }

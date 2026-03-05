@@ -395,6 +395,11 @@ export interface Invoice {
   seriesId: string;
   customerId: string;
   /**
+   * Tipo de factura: 'standard' | 'proforma' | 'simplified'
+   * Por defecto 'standard'. Solo las proformas pueden convertirse a oficial.
+   */
+  invoiceType?: string | null;
+  /**
    * ID de la plantilla asociada a la factura (puede ser null si legacy)
    */
   templateId?: string | null;
@@ -402,7 +407,7 @@ export interface Invoice {
    * Plantilla asociada (opcional, solo si se incluye en el include de Prisma)
    */
   template?: InvoiceTemplate | null;
-  number: string;
+  number: string | null;
   issueDate: string;
   dueDate: string | null;
   status: InvoiceStatus;
@@ -447,6 +452,8 @@ export interface CreateInvoiceInput {
   issueDate: string;
   dueDate?: string;
   lines: CreateInvoiceLineInput[];
+  /** Tipo de factura: 'standard' | 'proforma' | 'simplified'. Por defecto 'standard'. */
+  invoiceType?: string;
   discountPercent?: number;
   irpfPercent?: number;
   paymentMethod?: PaymentMethod;
@@ -463,6 +470,8 @@ export interface UpdateInvoiceInput {
   issueDate?: string;
   dueDate?: string;
   lines?: CreateInvoiceLineInput[];
+  /** Tipo de factura: 'standard' | 'proforma' | 'simplified'. */
+  invoiceType?: string;
   discountPercent?: number;
   irpfPercent?: number;
   paymentMethod?: PaymentMethod;

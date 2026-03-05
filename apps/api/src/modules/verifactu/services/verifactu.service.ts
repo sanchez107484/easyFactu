@@ -46,6 +46,10 @@ export class VerifactuService {
         throw new Error('Solo se pueden procesar facturas confirmadas');
       }
 
+      if (!invoice.number) {
+        throw new Error('La factura confirmada no tiene número asignado');
+      }
+
       // Step 1: Generate hash chain
       const { hash, prevHash } = await this.hashService.generateHash(tenantId, {
         nif: invoice.customer.nif,

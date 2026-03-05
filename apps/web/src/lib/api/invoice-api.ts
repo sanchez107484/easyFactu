@@ -50,5 +50,10 @@ export const invoiceApi = {
   rectify: (id: string, data: RectifyInvoiceInput): Promise<Invoice> =>
     apiClient.post<ApiResponse<Invoice>>(`/invoices/${id}/rectify`, data).then(unwrapApiResponse),
 
+  convertToOfficial: (id: string): Promise<Invoice> =>
+    apiClient
+      .post<ApiResponse<Invoice>>(`/invoices/${id}/convert-to-official`)
+      .then(unwrapApiResponse),
+
   remove: (id: string): Promise<void> => apiClient.delete(`/invoices/${id}`).then(() => undefined),
 };

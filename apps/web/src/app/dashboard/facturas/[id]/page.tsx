@@ -39,6 +39,8 @@ import {
   Banknote,
   FileText,
   Hash,
+  Pencil,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { DownloadInvoiceButton } from '@/components/ui/download-invoice-button';
 import { Label } from '@/components/ui/label';
@@ -51,7 +53,9 @@ import {
   useMarkInvoiceAsPaid,
   useDeleteInvoice,
   useRectifyInvoice,
+  useConvertProformaToOfficial,
 } from '@/hooks/use-invoices';
+import { ConvertProformaModal } from '@/components/facturas/ConvertProformaModal';
 import { InvoiceStatus, PaymentMethod } from '@easyfactura/shared-types';
 import { useInvoiceTemplate } from '@/hooks/use-invoice-templates';
 import { useAuthStore } from '@/store/auth-store';
@@ -206,6 +210,7 @@ export default function FacturaDetailPage() {
 
   const [showRectifyDialog, setShowRectifyDialog] = useState(false);
   const [rectifyReason, setRectifyReason] = useState('');
+  const [showConvertModal, setShowConvertModal] = useState(false);
 
   const currentTenant = useAuthStore((s) => s.currentTenant);
 
@@ -214,6 +219,7 @@ export default function FacturaDetailPage() {
   const paidMutation = useMarkInvoiceAsPaid();
   const deleteMutation = useDeleteInvoice();
   const rectifyMutation = useRectifyInvoice();
+  const convertMutation = useConvertProformaToOfficial();
   // FIX: useDuplicateInvoice eliminado — duplicar es solo navegar a /nueva?duplicate=ID
 
   const templateId = (invoice as any)?.templateId ?? (invoice as any)?.template?.id ?? '';
@@ -240,6 +246,11 @@ export default function FacturaDetailPage() {
   const handleDelete = async () => {
     await deleteMutation.mutateAsync(id);
     router.push('/dashboard/facturas');
+  };
+
+  const handleConvertToOfficial = async () => {
+    await convertMutation.mutateAsync(id);
+    setShowConvertModal(false);
   };
 
   const handleRectify = async () => {
@@ -284,6 +295,7 @@ export default function FacturaDetailPage() {
   const isSent = invoice.status === InvoiceStatus.SENT;
   const canPay = isConfirmed || isSent;
   const canRectify = isConfirmed || isSent || invoice.status === InvoiceStatus.PAID;
+  const isProforma = (invoice as any).invoiceType === 'proforma';
 
   const statusCfg = STATUS_CONFIG[invoice.status] ?? STATUS_CONFIG[InvoiceStatus.DRAFT];
   const series = (invoice as any).series;
@@ -302,10 +314,15 @@ export default function FacturaDetailPage() {
           </Link>
           <span className="text-sm text-muted-foreground">Facturas</span>
           <span className="text-muted-foreground/40">/</span>
-          <span className="text-sm font-medium">{invoice.number}</span>
+          <span className="text-sm font-medium">{invoice.number ?? 'Borrador'}</span>
           {invoice.isRectificative && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400 font-medium">
               Rectificativa
+            </span>
+          )}
+          {isProforma && (
+            <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 font-medium">
+              Proforma
             </span>
           )}
         </div>
@@ -321,6 +338,18 @@ export default function FacturaDetailPage() {
               <Copy className="mr-2 h-4 w-4" />
               Duplicar factura
             </DropdownMenuItem>
+            {isDraft && (
+              <DropdownMenuItem onClick={() => router.push(`/dashboard/facturas/nueva?edit=${id}`)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar borrador
+              </DropdownMenuItem>
+            )}
+            {isDraft && isProforma && (
+              <DropdownMenuItem onClick={() => setShowConvertModal(true)}>
+                <ArrowRightLeft className="mr-2 h-4 w-4" />
+                Convertir a factura oficial
+              </DropdownMenuItem>
+            )}
             {canRectify && (
               <DropdownMenuItem onClick={() => setShowRectifyDialog(true)}>
                 <RotateCcw className="mr-2 h-4 w-4" />
@@ -411,9 +440,31 @@ export default function FacturaDetailPage() {
                   {isDraft && (
                     <Button
                       size="sm"
+                      variant="outline"
+                      onClick={() => router.push(`/dashboard/facturas/nueva?edit=${id}`)}
+                      className="min-w-[160px]"
+                    >
+                      <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                      Editar borrador
+                    </Button>
+                  )}
+                  {isDraft && isProforma && (
+                    <Button
+                      size="sm"
+                      onClick={() => setShowConvertModal(true)}
+                      disabled={convertMutation.isPending}
+                      className="min-w-[160px]"
+                    >
+                      <ArrowRightLeft className="mr-1.5 h-3.5 w-3.5" />
+                      {convertMutation.isPending ? 'Convirtiendo...' : 'Convertir a oficial'}
+                    </Button>
+                  )}
+                  {isDraft && !isProforma && (
+                    <Button
+                      size="sm"
                       onClick={handleConfirm}
                       disabled={confirmMutation.isPending}
-                      className="min-w-[140px]"
+                      className="min-w-[160px]"
                     >
                       <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
                       {confirmMutation.isPending ? 'Confirmando...' : 'Confirmar factura'}
@@ -622,6 +673,14 @@ export default function FacturaDetailPage() {
           />
         </div>
       </div>
+
+      <ConvertProformaModal
+        open={showConvertModal}
+        invoiceCustomerName={invoice.customer?.name ?? '—'}
+        isPending={convertMutation.isPending}
+        onCancel={() => setShowConvertModal(false)}
+        onConfirm={handleConvertToOfficial}
+      />
 
       {/* Rectify dialog */}
       <AlertDialog open={showRectifyDialog} onOpenChange={setShowRectifyDialog}>

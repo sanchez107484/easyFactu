@@ -20,6 +20,10 @@ export class VerifactuQrService {
       throw new Error('Factura no encontrada');
     }
 
+    if (!invoice.number) {
+      throw new Error('Solo se puede generar QR para facturas con número asignado (confirmadas)');
+    }
+
     // Get tenant NIF
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },

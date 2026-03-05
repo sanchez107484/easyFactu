@@ -104,10 +104,11 @@ export class InvoiceService {
         tenantId,
         seriesId,
         customerId: dto.customerId,
-        number: 'BORRADOR',
+        number: null,
         issueDate: new Date(dto.issueDate),
         dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
         status: PrismaInvoiceStatus.DRAFT,
+        invoiceType: dto.invoiceType ?? 'standard',
         subtotal: totals.subtotal,
         discountPercent: dto.discountPercent ?? null,
         discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
@@ -274,6 +275,7 @@ export class InvoiceService {
           issueDate: dto.issueDate ? new Date(dto.issueDate) : undefined,
           dueDate:
             dto.dueDate !== undefined ? (dto.dueDate ? new Date(dto.dueDate) : null) : undefined,
+          invoiceType: dto.invoiceType !== undefined ? dto.invoiceType : undefined,
           discountPercent: dto.discountPercent !== undefined ? dto.discountPercent : undefined,
           discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
           irpfPercent: dto.irpfPercent !== undefined ? dto.irpfPercent : undefined,
@@ -305,6 +307,12 @@ export class InvoiceService {
 
   async confirm(tenantId: string, id: string) {
     const invoice = await this.findOne(tenantId, id);
+
+    if (invoice.invoiceType === 'proforma') {
+      throw new ConflictException(
+        'Las facturas proforma no se pueden confirmar directamente. Primero conviértela a factura oficial.'
+      );
+    }
 
     if (invoice.status !== InvoiceStatus.DRAFT) {
       throw new ConflictException(
@@ -405,7 +413,7 @@ export class InvoiceService {
         tenantId,
         seriesId: defaultSeries.id,
         customerId: original.customerId,
-        number: 'BORRADOR',
+        number: null,
         issueDate: new Date(),
         dueDate: null,
         status: PrismaInvoiceStatus.DRAFT,
@@ -466,7 +474,7 @@ export class InvoiceService {
           tenantId,
           seriesId: rectificativeSeries.id,
           customerId: original.customerId,
-          number: 'BORRADOR',
+          number: null,
           issueDate: new Date(),
           status: PrismaInvoiceStatus.DRAFT,
           isRectificative: true,
@@ -500,5 +508,33 @@ export class InvoiceService {
     }
 
     await this.prisma.invoice.delete({ where: { id } });
+  }
+
+  // ==================== PROFORMA CONVERSION ====================
+
+  async convertToOfficial(tenantId: string, id: string) {
+    const invoice = await this.findOne(tenantId, id);
+
+    if (invoice.invoiceType !== 'proforma') {
+      throw new ConflictException(
+        'Solo se pueden convertir facturas proforma a facturas oficiales'
+      );
+    }
+
+    if (invoice.status !== InvoiceStatus.DRAFT) {
+      throw new ConflictException(
+        'Solo se pueden convertir facturas proforma que est\u00e9n en estado borrador'
+      );
+    }
+
+    return this.prisma.invoice.update({
+      where: { id },
+      data: { invoiceType: 'standard' },
+      include: {
+        lines: { orderBy: { sortOrder: 'asc' } },
+        customer: true,
+        series: true,
+      },
+    });
   }
 }

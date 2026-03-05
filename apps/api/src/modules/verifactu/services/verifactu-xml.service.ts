@@ -28,6 +28,10 @@ export class VerifactuXmlService {
       throw new Error('Factura no encontrada');
     }
 
+    if (!invoice.number) {
+      throw new Error('Solo se puede generar XML para facturas con número asignado (confirmadas)');
+    }
+
     // Get tenant data
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
@@ -60,7 +64,7 @@ export class VerifactuXmlService {
       <IDEmisorFactura>
         <NIF>${tenant.nif}</NIF>
       </IDEmisorFactura>
-      <NumSerieFactura>${this.escapeXml(invoice.number)}</NumSerieFactura>
+      <NumSerieFactura>${this.escapeXml(invoice.number!)}</NumSerieFactura>
       <FechaExpedicionFactura>${issueDate}</FechaExpedicionFactura>
     </IDFactura>
     <TipoFactura>F1</TipoFactura>

@@ -5,7 +5,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "prisma generate --schema=./prisma/schema.prisma && nest build",
+    "build": "prisma generate --schema=./prisma/schema.prisma && node scripts/sync-prisma-client.js && nest build",
     "vercel:build": "pnpm --filter @easyfactura/shared-types --filter @easyfactura/shared-constants --filter @easyfactura/shared-validators --filter @easyfactura/brand-config run build && pnpm --filter @easyfactura/backend exec prisma generate --schema=./prisma/schema.prisma && pnpm exec nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -18,7 +18,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
+    "prisma:generate": "prisma generate --schema=./prisma/schema.prisma && node scripts/sync-prisma-client.js",
     "prisma:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
     "prisma:migrate:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=./prisma/schema.prisma",

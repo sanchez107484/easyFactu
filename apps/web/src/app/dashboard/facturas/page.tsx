@@ -22,6 +22,7 @@ import {
   ArrowRightLeft,
   CalendarClock,
   X,
+  Pencil,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -45,6 +46,7 @@ import {
   useConfirmInvoice,
   useMarkInvoiceAsPaid,
   useDeleteInvoice,
+  useConvertProformaToOfficial,
 } from '@/hooks/use-invoices';
 import { useSortTable, sortData } from '@/hooks/use-sort-table';
 import { InvoiceStatus, PaymentMethod, Invoice } from '@easyfactura/shared-types';
@@ -53,6 +55,7 @@ import { SortableHeader } from '@/components/common/sortable-header';
 import { InvoiceStatusBadge } from '@/components/common/invoice-status-badge';
 import { InvoiceStatusFilterPills } from '@/components/common/invoice-status-filter-pills';
 import { EmptyState } from '@/components/common/empty-state';
+import { ConvertProformaModal } from '@/components/facturas/ConvertProformaModal';
 
 // ==================== CONSTANTS ====================
 
@@ -89,12 +92,18 @@ function isOverdue(invoice: Invoice): boolean {
 
 function getInvoiceSortValue(invoice: Invoice, key: string): string | number {
   switch (key) {
-    case 'number': return invoice.number ?? '';
-    case 'customer': return invoice.customer?.name ?? '';
-    case 'issueDate': return invoice.issueDate ?? '';
-    case 'dueDate': return invoice.dueDate ?? '';
-    case 'total': return Number(invoice.total);
-    default: return '';
+    case 'number':
+      return invoice.number ?? '';
+    case 'customer':
+      return invoice.customer?.name ?? '';
+    case 'issueDate':
+      return invoice.issueDate ?? '';
+    case 'dueDate':
+      return invoice.dueDate ?? '';
+    case 'total':
+      return Number(invoice.total);
+    default:
+      return '';
   }
 }
 
@@ -138,6 +147,7 @@ export default function FacturasPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [convertId, setConvertId] = useState<string | null>(null);
 
   const { sortKey, sortDir, handleSort } = useSortTable('issueDate', 'desc');
 
@@ -150,11 +160,18 @@ export default function FacturasPage() {
   const confirmMutation = useConfirmInvoice();
   const paidMutation = useMarkInvoiceAsPaid();
   const deleteMutation = useDeleteInvoice();
+  const convertMutation = useConvertProformaToOfficial();
 
   const handleDelete = async () => {
     if (!deleteId) return;
     await deleteMutation.mutateAsync(deleteId);
     setDeleteId(null);
+  };
+
+  const handleConvertToOfficial = async () => {
+    if (!convertId) return;
+    await convertMutation.mutateAsync(convertId);
+    setConvertId(null);
   };
 
   const handleDuplicate = (invoice: Invoice) => {
@@ -259,7 +276,10 @@ export default function FacturasPage() {
                   variant="outline"
                   size="sm"
                   className="mt-4"
-                  onClick={() => { setSearch(''); setStatusFilter('ALL'); }}
+                  onClick={() => {
+                    setSearch('');
+                    setStatusFilter('ALL');
+                  }}
                 >
                   Limpiar filtros
                 </Button>
@@ -269,13 +289,51 @@ export default function FacturasPage() {
                 <table className="w-full">
                   <thead className="border-b bg-muted/40">
                     <tr>
-                      <SortableHeader label="Numero" sortKey="number" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="px-6" />
-                      <SortableHeader label="Cliente" sortKey="customer" currentKey={sortKey} direction={sortDir} onSort={handleSort} />
-                      <SortableHeader label="Emision" sortKey="issueDate" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="hidden md:table-cell" />
-                      <SortableHeader label="Vencimiento" sortKey="dueDate" currentKey={sortKey} direction={sortDir} onSort={handleSort} className="hidden lg:table-cell" />
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground hidden lg:table-cell">Pago</th>
-                      <SortableHeader label="Total" sortKey="total" currentKey={sortKey} direction={sortDir} onSort={handleSort} align="right" />
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Estado</th>
+                      <SortableHeader
+                        label="Numero"
+                        sortKey="number"
+                        currentKey={sortKey}
+                        direction={sortDir}
+                        onSort={handleSort}
+                        className="px-6"
+                      />
+                      <SortableHeader
+                        label="Cliente"
+                        sortKey="customer"
+                        currentKey={sortKey}
+                        direction={sortDir}
+                        onSort={handleSort}
+                      />
+                      <SortableHeader
+                        label="Emision"
+                        sortKey="issueDate"
+                        currentKey={sortKey}
+                        direction={sortDir}
+                        onSort={handleSort}
+                        className="hidden md:table-cell"
+                      />
+                      <SortableHeader
+                        label="Vencimiento"
+                        sortKey="dueDate"
+                        currentKey={sortKey}
+                        direction={sortDir}
+                        onSort={handleSort}
+                        className="hidden lg:table-cell"
+                      />
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground hidden lg:table-cell">
+                        Pago
+                      </th>
+                      <SortableHeader
+                        label="Total"
+                        sortKey="total"
+                        currentKey={sortKey}
+                        direction={sortDir}
+                        onSort={handleSort}
+                        align="right"
+                      />
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                        Estado
+                      </th>
                       <th className="px-4 py-3" />
                     </tr>
                   </thead>
@@ -287,22 +345,43 @@ export default function FacturasPage() {
                           key={invoice.id}
                           className={cn(
                             'group transition-colors hover:bg-muted/30',
-                            overdue && 'bg-red-50/50 hover:bg-red-50 dark:bg-red-950/10 dark:hover:bg-red-950/20',
+                            overdue &&
+                              'bg-red-50/50 hover:bg-red-50 dark:bg-red-950/10 dark:hover:bg-red-950/20',
                           )}
                         >
                           <td className="px-6 py-3">
-                            <Link href={`/dashboard/facturas/${invoice.id}`} className="font-mono text-sm font-medium hover:text-primary transition-colors">
-                              {invoice.number ?? <span className="text-muted-foreground italic">Borrador</span>}
+                            <Link
+                              href={`/dashboard/facturas/${invoice.id}`}
+                              className="font-mono text-sm font-medium hover:text-primary transition-colors"
+                            >
+                              {invoice.status === InvoiceStatus.DRAFT ? (
+                                <span className="text-muted-foreground font-normal">
+                                  {invoice.customer?.name ?? '—'} &mdash; BORRADOR
+                                </span>
+                              ) : (
+                                invoice.number
+                              )}
                             </Link>
                             {invoice.isRectificative && (
-                              <span className="ml-2 text-[10px] text-muted-foreground bg-muted rounded px-1 py-0.5">rectif.</span>
+                              <span className="ml-2 text-[10px] text-muted-foreground bg-muted rounded px-1 py-0.5">
+                                rectif.
+                              </span>
+                            )}
+                            {(invoice as any).invoiceType === 'proforma' && (
+                              <span className="ml-2 text-[10px] font-medium text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/40 rounded px-1.5 py-0.5">
+                                proforma
+                              </span>
                             )}
                           </td>
                           <td className="px-4 py-3">
                             <div className="min-w-0">
-                              <p className="text-sm font-medium truncate max-w-[180px]">{invoice.customer?.name ?? '-'}</p>
+                              <p className="text-sm font-medium truncate max-w-[180px]">
+                                {invoice.customer?.name ?? '-'}
+                              </p>
                               {invoice.customer?.nif && (
-                                <p className="text-xs font-mono text-muted-foreground">{invoice.customer.nif}</p>
+                                <p className="text-xs font-mono text-muted-foreground">
+                                  {invoice.customer.nif}
+                                </p>
                               )}
                             </div>
                           </td>
@@ -311,7 +390,14 @@ export default function FacturasPage() {
                           </td>
                           <td className="px-4 py-3 hidden lg:table-cell whitespace-nowrap">
                             {invoice.dueDate ? (
-                              <span className={cn('inline-flex items-center gap-1 text-sm', overdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-muted-foreground')}>
+                              <span
+                                className={cn(
+                                  'inline-flex items-center gap-1 text-sm',
+                                  overdue
+                                    ? 'text-red-600 dark:text-red-400 font-medium'
+                                    : 'text-muted-foreground',
+                                )}
+                              >
                                 {overdue && <CalendarClock className="h-3.5 w-3.5 shrink-0" />}
                                 {formatDate(invoice.dueDate)}
                                 {overdue && (
@@ -336,7 +422,11 @@ export default function FacturasPage() {
                           <td className="px-4 py-3 text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -348,13 +438,36 @@ export default function FacturasPage() {
                                   </Link>
                                 </DropdownMenuItem>
                                 {invoice.status === InvoiceStatus.DRAFT && (
-                                  <DropdownMenuItem onClick={() => confirmMutation.mutate(invoice.id)} disabled={confirmMutation.isPending}>
-                                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                                    Confirmar
+                                  <DropdownMenuItem asChild>
+                                    <Link href={`/dashboard/facturas/nueva?edit=${invoice.id}`}>
+                                      <Pencil className="mr-2 h-4 w-4" />
+                                      Editar borrador
+                                    </Link>
                                   </DropdownMenuItem>
                                 )}
-                                {(invoice.status === InvoiceStatus.CONFIRMED || invoice.status === InvoiceStatus.SENT) && (
-                                  <DropdownMenuItem onClick={() => paidMutation.mutate(invoice.id)} disabled={paidMutation.isPending}>
+                                {invoice.status === InvoiceStatus.DRAFT &&
+                                  (invoice as any).invoiceType !== 'proforma' && (
+                                    <DropdownMenuItem
+                                      onClick={() => confirmMutation.mutate(invoice.id)}
+                                      disabled={confirmMutation.isPending}
+                                    >
+                                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                                      Confirmar
+                                    </DropdownMenuItem>
+                                  )}
+                                {invoice.status === InvoiceStatus.DRAFT &&
+                                  (invoice as any).invoiceType === 'proforma' && (
+                                    <DropdownMenuItem onClick={() => setConvertId(invoice.id)}>
+                                      <ArrowRightLeft className="mr-2 h-4 w-4" />
+                                      Convertir a factura oficial
+                                    </DropdownMenuItem>
+                                  )}
+                                {(invoice.status === InvoiceStatus.CONFIRMED ||
+                                  invoice.status === InvoiceStatus.SENT) && (
+                                  <DropdownMenuItem
+                                    onClick={() => paidMutation.mutate(invoice.id)}
+                                    disabled={paidMutation.isPending}
+                                  >
                                     <Coins className="mr-2 h-4 w-4" />
                                     Marcar como pagada
                                   </DropdownMenuItem>
@@ -366,7 +479,10 @@ export default function FacturasPage() {
                                 {invoice.status === InvoiceStatus.DRAFT && (
                                   <>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteId(invoice.id)}>
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onClick={() => setDeleteId(invoice.id)}
+                                    >
                                       Eliminar borrador
                                     </DropdownMenuItem>
                                   </>
@@ -395,12 +511,24 @@ export default function FacturasPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={deleteMutation.isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               {deleteMutation.isPending ? 'Eliminando...' : 'Si, eliminar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ConvertProformaModal
+        open={Boolean(convertId)}
+        invoiceCustomerName={rawInvoices.find((inv) => inv.id === convertId)?.customer?.name ?? '—'}
+        isPending={convertMutation.isPending}
+        onCancel={() => setConvertId(null)}
+        onConfirm={handleConvertToOfficial}
+      />
     </div>
   );
 }

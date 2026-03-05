@@ -20,10 +20,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Plus, AlertCircle, Save, CheckCircle, Copy } from 'lucide-react';
+import { ArrowLeft, Plus, AlertCircle, Save, CheckCircle, Copy, Pencil } from 'lucide-react';
 import { InvoiceLineItem } from '@/components/facturas/InvoiceLineItem';
 import { extendedLineSchema, EMPTY_LINE, ExtendedLineData } from '@/lib/invoice-line-types';
-import { useCreateInvoice, useConfirmInvoice, useInvoice } from '@/hooks/use-invoices';
+import {
+  useCreateInvoice,
+  useUpdateInvoice,
+  useConfirmInvoice,
+  useInvoice,
+} from '@/hooks/use-invoices';
 import { useCustomers } from '@/hooks/use-customers';
 import { useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useAuthStore } from '@/store/auth-store';
@@ -115,23 +120,36 @@ interface InvoiceFormProps {
   defaultValues: FormData;
   isDuplicate: boolean;
   sourceNumber?: string;
+  editDraftId?: string;
+  initialInvoiceType?: InvoiceTypeOption;
 }
 
-function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormProps) {
+function InvoiceForm({
+  defaultValues,
+  isDuplicate,
+  sourceNumber,
+  editDraftId,
+  initialInvoiceType,
+}: InvoiceFormProps) {
   const router = useRouter();
   const currentTenant = useAuthStore((s) => s.currentTenant);
 
-  const [invoiceType, setInvoiceType] = useState<InvoiceTypeOption | null>(null);
+  const [invoiceType, setInvoiceType] = useState<InvoiceTypeOption | null>(
+    initialInvoiceType ?? null,
+  );
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate | null>(null);
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const [pendingDraftId, setPendingDraftId] = useState<string | null>(null);
+  const [pendingDraftId, setPendingDraftId] = useState<string | null>(editDraftId ?? null);
   const [showQuickClient, setShowQuickClient] = useState(false);
+
+  const isProforma = invoiceType === 'proforma';
 
   const { data: customersData, isLoading: loadingCustomers } = useCustomers();
   const { data: defaultTemplate } = useDefaultTemplate();
   const createMutation = useCreateInvoice();
+  const updateMutation = useUpdateInvoice();
   const confirmMutation = useConfirmInvoice();
 
   const customers: Customer[] = customersData?.data ?? [];
@@ -196,8 +214,18 @@ function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormPr
 
   const handleSaveDraft = async (data: FormData) => {
     try {
-      const invoice = await createMutation.mutateAsync(buildCreateInput(data));
-      router.push(`/dashboard/facturas/${invoice.id}`);
+      if (editDraftId) {
+        await updateMutation.mutateAsync({
+          id: editDraftId,
+          data: buildCreateInput({ ...data, invoiceType: invoiceType ?? 'standard' }),
+        });
+        router.push(`/dashboard/facturas/${editDraftId}`);
+      } else {
+        const invoice = await createMutation.mutateAsync(
+          buildCreateInput({ ...data, invoiceType: invoiceType ?? 'standard' }),
+        );
+        router.push(`/dashboard/facturas/${invoice.id}`);
+      }
     } catch (error) {
       console.error(error);
     }
@@ -214,24 +242,62 @@ function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormPr
 
   const handleConfirmDialogConfirm = async () => {
     const data = form.getValues();
+
+    // Proformas: solo guardar, nunca confirmar (no se asigna número)
+    if (isProforma) {
+      try {
+        if (editDraftId) {
+          await updateMutation.mutateAsync({
+            id: editDraftId,
+            data: buildCreateInput({ ...data, invoiceType: 'proforma' }),
+          });
+          setShowConfirmDialog(false);
+          router.push(`/dashboard/facturas/${editDraftId}`);
+        } else {
+          const draft = await createMutation.mutateAsync(
+            buildCreateInput({ ...data, invoiceType: 'proforma' }),
+          );
+          setShowConfirmDialog(false);
+          router.push(`/dashboard/facturas/${draft.id}`);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+      return;
+    }
+
     let draftId = pendingDraftId;
     try {
-      if (!draftId) {
-        const draft = await createMutation.mutateAsync(buildCreateInput(data));
-        draftId = draft.id;
-        setPendingDraftId(draftId);
-      }
-      if (draftId) {
-        await confirmMutation.mutateAsync(draftId);
+      if (editDraftId) {
+        // En modo edición: guardamos los cambios y luego confirmamos el borrador existente
+        await updateMutation.mutateAsync({
+          id: editDraftId,
+          data: buildCreateInput({ ...data, invoiceType: invoiceType ?? 'standard' }),
+        });
+        await confirmMutation.mutateAsync(editDraftId);
         setShowConfirmDialog(false);
-        router.push(`/dashboard/facturas/${draftId}`);
+        router.push(`/dashboard/facturas/${editDraftId}`);
+      } else {
+        if (!draftId) {
+          const draft = await createMutation.mutateAsync(
+            buildCreateInput({ ...data, invoiceType: invoiceType ?? 'standard' }),
+          );
+          draftId = draft.id;
+          setPendingDraftId(draftId);
+        }
+        if (draftId) {
+          await confirmMutation.mutateAsync(draftId);
+          setShowConfirmDialog(false);
+          router.push(`/dashboard/facturas/${draftId}`);
+        }
       }
     } catch (error) {
       console.error(error);
     }
   };
 
-  const isSubmitting = createMutation.isPending || confirmMutation.isPending;
+  const isSubmitting =
+    createMutation.isPending || updateMutation.isPending || confirmMutation.isPending;
 
   // ==================== RENDER ====================
 
@@ -253,6 +319,7 @@ function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormPr
         onCancel={() => setShowConfirmDialog(false)}
         onConfirm={handleConfirmDialogConfirm}
         isPending={isSubmitting}
+        invoiceType={invoiceType ?? undefined}
         summary={{
           customerName: selectedCustomer?.name ?? '---',
           total: previewInvoice.total,
@@ -269,9 +336,19 @@ function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormPr
               </Button>
             </Link>
             <div>
-              <h1 className="text-lg font-bold tracking-tight leading-tight">Nueva factura</h1>
+              <h1 className="text-lg font-bold tracking-tight leading-tight">
+                {editDraftId
+                  ? isProforma
+                    ? 'Editar proforma'
+                    : 'Editar borrador'
+                  : 'Nueva factura'}
+              </h1>
               <p className="text-xs text-muted-foreground">
-                Guardada como borrador hasta que la confirmes.
+                {isProforma
+                  ? 'Se guardará como proforma. Sin número fiscal hasta que la conviertas a oficial.'
+                  : editDraftId
+                    ? 'Modifica el borrador y guárdalo o confírmalo como factura definitiva.'
+                    : 'Guardada como borrador hasta que la confirmes.'}
               </p>
             </div>
           </div>
@@ -291,11 +368,13 @@ function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormPr
             </Button>
             <Button variant="outline" size="sm" onClick={triggerSubmit} disabled={isSubmitting}>
               <Save className="mr-1.5 h-3.5 w-3.5" />
-              {createMutation.isPending ? 'Guardando...' : 'Guardar borrador'}
+              {createMutation.isPending || updateMutation.isPending
+                ? 'Guardando...'
+                : 'Guardar borrador'}
             </Button>
             <Button size="sm" onClick={handleConfirmClick} disabled={isSubmitting}>
               <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
-              Confirmar factura
+              {isProforma ? 'Guardar como proforma' : 'Confirmar factura'}
             </Button>
           </div>
         </div>
@@ -315,6 +394,21 @@ function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormPr
                   <p className="text-xs text-blue-600/80 dark:text-blue-400/80 mt-0.5">
                     Los datos se han copiado de la factura original. La fecha de emisión se ha
                     actualizado a hoy. Revisa y confirma antes de guardar.
+                  </p>
+                </div>
+              </div>
+            )}
+            {editDraftId && (
+              <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 px-4 py-3">
+                <Pencil className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                    {isProforma ? 'Editando factura proforma' : 'Editando borrador'}
+                  </p>
+                  <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">
+                    {isProforma
+                      ? 'Los cambios se guardarán sobre esta proforma. Cuando el cliente acepte, conviértela a factura oficial.'
+                      : 'Los cambios se guardarán sobre este borrador. Puedes confirmarlo cuando esté listo.'}
                   </p>
                 </div>
               </div>
@@ -661,16 +755,24 @@ function InvoiceForm({ defaultValues, isDuplicate, sourceNumber }: InvoiceFormPr
 // y luego renderiza el formulario con los defaultValues correctos.
 // Esto garantiza que useForm() se inicialice una sola vez con los datos completos.
 
+const VALID_INVOICE_TYPES: InvoiceTypeOption[] = ['standard', 'proforma', 'simplified'];
+
 export default function NuevaFacturaPage() {
   const searchParams = useSearchParams();
   const duplicateId = searchParams.get('duplicate');
+  const editId = searchParams.get('edit');
+  const tipoParam = searchParams.get('tipo');
+  const initialTypeFromParam = VALID_INVOICE_TYPES.includes(tipoParam as InvoiceTypeOption)
+    ? (tipoParam as InvoiceTypeOption)
+    : undefined;
+  const sourceId = duplicateId ?? editId;
 
-  const { data: sourceInvoice, isLoading: loadingSource } = useInvoice(duplicateId ?? '', {
-    enabled: !!duplicateId,
+  const { data: sourceInvoice, isLoading: loadingSource } = useInvoice(sourceId ?? '', {
+    enabled: !!sourceId,
   });
 
-  // Mientras cargamos la factura a duplicar, mostramos loading
-  if (duplicateId && loadingSource) {
+  // Mientras cargamos la factura origen (duplicado o edición), mostramos loading
+  if (sourceId && loadingSource) {
     return (
       <div className="flex h-[calc(100vh-64px)] items-center justify-center flex-col gap-4">
         <Skeleton className="h-12 w-12 rounded-full" />
@@ -679,19 +781,20 @@ export default function NuevaFacturaPage() {
     );
   }
 
-  // FIX: calculamos los defaultValues UNA VEZ aquí, antes de montar InvoiceForm.
-  // De este modo useForm() los recibe en la inicialización, no en un reset posterior.
+  // Construimos los defaultValues una única vez para que useForm() se inicialice correctamente.
+  // En modo edición preservamos la fecha original del borrador; en duplicado usamos hoy.
   const defaultValues: FormData = sourceInvoice
     ? {
         customerId: sourceInvoice.customerId ?? '',
-        issueDate: new Date().toISOString().split('T')[0],
-        dueDate: undefined,
+        issueDate: editId
+          ? (sourceInvoice.issueDate?.split('T')[0] ?? new Date().toISOString().split('T')[0])
+          : new Date().toISOString().split('T')[0],
+        dueDate: editId ? (sourceInvoice.dueDate?.split('T')[0] ?? undefined) : undefined,
         discountPercent: sourceInvoice.discountPercent
           ? Number(sourceInvoice.discountPercent)
           : undefined,
         irpfPercent: sourceInvoice.irpfPercent ? Number(sourceInvoice.irpfPercent) : undefined,
         paymentMethod: (sourceInvoice.paymentMethod as PaymentMethod) ?? undefined,
-        // paymentDetails viene como objeto del backend pero no está en el tipo Invoice
         paymentDetails: (sourceInvoice as any).paymentDetails ?? {},
         notes: sourceInvoice.notes || undefined,
         lines: (sourceInvoice.lines ?? []).map((l) => ({
@@ -710,7 +813,13 @@ export default function NuevaFacturaPage() {
     <InvoiceForm
       defaultValues={defaultValues}
       isDuplicate={!!duplicateId}
-      sourceNumber={sourceInvoice?.number}
+      sourceNumber={sourceInvoice?.number ?? undefined}
+      editDraftId={editId ?? undefined}
+      initialInvoiceType={
+        editId
+          ? (((sourceInvoice as any)?.invoiceType as InvoiceTypeOption) ?? undefined)
+          : initialTypeFromParam
+      }
     />
   );
 }

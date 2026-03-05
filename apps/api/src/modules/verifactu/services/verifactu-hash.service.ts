@@ -103,6 +103,10 @@ export class VerifactuHashService {
       return false;
     }
 
+    if (!invoice.number) {
+      return false; // Cannot verify hash for a DRAFT invoice without a number
+    }
+
     // Regenerate hash and compare
     const { hash, prevHash } = await this.generateHash(tenantId, {
       nif: invoice.customer.nif,

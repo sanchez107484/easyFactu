@@ -8,6 +8,7 @@ export interface InvoiceFormData {
   customerId: string;
   issueDate: string;
   dueDate?: string;
+  invoiceType?: string;
   discountPercent?: number;
   irpfPercent?: number;
   paymentMethod?: PaymentMethod;
@@ -122,6 +123,7 @@ export function buildCreateInput(data: InvoiceFormData) {
     customerId: data.customerId,
     issueDate: data.issueDate,
     dueDate: data.dueDate || undefined,
+    invoiceType: data.invoiceType ?? 'standard',
     discountPercent: data.discountPercent || undefined,
     irpfPercent: data.irpfPercent || undefined,
     paymentMethod: data.paymentMethod,

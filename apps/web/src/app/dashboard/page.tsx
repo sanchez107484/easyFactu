@@ -227,7 +227,7 @@ export default function DashboardPage() {
             })}
           </p>
         </div>
-        <Link href="/dashboard/facturas/nueva">
+        <Link href="/dashboard/facturas/nueva?tipo=standard">
           <Button className="shrink-0">
             <Plus className="mr-1.5 h-4 w-4" />
             Nueva factura
@@ -237,7 +237,7 @@ export default function DashboardPage() {
 
       {/* Acciones rapidas */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <Link href="/dashboard/facturas/nueva">
+        <Link href="/dashboard/facturas/nueva?tipo=standard">
           <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer h-full">
             <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
               <FilePlus className="h-4 w-4 text-primary" />
@@ -444,7 +444,7 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground mt-1">
                   Crea tu primera factura para empezar
                 </p>
-                <Link href="/dashboard/facturas/nueva" className="mt-3">
+                <Link href="/dashboard/facturas/nueva?tipo=standard" className="mt-3">
                   <Button size="sm" variant="outline">
                     <Plus className="mr-1.5 h-3.5 w-3.5" />
                     Crear factura
@@ -523,7 +523,7 @@ export default function DashboardPage() {
                   Anadir producto
                 </Button>
               </Link>
-              <Link href="/dashboard/facturas/nueva">
+              <Link href="/dashboard/facturas/nueva?tipo=standard">
                 <Button size="sm">
                   <FilePlus className="mr-1.5 h-3.5 w-3.5" />
                   Primera factura

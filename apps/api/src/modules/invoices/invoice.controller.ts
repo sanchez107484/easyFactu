@@ -97,6 +97,14 @@ export class InvoiceController {
     return this.invoiceService.confirm(tenantId, id);
   }
 
+  @Post(':id/convert-to-official')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Convertir factura proforma a factura oficial (borrador estándar)' })
+  @ApiOkResponse({ description: 'Factura proforma convertida a oficial correctamente' })
+  convertToOfficial(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    return this.invoiceService.convertToOfficial(tenantId, id);
+  }
+
   @Post(':id/paid')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Marcar factura como cobrada' })
