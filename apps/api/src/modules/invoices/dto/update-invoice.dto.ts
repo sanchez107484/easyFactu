@@ -94,4 +94,9 @@ export class UpdateInvoiceDto {
     message: "El tipo de factura debe ser 'standard', 'proforma' o 'simplified'",
   })
   invoiceType?: string;
+
+  @ApiPropertyOptional({ description: 'ID de la plantilla de diseño a utilizar' })
+  @IsOptional()
+  @IsUUID()
+  templateId?: string;
 }

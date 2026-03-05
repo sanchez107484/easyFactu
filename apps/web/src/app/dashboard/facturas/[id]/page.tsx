@@ -56,12 +56,13 @@ import {
   useConvertProformaToOfficial,
 } from '@/hooks/use-invoices';
 import { ConvertProformaModal } from '@/components/facturas/ConvertProformaModal';
-import { InvoiceStatus, PaymentMethod } from '@easyfactura/shared-types';
+import { InvoiceStatus, PaymentMethod, Tenant } from '@easyfactura/shared-types';
 import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge';
-import { useInvoiceTemplate } from '@/hooks/use-invoice-templates';
+import { useInvoiceTemplate, useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useAuthStore } from '@/store/auth-store';
-import { cn } from '@/lib/utils';
+import { useTenant } from '@/hooks/use-tenant';
+import { cn, resolveUrl } from '@/lib/utils';
 
 // ==================== CONSTANTS ====================
 
@@ -158,6 +159,7 @@ export default function FacturaDetailPage() {
   const [showConvertModal, setShowConvertModal] = useState(false);
 
   const currentTenant = useAuthStore((s) => s.currentTenant);
+  const { data: tenantData } = useTenant();
 
   const { data: invoice, isLoading, error } = useInvoice(id);
   const confirmMutation = useConfirmInvoice();
@@ -168,7 +170,10 @@ export default function FacturaDetailPage() {
   // FIX: useDuplicateInvoice eliminado — duplicar es solo navegar a /nueva?duplicate=ID
 
   const templateId = (invoice as any)?.templateId ?? (invoice as any)?.template?.id ?? '';
-  const { data: template } = useInvoiceTemplate(templateId);
+  const { data: specificTemplate } = useInvoiceTemplate(templateId);
+  const { data: defaultTemplate } = useDefaultTemplate();
+  // When the invoice has no templateId (existing data), fall back to the tenant's default template
+  const template = specificTemplate ?? defaultTemplate;
 
   const paymentDetails = (invoice as any)?.paymentDetails as PaymentDetails | undefined;
   const activePaymentMethod = invoice?.paymentMethod as string | null | undefined;
@@ -621,7 +626,10 @@ export default function FacturaDetailPage() {
           <LiveInvoicePreview
             invoice={invoice}
             template={template ?? null}
-            tenant={currentTenant}
+            tenant={(() => {
+              const src = tenantData ?? currentTenant;
+              return src ? ({ ...src, logoUrl: resolveUrl(src.logoUrl) ?? null } as Tenant) : null;
+            })()}
             activeFieldSection={null}
             onSectionClick={() => {}}
             paymentDetails={paymentDetails}

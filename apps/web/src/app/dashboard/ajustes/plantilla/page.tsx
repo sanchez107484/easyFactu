@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Loader2,
   Save,
@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { InvoicePreview } from '@/components/invoice-preview/InvoicePreview';
+import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
 import { useDefaultTemplate, useUpdateTemplate } from '@/hooks/use-invoice-templates';
 import { useAuthStore } from '@/store/auth-store';
 import { useTenant } from '@/hooks/use-tenant';
@@ -699,26 +699,6 @@ function SettingsPanel({
   );
 }
 
-// ==================== PREVIEW FLASH HOOK ====================
-
-function usePreviewFlash(layout: InvoiceLayout) {
-  const [flashing, setFlashing] = useState(false);
-  const prevLayout = useRef(layout);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
-
-  useEffect(() => {
-    if (prevLayout.current !== layout) {
-      prevLayout.current = layout;
-      setFlashing(true);
-      clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => setFlashing(false), 600);
-    }
-    return () => clearTimeout(timerRef.current);
-  }, [layout]);
-
-  return flashing;
-}
-
 // ==================== PAGE ====================
 
 export default function PlantillaPage() {
@@ -731,8 +711,6 @@ export default function PlantillaPage() {
   const [savedLayout, setSavedLayout] = useState<InvoiceLayout>(DEFAULT_INVOICE_LAYOUT);
   const [hasChanges, setHasChanges] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
-
-  const previewFlashing = usePreviewFlash(localLayout);
 
   useEffect(() => {
     if (template) {
@@ -920,49 +898,16 @@ export default function PlantillaPage() {
 
         {/* Preview A4 */}
         <div
-          className="overflow-hidden rounded-xl border bg-muted/30 flex flex-col transition-all"
-          style={{ minHeight: 'calc(100vh - 190px)' }}
+          className="overflow-hidden rounded-xl border flex flex-col transition-all"
+          style={{ height: 'calc(100vh - 190px)' }}
         >
-          <div className="flex items-center justify-between px-4 py-2.5 border-b bg-card/80 backdrop-blur-sm shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="flex gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
-                <div className="w-2.5 h-2.5 rounded-full bg-yellow-400/70" />
-                <div className="w-2.5 h-2.5 rounded-full bg-green-400/70" />
-              </div>
-              <span className="text-xs text-muted-foreground ml-1">
-                Vista previa en tiempo real
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div
-                className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${previewFlashing ? 'bg-blue-500' : 'bg-green-500 animate-pulse'}`}
-              />
-              <span className="text-[10px] text-muted-foreground">
-                {previewFlashing ? 'Actualizando…' : 'Se actualiza al instante'}
-              </span>
-            </div>
-          </div>
-          <div
-            className="flex-1 overflow-auto p-6 transition-opacity duration-300"
-            style={{ opacity: previewFlashing ? 0.85 : 1 }}
-          >
-            <div className="flex justify-center">
-              <div
-                style={{
-                  transform: 'scale(0.72)',
-                  transformOrigin: 'top center',
-                  marginBottom: '-230px',
-                }}
-              >
-                <InvoicePreview
-                  invoice={exampleInvoice}
-                  template={previewTemplate as never}
-                  tenant={previewTenant}
-                />
-              </div>
-            </div>
-          </div>
+          <LiveInvoicePreview
+            invoice={exampleInvoice}
+            template={previewTemplate as never}
+            tenant={previewTenant}
+            activeFieldSection={null}
+            onSectionClick={() => {}}
+          />
         </div>
       </div>
     </div>

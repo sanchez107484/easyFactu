@@ -116,6 +116,7 @@ export class InvoiceService {
         dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
         status: invoiceStatus,
         invoiceType: dto.invoiceType ?? 'standard',
+        templateId: dto.templateId ?? null,
         subtotal: totals.subtotal,
         discountPercent: dto.discountPercent ?? null,
         discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
@@ -285,6 +286,7 @@ export class InvoiceService {
           dueDate:
             dto.dueDate !== undefined ? (dto.dueDate ? new Date(dto.dueDate) : null) : undefined,
           invoiceType: dto.invoiceType !== undefined ? dto.invoiceType : undefined,
+          templateId: dto.templateId !== undefined ? dto.templateId : undefined,
           discountPercent: dto.discountPercent !== undefined ? dto.discountPercent : undefined,
           discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
           irpfPercent: dto.irpfPercent !== undefined ? dto.irpfPercent : undefined,

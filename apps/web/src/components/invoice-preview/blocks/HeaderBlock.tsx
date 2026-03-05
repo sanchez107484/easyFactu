@@ -62,13 +62,20 @@ function logoJustify(position: InvoiceLayout['logo']['position']): string {
 export function HeaderBlock({ layout, invoice, tenant }: HeaderBlockProps) {
   const isLeftSender = layout.header.senderSide === 'left';
   const showLogo = layout.logo.visible && !!tenant.logoUrl;
-  const logoWidthPx = layout.logo.widthMm * 3.78; // mm → px (96 dpi)
+  // 595px = A4 at 72 DPI → 2.83 px/mm (matches the margin conversion used in the preview)
+  const logoWidthPx = layout.logo.widthMm * 2.83;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
       {/* ── Logo: fila propia, posicionada independientemente ── */}
       {showLogo && (
-        <div style={{ display: 'flex', justifyContent: logoJustify(layout.logo.position) }}>
+        <div
+          style={{
+            display: 'flex',
+            width: '100%',
+            justifyContent: logoJustify(layout.logo.position),
+          }}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={tenant.logoUrl!}
@@ -78,13 +85,14 @@ export function HeaderBlock({ layout, invoice, tenant }: HeaderBlockProps) {
               maxHeight: `${logoWidthPx * 0.6}px`, // ratio 5:3 máximo
               objectFit: 'contain',
               display: 'block',
+              flexShrink: 0,
             }}
           />
         </div>
       )}
 
       {/* ── Emisor / Cliente: dos columnas ── */}
-      <div className="flex justify-between gap-4">
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', width: '100%' }}>
         {isLeftSender ? (
           <>
             <SenderInfo tenant={tenant} layout={layout} />
