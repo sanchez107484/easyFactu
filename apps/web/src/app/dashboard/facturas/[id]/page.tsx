@@ -57,75 +57,13 @@ import {
 } from '@/hooks/use-invoices';
 import { ConvertProformaModal } from '@/components/facturas/ConvertProformaModal';
 import { InvoiceStatus, PaymentMethod } from '@easyfactura/shared-types';
+import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
+import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge';
 import { useInvoiceTemplate } from '@/hooks/use-invoice-templates';
 import { useAuthStore } from '@/store/auth-store';
 import { cn } from '@/lib/utils';
 
 // ==================== CONSTANTS ====================
-
-const STATUS_CONFIG: Record<
-  string,
-  {
-    label: string;
-    color: string;
-    bg: string;
-    border: string;
-    dot: string;
-  }
-> = {
-  [InvoiceStatus.DRAFT]: {
-    label: 'Borrador',
-    color: 'text-zinc-500',
-    bg: 'bg-zinc-50 dark:bg-zinc-900/50',
-    border: 'border-zinc-200 dark:border-zinc-800',
-    dot: 'bg-zinc-400',
-  },
-  [InvoiceStatus.PROFORMA]: {
-    label: 'Proforma',
-    color: 'text-amber-600 dark:text-amber-400',
-    bg: 'bg-amber-50 dark:bg-amber-950/40',
-    border: 'border-amber-200 dark:border-amber-800',
-    dot: 'bg-amber-500',
-  },
-  [InvoiceStatus.CONFIRMED]: {
-    label: 'Confirmada',
-    color: 'text-blue-600 dark:text-blue-400',
-    bg: 'bg-blue-50 dark:bg-blue-950/40',
-    border: 'border-blue-200 dark:border-blue-800',
-    dot: 'bg-blue-500',
-  },
-  [InvoiceStatus.SENT]: {
-    label: 'Enviada',
-    color: 'text-amber-600 dark:text-amber-400',
-    bg: 'bg-amber-50 dark:bg-amber-950/40',
-    border: 'border-amber-200 dark:border-amber-800',
-    dot: 'bg-amber-500',
-  },
-  [InvoiceStatus.PAID]: {
-    label: 'Pagada',
-    color: 'text-emerald-600 dark:text-emerald-400',
-    bg: 'bg-emerald-50 dark:bg-emerald-950/40',
-    border: 'border-emerald-200 dark:border-emerald-800',
-    dot: 'bg-emerald-500',
-  },
-  [InvoiceStatus.RECTIFIED]: {
-    label: 'Rectificada',
-    color: 'text-orange-600 dark:text-orange-400',
-    bg: 'bg-orange-50 dark:bg-orange-950/40',
-    border: 'border-orange-200 dark:border-orange-800',
-    dot: 'bg-orange-500',
-  },
-};
-
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  [PaymentMethod.BANK_TRANSFER]: 'Transferencia bancaria',
-  [PaymentMethod.DIRECT_DEBIT]: 'Domiciliación bancaria',
-  [PaymentMethod.CARD]: 'Tarjeta',
-  [PaymentMethod.CASH]: 'Efectivo',
-  [PaymentMethod.PAYPAL]: 'PayPal',
-  [PaymentMethod.OTHER]: 'Otro',
-  BIZUM: 'Bizum',
-};
 
 // ==================== HELPERS ====================
 
@@ -307,8 +245,9 @@ export default function FacturaDetailPage() {
   const isProforma = (invoice as any).invoiceType === 'proforma';
 
   const statusCfg = isProforma
-    ? STATUS_CONFIG[InvoiceStatus.PROFORMA]
-    : (STATUS_CONFIG[invoice.status] ?? STATUS_CONFIG[InvoiceStatus.DRAFT]);
+    ? INVOICE_STATUS_CONFIG[InvoiceStatus.PROFORMA]
+    : (INVOICE_STATUS_CONFIG[invoice.status as InvoiceStatus] ??
+      INVOICE_STATUS_CONFIG[InvoiceStatus.DRAFT]);
   const series = (invoice as any).series;
 
   // ==================== RENDER ====================
@@ -619,7 +558,8 @@ export default function FacturaDetailPage() {
               <div className="rounded-xl border bg-card p-5">
                 <SectionLabel icon={Banknote}>Forma de pago</SectionLabel>
                 <p className="font-semibold text-sm mb-2">
-                  {PAYMENT_METHOD_LABELS[activePaymentMethod] ?? activePaymentMethod}
+                  {PAYMENT_METHOD_LABELS[activePaymentMethod as PaymentMethod] ??
+                    activePaymentMethod}
                 </p>
                 {paymentDetails && (
                   <div className="space-y-1">

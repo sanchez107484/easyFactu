@@ -11,11 +11,11 @@ export const TAX_RATES = {
 } as const;
 
 export const TAX_RATE_OPTIONS = [
-  { value: TAX_RATES.STANDARD, label: "21% - IVA General" },
-  { value: TAX_RATES.REDUCED, label: "10% - IVA Reducido" },
-  { value: TAX_RATES.SUPER_REDUCED, label: "4% - IVA Superreducido" },
-  { value: TAX_RATES.EXEMPT, label: "0% - Exento" },
-  { value: TAX_RATES.INTRACOMMUNITY, label: "0% - Intracomunitario" },
+  { value: TAX_RATES.STANDARD, label: '21% - IVA General' },
+  { value: TAX_RATES.REDUCED, label: '10% - IVA Reducido' },
+  { value: TAX_RATES.SUPER_REDUCED, label: '4% - IVA Superreducido' },
+  { value: TAX_RATES.EXEMPT, label: '0% - Exento' },
+  { value: TAX_RATES.INTRACOMMUNITY, label: '0% - Intracomunitario' },
 ] as const;
 
 /**
@@ -28,10 +28,32 @@ export const IRPF_RATES = {
 } as const;
 
 export const IRPF_RATE_OPTIONS = [
-  { value: IRPF_RATES.DEFAULT, label: "15% - Retención general" },
+  { value: IRPF_RATES.DEFAULT, label: '15% - Retención general' },
   {
     value: IRPF_RATES.NEW_ACTIVITY,
-    label: "7% - Nueva actividad (primeros 3 años)",
+    label: '7% - Nueva actividad (primeros 3 años)',
   },
-  { value: IRPF_RATES.EXEMPT, label: "0% - Sin retención" },
+  { value: IRPF_RATES.EXEMPT, label: '0% - Sin retención' },
+] as const;
+
+/**
+ * Deduplicated tax rate options for select inputs (product/service pricing).
+ * Excludes the INTRACOMMUNITY duplicate — use TAX_RATE_OPTIONS for full list.
+ */
+export const TAX_RATE_SELECT_OPTIONS = [
+  { value: TAX_RATES.STANDARD, label: '21% — IVA General' },
+  { value: TAX_RATES.REDUCED, label: '10% — IVA Reducido' },
+  { value: TAX_RATES.SUPER_REDUCED, label: '4% — IVA Superreducido' },
+  { value: TAX_RATES.EXEMPT, label: '0% — Exento / No sujeto' },
+] as const;
+
+/**
+ * Valid tax rate values for backend DTO validation.
+ * = [0, 4, 10, 21]
+ */
+export const VALID_TAX_RATES = [
+  TAX_RATES.EXEMPT,
+  TAX_RATES.SUPER_REDUCED,
+  TAX_RATES.REDUCED,
+  TAX_RATES.STANDARD,
 ] as const;

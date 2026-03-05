@@ -18,8 +18,7 @@ import {
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentMethod } from '@easyfactura/shared-types';
-
-const VALID_TAX_RATES = [0, 4, 10, 21];
+import { VALID_TAX_RATES } from '@easyfactura/shared-constants';
 
 export class CreateInvoiceLineDto {
   @ApiPropertyOptional({ description: 'ID del producto existente (opcional)' })

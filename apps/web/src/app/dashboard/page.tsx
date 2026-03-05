@@ -26,6 +26,7 @@ import { useInvoices, useAllInvoices } from '@/hooks/use-invoices';
 import { useCustomers } from '@/hooks/use-customers';
 import { useProducts } from '@/hooks/use-products';
 import { Invoice, InvoiceStatus } from '@easyfactura/shared-types';
+import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge';
 import { cn } from '@/lib/utils';
 
 // ==================== HELPERS ====================
@@ -54,23 +55,6 @@ function getGreeting(): string {
   if (hour < 14) return 'Buenos dias';
   if (hour < 21) return 'Buenas tardes';
   return 'Buenas noches';
-}
-
-function getStatusMeta(status: InvoiceStatus): { label: string; className: string } {
-  switch (status) {
-    case InvoiceStatus.DRAFT:
-      return { label: 'Borrador', className: 'bg-slate-100 text-slate-600 border-slate-200' };
-    case InvoiceStatus.CONFIRMED:
-      return { label: 'Confirmada', className: 'bg-blue-50 text-blue-700 border-blue-200' };
-    case InvoiceStatus.SENT:
-      return { label: 'Enviada', className: 'bg-purple-50 text-purple-700 border-purple-200' };
-    case InvoiceStatus.PAID:
-      return { label: 'Cobrada', className: 'bg-green-50 text-green-700 border-green-200' };
-    case InvoiceStatus.RECTIFIED:
-      return { label: 'Rectificada', className: 'bg-orange-50 text-orange-700 border-orange-200' };
-    default:
-      return { label: status, className: 'bg-slate-100 text-slate-600 border-slate-200' };
-  }
 }
 
 // ==================== STATS COMPUTATION ====================
@@ -454,7 +438,7 @@ export default function DashboardPage() {
             ) : (
               <div>
                 {recentInvoices.map((invoice) => {
-                  const statusMeta = getStatusMeta(invoice.status);
+                  const statusCfg = INVOICE_STATUS_CONFIG[invoice.status as InvoiceStatus];
                   return (
                     <Link key={invoice.id} href={`/dashboard/facturas/${invoice.id}`}>
                       <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors border-b last:border-b-0 group">
@@ -467,10 +451,12 @@ export default function DashboardPage() {
                               variant="outline"
                               className={cn(
                                 'text-[10px] px-1.5 py-0 h-4 font-normal',
-                                statusMeta.className,
+                                statusCfg?.color,
+                                statusCfg?.bg,
+                                statusCfg?.border,
                               )}
                             >
-                              {statusMeta.label}
+                              {statusCfg?.label ?? invoice.status}
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground truncate mt-0.5">

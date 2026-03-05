@@ -9,6 +9,7 @@ import {
   DEFAULT_INVOICE_LAYOUT,
   PaymentMethod,
 } from '@easyfactura/shared-types';
+import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import { HeaderBlock } from '@/components/invoice-preview/blocks/HeaderBlock';
 import { ItemsTableBlock } from '@/components/invoice-preview/blocks/ItemsTableBlock';
 import { TotalsBlock } from '@/components/invoice-preview/blocks/TotalsBlock';
@@ -27,16 +28,6 @@ const FONT_FAMILY_MAP: Record<string, string> = {
   helvetica: 'Helvetica, Arial, sans-serif',
   'times-roman': 'Times New Roman, Times, serif',
   courier: 'Courier New, Courier, monospace',
-};
-
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  [PaymentMethod.BANK_TRANSFER]: 'Transferencia bancaria',
-  [PaymentMethod.DIRECT_DEBIT]: 'Domiciliación bancaria',
-  [PaymentMethod.CARD]: 'Tarjeta',
-  [PaymentMethod.CASH]: 'Efectivo',
-  [PaymentMethod.PAYPAL]: 'PayPal',
-  [PaymentMethod.OTHER]: 'Otro',
-  BIZUM: 'Bizum',
 };
 
 // Fallback tenant for preview when tenant data is not yet loaded
@@ -158,7 +149,7 @@ function PaymentDetailsBlock({ invoice, paymentDetails, primaryColor }: PaymentD
   // No renderizar nada si no hay método seleccionado
   if (!method) return null;
 
-  const methodLabel = PAYMENT_METHOD_LABELS[method] ?? method;
+  const methodLabel = PAYMENT_METHOD_LABELS[method as PaymentMethod] ?? method;
   const hasDetails =
     paymentDetails?.iban ||
     paymentDetails?.bizumPhone ||

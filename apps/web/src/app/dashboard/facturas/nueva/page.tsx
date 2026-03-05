@@ -33,6 +33,10 @@ import { useCustomers } from '@/hooks/use-customers';
 import { useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useAuthStore } from '@/store/auth-store';
 import { PaymentMethod, Customer, InvoiceTemplate } from '@easyfactura/shared-types';
+import {
+  PAYMENT_METHOD_LABELS,
+  PAYMENT_METHOD_SECTION_LABELS,
+} from '@easyfactura/shared-constants';
 import { getPaymentDetailFields } from '@/lib/payment-method-details';
 import { buildPreviewInvoice, buildCreateInput } from '@/lib/invoice-helpers';
 import { round2 } from '@/lib/math';
@@ -50,26 +54,6 @@ const INVOICE_TYPE_LABELS: Record<Exclude<InvoiceTypeOption, 'template'>, string
   standard: 'Factura ordinaria',
   proforma: 'Factura proforma',
   simplified: 'Factura simplificada',
-};
-
-const PAYMENT_METHOD_LABELS: Record<PaymentMethod | 'BIZUM', string> = {
-  [PaymentMethod.BANK_TRANSFER]: 'Transferencia bancaria',
-  [PaymentMethod.DIRECT_DEBIT]: 'Domiciliación bancaria',
-  [PaymentMethod.CARD]: 'Tarjeta',
-  [PaymentMethod.CASH]: 'Efectivo',
-  [PaymentMethod.PAYPAL]: 'PayPal',
-  [PaymentMethod.OTHER]: 'Otro',
-  BIZUM: 'Bizum',
-};
-
-const PAYMENT_METHOD_SECTION_LABELS: Record<PaymentMethod | 'BIZUM', string> = {
-  [PaymentMethod.BANK_TRANSFER]: 'Datos para la transferencia',
-  [PaymentMethod.DIRECT_DEBIT]: 'Domiciliación bancaria',
-  [PaymentMethod.CARD]: 'Pago con tarjeta',
-  [PaymentMethod.CASH]: 'Pago en efectivo',
-  [PaymentMethod.PAYPAL]: 'Datos PayPal',
-  [PaymentMethod.OTHER]: 'Instrucciones de pago',
-  BIZUM: 'Datos Bizum',
 };
 
 const EMPTY_DEFAULT_VALUES = {

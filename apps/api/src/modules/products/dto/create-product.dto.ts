@@ -11,8 +11,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ProductType } from '@prisma/client';
-
-const VALID_TAX_RATES = [0, 4, 10, 21] as const;
+import { VALID_TAX_RATES } from '@easyfactura/shared-constants';
 
 export class CreateProductDto {
   @ApiPropertyOptional({

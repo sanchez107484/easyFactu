@@ -19,6 +19,7 @@ import { ArrowLeft, Package, Wrench, Euro, Tag, FileText, Hash, Ruler } from 'lu
 import Link from 'next/link';
 import { useCreateProduct } from '@/hooks/use-products';
 import { ProductType } from '@easyfactura/shared-types';
+import { TAX_RATE_SELECT_OPTIONS } from '@easyfactura/shared-constants';
 import { cn } from '@/lib/utils';
 
 const productSchema = z.object({
@@ -34,13 +35,6 @@ const productSchema = z.object({
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
-
-const TAX_RATES = [
-  { value: '0', label: '0% - Exento / No sujeto' },
-  { value: '4', label: '4% - Superreducido' },
-  { value: '10', label: '10% - Reducido' },
-  { value: '21', label: '21% - General' },
-];
 
 const TYPE_OPTIONS = [
   {
@@ -345,8 +339,8 @@ export default function NuevoProductoPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {TAX_RATES.map((t) => (
-                          <SelectItem key={t.value} value={t.value}>
+                        {TAX_RATE_SELECT_OPTIONS.map((t) => (
+                          <SelectItem key={String(t.value)} value={String(t.value)}>
                             {t.label}
                           </SelectItem>
                         ))}
