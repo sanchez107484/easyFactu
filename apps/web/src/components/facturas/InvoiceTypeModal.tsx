@@ -129,9 +129,10 @@ function TemplateList({ onSelect }: TemplateListProps) {
 interface InvoiceTypeModalProps {
   open: boolean;
   onSelect: (type: InvoiceTypeOption, template?: InvoiceTemplate) => void;
+  onClose?: () => void;
 }
 
-export function InvoiceTypeModal({ open, onSelect }: InvoiceTypeModalProps) {
+export function InvoiceTypeModal({ open, onSelect, onClose }: InvoiceTypeModalProps) {
   const [showTemplates, setShowTemplates] = useState(false);
 
   const handleTypeSelect = (type: Exclude<InvoiceTypeOption, 'template'>) => {
@@ -146,13 +147,17 @@ export function InvoiceTypeModal({ open, onSelect }: InvoiceTypeModalProps) {
     onSelect('template', template);
   };
 
+  const handleClose = () => {
+    if (onClose) onClose();
+  };
+
   return (
     <Dialog open={open}>
       <DialogContent
         className="sm:max-w-md [&>button:last-child]:hidden"
-        // Prevent closing by clicking backdrop or Escape — user must choose a type
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
+        // Allow closing when onClose is provided (modal opened by user, not forced)
+        onPointerDownOutside={onClose ? handleClose : (e) => e.preventDefault()}
+        onEscapeKeyDown={onClose ? handleClose : (e) => e.preventDefault()}
       >
         <DialogHeader>
           <DialogTitle>¿Qué tipo de factura quieres crear?</DialogTitle>

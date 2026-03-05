@@ -9,6 +9,8 @@ export interface InvoiceFormData {
   issueDate: string;
   dueDate?: string;
   invoiceType?: string;
+  seriesId?: string;
+  templateId?: string;
   discountPercent?: number;
   irpfPercent?: number;
   paymentMethod?: PaymentMethod;
@@ -26,6 +28,7 @@ export interface InvoiceFormData {
 export function buildPreviewInvoice(
   data: Partial<InvoiceFormData>,
   customers: Customer[],
+  seriesPrefix?: string,
 ): Invoice {
   const today = new Date().toISOString();
   const lines = data.lines ?? [];
@@ -81,7 +84,7 @@ export function buildPreviewInvoice(
     tenantId: '',
     seriesId: '',
     customerId: data.customerId ?? '',
-    number: '---',
+    number: seriesPrefix ? `${seriesPrefix}-${new Date().getFullYear()}-???` : '---',
     issueDate: data.issueDate || today.split('T')[0],
     dueDate: data.dueDate ?? null,
     status: InvoiceStatus.DRAFT,
@@ -121,6 +124,8 @@ export function buildPreviewInvoice(
 export function buildCreateInput(data: InvoiceFormData) {
   return {
     customerId: data.customerId,
+    seriesId: data.seriesId || undefined,
+    templateId: data.templateId || undefined,
     issueDate: data.issueDate,
     dueDate: data.dueDate || undefined,
     invoiceType: data.invoiceType ?? 'standard',

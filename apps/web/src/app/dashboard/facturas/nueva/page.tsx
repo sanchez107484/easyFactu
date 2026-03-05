@@ -31,8 +31,18 @@ import {
 } from '@/hooks/use-invoices';
 import { useCustomers } from '@/hooks/use-customers';
 import { useDefaultTemplate } from '@/hooks/use-invoice-templates';
+import { useInvoiceSeries } from '@/hooks/use-invoice-series';
+import { useTenant } from '@/hooks/use-tenant';
 import { useAuthStore } from '@/store/auth-store';
-import { PaymentMethod, Customer, InvoiceTemplate } from '@easyfactura/shared-types';
+import {
+  PaymentMethod,
+  Customer,
+  InvoiceTemplate,
+  InvoiceSeries,
+  SeriesType,
+  Tenant,
+} from '@easyfactura/shared-types';
+import { resolveUrl } from '@/lib/utils';
 import {
   PAYMENT_METHOD_LABELS,
   PAYMENT_METHOD_SECTION_LABELS,
@@ -63,6 +73,7 @@ const EMPTY_DEFAULT_VALUES = {
   paymentDetails: {} as Record<string, string | undefined>,
   issueDate: new Date().toISOString().split('T')[0],
   dueDate: undefined as string | undefined,
+  seriesId: undefined as string | undefined,
   discountPercent: undefined as number | undefined,
   irpfPercent: undefined as number | undefined,
   notes: undefined as string | undefined,
@@ -86,6 +97,7 @@ const formSchema = z.object({
   customerId: z.string().min(1, 'Selecciona un cliente'),
   issueDate: z.string().min(1, 'La fecha es obligatoria'),
   dueDate: z.string().optional(),
+  seriesId: z.string().optional(),
   discountPercent: z.number().min(0).max(100).optional(),
   irpfPercent: z.number().min(0).max(100).optional(),
   paymentMethod: z
@@ -121,9 +133,11 @@ function InvoiceForm({
 }: InvoiceFormProps) {
   const router = useRouter();
   const currentTenant = useAuthStore((s) => s.currentTenant);
+  const currentYear = new Date().getFullYear();
 
-  const [invoiceType, setInvoiceType] = useState<InvoiceTypeOption | null>(
-    initialInvoiceType ?? null,
+  // Default to 'standard' so the form renders immediately without forcing the modal
+  const [invoiceType, setInvoiceType] = useState<InvoiceTypeOption>(
+    initialInvoiceType ?? 'standard',
   );
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate | null>(null);
   const [showTypeModal, setShowTypeModal] = useState(false);
@@ -136,12 +150,18 @@ function InvoiceForm({
 
   const { data: customersData, isLoading: loadingCustomers } = useCustomers();
   const { data: defaultTemplate } = useDefaultTemplate();
+  const { data: tenantData } = useTenant();
+  const { data: seriesData } = useInvoiceSeries(currentYear);
   const createMutation = useCreateInvoice();
   const updateMutation = useUpdateInvoice();
   const confirmMutation = useConfirmInvoice();
 
   const customers: Customer[] = customersData?.data ?? [];
+  const allSeries: InvoiceSeries[] = seriesData?.data ?? [];
   const effectiveTemplate: InvoiceTemplate | null = selectedTemplate ?? defaultTemplate ?? null;
+
+  // Filter series by type: proformas don't use official series
+  const availableSeries = isProforma ? [] : allSeries.filter((s) => s.type === SeriesType.INVOICE);
 
   // FIX: useForm se inicializa con los defaultValues ya resueltos (vacíos o del duplicado)
   // No se llama a form.reset() en ningún efecto posterior
@@ -149,6 +169,26 @@ function InvoiceForm({
     resolver: zodResolver(formSchema),
     defaultValues,
   });
+
+  // Auto-select default series when series load or invoice type changes
+  useEffect(() => {
+    if (availableSeries.length === 0) return;
+    const currentSeriesId = form.getValues('seriesId');
+    // Only auto-select if not already set
+    if (!currentSeriesId) {
+      const defaultSeries = availableSeries.find((s) => s.isDefault) ?? availableSeries[0];
+      if (defaultSeries) {
+        form.setValue('seriesId', defaultSeries.id, { shouldDirty: false });
+      }
+    }
+  }, [availableSeries.length, isProforma]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clear seriesId for proformas (no official number)
+  useEffect(() => {
+    if (isProforma) {
+      form.setValue('seriesId', undefined, { shouldDirty: false });
+    }
+  }, [isProforma]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { fields, append, remove, swap } = useFieldArray({
     control: form.control,
@@ -161,7 +201,9 @@ function InvoiceForm({
   };
 
   const watchedValues = form.watch();
-  const previewInvoice = buildPreviewInvoice(watchedValues, customers);
+  const selectedSeriesId = watchedValues.seriesId;
+  const selectedSeries = availableSeries.find((s) => s.id === selectedSeriesId) ?? null;
+  const previewInvoice = buildPreviewInvoice(watchedValues, customers, selectedSeries?.prefix);
   const selectedCustomer = customers.find((c) => c.id === watchedValues.customerId);
   const activePaymentMethod = watchedValues.paymentMethod as PaymentMethod | undefined;
 
@@ -206,12 +248,20 @@ function InvoiceForm({
       if (editDraftId) {
         await updateMutation.mutateAsync({
           id: editDraftId,
-          data: buildCreateInput({ ...data, invoiceType: invoiceType ?? 'standard' }),
+          data: buildCreateInput({
+            ...data,
+            invoiceType: invoiceType ?? 'standard',
+            templateId: defaultTemplate?.id,
+          }),
         });
         router.push(`/dashboard/facturas/${editDraftId}`);
       } else {
         const invoice = await createMutation.mutateAsync(
-          buildCreateInput({ ...data, invoiceType: invoiceType ?? 'standard' }),
+          buildCreateInput({
+            ...data,
+            invoiceType: invoiceType ?? 'standard',
+            templateId: defaultTemplate?.id,
+          }),
         );
         router.push(`/dashboard/facturas/${invoice.id}`);
       }
@@ -238,13 +288,17 @@ function InvoiceForm({
         if (editDraftId) {
           await updateMutation.mutateAsync({
             id: editDraftId,
-            data: buildCreateInput({ ...data, invoiceType: 'proforma' }),
+            data: buildCreateInput({
+              ...data,
+              invoiceType: 'proforma',
+              templateId: defaultTemplate?.id,
+            }),
           });
           setShowConfirmDialog(false);
           router.push(`/dashboard/facturas/${editDraftId}`);
         } else {
           const draft = await createMutation.mutateAsync(
-            buildCreateInput({ ...data, invoiceType: 'proforma' }),
+            buildCreateInput({ ...data, invoiceType: 'proforma', templateId: defaultTemplate?.id }),
           );
           setShowConfirmDialog(false);
           router.push(`/dashboard/facturas/${draft.id}`);
@@ -261,7 +315,11 @@ function InvoiceForm({
         // En modo edición: guardamos los cambios y luego confirmamos el borrador existente
         await updateMutation.mutateAsync({
           id: editDraftId,
-          data: buildCreateInput({ ...data, invoiceType: invoiceType ?? 'standard' }),
+          data: buildCreateInput({
+            ...data,
+            invoiceType: invoiceType ?? 'standard',
+            templateId: defaultTemplate?.id,
+          }),
         });
         await confirmMutation.mutateAsync(editDraftId);
         setShowConfirmDialog(false);
@@ -269,7 +327,11 @@ function InvoiceForm({
       } else {
         if (!draftId) {
           const draft = await createMutation.mutateAsync(
-            buildCreateInput({ ...data, invoiceType: invoiceType ?? 'standard' }),
+            buildCreateInput({
+              ...data,
+              invoiceType: invoiceType ?? 'standard',
+              templateId: defaultTemplate?.id,
+            }),
           );
           draftId = draft.id;
           setPendingDraftId(draftId);
@@ -288,11 +350,25 @@ function InvoiceForm({
   const isSubmitting =
     createMutation.isPending || updateMutation.isPending || confirmMutation.isPending;
 
+  // Build a fully resolved tenant for the preview, using fresh useTenant() data
+  // and resolving the logoUrl to an absolute URL so <img> can load it.
+  const source = tenantData ?? currentTenant;
+  const previewTenant: Tenant | null = source
+    ? ({
+        ...source,
+        logoUrl: resolveUrl(source.logoUrl) ?? null,
+      } as Tenant)
+    : null;
+
   // ==================== RENDER ====================
 
   return (
     <>
-      <InvoiceTypeModal open={invoiceType === null || showTypeModal} onSelect={handleTypeSelect} />
+      <InvoiceTypeModal
+        open={showTypeModal}
+        onSelect={handleTypeSelect}
+        onClose={() => setShowTypeModal(false)}
+      />
 
       <QuickCreateCustomerModal
         open={showQuickClient}
@@ -308,7 +384,7 @@ function InvoiceForm({
         onCancel={() => setShowConfirmDialog(false)}
         onConfirm={handleConfirmDialogConfirm}
         isPending={isSubmitting}
-        invoiceType={invoiceType ?? undefined}
+        invoiceType={invoiceType}
         summary={{
           customerName: selectedCustomer?.name ?? '---',
           total: previewInvoice.total,
@@ -493,6 +569,39 @@ function InvoiceForm({
                     </div>
                   </section>
 
+                  {/* Serie de facturación */}
+                  {!isProforma && availableSeries.length > 0 && (
+                    <section
+                      id="field-seriesId"
+                      className="space-y-2"
+                      onFocus={() => setActiveSection('seriesId')}
+                    >
+                      <Label>Serie de facturación</Label>
+                      <Select
+                        value={watchedValues.seriesId || ''}
+                        onValueChange={(v) => form.setValue('seriesId', v, { shouldDirty: true })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona una serie" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableSeries.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.name}
+                              {' — '}
+                              <span className="font-mono text-xs">
+                                {s.prefix}-{currentYear}-???
+                              </span>
+                              {s.isDefault && (
+                                <span className="ml-1 text-[10px] text-primary">(por defecto)</span>
+                              )}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </section>
+                  )}
+
                   {/* Método de pago */}
                   <section
                     id="field-paymentMethod"
@@ -511,6 +620,25 @@ function InvoiceForm({
                         // Solo limpiar detalles si cambia el método (no en la carga inicial)
                         if (v !== defaultValues.paymentMethod) {
                           form.setValue('paymentDetails', {});
+                        }
+                        // Auto-rellenar datos bancarios desde los ajustes de empresa
+                        if (v === PaymentMethod.BANK_TRANSFER) {
+                          const tenant = tenantData ?? currentTenant;
+                          if (tenant?.iban && !form.getValues('paymentDetails.iban')) {
+                            form.setValue('paymentDetails.iban', tenant.iban, {
+                              shouldDirty: true,
+                            });
+                          }
+                          if (
+                            tenant?.bankAccountHolder &&
+                            !form.getValues('paymentDetails.accountHolder')
+                          ) {
+                            form.setValue(
+                              'paymentDetails.accountHolder',
+                              tenant.bankAccountHolder,
+                              { shouldDirty: true },
+                            );
+                          }
                         }
                       }}
                     >
@@ -741,7 +869,7 @@ function InvoiceForm({
             <LiveInvoicePreview
               invoice={previewInvoice}
               template={effectiveTemplate}
-              tenant={currentTenant}
+              tenant={previewTenant}
               activeFieldSection={activeSection}
               onSectionClick={handlePreviewSectionClick}
               paymentDetails={watchedValues.paymentDetails as PaymentDetails | undefined}
@@ -794,6 +922,7 @@ export default function NuevaFacturaPage() {
           ? (sourceInvoice.issueDate?.split('T')[0] ?? new Date().toISOString().split('T')[0])
           : new Date().toISOString().split('T')[0],
         dueDate: editId ? (sourceInvoice.dueDate?.split('T')[0] ?? undefined) : undefined,
+        seriesId: editId ? (sourceInvoice.seriesId ?? undefined) : undefined,
         discountPercent: sourceInvoice.discountPercent
           ? Number(sourceInvoice.discountPercent)
           : undefined,
