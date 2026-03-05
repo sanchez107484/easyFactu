@@ -47,7 +47,7 @@ const navItems: NavItem[] = [
     href: '/dashboard/productos',
     icon: Package,
   },
-  {
+  /*{
     title: 'VeriFactu',
     href: '/dashboard/verifactu',
     icon: Shield,
@@ -56,7 +56,7 @@ const navItems: NavItem[] = [
     title: 'Informes',
     href: '/dashboard/informes',
     icon: BarChart3,
-  },
+  },*/
   {
     title: 'Ajustes',
     href: '/dashboard/ajustes',
