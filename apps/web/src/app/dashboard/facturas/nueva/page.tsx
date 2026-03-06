@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,7 +20,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Plus, AlertCircle, Save, CheckCircle, Copy, Pencil } from 'lucide-react';
+import {
+  ArrowLeft,
+  Plus,
+  AlertCircle,
+  Save,
+  CheckCircle,
+  Copy,
+  Pencil,
+  ChevronDown,
+  FileText,
+  FileCheck,
+  FileClock,
+  LayoutTemplate,
+} from 'lucide-react';
 import { InvoiceLineItem } from '@/components/facturas/InvoiceLineItem';
 import { extendedLineSchema, EMPTY_LINE, ExtendedLineData } from '@/lib/invoice-line-types';
 import {
@@ -33,51 +46,73 @@ import { useCustomers } from '@/hooks/use-customers';
 import { useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useInvoiceSeries } from '@/hooks/use-invoice-series';
 import { useTenant } from '@/hooks/use-tenant';
+import { useInvoiceDefaults } from '@/hooks/use-invoice-defaults';
 import { useAuthStore } from '@/store/auth-store';
 import {
   PaymentMethod,
   Customer,
   InvoiceTemplate,
-  InvoiceSeries,
   SeriesType,
   Tenant,
+  InvoiceDefaults,
 } from '@easyfactura/shared-types';
 import { resolveUrl } from '@/lib/utils';
-import {
-  PAYMENT_METHOD_LABELS,
-  PAYMENT_METHOD_SECTION_LABELS,
-} from '@easyfactura/shared-constants';
-import { getPaymentDetailFields } from '@/lib/payment-method-details';
-import { buildPreviewInvoice, buildCreateInput } from '@/lib/invoice-helpers';
-import { round2 } from '@/lib/math';
+import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
+import { buildPreviewInvoice, buildCreateInput, calculateDueDate } from '@/lib/invoice-helpers';
+import { formatSeriesPreview } from '@easyfactura/shared-validators';
 import { InvoiceTypeModal, InvoiceTypeOption } from '@/components/facturas/InvoiceTypeModal';
 import { ConfirmInvoiceDialog } from '@/components/facturas/ConfirmInvoiceDialog';
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
-import { ProductPickerButton } from '@/components/facturas/ProductPickerButton';
 import type { PaymentDetails } from '@/components/facturas/LiveInvoicePreview';
-import { Path } from 'react-hook-form';
 import { QuickCreateCustomerModal } from '@/components/clientes/QuickCreateCustomerModal';
 import { DueDatePicker } from '@/components/facturas/DueDatePicker';
+import {
+  PaymentDetailsFields,
+  PaymentDetailsValues,
+} from '@/components/facturas/PaymentDetailsFields';
+import { SaveAsDefaultBanner } from '@/components/facturas/SaveAsDefaultBanner';
 
 // ==================== CONSTANTS ====================
 
-const INVOICE_TYPE_LABELS: Record<Exclude<InvoiceTypeOption, 'template'>, string> = {
-  standard: 'Factura ordinaria',
-  proforma: 'Factura proforma',
-  simplified: 'Factura simplificada',
-};
-
-const EMPTY_DEFAULT_VALUES = {
-  customerId: '',
-  paymentMethod: undefined as PaymentMethod | undefined,
-  paymentDetails: {} as Record<string, string | undefined>,
-  issueDate: new Date().toISOString().split('T')[0],
-  dueDate: undefined as string | undefined,
-  seriesId: undefined as string | undefined,
-  discountPercent: undefined as number | undefined,
-  irpfPercent: undefined as number | undefined,
-  notes: undefined as string | undefined,
-  lines: [{ ...EMPTY_LINE }] as ExtendedLineData[],
+const INVOICE_TYPE_CONFIG: Record<
+  Exclude<InvoiceTypeOption, 'template'>,
+  {
+    label: string;
+    description: string;
+    color: string;
+    bg: string;
+    border: string;
+    hoverBorder: string;
+    icon: React.ReactNode;
+  }
+> = {
+  standard: {
+    label: 'Factura ordinaria',
+    description: 'Oficial con número fiscal',
+    color: 'text-emerald-700 dark:text-emerald-400',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/40',
+    border: 'border-emerald-200 dark:border-emerald-700',
+    hoverBorder: 'hover:border-emerald-400 dark:hover:border-emerald-500',
+    icon: <FileCheck className="h-4 w-4" />,
+  },
+  proforma: {
+    label: 'Factura proforma',
+    description: 'Sin número hasta su conversión',
+    color: 'text-amber-700 dark:text-amber-400',
+    bg: 'bg-amber-50 dark:bg-amber-950/40',
+    border: 'border-amber-200 dark:border-amber-700',
+    hoverBorder: 'hover:border-amber-400 dark:hover:border-amber-500',
+    icon: <FileClock className="h-4 w-4" />,
+  },
+  simplified: {
+    label: 'Factura simplificada',
+    description: 'Para operaciones de menor importe',
+    color: 'text-blue-700 dark:text-blue-400',
+    bg: 'bg-blue-50 dark:bg-blue-950/40',
+    border: 'border-blue-200 dark:border-blue-700',
+    hoverBorder: 'hover:border-blue-400 dark:hover:border-blue-500',
+    icon: <FileText className="h-4 w-4" />,
+  },
 };
 
 // ==================== SCHEMA ====================
@@ -97,7 +132,7 @@ const formSchema = z.object({
   customerId: z.string().min(1, 'Selecciona un cliente'),
   issueDate: z.string().min(1, 'La fecha es obligatoria'),
   dueDate: z.string().optional(),
-  seriesId: z.string().optional(),
+  seriesId: z.string().optional().default(''),
   discountPercent: z.number().min(0).max(100).optional(),
   irpfPercent: z.number().min(0).max(100).optional(),
   paymentMethod: z
@@ -111,10 +146,53 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+// ==================== INVOICE TYPE BADGE ====================
+
+interface InvoiceTypeBadgeProps {
+  invoiceType: InvoiceTypeOption;
+  selectedTemplate: InvoiceTemplate | null;
+  onClick: () => void;
+}
+
+function InvoiceTypeBadge({ invoiceType, selectedTemplate, onClick }: InvoiceTypeBadgeProps) {
+  const isTemplate = invoiceType === 'template';
+  const config = isTemplate
+    ? null
+    : INVOICE_TYPE_CONFIG[invoiceType as Exclude<InvoiceTypeOption, 'template'>];
+
+  const colorClass = isTemplate ? 'text-purple-700 dark:text-purple-400' : config!.color;
+  const bgClass = isTemplate ? 'bg-purple-50 dark:bg-purple-950/40' : config!.bg;
+  const borderClass = isTemplate
+    ? 'border-purple-200 dark:border-purple-700 hover:border-purple-400'
+    : `${config!.border} ${config!.hoverBorder}`;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`
+        group flex items-center gap-2.5 rounded-lg border px-3 py-1.5
+        transition-all duration-150 hover:shadow-sm active:scale-[0.98] cursor-pointer
+        ${colorClass} ${bgClass} ${borderClass}
+      `}
+    >
+      <span className="shrink-0">
+        {isTemplate ? <LayoutTemplate className="h-4 w-4" /> : config!.icon}
+      </span>
+      <div className="text-left min-w-0">
+        <div className="text-xs font-semibold leading-tight whitespace-nowrap">
+          {isTemplate && selectedTemplate ? `Plantilla: ${selectedTemplate.name}` : config?.label}
+        </div>
+        <div className="text-[10px] opacity-60 leading-tight hidden sm:block whitespace-nowrap">
+          {isTemplate ? 'Plantilla personalizada' : config?.description}
+        </div>
+      </div>
+      <ChevronDown className="h-3 w-3 opacity-40 group-hover:opacity-70 transition-opacity shrink-0 ml-0.5" />
+    </button>
+  );
+}
+
 // ==================== INNER FORM COMPONENT ====================
-// FIX: separamos el formulario en un componente hijo que recibe los defaultValues
-// ya resueltos. Así useForm() se inicializa UNA SOLA VEZ con los datos correctos,
-// evitando el problema de los Select de Radix que no reaccionan a form.reset().
 
 interface InvoiceFormProps {
   defaultValues: FormData;
@@ -122,6 +200,9 @@ interface InvoiceFormProps {
   sourceNumber?: string;
   editDraftId?: string;
   initialInvoiceType?: InvoiceTypeOption;
+  invoiceDefaults?: InvoiceDefaults | null;
+  /** Abre el modal de selección de tipo al montar (cuando la URL no trae ?tipo=) */
+  showTypeModalOnMount?: boolean;
 }
 
 function InvoiceForm({
@@ -130,17 +211,18 @@ function InvoiceForm({
   sourceNumber,
   editDraftId,
   initialInvoiceType,
+  invoiceDefaults,
+  showTypeModalOnMount = false,
 }: InvoiceFormProps) {
   const router = useRouter();
   const currentTenant = useAuthStore((s) => s.currentTenant);
   const currentYear = new Date().getFullYear();
 
-  // Default to 'standard' so the form renders immediately without forcing the modal
   const [invoiceType, setInvoiceType] = useState<InvoiceTypeOption>(
     initialInvoiceType ?? 'standard',
   );
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate | null>(null);
-  const [showTypeModal, setShowTypeModal] = useState(false);
+  const [showTypeModal, setShowTypeModal] = useState(showTypeModalOnMount);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [pendingDraftId, setPendingDraftId] = useState<string | null>(editDraftId ?? null);
@@ -157,38 +239,23 @@ function InvoiceForm({
   const confirmMutation = useConfirmInvoice();
 
   const customers: Customer[] = customersData?.data ?? [];
-  const allSeries: InvoiceSeries[] = seriesData?.data ?? [];
   const effectiveTemplate: InvoiceTemplate | null = selectedTemplate ?? defaultTemplate ?? null;
 
-  // Filter series by type: proformas don't use official series
-  const availableSeries = isProforma ? [] : allSeries.filter((s) => s.type === SeriesType.INVOICE);
+  const availableSeries = useMemo(
+    () => (isProforma ? [] : (seriesData?.data ?? []).filter((s) => s.type === SeriesType.INVOICE)),
+    [isProforma, seriesData],
+  );
 
-  // FIX: useForm se inicializa con los defaultValues ya resueltos (vacíos o del duplicado)
-  // No se llama a form.reset() en ningún efecto posterior
+  // Serie por defecto: la marcada como default o la primera. Fallback sin efectos ni refs.
+  const defaultSeriesId = useMemo(
+    () => (availableSeries.find((s) => s.isDefault) ?? availableSeries[0])?.id ?? '',
+    [availableSeries],
+  );
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues,
   });
-
-  // Auto-select default series when series load or invoice type changes
-  useEffect(() => {
-    if (availableSeries.length === 0) return;
-    const currentSeriesId = form.getValues('seriesId');
-    // Only auto-select if not already set
-    if (!currentSeriesId) {
-      const defaultSeries = availableSeries.find((s) => s.isDefault) ?? availableSeries[0];
-      if (defaultSeries) {
-        form.setValue('seriesId', defaultSeries.id, { shouldDirty: false });
-      }
-    }
-  }, [availableSeries.length, isProforma]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Clear seriesId for proformas (no official number)
-  useEffect(() => {
-    if (isProforma) {
-      form.setValue('seriesId', undefined, { shouldDirty: false });
-    }
-  }, [isProforma]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { fields, append, remove, swap } = useFieldArray({
     control: form.control,
@@ -201,9 +268,11 @@ function InvoiceForm({
   };
 
   const watchedValues = form.watch();
-  const selectedSeriesId = watchedValues.seriesId;
-  const selectedSeries = availableSeries.find((s) => s.id === selectedSeriesId) ?? null;
-  const previewInvoice = buildPreviewInvoice(watchedValues, customers, selectedSeries?.prefix);
+
+  // El seriesId efectivo: lo que haya seleccionado el usuario, o el por defecto
+  const effectiveSeriesId = watchedValues.seriesId || defaultSeriesId;
+  const selectedSeries = availableSeries.find((s) => s.id === effectiveSeriesId) ?? null;
+  const previewInvoice = buildPreviewInvoice(watchedValues, customers, selectedSeries);
   const selectedCustomer = customers.find((c) => c.id === watchedValues.customerId);
   const activePaymentMethod = watchedValues.paymentMethod as PaymentMethod | undefined;
 
@@ -245,24 +314,17 @@ function InvoiceForm({
 
   const handleSaveDraft = async (data: FormData) => {
     try {
+      const input = buildCreateInput({
+        ...data,
+        seriesId: data.seriesId || defaultSeriesId,
+        invoiceType: invoiceType ?? 'standard',
+        templateId: defaultTemplate?.id,
+      });
       if (editDraftId) {
-        await updateMutation.mutateAsync({
-          id: editDraftId,
-          data: buildCreateInput({
-            ...data,
-            invoiceType: invoiceType ?? 'standard',
-            templateId: defaultTemplate?.id,
-          }),
-        });
+        await updateMutation.mutateAsync({ id: editDraftId, data: input });
         router.push(`/dashboard/facturas/${editDraftId}`);
       } else {
-        const invoice = await createMutation.mutateAsync(
-          buildCreateInput({
-            ...data,
-            invoiceType: invoiceType ?? 'standard',
-            templateId: defaultTemplate?.id,
-          }),
-        );
+        const invoice = await createMutation.mutateAsync(input);
         router.push(`/dashboard/facturas/${invoice.id}`);
       }
     } catch (error) {
@@ -276,30 +338,30 @@ function InvoiceForm({
       toast.error('Rellena todos los campos obligatorios antes de confirmar.');
       return;
     }
+    if (!isProforma && !effectiveSeriesId) {
+      toast.error('Selecciona una serie de facturación.');
+      return;
+    }
     setShowConfirmDialog(true);
   };
 
   const handleConfirmDialogConfirm = async () => {
     const data = form.getValues();
+    const resolvedData = { ...data, seriesId: data.seriesId || defaultSeriesId };
 
-    // Proformas: solo guardar, nunca confirmar (no se asigna número)
     if (isProforma) {
       try {
+        const input = buildCreateInput({
+          ...resolvedData,
+          invoiceType: 'proforma',
+          templateId: defaultTemplate?.id,
+        });
         if (editDraftId) {
-          await updateMutation.mutateAsync({
-            id: editDraftId,
-            data: buildCreateInput({
-              ...data,
-              invoiceType: 'proforma',
-              templateId: defaultTemplate?.id,
-            }),
-          });
+          await updateMutation.mutateAsync({ id: editDraftId, data: input });
           setShowConfirmDialog(false);
           router.push(`/dashboard/facturas/${editDraftId}`);
         } else {
-          const draft = await createMutation.mutateAsync(
-            buildCreateInput({ ...data, invoiceType: 'proforma', templateId: defaultTemplate?.id }),
-          );
+          const draft = await createMutation.mutateAsync(input);
           setShowConfirmDialog(false);
           router.push(`/dashboard/facturas/${draft.id}`);
         }
@@ -311,28 +373,19 @@ function InvoiceForm({
 
     let draftId = pendingDraftId;
     try {
+      const input = buildCreateInput({
+        ...resolvedData,
+        invoiceType: invoiceType ?? 'standard',
+        templateId: defaultTemplate?.id,
+      });
       if (editDraftId) {
-        // En modo edición: guardamos los cambios y luego confirmamos el borrador existente
-        await updateMutation.mutateAsync({
-          id: editDraftId,
-          data: buildCreateInput({
-            ...data,
-            invoiceType: invoiceType ?? 'standard',
-            templateId: defaultTemplate?.id,
-          }),
-        });
+        await updateMutation.mutateAsync({ id: editDraftId, data: input });
         await confirmMutation.mutateAsync(editDraftId);
         setShowConfirmDialog(false);
         router.push(`/dashboard/facturas/${editDraftId}`);
       } else {
         if (!draftId) {
-          const draft = await createMutation.mutateAsync(
-            buildCreateInput({
-              ...data,
-              invoiceType: invoiceType ?? 'standard',
-              templateId: defaultTemplate?.id,
-            }),
-          );
+          const draft = await createMutation.mutateAsync(input);
           draftId = draft.id;
           setPendingDraftId(draftId);
         }
@@ -350,14 +403,9 @@ function InvoiceForm({
   const isSubmitting =
     createMutation.isPending || updateMutation.isPending || confirmMutation.isPending;
 
-  // Build a fully resolved tenant for the preview, using fresh useTenant() data
-  // and resolving the logoUrl to an absolute URL so <img> can load it.
   const source = tenantData ?? currentTenant;
   const previewTenant: Tenant | null = source
-    ? ({
-        ...source,
-        logoUrl: resolveUrl(source.logoUrl) ?? null,
-      } as Tenant)
+    ? ({ ...source, logoUrl: resolveUrl(source.logoUrl) ?? null } as Tenant)
     : null;
 
   // ==================== RENDER ====================
@@ -409,28 +457,23 @@ function InvoiceForm({
                   : 'Nueva factura'}
               </h1>
               <p className="text-xs text-muted-foreground">
-                {isProforma
-                  ? 'Se guardará como proforma. Sin número fiscal hasta que la conviertas a oficial.'
-                  : editDraftId
-                    ? 'Modifica el borrador y guárdalo o confírmalo como factura definitiva.'
-                    : 'Guardada como borrador hasta que la confirmes.'}
+                {editDraftId
+                  ? 'Modifica y guarda o confirma como definitiva.'
+                  : 'Guardada como borrador hasta que la confirmes.'}
               </p>
             </div>
           </div>
+
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="mr-2"
+            {/* Badge de tipo — llamativo y clicable */}
+            <InvoiceTypeBadge
+              invoiceType={invoiceType}
+              selectedTemplate={selectedTemplate}
               onClick={() => setShowTypeModal(true)}
-            >
-              Tipo:{' '}
-              {invoiceType === 'template' && selectedTemplate
-                ? `Plantilla: ${selectedTemplate.name}`
-                : invoiceType
-                  ? INVOICE_TYPE_LABELS[invoiceType as Exclude<InvoiceTypeOption, 'template'>]
-                  : '---'}
-            </Button>
+            />
+
+            <div className="w-px h-6 bg-border mx-1 shrink-0" />
+
             <Button variant="outline" size="sm" onClick={triggerSubmit} disabled={isSubmitting}>
               <Save className="mr-1.5 h-3.5 w-3.5" />
               {createMutation.isPending || updateMutation.isPending
@@ -439,7 +482,7 @@ function InvoiceForm({
             </Button>
             <Button size="sm" onClick={handleConfirmClick} disabled={isSubmitting}>
               <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
-              {isProforma ? 'Guardar como proforma' : 'Confirmar factura'}
+              {isProforma ? 'Guardar proforma' : 'Confirmar factura'}
             </Button>
           </div>
         </div>
@@ -448,7 +491,6 @@ function InvoiceForm({
         <div className="flex flex-1 overflow-hidden">
           {/* LEFT -- Form (60%) */}
           <div className="w-[60%] overflow-y-auto px-6 py-5 space-y-5 border-r">
-            {/* Banner de duplicado */}
             {isDuplicate && sourceNumber && (
               <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/40 px-4 py-3">
                 <Copy className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
@@ -490,6 +532,18 @@ function InvoiceForm({
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Datos generales</CardTitle>
+                  {!invoiceDefaults && !isDuplicate && !editDraftId && (
+                    <p className="text-xs text-muted-foreground">
+                      ¿Siempre usas los mismos datos?{' '}
+                      <Link
+                        href="/dashboard/ajustes/facturacion"
+                        className="text-primary underline underline-offset-2"
+                      >
+                        Configura tus preferencias
+                      </Link>{' '}
+                      para ahorrar tiempo.
+                    </p>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Cliente */}
@@ -570,15 +624,17 @@ function InvoiceForm({
                   </section>
 
                   {/* Serie de facturación */}
-                  {!isProforma && availableSeries.length > 0 && (
+                  {!isProforma && (
                     <section
                       id="field-seriesId"
                       className="space-y-2"
                       onFocus={() => setActiveSection('seriesId')}
                     >
-                      <Label>Serie de facturación</Label>
+                      <Label>
+                        Serie de facturación <span className="text-destructive">*</span>
+                      </Label>
                       <Select
-                        value={watchedValues.seriesId || ''}
+                        value={effectiveSeriesId}
                         onValueChange={(v) => form.setValue('seriesId', v, { shouldDirty: true })}
                       >
                         <SelectTrigger>
@@ -590,13 +646,25 @@ function InvoiceForm({
                               {s.name}
                               {' — '}
                               <span className="font-mono text-xs">
-                                {s.prefix}-{currentYear}-???
+                                {formatSeriesPreview(s.prefix, s.year, s.nextNumber)}
                               </span>
                               {s.isDefault && (
                                 <span className="ml-1 text-[10px] text-primary">(por defecto)</span>
                               )}
                             </SelectItem>
                           ))}
+                          {availableSeries.length === 0 && (
+                            <div className="p-3 text-sm text-muted-foreground flex gap-2 items-start">
+                              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                              No hay series activas.{' '}
+                              <Link
+                                href="/dashboard/ajustes/facturacion"
+                                className="underline text-primary"
+                              >
+                                Crea una en ajustes
+                              </Link>
+                            </div>
+                          )}
                         </SelectContent>
                       </Select>
                     </section>
@@ -617,11 +685,9 @@ function InvoiceForm({
                         form.setValue('paymentMethod', v as PaymentMethod, {
                           shouldValidate: true,
                         });
-                        // Solo limpiar detalles si cambia el método (no en la carga inicial)
                         if (v !== defaultValues.paymentMethod) {
                           form.setValue('paymentDetails', {});
                         }
-                        // Auto-rellenar datos bancarios desde los ajustes de empresa
                         if (v === PaymentMethod.BANK_TRANSFER) {
                           const tenant = tenantData ?? currentTenant;
                           if (tenant?.iban && !form.getValues('paymentDetails.iban')) {
@@ -660,108 +726,34 @@ function InvoiceForm({
                         {form.formState.errors.paymentMethod.message}
                       </p>
                     )}
-
                     {activePaymentMethod && (
-                      <div className="rounded-lg border bg-muted/40 p-4 space-y-3">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                          {PAYMENT_METHOD_SECTION_LABELS[activePaymentMethod]}
-                        </p>
-
-                        {activePaymentMethod === PaymentMethod.CASH && (
-                          <p className="text-sm text-muted-foreground">
-                            💡 Recuerda: la normativa española limita los pagos en efectivo a{' '}
-                            <strong>1.000 €</strong> entre empresarios y autónomos (2.500 € con
-                            particulares).
-                          </p>
-                        )}
-
-                        {activePaymentMethod === PaymentMethod.BANK_TRANSFER && (
-                          <>
-                            <div className="space-y-1.5">
-                              <Label htmlFor="iban" className="text-sm">
-                                IBAN
-                              </Label>
-                              <Input
-                                id="iban"
-                                placeholder="ES91 2100 0418 4502 0005 1332"
-                                className="font-mono text-sm tracking-wider"
-                                value={watchedValues.paymentDetails?.iban ?? ''}
-                                onChange={(e) => {
-                                  const raw = e.target.value.replace(/\s/g, '').toUpperCase();
-                                  const formatted = raw.match(/.{1,4}/g)?.join(' ') ?? raw;
-                                  form.setValue('paymentDetails.iban', formatted, {
-                                    shouldDirty: true,
-                                  });
-                                }}
-                              />
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-1.5">
-                                <Label className="text-sm">Titular de la cuenta</Label>
-                                <Input
-                                  placeholder="Nombre Apellidos / Empresa S.L."
-                                  {...form.register('paymentDetails.accountHolder')}
-                                />
-                              </div>
-                              <div className="space-y-1.5">
-                                <Label className="text-sm">
-                                  BIC/SWIFT{' '}
-                                  <span className="text-muted-foreground font-normal">
-                                    (pagos internacionales)
-                                  </span>
-                                </Label>
-                                <Input
-                                  placeholder="CAIXESBBXXX"
-                                  className="font-mono text-sm"
-                                  {...form.register('paymentDetails.bic')}
-                                />
-                              </div>
-                            </div>
-                          </>
-                        )}
-
-                        {activePaymentMethod !== PaymentMethod.BANK_TRANSFER &&
-                          activePaymentMethod !== PaymentMethod.CASH &&
-                          getPaymentDetailFields(activePaymentMethod).map((field) => {
-                            const fieldPath = `paymentDetails.${field.key}` as Path<FormData>;
-                            return (
-                              <div key={field.key} className="space-y-1.5">
-                                <Label className="text-sm">
-                                  {field.label}
-                                  {field.helperText && (
-                                    <span className="text-muted-foreground font-normal ml-1">
-                                      {field.helperText}
-                                    </span>
-                                  )}
-                                </Label>
-                                {field.type === 'textarea' ? (
-                                  <Textarea
-                                    placeholder={field.placeholder}
-                                    rows={2}
-                                    {...form.register(fieldPath)}
-                                  />
-                                ) : (
-                                  <Input
-                                    type={
-                                      field.type === 'email'
-                                        ? 'email'
-                                        : field.type === 'tel'
-                                          ? 'tel'
-                                          : 'text'
-                                    }
-                                    placeholder={field.placeholder}
-                                    className={field.inputProps?.className}
-                                    {...form.register(fieldPath)}
-                                  />
-                                )}
-                              </div>
-                            );
-                          })}
-                      </div>
+                      <PaymentDetailsFields
+                        paymentMethod={activePaymentMethod}
+                        values={(watchedValues.paymentDetails ?? {}) as PaymentDetailsValues}
+                        onChange={(key, value) =>
+                          form.setValue(
+                            `paymentDetails.${key}` as `paymentDetails.${keyof PaymentDetailsValues}`,
+                            value,
+                            { shouldDirty: true },
+                          )
+                        }
+                        tenantIban={(tenantData ?? currentTenant)?.iban ?? undefined}
+                        tenantAccountHolder={
+                          (tenantData ?? currentTenant)?.bankAccountHolder ?? undefined
+                        }
+                      />
                     )}
                   </section>
                 </CardContent>
               </Card>
+
+              {/* ── Banner: guardar como predeterminado ── */}
+              <SaveAsDefaultBanner
+                watchedValues={watchedValues}
+                currentDefaults={invoiceDefaults}
+                isDuplicate={isDuplicate}
+                editDraftId={editDraftId}
+              />
 
               {/* ── Líneas de factura ── */}
               <Card>
@@ -883,9 +875,6 @@ function InvoiceForm({
 }
 
 // ==================== PAGE (shell) ====================
-// FIX: la página solo espera a que los datos del duplicado estén listos
-// y luego renderiza el formulario con los defaultValues correctos.
-// Esto garantiza que useForm() se inicialice una sola vez con los datos completos.
 
 const VALID_INVOICE_TYPES: InvoiceTypeOption[] = ['standard', 'proforma', 'simplified'];
 
@@ -894,17 +883,24 @@ export default function NuevaFacturaPage() {
   const duplicateId = searchParams.get('duplicate');
   const editId = searchParams.get('edit');
   const tipoParam = searchParams.get('tipo');
+
+  // Si hay ?tipo= válido lo usamos directamente
   const initialTypeFromParam = VALID_INVOICE_TYPES.includes(tipoParam as InvoiceTypeOption)
     ? (tipoParam as InvoiceTypeOption)
     : undefined;
+
+  // Sin ?tipo=, sin edición ni duplicado → abrir modal de selección al montar
+  const showTypeModalOnMount = !initialTypeFromParam && !editId && !duplicateId;
+
   const sourceId = duplicateId ?? editId;
 
   const { data: sourceInvoice, isLoading: loadingSource } = useInvoice(sourceId ?? '', {
     enabled: !!sourceId,
   });
 
-  // Mientras cargamos la factura origen (duplicado o edición), mostramos loading
-  if (sourceId && loadingSource) {
+  const { data: invoiceDefaults, isLoading: loadingDefaults } = useInvoiceDefaults();
+
+  if ((sourceId && loadingSource) || loadingDefaults) {
     return (
       <div className="flex h-[calc(100vh-64px)] items-center justify-center flex-col gap-4">
         <Skeleton className="h-12 w-12 rounded-full" />
@@ -913,8 +909,6 @@ export default function NuevaFacturaPage() {
     );
   }
 
-  // Construimos los defaultValues una única vez para que useForm() se inicialice correctamente.
-  // En modo edición preservamos la fecha original del borrador; en duplicado usamos hoy.
   const defaultValues: FormData = sourceInvoice
     ? {
         customerId: sourceInvoice.customerId ?? '',
@@ -922,7 +916,7 @@ export default function NuevaFacturaPage() {
           ? (sourceInvoice.issueDate?.split('T')[0] ?? new Date().toISOString().split('T')[0])
           : new Date().toISOString().split('T')[0],
         dueDate: editId ? (sourceInvoice.dueDate?.split('T')[0] ?? undefined) : undefined,
-        seriesId: editId ? (sourceInvoice.seriesId ?? undefined) : undefined,
+        seriesId: editId ? (sourceInvoice.seriesId ?? '') : '',
         discountPercent: sourceInvoice.discountPercent
           ? Number(sourceInvoice.discountPercent)
           : undefined,
@@ -940,7 +934,22 @@ export default function NuevaFacturaPage() {
           _hideQty: false,
         })),
       }
-    : { ...EMPTY_DEFAULT_VALUES };
+    : {
+        customerId: '',
+        paymentMethod: (invoiceDefaults?.paymentMethod as PaymentMethod) ?? undefined,
+        paymentDetails:
+          (invoiceDefaults?.paymentDetails as Record<string, string | undefined>) ?? {},
+        issueDate: new Date().toISOString().split('T')[0],
+        dueDate: invoiceDefaults?.dueDays
+          ? calculateDueDate(new Date(), invoiceDefaults.dueDays)
+          : undefined,
+        seriesId: '',
+        discountPercent: undefined,
+        irpfPercent:
+          invoiceDefaults?.irpfPercent != null ? Number(invoiceDefaults.irpfPercent) : undefined,
+        notes: invoiceDefaults?.notes ?? undefined,
+        lines: [{ ...EMPTY_LINE }] as ExtendedLineData[],
+      };
 
   return (
     <InvoiceForm
@@ -953,6 +962,8 @@ export default function NuevaFacturaPage() {
           ? (((sourceInvoice as any)?.invoiceType as InvoiceTypeOption) ?? undefined)
           : initialTypeFromParam
       }
+      invoiceDefaults={invoiceDefaults ?? null}
+      showTypeModalOnMount={showTypeModalOnMount}
     />
   );
 }

@@ -90,8 +90,7 @@ function mod97(iban: string): number {
 
   while (remainder.length > 2) {
     block = remainder.slice(0, 9);
-    remainder =
-      (parseInt(block, 10) % 97).toString() + remainder.slice(block.length);
+    remainder = (parseInt(block, 10) % 97).toString() + remainder.slice(block.length);
   }
 
   return parseInt(remainder, 10) % 97;
@@ -99,7 +98,7 @@ function mod97(iban: string): number {
 
 function convertIbanToNumeric(iban: string): string {
   return iban
-    .split("")
+    .split('')
     .map((char) => {
       const code = char.charCodeAt(0);
       if (code >= 65 && code <= 90) {
@@ -107,20 +106,20 @@ function convertIbanToNumeric(iban: string): string {
       }
       return char;
     })
-    .join("");
+    .join('');
 }
 
 export function validateIban(iban: string): IbanValidationResult {
-  if (!iban || typeof iban !== "string") {
-    return { isValid: false, message: "El IBAN es obligatorio" };
+  if (!iban || typeof iban !== 'string') {
+    return { isValid: false, message: 'El IBAN es obligatorio' };
   }
 
-  const cleaned = iban.toUpperCase().replace(/[\s]/g, "");
+  const cleaned = iban.toUpperCase().replace(/[\s]/g, '');
 
   if (!/^[A-Z]{2}/.test(cleaned)) {
     return {
       isValid: false,
-      message: "El IBAN debe comenzar con el código de país (2 letras)",
+      message: 'El IBAN debe comenzar con el código de país (2 letras)',
     };
   }
 
@@ -147,7 +146,7 @@ export function validateIban(iban: string): IbanValidationResult {
     return {
       isValid: false,
       country: countryCode,
-      message: "El IBAN contiene caracteres no válidos",
+      message: 'El IBAN contiene caracteres no válidos',
     };
   }
 
@@ -158,7 +157,7 @@ export function validateIban(iban: string): IbanValidationResult {
     return {
       isValid: false,
       country: countryCode,
-      message: "El IBAN no es válido (checksum incorrecto)",
+      message: 'El IBAN no es válido (checksum incorrecto)',
     };
   }
 
@@ -167,4 +166,14 @@ export function validateIban(iban: string): IbanValidationResult {
 
 export function isValidIban(iban: string): boolean {
   return validateIban(iban).isValid;
+}
+
+/**
+ * Formats an IBAN string for display: strips whitespace, uppercases,
+ * and inserts a space every 4 characters (e.g. "ES9121000418450200051332" → "ES91 2100 0418 4502 0005 1332").
+ */
+export function formatIban(raw: string): string {
+  if (!raw) return '';
+  const clean = raw.replace(/\s/g, '').toUpperCase();
+  return clean.match(/.{1,4}/g)?.join(' ') ?? clean;
 }

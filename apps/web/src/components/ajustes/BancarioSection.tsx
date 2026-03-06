@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Save, Pencil, X, Loader2, CreditCard, Building, ChevronRight } from 'lucide-react';
+import { formatIban } from '@easyfactura/shared-validators';
 
 // ── Schema ──────────────────────────────────────────────────────────────────
 const bancarioSchema = z.object({
@@ -23,21 +24,12 @@ const bancarioSchema = z.object({
 type BancarioFormData = z.infer<typeof bancarioSchema>;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-function formatIBANDisplay(raw: string) {
-  return raw.replace(/(.{4})/g, '$1 ').trim();
-}
-
 function maskIBAN(iban: string) {
   if (!iban || iban.length < 8) return iban;
   const prefix = iban.slice(0, 4);
   const suffix = iban.slice(-4);
   const middle = '•'.repeat(Math.max(0, iban.length - 8));
-  return formatIBANDisplay(prefix + middle + suffix);
-}
-
-function formatIBANInput(value: string) {
-  const clean = value.replace(/\s/g, '').toUpperCase();
-  return clean.replace(/(.{4})/g, '$1 ').trim();
+  return formatIban(prefix + middle + suffix);
 }
 
 // ── Tarjeta visual ───────────────────────────────────────────────────────────
@@ -335,7 +327,7 @@ function EditForm({
     defaultValues,
   });
 
-  const [ibanDisplay, setIbanDisplay] = useState(formatIBANInput(defaultValues.iban ?? ''));
+  const [ibanDisplay, setIbanDisplay] = useState(formatIban(defaultValues.iban ?? ''));
 
   const watchedHolder = form.watch('bankAccountHolder') ?? '';
   const watchedIban = form.watch('iban') ?? '';
@@ -363,7 +355,7 @@ function EditForm({
                 placeholder="ES00 0000 0000 0000 0000 0000"
                 value={ibanDisplay}
                 onChange={(e) => {
-                  const formatted = formatIBANInput(e.target.value);
+                  const formatted = formatIban(e.target.value);
                   setIbanDisplay(formatted);
                   field.onChange(formatted.replace(/\s/g, ''));
                 }}

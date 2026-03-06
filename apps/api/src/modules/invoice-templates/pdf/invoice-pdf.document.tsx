@@ -3,6 +3,7 @@
 // NOTE: @react-pdf/renderer is NOT imported at the top level because it is ESM-only.
 // The `renderer` object is injected at runtime via the `createInvoicePdfElement` factory.
 import { Invoice, InvoiceLayout, InvoiceTemplate, Tenant } from '@easyfactura/shared-types';
+import { formatIban } from '@easyfactura/shared-validators';
 
 interface InvoicePdfDocumentProps {
   invoice: Invoice;
@@ -269,7 +270,7 @@ export function createInvoicePdfElement(
         <Text style={styles.valueText}>{tenant.phone}</Text>
       )}
       {layout.header.showIban && tenant.iban && (
-        <Text style={styles.valueText}>IBAN: {tenant.iban}</Text>
+        <Text style={styles.valueText}>IBAN: {formatIban(tenant.iban)}</Text>
       )}
     </View>
   );
@@ -408,7 +409,7 @@ export function createInvoicePdfElement(
           {layout.footer.showPaymentInfo && invoice.customer && tenant.iban && (
             <View style={styles.paymentInfoRow}>
               <Text style={styles.paymentText}>
-                Transfiere a: {tenant.iban}
+                Transfiere a: {formatIban(tenant.iban)}
                 {tenant.bankAccountHolder ? ` · ${tenant.bankAccountHolder}` : ''}
               </Text>
             </View>

@@ -10,6 +10,7 @@ import {
   PaymentMethod,
 } from '@easyfactura/shared-types';
 import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
+import { formatIban } from '@easyfactura/shared-validators';
 import { HeaderBlock } from '@/components/invoice-preview/blocks/HeaderBlock';
 import { ItemsTableBlock } from '@/components/invoice-preview/blocks/ItemsTableBlock';
 import { TotalsBlock } from '@/components/invoice-preview/blocks/TotalsBlock';
@@ -204,7 +205,7 @@ function PaymentDetailsBlock({ invoice, paymentDetails, primaryColor }: PaymentD
                 fontWeight: 600,
               }}
             >
-              {paymentDetails.iban}
+              {formatIban(paymentDetails.iban)}
             </p>
           )}
           {paymentDetails?.accountHolder && (

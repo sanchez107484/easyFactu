@@ -132,3 +132,26 @@ export function formatInvoiceNumber(
   const paddedNumber = number.toString().padStart(digits, '0');
   return `${prefix.toUpperCase()}-${year}-${paddedNumber}`;
 }
+
+/**
+ * Formats a series-based invoice number preview using the same logic as the backend.
+ * The prefix is used as-is (it may include a trailing dash or year segment).
+ * Numbers below 10 are zero-padded to 2 digits; all others are shown as-is.
+ *
+ * FORMAT: {prefix}{year}-{formattedNumber}
+ *
+ * @param prefix - Series prefix as stored in the DB (e.g., 'F-', '2026/F-')
+ * @param year - Series year (e.g., 2026)
+ * @param number - Sequential number to preview (e.g., 1 for the next invoice)
+ * @returns Formatted invoice number preview (e.g., 'F-2026-01', 'F-2026-42')
+ *
+ * @example
+ * formatSeriesPreview('F-', 2026, 1)   // 'F-2026-01'
+ * formatSeriesPreview('FAC-', 2026, 9) // 'FAC-2026-09'
+ * formatSeriesPreview('R-', 2026, 10)  // 'R-2026-10'
+ * formatSeriesPreview('R-', 2026, 42)  // 'R-2026-42'
+ */
+export function formatSeriesPreview(prefix: string, year: number, number: number): string {
+  const formatted = number < 10 ? `0${number}` : `${number}`;
+  return `${prefix}${year}-${formatted}`;
+}

@@ -131,6 +131,22 @@ export class InvoiceSeriesService {
     });
   }
 
+  async delete(tenantId: string, id: string): Promise<void> {
+    const series = await this.findOne(tenantId, id);
+
+    const invoiceCount = series._count?.invoices ?? 0;
+    if (invoiceCount > 0) {
+      throw new ConflictException(
+        `No se puede eliminar la serie "${series.code}" porque tiene ${invoiceCount} factura(s) asociada(s). ` +
+          'Archiva las facturas o asígnalas a otra serie antes de eliminar esta.'
+      );
+    }
+
+    await this.prisma.invoiceSeries.delete({
+      where: { id, tenantId },
+    });
+  }
+
   /**
    * Atomically increments the next number for a series
    * Used when creating a new invoice to prevent race conditions

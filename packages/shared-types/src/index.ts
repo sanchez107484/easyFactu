@@ -349,7 +349,8 @@ export interface InvoiceSeries {
   name: string;
   type: SeriesType;
   prefix: string;
-  lastNumber: number;
+  nextNumber: number;
+  digits: number;
   year: number;
   isDefault: boolean;
   createdAt: string;
@@ -571,6 +572,27 @@ export interface InvoiceLayout {
     showPaymentInfo: boolean;
     showVerifactuQr: boolean;
   };
+}
+
+// ==================== INVOICE DEFAULTS ====================
+
+export interface InvoiceDefaults {
+  id: string;
+  tenantId: string;
+  paymentMethod?: string | null;
+  paymentDetails?: {
+    iban?: string;
+    bic?: string;
+    accountHolder?: string;
+    bizumPhone?: string;
+    paypalEmail?: string;
+    paymentNote?: string;
+  } | null;
+  irpfPercent?: number | null;
+  dueDays?: number | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const DEFAULT_INVOICE_LAYOUT: InvoiceLayout = {

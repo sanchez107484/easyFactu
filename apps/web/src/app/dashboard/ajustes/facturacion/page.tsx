@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -35,11 +35,65 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Edit, FileText, Loader2, LayoutTemplate, ExternalLink } from 'lucide-react';
-import { useInvoiceSeries, useCreateSeries, useUpdateSeries } from '@/hooks/use-invoice-series';
-import { InvoiceSeries, SeriesType } from '@easyfactura/shared-types';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  FileText,
+  Loader2,
+  LayoutTemplate,
+  ExternalLink,
+  Settings2,
+} from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  useInvoiceSeries,
+  useCreateSeries,
+  useUpdateSeries,
+  useDeleteSeries,
+} from '@/hooks/use-invoice-series';
+import { formatSeriesPreview } from '@easyfactura/shared-validators';
+import { useInvoiceDefaults, useUpdateInvoiceDefaults } from '@/hooks/use-invoice-defaults';
+import { useTenant, useUpdateTenant } from '@/hooks/use-tenant';
+import { InvoiceSeries, PaymentMethod, SeriesType } from '@easyfactura/shared-types';
+import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
+import {
+  PaymentDetailsFields,
+  PaymentDetailsValues,
+} from '@/components/facturas/PaymentDetailsFields';
+import { Path } from 'react-hook-form';
 
 // ==================== SCHEMA ====================
+
+const defaultsSchema = z.object({
+  paymentMethod: z.nativeEnum(PaymentMethod).optional().nullable(),
+  paymentDetails: z
+    .object({
+      iban: z.string().optional(),
+      bic: z.string().optional(),
+      accountHolder: z.string().optional(),
+      bizumPhone: z.string().optional(),
+      paypalEmail: z.string().optional(),
+      paymentNote: z.string().max(300, 'Máximo 300 caracteres').optional(),
+    })
+    .optional()
+    .nullable(),
+  irpfPercent: z.number().min(0).max(100).optional().nullable(),
+  dueDays: z.number().int().min(0).optional().nullable(),
+  notes: z.string().max(1000, 'Máximo 1000 caracteres').optional().nullable(),
+});
+
+type DefaultsFormData = z.infer<typeof defaultsSchema>;
 
 const seriesSchema = z.object({
   code: z
@@ -61,6 +115,195 @@ const editSeriesSchema = z.object({
 
 type SeriesFormData = z.infer<typeof seriesSchema>;
 type EditSeriesFormData = z.infer<typeof editSeriesSchema>;
+
+// ==================== INVOICE DEFAULTS FORM ====================
+function InvoiceDefaultsForm() {
+  const { data: defaults, isLoading: loadingDefaults } = useInvoiceDefaults();
+  const { data: tenantData } = useTenant();
+  const updateDefaults = useUpdateInvoiceDefaults();
+  const updateTenant = useUpdateTenant();
+
+  const form = useForm<DefaultsFormData>({
+    resolver: zodResolver(defaultsSchema),
+    defaultValues: {
+      paymentMethod: null,
+      paymentDetails: {},
+      irpfPercent: null,
+      dueDays: null,
+      notes: '',
+    },
+  });
+
+  // ── FIX: esperamos a que defaults esté cargado para hacer reset ──
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (defaults === undefined) return;
+    form.reset({
+      paymentMethod: (defaults?.paymentMethod as PaymentMethod | null | undefined) ?? null,
+      paymentDetails: (defaults?.paymentDetails as DefaultsFormData['paymentDetails']) ?? {},
+      irpfPercent: defaults?.irpfPercent != null ? Number(defaults.irpfPercent) : null,
+      dueDays: defaults?.dueDays ?? null,
+      notes: defaults?.notes ?? '',
+    });
+    setReady(true);
+  }, [defaults]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const watchedMethod = form.watch('paymentMethod') as PaymentMethod | null | undefined;
+  const watchedPD = form.watch('paymentDetails') as PaymentDetailsValues | null | undefined;
+  const watchedDueDays = form.watch('dueDays');
+  const watchedIrpf = form.watch('irpfPercent');
+
+  function onSubmit(data: DefaultsFormData) {
+    // Si el método es transferencia y hay IBAN en paymentDetails,
+    // lo guardamos también en tenant (fuente única de verdad)
+    if (
+      data.paymentMethod === PaymentMethod.BANK_TRANSFER &&
+      (data.paymentDetails?.iban || data.paymentDetails?.accountHolder)
+    ) {
+      updateTenant.mutate({
+        iban: data.paymentDetails?.iban?.replace(/\s/g, '') ?? undefined,
+        bankAccountHolder: data.paymentDetails?.accountHolder ?? undefined,
+      });
+    }
+
+    updateDefaults.mutate({
+      paymentMethod: (data.paymentMethod as PaymentMethod) ?? null,
+      paymentDetails: data.paymentDetails ?? null,
+      irpfPercent: data.irpfPercent ?? null,
+      dueDays: data.dueDays ?? null,
+      notes: data.notes || null,
+    });
+  }
+
+  if (loadingDefaults || !ready) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-10 w-full" />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      {/* Método de pago predeterminado */}
+      <div className="space-y-2">
+        <Label>Método de pago predeterminado</Label>
+        {/* FIX: key fuerza re-mount del Select cuando llegan los datos */}
+        <Select
+          key={`pm-${watchedMethod ?? 'none'}-${ready}`}
+          defaultValue={watchedMethod ?? 'none'}
+          onValueChange={(v) => {
+            form.setValue('paymentMethod', v !== 'none' ? (v as PaymentMethod) : null);
+            form.setValue('paymentDetails', {});
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Sin predeterminado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Sin predeterminado</SelectItem>
+            {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Detalles del método de pago */}
+      {watchedMethod && (
+        <PaymentDetailsFields
+          paymentMethod={watchedMethod}
+          values={(watchedPD ?? {}) as PaymentDetailsValues}
+          onChange={(key, value) =>
+            form.setValue(`paymentDetails.${key}` as Path<DefaultsFormData>, value)
+          }
+          tenantIban={tenantData?.iban ?? undefined}
+          tenantAccountHolder={tenantData?.bankAccountHolder ?? undefined}
+        />
+      )}
+
+      {/* Retención IRPF */}
+      <div className="space-y-2">
+        <Label htmlFor="def-irpf">Retención IRPF por defecto (%)</Label>
+        <Input
+          id="def-irpf"
+          type="number"
+          step="0.01"
+          min="0"
+          max="100"
+          placeholder="Sin retención"
+          {...form.register('irpfPercent', {
+            setValueAs: (v) => (v === '' || v === null ? null : Number(v)),
+          })}
+        />
+        <p className="text-xs text-muted-foreground">
+          Introduce 15 para aplicar el 15% de IRPF en cada nueva factura
+        </p>
+        {form.formState.errors.irpfPercent && (
+          <p className="text-xs text-destructive">{form.formState.errors.irpfPercent.message}</p>
+        )}
+      </div>
+
+      {/* Días de vencimiento */}
+      <div className="space-y-2">
+        <Label>Días de vencimiento por defecto</Label>
+        {/* FIX: mismo patrón, key + defaultValue */}
+        <Select
+          key={`dd-${watchedDueDays ?? 'none'}-${ready}`}
+          defaultValue={watchedDueDays != null ? String(watchedDueDays) : 'none'}
+          onValueChange={(v) => form.setValue('dueDays', v !== 'none' ? Number(v) : null)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Sin vencimiento" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Sin vencimiento</SelectItem>
+            <SelectItem value="15">15 días</SelectItem>
+            <SelectItem value="30">30 días</SelectItem>
+            <SelectItem value="45">45 días</SelectItem>
+            <SelectItem value="60">60 días</SelectItem>
+            <SelectItem value="90">90 días</SelectItem>
+          </SelectContent>
+        </Select>
+        {watchedDueDays != null && (
+          <p className="text-xs text-muted-foreground">
+            La fecha de vencimiento se calculará automáticamente
+          </p>
+        )}
+      </div>
+
+      {/* Notas predeterminadas */}
+      <div className="space-y-2">
+        <Label htmlFor="def-notes">Notas predeterminadas</Label>
+        <Textarea
+          id="def-notes"
+          rows={2}
+          placeholder="Ej: Gracias por su confianza..."
+          {...form.register('notes')}
+        />
+        {form.formState.errors.notes && (
+          <p className="text-xs text-destructive">{form.formState.errors.notes.message}</p>
+        )}
+      </div>
+
+      <Button
+        type="submit"
+        disabled={updateDefaults.isPending || updateTenant.isPending}
+        className="gap-2"
+      >
+        {(updateDefaults.isPending || updateTenant.isPending) && (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        )}
+        Guardar preferencias
+      </Button>
+    </form>
+  );
+}
 
 // ==================== CREATE SERIES DIALOG ====================
 
@@ -145,10 +388,24 @@ function CreateSeriesDialog({ open, onClose }: CreateSeriesDialogProps) {
 
           <div>
             <Label htmlFor="prefix">Prefijo de numeración *</Label>
-            <Input id="prefix" placeholder={`${currentYear}/F-`} {...form.register('prefix')} />
-            <p className="mt-1 text-xs text-muted-foreground">
-              Ej: {currentYear}/F- → genera {currentYear}/F-0001, {currentYear}/F-0002...
-            </p>
+            <Input id="prefix" placeholder="F-" {...form.register('prefix')} />
+            {form.watch('prefix') ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Ej:{' '}
+                <span className="font-mono">
+                  {formatSeriesPreview(form.watch('prefix'), currentYear, 1)}
+                </span>
+                ,{' '}
+                <span className="font-mono">
+                  {formatSeriesPreview(form.watch('prefix'), currentYear, 2)}
+                </span>
+                ...
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Escribe un prefijo para ver cómo quedarán las facturas
+              </p>
+            )}
             {form.formState.errors.prefix && (
               <p className="mt-1 text-xs text-destructive">
                 {form.formState.errors.prefix.message}
@@ -226,6 +483,14 @@ function EditSeriesDialog({ series, onClose }: EditSeriesDialogProps) {
           <div>
             <Label htmlFor="edit-prefix">Prefijo de numeración *</Label>
             <Input id="edit-prefix" {...form.register('prefix')} />
+            {form.watch('prefix') && series && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Ej:{' '}
+                <span className="font-mono">
+                  {formatSeriesPreview(form.watch('prefix'), series.year, series.nextNumber)}
+                </span>
+              </p>
+            )}
             {form.formState.errors.prefix && (
               <p className="mt-1 text-xs text-destructive">
                 {form.formState.errors.prefix.message}
@@ -264,8 +529,10 @@ function EditSeriesDialog({ series, onClose }: EditSeriesDialogProps) {
 export default function AjustesFacturacionPage() {
   const currentYear = new Date().getFullYear();
   const { data: seriesData, isLoading } = useInvoiceSeries(currentYear);
+  const deleteSeries = useDeleteSeries();
   const [createOpen, setCreateOpen] = useState(false);
   const [editingSeries, setEditingSeries] = useState<InvoiceSeries | null>(null);
+  const [deletingSeries, setDeletingSeries] = useState<InvoiceSeries | null>(null);
 
   const series = seriesData?.data ?? [];
 
@@ -274,6 +541,22 @@ export default function AjustesFacturacionPage() {
 
   return (
     <div className="space-y-6">
+      {/* Preferencias por defecto */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings2 className="h-5 w-5" />
+            Preferencias por defecto
+          </CardTitle>
+          <CardDescription>
+            Se aplicarán automáticamente al crear cada nueva factura
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <InvoiceDefaultsForm />
+        </CardContent>
+      </Card>
+
       {/* Series de Facturación */}
       <Card>
         <CardHeader>
@@ -319,6 +602,7 @@ export default function AjustesFacturacionPage() {
                   <TableHead>Tipo</TableHead>
                   <TableHead>Prefijo</TableHead>
                   <TableHead>Último nº</TableHead>
+                  <TableHead>Siguiente factura</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
@@ -334,7 +618,12 @@ export default function AjustesFacturacionPage() {
                     <TableCell className="font-mono text-sm text-muted-foreground">
                       {serie.prefix}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{serie.lastNumber}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {serie.nextNumber > 1 ? serie.nextNumber - 1 : '—'}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {formatSeriesPreview(serie.prefix, serie.year, serie.nextNumber)}
+                    </TableCell>
                     <TableCell>
                       {serie.isDefault ? (
                         <Badge variant="default">Por defecto</Badge>
@@ -343,15 +632,26 @@ export default function AjustesFacturacionPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="gap-1"
-                        onClick={() => setEditingSeries(serie)}
-                      >
-                        <Edit className="h-3.5 w-3.5" />
-                        Editar
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="gap-1"
+                          onClick={() => setEditingSeries(serie)}
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                          Editar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="gap-1 text-destructive hover:text-destructive"
+                          onClick={() => setDeletingSeries(serie)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Eliminar
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -393,6 +693,36 @@ export default function AjustesFacturacionPage() {
       {/* Dialogs */}
       <CreateSeriesDialog open={createOpen} onClose={() => setCreateOpen(false)} />
       <EditSeriesDialog series={editingSeries} onClose={() => setEditingSeries(null)} />
+
+      <AlertDialog
+        open={Boolean(deletingSeries)}
+        onOpenChange={(open) => !open && setDeletingSeries(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar serie {deletingSeries?.code}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará la serie <strong>{deletingSeries?.name}</strong> permanentemente. Esta
+              acción no se puede deshacer. Solo es posible si no tiene facturas asociadas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (!deletingSeries) return;
+                deleteSeries.mutate(deletingSeries.id, {
+                  onSuccess: () => setDeletingSeries(null),
+                });
+              }}
+            >
+              {deleteSeries.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Eliminar serie
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

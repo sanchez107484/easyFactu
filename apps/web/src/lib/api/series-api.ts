@@ -25,4 +25,7 @@ export const seriesApi = {
     apiClient
       .put<ApiResponse<InvoiceSeries>>(`/invoice-series/${id}`, data)
       .then(unwrapApiResponse),
+
+  delete: (id: string): Promise<void> =>
+    apiClient.delete(`/invoice-series/${id}`).then(() => undefined),
 };

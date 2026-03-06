@@ -1,6 +1,25 @@
-import { Invoice, InvoiceStatus, Customer, PaymentMethod } from '@easyfactura/shared-types';
+import {
+  Invoice,
+  InvoiceStatus,
+  Customer,
+  PaymentMethod,
+  InvoiceSeries,
+} from '@easyfactura/shared-types';
+import { formatSeriesPreview } from '@easyfactura/shared-validators';
 import { round2 } from '@/lib/math';
 import { ExtendedLineData, stripLineMetaFields } from '@/lib/invoice-line-types';
+
+// ==================== HELPERS ====================
+
+/**
+ * Calcula la fecha de vencimiento sumando `days` días a `issueDate`.
+ * Devuelve una string en formato ISO 'YYYY-MM-DD'.
+ */
+export function calculateDueDate(issueDate: Date, days: number): string {
+  const due = new Date(issueDate);
+  due.setDate(due.getDate() + days);
+  return due.toISOString().split('T')[0];
+}
 
 // ==================== TYPES ====================
 
@@ -28,7 +47,7 @@ export interface InvoiceFormData {
 export function buildPreviewInvoice(
   data: Partial<InvoiceFormData>,
   customers: Customer[],
-  seriesPrefix?: string,
+  selectedSeries?: InvoiceSeries | null,
 ): Invoice {
   const today = new Date().toISOString();
   const lines = data.lines ?? [];
@@ -84,7 +103,9 @@ export function buildPreviewInvoice(
     tenantId: '',
     seriesId: '',
     customerId: data.customerId ?? '',
-    number: seriesPrefix ? `${seriesPrefix}-${new Date().getFullYear()}-???` : '---',
+    number: selectedSeries
+      ? formatSeriesPreview(selectedSeries.prefix, selectedSeries.year, selectedSeries.nextNumber)
+      : '---',
     issueDate: data.issueDate || today.split('T')[0],
     dueDate: data.dueDate ?? null,
     status: InvoiceStatus.DRAFT,

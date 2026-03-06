@@ -58,3 +58,18 @@ export function useUpdateSeries() {
     },
   });
 }
+
+export function useDeleteSeries() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => seriesApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: seriesKeys.lists() });
+      toast.success('Serie eliminada');
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}

@@ -1,7 +1,7 @@
 export { validateNif, isValidNif, getNifType, NifType } from './nif-validator';
 export type { NifValidationResult } from './nif-validator';
 
-export { validateIban, isValidIban } from './iban-validator';
+export { validateIban, isValidIban, formatIban } from './iban-validator';
 export type { IbanValidationResult } from './iban-validator';
 
 export { validatePostalCode, isValidPostalCode } from './postal-code-validator';
@@ -17,5 +17,6 @@ export {
   validateInvoiceNumber,
   isValidInvoiceNumber,
   formatInvoiceNumber,
+  formatSeriesPreview,
 } from './invoice-number-validator';
 export type { InvoiceNumberValidationResult } from './invoice-number-validator';

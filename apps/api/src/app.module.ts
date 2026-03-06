@@ -11,6 +11,7 @@ import { InvoiceModule } from './modules/invoices/invoice.module';
 import { InvoiceSeriesModule } from './modules/invoice-series/invoice-series.module';
 import { VerifactuModule } from './modules/verifactu/verifactu.module';
 import { InvoiceTemplateModule } from './modules/invoice-templates/invoice-template.module';
+import { InvoiceDefaultsModule } from './modules/invoice-defaults/invoice-defaults.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { InvoiceTemplateModule } from './modules/invoice-templates/invoice-templ
     InvoiceSeriesModule,
     VerifactuModule,
     InvoiceTemplateModule,
+    InvoiceDefaultsModule,
   ],
   controllers: [],
   providers: [

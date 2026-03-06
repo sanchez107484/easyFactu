@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Body,
   Param,
   Query,
@@ -16,6 +17,7 @@ import {
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
+  ApiNoContentResponse,
 } from '@nestjs/swagger';
 import { InvoiceSeriesService } from './invoice-series.service';
 import { CreateInvoiceSeriesDto } from './dto/create-invoice-series.dto';
@@ -78,5 +80,14 @@ export class InvoiceSeriesController {
   @ApiCreatedResponse({ description: 'Series creadas para el nuevo año' })
   createForNewYear(@CurrentTenant() tenantId: string, @Param('year') year: string) {
     return this.invoiceSeriesService.createSeriesForNewYear(tenantId, parseInt(year, 10));
+  }
+
+  @Delete(':id')
+  @Roles(TenantUserRole.ADMIN, TenantUserRole.ACCOUNTANT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Eliminar serie de facturación' })
+  @ApiNoContentResponse({ description: 'Serie eliminada correctamente' })
+  delete(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    return this.invoiceSeriesService.delete(tenantId, id);
   }
 }

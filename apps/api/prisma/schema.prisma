@@ -43,6 +43,7 @@ model Tenant {
   invoiceSeries    InvoiceSeries[]
   invoiceTemplates InvoiceTemplate[]
   verifactuLogs    VerifactuLog[]
+  invoiceDefaults  InvoiceDefaults?
 
   @@map("tenants")
 }
@@ -369,4 +370,22 @@ model VerifactuLog {
   @@index([invoiceId])
   @@index([createdAt])
   @@map("verifactu_logs")
+}
+
+// ==================== INVOICE DEFAULTS ====================
+
+model InvoiceDefaults {
+  id             String         @id @default(uuid())
+  tenantId       String         @unique @map("tenant_id")
+  paymentMethod  PaymentMethod? @map("payment_method")
+  paymentDetails Json?          @map("payment_details")
+  irpfPercent    Decimal?       @map("irpf_percent") @db.Decimal(5, 2)
+  dueDays        Int?           @map("due_days")
+  notes          String?        @db.Text
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_defaults")
 }
