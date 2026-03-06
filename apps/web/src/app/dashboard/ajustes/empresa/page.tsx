@@ -24,9 +24,10 @@ import {
   useDeleteTenantLogo,
 } from '@/hooks/use-tenant';
 import { PROVINCES } from '@easyfactura/shared-constants';
-import { AccountType } from '@easyfactura/shared-types';
+import { AccountType, PaymentMethod } from '@easyfactura/shared-types';
 import { BancarioSection } from '@/components/ajustes/BancarioSection';
 import { resolveUrl } from '@/lib/utils';
+import { useInvoiceDefaults, useUpdateInvoiceDefaults } from '@/hooks/use-invoice-defaults';
 
 // ==================== SCHEMAS ====================
 
@@ -57,6 +58,9 @@ export default function AjustesEmpresaPage() {
   const uploadLogo = useUploadTenantLogo();
   const deleteLogo = useDeleteTenantLogo();
   const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: invoiceDefaults } = useInvoiceDefaults();
+  const updateInvoiceDefaults = useUpdateInvoiceDefaults();
 
   const empresaForm = useForm<EmpresaFormData>({
     resolver: zodResolver(empresaSchema),
@@ -350,8 +354,22 @@ export default function AjustesEmpresaPage() {
             <BancarioSection
               iban={tenant?.iban}
               bankAccountHolder={tenant?.bankAccountHolder}
+              bic={tenant?.bic}
               isPending={updateTenant.isPending}
-              onSave={(data) => updateTenant.mutate(data)}
+              onSave={(data) => {
+                updateTenant.mutate(data);
+                if (invoiceDefaults?.paymentMethod === PaymentMethod.BANK_TRANSFER) {
+                  updateInvoiceDefaults.mutate({
+                    paymentMethod: PaymentMethod.BANK_TRANSFER,
+                    paymentDetails: {
+                      ...(invoiceDefaults.paymentDetails as object ?? {}),
+                      iban: data.iban?.replace(/\s/g, '') || undefined,
+                      accountHolder: data.bankAccountHolder || undefined,
+                      bic: data.bic?.trim() || undefined,
+                    },
+                  });
+                }
+              }}
             />
           </CardContent>
         </Card>

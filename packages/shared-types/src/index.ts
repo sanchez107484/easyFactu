@@ -101,6 +101,7 @@ export interface Tenant {
   logoUrl: string | null;
   iban: string | null;
   bankAccountHolder: string | null;
+  bic: string | null;
   certificateUrl: string | null;
   certificateExpiry: string | null;
   setupCompleted: boolean;
@@ -150,6 +151,7 @@ export interface UpdateTenantInput {
   email?: string;
   iban?: string;
   bankAccountHolder?: string;
+  bic?: string;
 }
 
 // ==================== USER ====================

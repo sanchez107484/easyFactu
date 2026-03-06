@@ -262,9 +262,17 @@ function InvoiceForm({
     name: 'lines',
   });
 
+  const [lastAddedIndex, setLastAddedIndex] = useState<number | null>(null);
+
+  const handleAddLine = () => {
+    append({ ...EMPTY_LINE });
+    setLastAddedIndex(fields.length);
+  };
+
   const handleDuplicateLine = (index: number) => {
     const line = form.getValues(`lines.${index}`);
     append({ ...line });
+    setLastAddedIndex(fields.length);
   };
 
   const watchedValues = form.watch();
@@ -758,21 +766,10 @@ function InvoiceForm({
               {/* ── Líneas de factura ── */}
               <Card>
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">Líneas de factura</CardTitle>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => append({ ...EMPTY_LINE })}
-                    >
-                      <Plus className="mr-1.5 h-4 w-4" />
-                      Añadir línea
-                    </Button>
-                  </div>
+                  <CardTitle className="text-base">Líneas de factura</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div id="field-lines-section">
+                  <div id="field-lines-section" className="space-y-3">
                     {form.formState.errors.lines?.root && (
                       <p className="text-sm text-destructive mb-2">
                         {form.formState.errors.lines.root.message}
@@ -789,9 +786,19 @@ function InvoiceForm({
                         onMoveUp={() => swap(index, index - 1)}
                         onMoveDown={() => swap(index, index + 1)}
                         onFocus={() => setActiveSection('lines-section')}
+                        autoFocusDescription={index === lastAddedIndex}
                       />
                     ))}
                   </div>
+                  {/* ── Add line button — at the bottom for easy access ── */}
+                  <button
+                    type="button"
+                    onClick={handleAddLine}
+                    className="w-full flex items-center justify-center gap-2 rounded-lg border border-dashed border-border py-2.5 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary hover:bg-primary/5 active:scale-[0.99]"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Añadir línea
+                  </button>
                 </CardContent>
               </Card>
 

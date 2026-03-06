@@ -23,6 +23,7 @@ interface PaymentDetailsFieldsProps {
   onChange: (key: keyof PaymentDetailsValues, value: string) => void;
   tenantIban?: string;
   tenantAccountHolder?: string;
+  tenantBic?: string;
 }
 
 export function PaymentDetailsFields({
@@ -31,6 +32,7 @@ export function PaymentDetailsFields({
   onChange,
   tenantIban,
   tenantAccountHolder,
+  tenantBic,
 }: PaymentDetailsFieldsProps) {
   const handleIbanChange = (raw: string) => {
     onChange('iban', formatIban(raw));
@@ -52,6 +54,11 @@ export function PaymentDetailsFields({
     isBankTransfer && !values.accountHolder && tenantAccountHolder
       ? tenantAccountHolder
       : values.accountHolder;
+
+  const tenantBicClean = tenantBic?.trim() ?? '';
+  const valuesBicClean = values.bic?.trim() ?? '';
+  const effectiveBic =
+    isBankTransfer && !valuesBicClean && tenantBicClean ? tenantBicClean : values.bic;
 
   const isSyncedWithTenant =
     isBankTransfer &&
@@ -113,6 +120,7 @@ export function PaymentDetailsFields({
                   onClick={() => {
                     onChange('iban', tenantIban!);
                     onChange('accountHolder', tenantAccountHolder ?? values.accountHolder ?? '');
+                    onChange('bic', tenantBic ?? values.bic ?? '');
                   }}
                 >
                   Usar el de Empresa
@@ -151,8 +159,8 @@ export function PaymentDetailsFields({
               <Input
                 placeholder="CAIXESBBXXX"
                 className="font-mono text-sm"
-                value={values.bic ?? ''}
-                onChange={(e) => onChange('bic', e.target.value)}
+                value={effectiveBic ?? ''}
+                onChange={(e) => onChange('bic', e.target.value.toUpperCase().trim())}
               />
             </div>
           </div>

@@ -27,6 +27,7 @@ model Tenant {
   logoUrl          String?     @map("logo_url")
   iban             String?
   bankAccountHolder String?    @map("bank_account_holder")
+  bic              String?
   certificateUrl   String?     @map("certificate_url")
   certificateExpiry DateTime?  @map("certificate_expiry")
   setupCompleted   Boolean     @default(false) @map("setup_completed")

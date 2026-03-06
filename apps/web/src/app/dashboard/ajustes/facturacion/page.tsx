@@ -159,11 +159,12 @@ function InvoiceDefaultsForm() {
     // lo guardamos también en tenant (fuente única de verdad)
     if (
       data.paymentMethod === PaymentMethod.BANK_TRANSFER &&
-      (data.paymentDetails?.iban || data.paymentDetails?.accountHolder)
+      (data.paymentDetails?.iban || data.paymentDetails?.accountHolder || data.paymentDetails?.bic)
     ) {
       updateTenant.mutate({
         iban: data.paymentDetails?.iban?.replace(/\s/g, '') ?? undefined,
         bankAccountHolder: data.paymentDetails?.accountHolder ?? undefined,
+        bic: data.paymentDetails?.bic?.trim() || undefined,
       });
     }
 
@@ -224,6 +225,7 @@ function InvoiceDefaultsForm() {
           }
           tenantIban={tenantData?.iban ?? undefined}
           tenantAccountHolder={tenantData?.bankAccountHolder ?? undefined}
+          tenantBic={tenantData?.bic ?? undefined}
         />
       )}
 

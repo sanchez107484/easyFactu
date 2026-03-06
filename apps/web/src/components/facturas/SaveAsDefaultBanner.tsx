@@ -9,7 +9,15 @@ import { useUpdateInvoiceDefaults } from '@/hooks/use-invoice-defaults';
 
 interface WatchedFormValues {
   paymentMethod?: string;
-  paymentDetails?: { iban?: string; [key: string]: string | undefined };
+  paymentDetails?: {
+    iban?: string;
+    bic?: string;
+    accountHolder?: string;
+    bizumPhone?: string;
+    paypalEmail?: string;
+    paymentNote?: string;
+    [key: string]: string | undefined;
+  };
   irpfPercent?: number;
 }
 
@@ -20,6 +28,22 @@ interface SaveAsDefaultBannerProps {
   editDraftId?: string;
 }
 
+/** Fields relevant to each payment method */
+const PAYMENT_DETAIL_FIELDS: Partial<Record<PaymentMethod, string[]>> = {
+  [PaymentMethod.BANK_TRANSFER]: ['iban', 'accountHolder', 'bic', 'paymentNote'],
+  [PaymentMethod.BIZUM]: ['bizumPhone', 'paymentNote'],
+  [PaymentMethod.PAYPAL]: ['paypalEmail', 'paymentNote'],
+};
+
+const PAYMENT_DETAIL_LABELS: Record<string, string> = {
+  iban: 'IBAN',
+  bic: 'BIC/SWIFT',
+  accountHolder: 'Titular',
+  bizumPhone: 'Teléfono Bizum',
+  paypalEmail: 'Email PayPal',
+  paymentNote: 'Nota de pago',
+};
+
 export function SaveAsDefaultBanner({
   watchedValues,
   currentDefaults,
@@ -29,21 +53,30 @@ export function SaveAsDefaultBanner({
   const [dismissed, setDismissed] = useState(false);
   const updateDefaults = useUpdateInvoiceDefaults();
 
-  // --- Divergence checks ---
-  const paymentMethodDiverges =
-    !!watchedValues.paymentMethod && watchedValues.paymentMethod !== currentDefaults?.paymentMethod;
+  const currentMethod = watchedValues.paymentMethod as PaymentMethod | undefined;
+  const currentDetails = watchedValues.paymentDetails ?? {};
+  const storedDetails = (currentDefaults?.paymentDetails ?? {}) as Record<
+    string,
+    string | undefined
+  >;
 
-  const ibanDiverges =
-    watchedValues.paymentMethod === PaymentMethod.BANK_TRANSFER &&
-    !!watchedValues.paymentDetails?.iban &&
-    watchedValues.paymentDetails.iban !== currentDefaults?.paymentDetails?.iban;
+  // --- Divergence checks ---
+  const paymentMethodDiverges = !!currentMethod && currentMethod !== currentDefaults?.paymentMethod;
+
+  const relevantFields = currentMethod
+    ? (PAYMENT_DETAIL_FIELDS[currentMethod] ?? ['paymentNote'])
+    : [];
+  const divergentDetailFields = relevantFields.filter(
+    (field) => !!currentDetails[field] && currentDetails[field] !== storedDetails[field],
+  );
+  const paymentDetailsDiverge = divergentDetailFields.length > 0;
 
   const currentIrpf =
     currentDefaults?.irpfPercent != null ? Number(currentDefaults.irpfPercent) : undefined;
   const irpfDiverges =
     watchedValues.irpfPercent !== undefined && watchedValues.irpfPercent !== currentIrpf;
 
-  const hasDivergence = paymentMethodDiverges || ibanDiverges || irpfDiverges;
+  const hasDivergence = paymentMethodDiverges || paymentDetailsDiverge || irpfDiverges;
 
   if (!hasDivergence || dismissed || isDuplicate || !!editDraftId) {
     return null;
@@ -52,15 +85,14 @@ export function SaveAsDefaultBanner({
   // --- Build human-readable label of divergent fields ---
   const divergentParts: string[] = [];
   if (paymentMethodDiverges) {
-    const label =
-      PAYMENT_METHOD_LABELS[watchedValues.paymentMethod as PaymentMethod] ??
-      watchedValues.paymentMethod;
+    const label = PAYMENT_METHOD_LABELS[currentMethod as PaymentMethod] ?? currentMethod;
     divergentParts.push(`Método de pago: ${label}`);
   }
-  if (ibanDiverges && watchedValues.paymentDetails?.iban) {
-    const iban = watchedValues.paymentDetails.iban;
-    const preview = iban.length > 12 ? `${iban.substring(0, 12)}...` : iban;
-    divergentParts.push(`IBAN: ${preview}`);
+  for (const field of divergentDetailFields) {
+    const value = currentDetails[field]!;
+    const label = PAYMENT_DETAIL_LABELS[field] ?? field;
+    const preview = value.length > 14 ? `${value.substring(0, 14)}…` : value;
+    divergentParts.push(`${label}: ${preview}`);
   }
   if (irpfDiverges && watchedValues.irpfPercent !== undefined) {
     divergentParts.push(`IRPF: ${watchedValues.irpfPercent}%`);
@@ -70,13 +102,17 @@ export function SaveAsDefaultBanner({
     const changes: Parameters<typeof updateDefaults.mutate>[0] = {};
 
     if (paymentMethodDiverges) {
-      changes.paymentMethod = watchedValues.paymentMethod as PaymentMethod;
+      changes.paymentMethod = currentMethod as PaymentMethod;
     }
-    if (ibanDiverges) {
-      changes.paymentDetails = {
-        ...(currentDefaults?.paymentDetails ?? {}),
-        iban: watchedValues.paymentDetails!.iban!,
-      };
+    if (paymentDetailsDiverge) {
+      // Merge all relevant field values into the stored payment details
+      const updatedDetails: Record<string, string | undefined> = { ...storedDetails };
+      for (const field of relevantFields) {
+        if (currentDetails[field]) {
+          updatedDetails[field] = currentDetails[field];
+        }
+      }
+      changes.paymentDetails = updatedDetails;
     }
     if (irpfDiverges) {
       changes.irpfPercent = watchedValues.irpfPercent ?? null;

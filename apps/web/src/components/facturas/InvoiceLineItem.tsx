@@ -42,6 +42,7 @@ interface InvoiceLineItemProps {
   onMoveUp: () => void;
   onMoveDown: () => void;
   onFocus: () => void;
+  autoFocusDescription?: boolean;
 }
 
 // ==================== CONSTANTS ====================
@@ -141,6 +142,7 @@ export function InvoiceLineItem({
   onMoveUp,
   onMoveDown,
   onFocus,
+  autoFocusDescription = false,
 }: InvoiceLineItemProps) {
   const line: ExtendedLineData = useWatch({ control: form.control, name: `lines.${index}` }) ?? {};
   const mode: LineMode = line._mode ?? 'custom';
@@ -297,6 +299,7 @@ export function InvoiceLineItem({
           }
           rows={2}
           className="resize-none text-sm"
+          autoFocus={autoFocusDescription}
         />
         {lineErrors?.description && (
           <p className="text-xs text-destructive -mt-1">{lineErrors.description.message}</p>

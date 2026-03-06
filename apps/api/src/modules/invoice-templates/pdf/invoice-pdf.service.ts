@@ -87,7 +87,8 @@ export class InvoicePdfService {
     tenant: Tenant
   ): Promise<Buffer> {
     const logoBuffer = this.resolveLogo(tenant.logoUrl);
-    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    const pdfTitle = [invoice.number, invoice.customer?.name].filter(Boolean).join(' - ');
+    const doc = new PDFDocument({ size: 'A4', margin: 40, info: { Title: pdfTitle } });
     const buffers: Buffer[] = [];
     doc.on('data', buffers.push.bind(buffers));
 

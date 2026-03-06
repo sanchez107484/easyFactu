@@ -74,7 +74,9 @@ export class InvoiceController {
       this.pdfService.generate(tenantId, id),
       this.invoiceService.findOne(tenantId, id),
     ]);
-    res.setHeader('Content-Disposition', `inline; filename="factura-${invoice.number}.pdf"`);
+    const pdfTitle = [invoice.number, invoice.customer?.name].filter(Boolean).join(' - ');
+    const safeFilename = pdfTitle.replace(/[\/\\:*?"<>|]/g, '').trim();
+    res.setHeader('Content-Disposition', `inline; filename="${safeFilename}.pdf"`);
     res.send(buffer);
   }
 

@@ -19,6 +19,11 @@ const bancarioSchema = z.object({
     .optional()
     .or(z.literal('')),
   bankAccountHolder: z.string().max(100).optional().or(z.literal('')),
+  bic: z
+    .string()
+    .regex(/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/, 'BIC/SWIFT inválido (ej: BBVAESMMXXX)')
+    .optional()
+    .or(z.literal('')),
 });
 
 type BancarioFormData = z.infer<typeof bancarioSchema>;
@@ -33,7 +38,7 @@ function maskIBAN(iban: string) {
 }
 
 // ── Tarjeta visual ───────────────────────────────────────────────────────────
-function BankCard({ iban, holder }: { iban: string; holder: string }) {
+function BankCard({ iban, holder, bic }: { iban: string; holder: string; bic?: string }) {
   const displayIban = iban ? maskIBAN(iban.replace(/\s/g, '')) : '•••• •••• •••• ••••';
   const displayHolder = holder || 'TITULAR DE LA CUENTA';
 
@@ -165,7 +170,7 @@ function BankCard({ iban, holder }: { iban: string; holder: string }) {
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
               fontWeight: 600,
-              maxWidth: '220px',
+              maxWidth: '160px',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -173,6 +178,19 @@ function BankCard({ iban, holder }: { iban: string; holder: string }) {
           >
             {displayHolder}
           </div>
+          {bic && (
+            <div
+              style={{
+                color: 'rgba(255,255,255,0.45)',
+                fontSize: '10px',
+                letterSpacing: '0.12em',
+                fontFamily: 'monospace',
+                marginTop: '2px',
+              }}
+            >
+              {bic}
+            </div>
+          )}
         </div>
         {/* Círculos Mastercard style */}
         <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -203,15 +221,17 @@ function BankCard({ iban, holder }: { iban: string; holder: string }) {
 function ConfiguredView({
   iban,
   holder,
+  bic,
   onEdit,
 }: {
   iban: string;
   holder: string;
+  bic?: string;
   onEdit: () => void;
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <BankCard iban={iban} holder={holder} />
+      <BankCard iban={iban} holder={holder} bic={bic} />
 
       <div
         style={{
@@ -331,11 +351,12 @@ function EditForm({
 
   const watchedHolder = form.watch('bankAccountHolder') ?? '';
   const watchedIban = form.watch('iban') ?? '';
+  const watchedBic = form.watch('bic') ?? '';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Tarjeta en tiempo real */}
-      <BankCard iban={watchedIban.replace(/\s/g, '')} holder={watchedHolder} />
+      <BankCard iban={watchedIban.replace(/\s/g, '')} holder={watchedHolder} bic={watchedBic} />
 
       {/* Formulario */}
       <form
@@ -382,6 +403,24 @@ function EditForm({
           />
         </div>
 
+        <div>
+          <Label htmlFor="bic" style={{ fontSize: '13px', fontWeight: 500 }}>
+            BIC / SWIFT{' '}
+            <span style={{ fontWeight: 400, color: 'hsl(var(--muted-foreground))' }}>(opcional)</span>
+          </Label>
+          <Input
+            id="bic"
+            placeholder="BBVAESMMXXX"
+            {...form.register('bic', { setValueAs: (v: string) => v.toUpperCase().trim() })}
+            style={{ marginTop: '6px', fontFamily: 'monospace', letterSpacing: '0.05em' }}
+          />
+          {form.formState.errors.bic && (
+            <p style={{ marginTop: '4px', fontSize: '12px', color: 'hsl(var(--destructive))' }}>
+              {form.formState.errors.bic.message}
+            </p>
+          )}
+        </div>
+
         <div style={{ display: 'flex', gap: '8px', paddingTop: '4px' }}>
           <Button type="submit" disabled={isPending} className="flex-1 gap-2">
             {isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
@@ -401,11 +440,13 @@ function EditForm({
 export function BancarioSection({
   iban,
   bankAccountHolder,
+  bic,
   isPending,
   onSave,
 }: {
   iban?: string | null;
   bankAccountHolder?: string | null;
+  bic?: string | null;
   isPending: boolean;
   onSave: (data: BancarioFormData) => void;
 }) {
@@ -420,7 +461,7 @@ export function BancarioSection({
   if (isEditing || !hasData) {
     return (
       <EditForm
-        defaultValues={{ iban: iban ?? '', bankAccountHolder: bankAccountHolder ?? '' }}
+        defaultValues={{ iban: iban ?? '', bankAccountHolder: bankAccountHolder ?? '', bic: bic ?? '' }}
         onSave={handleSave}
         onCancel={() => setIsEditing(false)}
         isPending={isPending}
@@ -433,6 +474,7 @@ export function BancarioSection({
       <ConfiguredView
         iban={iban ?? ''}
         holder={bankAccountHolder ?? ''}
+        bic={bic ?? undefined}
         onEdit={() => setIsEditing(true)}
       />
     );

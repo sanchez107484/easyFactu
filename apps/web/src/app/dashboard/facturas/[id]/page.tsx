@@ -249,6 +249,8 @@ export default function FacturaDetailPage() {
   const canRectify = isConfirmed || isSent || invoice.status === InvoiceStatus.PAID;
   const isProforma = (invoice as any).invoiceType === 'proforma';
 
+  const pdfFileName = [invoice.number, (invoice as any).customer?.name].filter(Boolean).join(' - ');
+
   const statusCfg = isProforma
     ? INVOICE_STATUS_CONFIG[InvoiceStatus.PROFORMA]
     : (INVOICE_STATUS_CONFIG[invoice.status as InvoiceStatus] ??
@@ -317,6 +319,7 @@ export default function FacturaDetailPage() {
               <DropdownMenuItem asChild>
                 <DownloadInvoiceButton
                   invoiceId={id}
+                  fileName={pdfFileName}
                   variant="ghost"
                   size="sm"
                   className="w-full justify-start px-2 cursor-pointer font-normal"
@@ -440,7 +443,14 @@ export default function FacturaDetailPage() {
                       {paidMutation.isPending ? 'Procesando...' : 'Marcar como pagada'}
                     </Button>
                   )}
-                  {!isDraft && <DownloadInvoiceButton invoiceId={id} variant="outline" size="sm" />}
+                  {!isDraft && (
+                    <DownloadInvoiceButton
+                      invoiceId={id}
+                      fileName={pdfFileName}
+                      variant="outline"
+                      size="sm"
+                    />
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-4 mt-4 pt-4 border-t border-current/10">

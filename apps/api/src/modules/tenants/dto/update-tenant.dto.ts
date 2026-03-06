@@ -78,6 +78,12 @@ export class UpdateTenantDto {
   @MaxLength(100, { message: 'El titular no puede superar los 100 caracteres' })
   bankAccountHolder?: string;
 
+  @ApiPropertyOptional({ description: 'Código BIC/SWIFT del banco' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(11, { message: 'El BIC no puede superar los 11 caracteres' })
+  bic?: string;
+
   @ApiPropertyOptional({ description: 'Sitio web' })
   @IsOptional()
   @IsString()
