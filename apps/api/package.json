@@ -7,7 +7,7 @@
   "scripts": {
     "postinstall": "prisma generate --schema=./prisma/schema.prisma",
     "build": "prisma generate --schema=./prisma/schema.prisma && node scripts/sync-prisma-client.js && nest build",
-    "vercel:build": "pnpm --filter @easyfactura/shared-types --filter @easyfactura/shared-constants --filter @easyfactura/shared-validators --filter @easyfactura/brand-config run build && pnpm --filter @easyfactura/backend exec prisma generate --schema=./prisma/schema.prisma && pnpm exec nest build",
+    "vercel:build": "pnpm --filter @easyfactura/shared-types --filter @easyfactura/shared-constants --filter @easyfactura/shared-validators --filter @easyfactura/brand-config run build && pnpm --filter @easyfactura/backend exec prisma generate --schema=./prisma/schema.prisma && node scripts/sync-prisma-client.js && pnpm exec nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "dev": "nest start --watch",

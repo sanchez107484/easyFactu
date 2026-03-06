@@ -4,7 +4,7 @@
   "installCommand": "pnpm install",
   "functions": {
     "api/index.ts": {
-      "includeFiles": "dist/**,node_modules/.prisma/**,node_modules/@easyfactura/**",
+      "includeFiles": "dist/**,node_modules/.prisma/**,node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/**,node_modules/@easyfactura/**",
       "maxDuration": 30,
       "memory": 1024
     }
