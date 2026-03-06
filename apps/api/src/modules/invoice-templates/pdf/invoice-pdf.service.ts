@@ -86,16 +86,15 @@ export class InvoicePdfService {
     template: InvoiceTemplate,
     tenant: Tenant
   ): Promise<Buffer> {
-    const logoAbsolutePath = this.resolveLogoPath(tenant.logoUrl);
+    const logoBuffer = this.resolveLogo(tenant.logoUrl);
     const doc = new PDFDocument({ size: 'A4', margin: 40 });
     const buffers: Buffer[] = [];
     doc.on('data', buffers.push.bind(buffers));
 
     // Logo
-    if (logoAbsolutePath) {
+    if (logoBuffer) {
       try {
-        const logo = readFileSync(logoAbsolutePath);
-        doc.image(logo, 40, 40, { width: 120 });
+        doc.image(logoBuffer, 40, 40, { width: 120 });
       } catch (e) {
         // Si el logo no se puede leer, lo ignoramos
       }
@@ -164,13 +163,19 @@ export class InvoicePdfService {
     });
   }
 
-  private resolveLogoPath(logoUrl: string | null): string | undefined {
+  private resolveLogo(logoUrl: string | null): Buffer | undefined {
     if (!logoUrl) return undefined;
 
+    // New format: data URL stored directly in the database
+    if (logoUrl.startsWith('data:')) {
+      const base64 = logoUrl.split(',')[1];
+      return base64 ? Buffer.from(base64, 'base64') : undefined;
+    }
+
+    // Legacy format: local filesystem path (development only)
     const relativePath = logoUrl.replace(/^\/uploads\//, '');
     const absolutePath = join(process.cwd(), 'uploads', relativePath);
-
-    return existsSync(absolutePath) ? absolutePath : undefined;
+    return existsSync(absolutePath) ? readFileSync(absolutePath) : undefined;
   }
 
   private buildExampleInvoice(tenantId: string): Invoice {

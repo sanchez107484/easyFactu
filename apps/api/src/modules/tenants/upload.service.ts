@@ -1,137 +1,80 @@
 import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { Express } from 'express';
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto';
-import { writeFile, unlink, mkdir } from 'fs/promises';
+import { unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 
+// Prefix used to identify base64-encoded encrypted certificates stored in the DB.
+const CERT_BASE64_PREFIX = 'base64:';
+
 export interface UploadResult {
   url: string;
-  path: string;
   size: number;
 }
 
 @Injectable()
 export class UploadService {
-  private readonly uploadDir: string;
   private readonly maxLogoSize = 2 * 1024 * 1024; // 2MB
   private readonly maxCertificateSize = 5 * 1024 * 1024; // 5MB
   private readonly allowedLogoFormats = ['image/jpeg', 'image/png', 'image/svg+xml'];
-  private readonly allowedCertificateFormats = [
-    'application/x-pkcs12',
-    'application/pkcs12',
-    'application/octet-stream', // .pfx/.p12 can be served as this
-  ];
 
-  constructor(
-    private prisma: PrismaService,
-    private configService: ConfigService
-  ) {
-    // Define upload directory (relative to project root)
-    this.uploadDir = this.configService.get('UPLOAD_DIR') || join(process.cwd(), 'uploads');
-    this.ensureUploadDir();
-  }
-
-  private async ensureUploadDir() {
-    try {
-      if (!existsSync(this.uploadDir)) {
-        await mkdir(this.uploadDir, { recursive: true });
-      }
-      // Create subdirectories
-      const subdirs = ['logos', 'certificates'];
-      for (const subdir of subdirs) {
-        const path = join(this.uploadDir, subdir);
-        if (!existsSync(path)) {
-          await mkdir(path, { recursive: true });
-        }
-      }
-    } catch (error) {
-      console.error('Error creating upload directories:', error);
-    }
-  }
+  constructor(private prisma: PrismaService) {}
 
   /**
-   * Upload logo for tenant
+   * Upload logo for tenant.
+   * The file buffer is encoded as a data URL and stored directly in the database,
+   * which works in every deployment environment (local, Vercel, etc.).
    */
   async uploadLogo(tenantId: string, file: Express.Multer.File): Promise<UploadResult> {
-    // Validate file
     this.validateLogoFile(file);
 
-    // Delete old logo if exists
-    await this.deleteOldLogo(tenantId);
+    // Delete old logo filesystem file if one exists from legacy local storage
+    await this.deleteOldLogoFile(tenantId);
 
-    // Generate unique filename
-    const extension = this.getFileExtension(file.originalname);
-    const filename = `${tenantId}-${Date.now()}${extension}`;
-    const filepath = join(this.uploadDir, 'logos', filename);
+    // Encode as data URL so the browser can render it without a file server
+    const dataUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
 
-    // Save file
-    await writeFile(filepath, file.buffer);
-
-    // Update tenant in database
-    const url = `/uploads/logos/${filename}`;
     await this.prisma.tenant.update({
       where: { id: tenantId },
-      data: { logoUrl: url },
+      data: { logoUrl: dataUrl },
     });
 
-    return {
-      url,
-      path: filepath,
-      size: file.size,
-    };
+    return { url: dataUrl, size: file.size };
   }
 
   /**
-   * Upload and encrypt certificate for tenant
+   * Upload and encrypt certificate for tenant.
+   * The encrypted buffer is base64-encoded and stored in the database,
+   * avoiding any filesystem dependency.
    */
   async uploadCertificate(
     tenantId: string,
     file: Express.Multer.File,
     password: string
   ): Promise<UploadResult> {
-    // Validate file
     this.validateCertificateFile(file);
 
-    // Delete old certificate if exists
-    await this.deleteOldCertificate(tenantId);
+    // Delete old certificate filesystem file if one exists from legacy local storage
+    await this.deleteOldCertificateFile(tenantId);
 
-    // Encrypt file content
     const encryptedBuffer = this.encryptBuffer(file.buffer, password);
+    const storedValue = `${CERT_BASE64_PREFIX}${encryptedBuffer.toString('base64')}`;
 
-    // Generate unique filename
-    const extension = this.getFileExtension(file.originalname);
-    const filename = `${tenantId}-${Date.now()}.enc${extension}`;
-    const filepath = join(this.uploadDir, 'certificates', filename);
-
-    // Save encrypted file
-    await writeFile(filepath, encryptedBuffer);
-
-    // Update tenant in database
-    const url = `/uploads/certificates/${filename}`;
     await this.prisma.tenant.update({
       where: { id: tenantId },
-      data: {
-        certificateUrl: url,
-        // TODO: Extract certificate expiry date from the .pfx/.p12 file
-        // This requires parsing the certificate with node-forge
-      },
+      data: { certificateUrl: storedValue },
     });
 
-    return {
-      url,
-      path: filepath,
-      size: file.size,
-    };
+    return { url: '', size: file.size };
   }
 
   /**
-   * Delete logo file from filesystem and database
+   * Delete logo from database (and legacy filesystem file if applicable).
    */
   async deleteLogo(tenantId: string): Promise<void> {
-    await this.deleteOldLogo(tenantId);
+    await this.deleteOldLogoFile(tenantId);
     await this.prisma.tenant.update({
       where: { id: tenantId },
       data: { logoUrl: null },
@@ -139,27 +82,62 @@ export class UploadService {
   }
 
   /**
-   * Delete certificate file from filesystem and database
+   * Delete certificate from database (and legacy filesystem file if applicable).
    */
   async deleteCertificate(tenantId: string): Promise<void> {
-    await this.deleteOldCertificate(tenantId);
+    await this.deleteOldCertificateFile(tenantId);
     await this.prisma.tenant.update({
       where: { id: tenantId },
-      data: {
-        certificateUrl: null,
-        certificateExpiry: null,
-      },
+      data: { certificateUrl: null, certificateExpiry: null },
     });
   }
 
   /**
-   * Decrypt certificate for use (e.g., signing invoices)
+   * Load and decrypt a tenant's certificate as a raw Buffer.
+   * Supports both the new base64-in-database format and the legacy filesystem format.
+   */
+  async loadDecryptedCertificate(tenantId: string, password: string): Promise<Buffer | null> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { certificateUrl: true },
+    });
+
+    if (!tenant?.certificateUrl) return null;
+
+    const encryptedBuffer = this.readCertificateBuffer(tenant.certificateUrl);
+    if (!encryptedBuffer) return null;
+
+    return this.decryptBuffer(encryptedBuffer, password);
+  }
+
+  /**
+   * Decrypt a certificate buffer (used when the caller already holds the raw encrypted bytes).
    */
   decryptCertificate(encryptedBuffer: Buffer, password: string): Buffer {
     return this.decryptBuffer(encryptedBuffer, password);
   }
 
   // ==================== PRIVATE METHODS ====================
+
+  /**
+   * Resolve a stored certificateUrl to an encrypted Buffer.
+   * Handles the new base64 format and the legacy local-path format.
+   */
+  private readCertificateBuffer(certificateUrl: string): Buffer | null {
+    if (certificateUrl.startsWith(CERT_BASE64_PREFIX)) {
+      return Buffer.from(certificateUrl.slice(CERT_BASE64_PREFIX.length), 'base64');
+    }
+
+    // Legacy: certificate was stored as a local filesystem path
+    const relativePath = certificateUrl.replace(/^\/uploads\//, '');
+    const filepath = join(process.cwd(), 'uploads', relativePath);
+    if (existsSync(filepath)) {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      return require('fs').readFileSync(filepath) as Buffer;
+    }
+
+    return null;
+  }
 
   private validateLogoFile(file: Express.Multer.File): void {
     if (!file) {
@@ -194,35 +172,42 @@ export class UploadService {
     }
   }
 
-  private async deleteOldLogo(tenantId: string): Promise<void> {
+  /**
+   * If the tenant previously stored a logo as a local filesystem path, delete that file.
+   * Data-URL values stored in the DB do not need filesystem cleanup.
+   */
+  private async deleteOldLogoFile(tenantId: string): Promise<void> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       select: { logoUrl: true },
     });
 
-    if (tenant?.logoUrl) {
+    if (tenant?.logoUrl && !tenant.logoUrl.startsWith('data:')) {
       const relativePath = tenant.logoUrl.replace(/^\/uploads\//, '');
-      const filepath = join(this.uploadDir, relativePath);
+      const filepath = join(process.cwd(), 'uploads', relativePath);
       try {
         if (existsSync(filepath)) {
           await unlink(filepath);
         }
       } catch (error) {
-        console.error('Error deleting old logo:', error);
-        // Don't throw, just log
+        console.error('Error deleting old logo file:', error);
       }
     }
   }
 
-  private async deleteOldCertificate(tenantId: string): Promise<void> {
+  /**
+   * If the tenant previously stored a certificate as a local filesystem path, delete that file.
+   * Base64-in-DB values do not need filesystem cleanup.
+   */
+  private async deleteOldCertificateFile(tenantId: string): Promise<void> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       select: { certificateUrl: true },
     });
 
-    if (tenant?.certificateUrl) {
+    if (tenant?.certificateUrl && !tenant.certificateUrl.startsWith(CERT_BASE64_PREFIX)) {
       const relativePath = tenant.certificateUrl.replace(/^\/uploads\//, '');
-      const filepath = join(this.uploadDir, relativePath);
+      const filepath = join(process.cwd(), 'uploads', relativePath);
       try {
         if (existsSync(filepath)) {
           await unlink(filepath);
