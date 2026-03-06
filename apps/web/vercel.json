@@ -1,4 +1,10 @@
 {
   "buildCommand": "cd ../.. && turbo build --filter=@easyfactura/web",
-  "installCommand": "pnpm install"
+  "installCommand": "pnpm install",
+  "functions": {
+    "src/app/api/invoices/[id]/pdf/route.ts": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  }
 }
