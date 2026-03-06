@@ -164,9 +164,12 @@ function PaymentDetailsBlock({ invoice, paymentDetails, primaryColor }: PaymentD
         borderTop: `1.5px solid #e5e7eb`,
         paddingTop: '10px',
         marginTop: '12px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
       }}
     >
-      {/* Encabezado de sección */}
+      {/* ── Etiqueta ── */}
       <p
         style={{
           fontSize: '8px',
@@ -174,131 +177,141 @@ function PaymentDetailsBlock({ invoice, paymentDetails, primaryColor }: PaymentD
           letterSpacing: '0.08em',
           color: '#6b7280',
           fontWeight: 600,
-          marginBottom: '6px',
+          textAlign: 'left',
         }}
       >
-        Forma de pago
+        Método de pago
       </p>
 
-      {/* Método */}
-      <p
+      {/* ── Contenido centrado ── */}
+      <div
         style={{
-          fontSize: '10px',
-          fontWeight: 700,
-          color: primaryColor,
-          marginBottom: hasDetails ? '6px' : '0',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '2px',
         }}
       >
-        {methodLabel}
-      </p>
-
-      {/* ── Transferencia bancaria ── */}
-      {method === PaymentMethod.BANK_TRANSFER && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          {paymentDetails?.iban && (
-            <p
-              style={{
-                fontSize: '11px',
-                fontFamily: 'Courier New, Courier, monospace',
-                letterSpacing: '0.05em',
-                color: '#111827',
-                fontWeight: 600,
-              }}
-            >
-              {formatIban(paymentDetails.iban)}
-            </p>
-          )}
-          {paymentDetails?.accountHolder && (
-            <p style={{ fontSize: '9px', color: '#6b7280' }}>
-              Titular: {paymentDetails.accountHolder}
-            </p>
-          )}
-          {paymentDetails?.bic && (
-            <p
-              style={{
-                fontSize: '9px',
-                color: '#6b7280',
-                fontFamily: 'Courier New, Courier, monospace',
-              }}
-            >
-              BIC/SWIFT: {paymentDetails.bic}
-            </p>
-          )}
-          {!paymentDetails?.iban && (
-            <p style={{ fontSize: '9px', color: '#9ca3af', fontStyle: 'italic' }}>
-              Añade tu IBAN en el formulario
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* ── Bizum ── */}
-      {method === 'BIZUM' && (
-        <div>
-          {paymentDetails?.bizumPhone ? (
-            <p
-              style={{
-                fontSize: '11px',
-                fontFamily: 'Courier New, Courier, monospace',
-                letterSpacing: '0.05em',
-                color: '#111827',
-                fontWeight: 600,
-              }}
-            >
-              {paymentDetails.bizumPhone}
-            </p>
-          ) : (
-            <p style={{ fontSize: '9px', color: '#9ca3af', fontStyle: 'italic' }}>
-              Añade tu número de teléfono en el formulario
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* ── PayPal ── */}
-      {method === PaymentMethod.PAYPAL && (
-        <div>
-          {paymentDetails?.paypalEmail ? (
-            <p style={{ fontSize: '10px', color: '#1d4ed8' }}>{paymentDetails.paypalEmail}</p>
-          ) : (
-            <p style={{ fontSize: '9px', color: '#9ca3af', fontStyle: 'italic' }}>
-              Añade tu email o enlace de PayPal en el formulario
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* ── Domiciliación bancaria ── */}
-      {method === PaymentMethod.DIRECT_DEBIT && (
-        <div>
-          <p style={{ fontSize: '9px', color: '#6b7280' }}>
-            El importe se cargará automáticamente en la cuenta del cliente en la fecha de
-            vencimiento.
-          </p>
-          {paymentDetails?.paymentNote && (
-            <p style={{ fontSize: '9px', color: '#6b7280', marginTop: '2px' }}>
-              Ref. SEPA: {paymentDetails.paymentNote}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* ── Tarjeta ── */}
-      {method === PaymentMethod.CARD && paymentDetails?.paymentNote && (
-        <p style={{ fontSize: '9px', color: '#6b7280' }}>{paymentDetails.paymentNote}</p>
-      )}
-
-      {/* ── Efectivo ── */}
-      {method === PaymentMethod.CASH && (
-        <p style={{ fontSize: '9px', color: '#6b7280' }}>
-          Límite legal: 1.000 € entre empresarios / 2.500 € con particulares.
+        {/* Nombre del método */}
+        <p
+          style={{
+            fontSize: '10px',
+            fontWeight: 700,
+            color: primaryColor,
+            marginBottom: hasDetails ? '4px' : '0',
+          }}
+        >
+          {methodLabel}
         </p>
-      )}
 
-      {/* ── Otro ── */}
-      {method === PaymentMethod.OTHER && paymentDetails?.paymentNote && (
-        <p style={{ fontSize: '9px', color: '#6b7280' }}>{paymentDetails.paymentNote}</p>
-      )}
+        {/* ── Transferencia bancaria ── */}
+        {method === PaymentMethod.BANK_TRANSFER && (
+          <>
+            {paymentDetails?.iban ? (
+              <p
+                style={{
+                  fontSize: '11px',
+                  fontFamily: 'Courier New, Courier, monospace',
+                  letterSpacing: '0.05em',
+                  color: '#111827',
+                  fontWeight: 600,
+                }}
+              >
+                {formatIban(paymentDetails.iban)}
+              </p>
+            ) : (
+              <p style={{ fontSize: '9px', color: '#9ca3af', fontStyle: 'italic' }}>
+                Añade tu IBAN en el formulario
+              </p>
+            )}
+            {paymentDetails?.accountHolder && (
+              <p style={{ fontSize: '9px', color: '#6b7280' }}>
+                Titular: {paymentDetails.accountHolder}
+              </p>
+            )}
+            {paymentDetails?.bic && (
+              <p
+                style={{
+                  fontSize: '9px',
+                  color: '#6b7280',
+                  fontFamily: 'Courier New, Courier, monospace',
+                }}
+              >
+                BIC/SWIFT: {paymentDetails.bic}
+              </p>
+            )}
+          </>
+        )}
+
+        {/* ── Bizum ── */}
+        {method === 'BIZUM' && (
+          <>
+            {paymentDetails?.bizumPhone ? (
+              <p
+                style={{
+                  fontSize: '11px',
+                  fontFamily: 'Courier New, Courier, monospace',
+                  letterSpacing: '0.05em',
+                  color: '#111827',
+                  fontWeight: 600,
+                }}
+              >
+                {paymentDetails.bizumPhone}
+              </p>
+            ) : (
+              <p style={{ fontSize: '9px', color: '#9ca3af', fontStyle: 'italic' }}>
+                Añade tu número de teléfono en el formulario
+              </p>
+            )}
+          </>
+        )}
+
+        {/* ── PayPal ── */}
+        {method === PaymentMethod.PAYPAL && (
+          <>
+            {paymentDetails?.paypalEmail ? (
+              <p style={{ fontSize: '10px', color: '#1d4ed8' }}>{paymentDetails.paypalEmail}</p>
+            ) : (
+              <p style={{ fontSize: '9px', color: '#9ca3af', fontStyle: 'italic' }}>
+                Añade tu email o enlace de PayPal en el formulario
+              </p>
+            )}
+          </>
+        )}
+
+        {/* ── Domiciliación bancaria ── */}
+        {method === PaymentMethod.DIRECT_DEBIT && (
+          <>
+            <p style={{ fontSize: '9px', color: '#6b7280' }}>
+              El importe se cargará automáticamente en la cuenta del cliente en la fecha de
+              vencimiento.
+            </p>
+            {paymentDetails?.paymentNote && (
+              <p style={{ fontSize: '9px', color: '#6b7280' }}>
+                Ref. SEPA: {paymentDetails.paymentNote}
+              </p>
+            )}
+          </>
+        )}
+
+        {/* ── Tarjeta ── */}
+        {method === PaymentMethod.CARD && paymentDetails?.paymentNote && (
+          <p style={{ fontSize: '9px', color: '#6b7280' }}>{paymentDetails.paymentNote}</p>
+        )}
+
+        {/* ── Efectivo ── */}
+        {method === PaymentMethod.CASH && (
+          <p style={{ fontSize: '9px', color: '#6b7280' }}>
+            Límite legal: 1.000 € entre empresarios / 2.500 € con particulares.
+          </p>
+        )}
+
+        {/* ── Otro ── */}
+        {method === PaymentMethod.OTHER && paymentDetails?.paymentNote && (
+          <p style={{ fontSize: '9px', color: '#6b7280' }}>{paymentDetails.paymentNote}</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -480,6 +493,7 @@ export function LiveInvoicePreview({
               label="Forma de pago"
               activeFieldSection={activeFieldSection}
               onSectionClick={onSectionClick}
+              className="mt-6"
             >
               <PaymentDetailsBlock
                 invoice={invoice}
@@ -489,16 +503,40 @@ export function LiveInvoicePreview({
             </PreviewSection>
 
             {/* 6 — Notes */}
-            {invoice.notes && (
+            {invoice.notes && layout.notes?.show !== false && (
               <PreviewSection
                 fieldId="notes"
                 label="Notas"
                 activeFieldSection={activeFieldSection}
                 onSectionClick={onSectionClick}
-                className="mt-4"
               >
-                <p className="text-[9px] uppercase tracking-wide text-gray-500 mb-1">Notas</p>
-                <p className="text-[10px] text-gray-600">{invoice.notes}</p>
+                <div
+                  style={{
+                    paddingTop: '10px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  }}
+                >
+                  {layout.notes?.showLabel !== false && (
+                    <p
+                      style={{
+                        fontSize: '8px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        color: '#6b7280',
+                        fontWeight: 600,
+                        textAlign: 'left',
+                      }}
+                    >
+                      Notas
+                    </p>
+                  )}
+                  <p style={{ fontSize: '10px', color: '#6b7280', textAlign: 'center' }}>
+                    {invoice.notes}
+                  </p>
+                </div>
               </PreviewSection>
             )}
 

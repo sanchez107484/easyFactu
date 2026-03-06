@@ -572,6 +572,10 @@ export interface InvoiceLayout {
     showPaymentInfo: boolean;
     showVerifactuQr: boolean;
   };
+  notes?: {
+    show: boolean;
+    showLabel: boolean;
+  };
 }
 
 // ==================== INVOICE DEFAULTS ====================
@@ -614,6 +618,7 @@ export const DEFAULT_INVOICE_LAYOUT: InvoiceLayout = {
     showPaymentInfo: true,
     showVerifactuQr: true,
   },
+  notes: { show: true, showLabel: true },
 };
 
 export interface InvoiceTemplate {

@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
 import { useDefaultTemplate, useUpdateTemplate } from '@/hooks/use-invoice-templates';
+import { useInvoiceDefaults } from '@/hooks/use-invoice-defaults';
 import { useAuthStore } from '@/store/auth-store';
 import { useTenant } from '@/hooks/use-tenant';
 import {
@@ -27,8 +28,10 @@ import {
   InvoiceLayout,
   Invoice,
   InvoiceStatus,
+  PaymentMethod,
   Tenant,
 } from '@easyfactura/shared-types';
+import { PaymentDetails } from '@/components/facturas/LiveInvoicePreview';
 import { invoiceTemplateApi } from '@/lib/api/invoice-template-api';
 import { resolveUrl } from '@/lib/utils';
 
@@ -49,12 +52,12 @@ function buildExampleInvoice(tenantId: string): Invoice {
     discountPercent: null,
     discountAmount: null,
     taxTotal: 210,
-    irpfPercent: null,
-    irpfTotal: null,
-    total: 1210,
-    paymentMethod: null,
+    total: 1060,
+    paymentMethod: PaymentMethod.BANK_TRANSFER,
     paymentDetails: null,
     notes: 'Gracias por su confianza.',
+    irpfPercent: 15,
+    irpfTotal: 150,
     pdfUrl: null,
     verifactuHash: null,
     verifactuPrevHash: null,
@@ -668,6 +671,22 @@ function SettingsPanel({
             checked={layout.totals.showIrpf}
             onChange={(v) => patchTotals({ showIrpf: v })}
           />
+          <ToggleRow
+            label="Sección de notas"
+            description="Muestra las notas de la factura"
+            checked={layout.notes?.show !== false}
+            onChange={(v) =>
+              onChange({ notes: { show: v, showLabel: layout.notes?.showLabel !== false } })
+            }
+          />
+          {layout.notes?.show !== false && (
+            <ToggleRow
+              label="Etiqueta 'Notas'"
+              description="Muestra el título de la sección"
+              checked={layout.notes?.showLabel !== false}
+              onChange={(v) => onChange({ notes: { show: true, showLabel: v } })}
+            />
+          )}
         </div>
       </SectionCard>
 
@@ -706,6 +725,7 @@ export default function PlantillaPage() {
   const updateTemplate = useUpdateTemplate();
   const currentTenant = useAuthStore((s) => s.currentTenant);
   const { data: tenantData } = useTenant();
+  const { data: invoiceDefaults } = useInvoiceDefaults();
 
   const [localLayout, setLocalLayout] = useState<InvoiceLayout>(DEFAULT_INVOICE_LAYOUT);
   const [savedLayout, setSavedLayout] = useState<InvoiceLayout>(DEFAULT_INVOICE_LAYOUT);
@@ -766,7 +786,10 @@ export default function PlantillaPage() {
     );
   }
 
-  const exampleInvoice = buildExampleInvoice(currentTenant?.id ?? 'preview');
+  const exampleInvoice = {
+    ...buildExampleInvoice(currentTenant?.id ?? 'preview'),
+    notes: invoiceDefaults?.notes ?? 'Gracias por su confianza.',
+  };
 
   // ── Logo URL: siempre resuelta con resolveUrl ──────────────────────────────
   const rawLogoUrl = tenantData?.logoUrl ?? currentTenant?.logoUrl ?? null;
@@ -786,8 +809,9 @@ export default function PlantillaPage() {
     phone: currentTenant?.phone ?? '+34 912 000 000',
     email: currentTenant?.email ?? 'info@miempresa.com',
     logoUrl, // ← URL ya resuelta
-    iban: currentTenant?.iban ?? null,
-    bankAccountHolder: currentTenant?.bankAccountHolder ?? null,
+    iban: currentTenant?.iban ?? 'ES91 2100 0418 4502 0005 1332',
+    bankAccountHolder:
+      currentTenant?.bankAccountHolder ?? currentTenant?.businessName ?? 'Mi Empresa S.L.',
     certificateUrl: null,
     certificateExpiry: null,
     setupCompleted: true,
@@ -796,6 +820,11 @@ export default function PlantillaPage() {
     isActive: true,
     createdAt: currentTenant?.createdAt ?? new Date().toISOString(),
     updatedAt: currentTenant?.updatedAt ?? new Date().toISOString(),
+  };
+
+  const previewPaymentDetails: PaymentDetails = {
+    iban: previewTenant.iban ?? 'ES91 2100 0418 4502 0005 1332',
+    accountHolder: previewTenant.bankAccountHolder ?? previewTenant.businessName,
   };
 
   const previewTemplate = template
@@ -907,6 +936,7 @@ export default function PlantillaPage() {
             tenant={previewTenant}
             activeFieldSection={null}
             onSectionClick={() => {}}
+            paymentDetails={previewPaymentDetails}
           />
         </div>
       </div>
