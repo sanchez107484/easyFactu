@@ -38,6 +38,6 @@ export function getErrorMessage(error: unknown): string {
 
 export function resolveUrl(path: string | null | undefined): string | null {
   if (!path) return null;
-  if (path.startsWith('http')) return path; // ya es URL completa, no tocar
+  if (path.startsWith('http') || path.startsWith('data:')) return path; // ya es URL completa o data URL, no tocar
   return `${process.env.NEXT_PUBLIC_API_URL}${path}`;
 }
