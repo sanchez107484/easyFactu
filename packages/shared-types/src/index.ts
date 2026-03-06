@@ -101,7 +101,7 @@ export interface Tenant {
   logoUrl: string | null;
   iban: string | null;
   bankAccountHolder: string | null;
-  bic: string | null;
+  bic?: string | null;
   certificateUrl: string | null;
   certificateExpiry: string | null;
   setupCompleted: boolean;
