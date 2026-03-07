@@ -39,14 +39,14 @@ export interface BrandConfig {
 export const brandConfig: BrandConfig = {
   // ==================== IDENTIDAD ====================
   app: {
-    name: 'EasyFactura',
-    shortName: 'EasyFactura',
+    name: 'NovaFactura',
+    shortName: 'NovaFactura',
     description: 'Facturación inteligente para autónomos y PYMEs con VeriFactu integrado',
     tagline: 'Factura sin complicaciones. VeriFactu automático.',
-    url: 'https://easyfactura.es',
-    domain: 'easyfactura.es',
-    supportEmail: 'soporte@easyfactura.es',
-    legalEntity: 'EasyFactura S.L.',
+    url: 'https://novafactura.es',
+    domain: 'novafactura.es',
+    supportEmail: 'soporte@novafactura.es',
+    legalEntity: 'NovaFactura S.L.',
   },
 
   // ==================== LOGOS ====================
