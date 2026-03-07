@@ -57,16 +57,16 @@ const TYPE_CONFIG: Record<
   [ProductType.PRODUCT]: {
     label: 'Producto',
     icon: Package,
-    color: 'text-blue-600 dark:text-blue-400',
-    bg: 'bg-blue-50 dark:bg-blue-950/40',
-    border: 'border-blue-200 dark:border-blue-800',
+    color: 'text-product-600 dark:text-product-400',
+    bg: 'bg-product-50 dark:bg-product-950/40',
+    border: 'border-product-200 dark:border-product-800',
   },
   [ProductType.SERVICE]: {
     label: 'Servicio',
     icon: Wrench,
-    color: 'text-violet-600 dark:text-violet-400',
-    bg: 'bg-violet-50 dark:bg-violet-950/40',
-    border: 'border-violet-200 dark:border-violet-800',
+    color: 'text-product-600 dark:text-product-400',
+    bg: 'bg-product-50 dark:bg-product-950/40',
+    border: 'border-product-200 dark:border-product-800',
   },
 };
 

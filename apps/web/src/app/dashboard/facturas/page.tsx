@@ -375,7 +375,7 @@ export default function FacturasPage() {
                               </span>
                             )}
                             {(invoice as any).invoiceType === 'proforma' && (
-                              <span className="ml-2 text-[10px] font-medium text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/40 rounded px-1.5 py-0.5">
+                              <span className="ml-2 text-[10px] font-medium text-proforma-700 bg-proforma-100 dark:text-proforma-300 dark:bg-proforma-900/40 rounded px-1.5 py-0.5">
                                 proforma
                               </span>
                             )}

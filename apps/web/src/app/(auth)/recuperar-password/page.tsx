@@ -7,7 +7,7 @@ import * as z from 'zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { brandConfig } from '@easyfactura/brand-config';
+import { getPrimaryColor } from '@easyfactura/brand-config';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -72,7 +72,7 @@ export default function RecuperarPasswordPage() {
             <CardTitle className="text-2xl font-bold">Recuperar contraseña</CardTitle>
             <div
               className="flex items-center justify-center rounded-lg p-2"
-              style={{ backgroundColor: brandConfig.colors.primary[600] }}
+              style={{ backgroundColor: getPrimaryColor(600) }}
             >
               <Mail className="h-6 w-6 text-white" />
             </div>
@@ -130,7 +130,7 @@ export default function RecuperarPasswordPage() {
                   className="w-full"
                   disabled={isLoading}
                   style={{
-                    backgroundColor: isLoading ? undefined : brandConfig.colors.primary[600],
+                    backgroundColor: isLoading ? undefined : getPrimaryColor(600),
                   }}
                 >
                   {isLoading ? 'Enviando...' : 'Enviar instrucciones'}

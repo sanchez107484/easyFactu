@@ -234,9 +234,9 @@ export default function DashboardPage() {
         </Link>
 
         <Link href="/dashboard/facturas/nueva?tipo=proforma">
-          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-violet-400/50 hover:bg-violet-50 dark:hover:bg-violet-950/20 transition-all cursor-pointer h-full">
-            <div className="h-9 w-9 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0 group-hover:bg-violet-200 dark:group-hover:bg-violet-900/50 transition-colors">
-              <ClipboardList className="h-4 w-4 text-violet-600" />
+          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-proforma-400/50 hover:bg-proforma-50 dark:hover:bg-proforma-950/20 transition-all cursor-pointer h-full">
+            <div className="h-9 w-9 rounded-lg bg-proforma-100 dark:bg-proforma-900/30 flex items-center justify-center shrink-0 group-hover:bg-proforma-200 dark:group-hover:bg-proforma-900/50 transition-colors">
+              <ClipboardList className="h-4 w-4 text-proforma-600" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium leading-tight">Proforma</p>
@@ -248,9 +248,9 @@ export default function DashboardPage() {
         </Link>
 
         <Link href="/dashboard/facturas">
-          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-orange-400/50 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-all cursor-pointer h-full">
-            <div className="h-9 w-9 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/50 transition-colors">
-              <FileText className="h-4 w-4 text-orange-600" />
+          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-rectificativa-400/50 hover:bg-rectificativa-50 dark:hover:bg-rectificativa-950/20 transition-all cursor-pointer h-full">
+            <div className="h-9 w-9 rounded-lg bg-rectificativa-100 dark:bg-rectificativa-900/30 flex items-center justify-center shrink-0 group-hover:bg-rectificativa-200 dark:group-hover:bg-rectificativa-900/50 transition-colors">
+              <FileText className="h-4 w-4 text-rectificativa-600" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium leading-tight">Rectificativa</p>
@@ -260,9 +260,9 @@ export default function DashboardPage() {
         </Link>
 
         <Link href="/dashboard/clientes/nuevo">
-          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-blue-400/50 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all cursor-pointer h-full">
-            <div className="h-9 w-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
-              <UserPlus className="h-4 w-4 text-blue-600" />
+          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-customer-400/50 hover:bg-customer-50 dark:hover:bg-customer-950/20 transition-all cursor-pointer h-full">
+            <div className="h-9 w-9 rounded-lg bg-customer-100 dark:bg-customer-900/30 flex items-center justify-center shrink-0 group-hover:bg-customer-200 dark:group-hover:bg-customer-900/50 transition-colors">
+              <UserPlus className="h-4 w-4 text-customer-600" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium leading-tight">Nuevo cliente</p>
@@ -272,9 +272,9 @@ export default function DashboardPage() {
         </Link>
 
         <Link href="/dashboard/productos/nuevo">
-          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-green-400/50 hover:bg-green-50 dark:hover:bg-green-950/20 transition-all cursor-pointer h-full">
-            <div className="h-9 w-9 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0 group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
-              <Package className="h-4 w-4 text-green-600" />
+          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-product-400/50 hover:bg-product-50 dark:hover:bg-product-950/20 transition-all cursor-pointer h-full">
+            <div className="h-9 w-9 rounded-lg bg-product-100 dark:bg-product-900/30 flex items-center justify-center shrink-0 group-hover:bg-product-200 dark:group-hover:bg-product-900/50 transition-colors">
+              <Package className="h-4 w-4 text-product-600" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium leading-tight">Nuevo producto</p>

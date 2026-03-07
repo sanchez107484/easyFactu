@@ -32,8 +32,8 @@ export function ConvertDraftToProformaModal({
       <AlertDialogContent className="sm:max-w-md">
         <AlertDialogHeader>
           <div className="flex items-center gap-3 mb-1">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/10 shrink-0">
-              <FileText className="h-5 w-5 text-amber-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-proforma-500/10 shrink-0">
+              <FileText className="h-5 w-5 text-proforma-600" />
             </div>
             <AlertDialogTitle>Convertir a proforma</AlertDialogTitle>
           </div>
@@ -46,7 +46,7 @@ export function ConvertDraftToProformaModal({
               </p>
               <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
                 <p className="font-medium text-foreground flex items-center gap-1.5">
-                  <Info className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                  <Info className="h-3.5 w-3.5 text-proforma-600 shrink-0" />
                   ¿Qué es una proforma?
                 </p>
                 <ul className="space-y-1.5 pl-1 list-none text-sm">
@@ -72,7 +72,7 @@ export function ConvertDraftToProformaModal({
           <AlertDialogAction
             onClick={onConfirm}
             disabled={isPending}
-            className="bg-amber-600 hover:bg-amber-700 text-white"
+            className="bg-proforma-600 hover:bg-proforma-700 text-white"
           >
             {isPending ? 'Convirtiendo...' : 'Sí, convertir a proforma'}
           </AlertDialogAction>

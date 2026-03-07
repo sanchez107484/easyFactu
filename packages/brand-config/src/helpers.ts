@@ -1,4 +1,5 @@
 import { brandConfig, BrandConfig } from './brand.config';
+import { themeConfig } from './theme.config';
 
 /**
  * Get app name
@@ -31,17 +32,15 @@ export function getTagline(): string {
 /**
  * Get primary color by shade
  */
-export function getPrimaryColor(shade: number = 500): string {
-  const color = brandConfig.colors.primary[shade as keyof typeof brandConfig.colors.primary];
-  return (color || brandConfig.colors.primary[500]) as string;
+export function getPrimaryColor(shade: keyof typeof themeConfig.scales.primary = 500): string {
+  return themeConfig.scales.primary[shade] as string;
 }
 
 /**
  * Get secondary color by shade
  */
-export function getSecondaryColor(shade: number = 500): string {
-  const color = brandConfig.colors.secondary[shade as keyof typeof brandConfig.colors.secondary];
-  return (color || brandConfig.colors.secondary[500]) as string;
+export function getSecondaryColor(shade: keyof typeof themeConfig.scales.secondary = 500): string {
+  return themeConfig.scales.secondary[shade] as string;
 }
 
 /**

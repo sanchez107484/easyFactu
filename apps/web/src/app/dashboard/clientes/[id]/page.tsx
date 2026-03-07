@@ -347,21 +347,21 @@ export default function ClienteDetailPage() {
           label="Total facturado"
           value={formatCurrency(totalInvoiced)}
           sub={`${invoices.filter((i) => i.status !== InvoiceStatus.DRAFT).length} facturas emitidas`}
-          color="bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400"
+          color="bg-customer-50 text-customer-600 dark:bg-customer-950/50 dark:text-customer-400"
         />
         <StatCard
           icon={Receipt}
           label="Total cobrado"
           value={formatCurrency(paidInvoiced)}
           sub={`${invoices.filter((i) => i.status === InvoiceStatus.PAID).length} facturas pagadas`}
-          color="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400"
+          color="bg-secondary-50 text-secondary-600 dark:bg-secondary-950/50 dark:text-secondary-400"
         />
         <StatCard
           icon={Clock}
           label="Última factura"
           value={lastInvoice ? formatDate(lastInvoice.issueDate) : '—'}
           sub={lastInvoice ? (lastInvoice.number ?? undefined) : 'Sin facturas aún'}
-          color="bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400"
+          color="bg-customer-50 text-customer-600 dark:bg-customer-950/50 dark:text-customer-400"
         />
       </div>
 

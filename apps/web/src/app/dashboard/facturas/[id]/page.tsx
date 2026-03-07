@@ -284,12 +284,12 @@ export default function FacturaDetailPage() {
             {isProforma ? 'Proforma' : (invoice.number ?? 'Borrador')}
           </span>
           {invoice.isRectificative && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400 font-medium">
+            <span className="text-xs px-1.5 py-0.5 rounded bg-rectificativa-100 text-rectificativa-700 dark:bg-rectificativa-950 dark:text-rectificativa-400 font-medium">
               Rectificativa
             </span>
           )}
           {isProforma && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 font-medium">
+            <span className="text-xs px-1.5 py-0.5 rounded bg-proforma-100 text-proforma-700 dark:bg-proforma-950 dark:text-proforma-300 font-medium">
               Proforma
             </span>
           )}
@@ -442,8 +442,8 @@ export default function FacturaDetailPage() {
                       variant="outline"
                       onClick={() => setShowConvertToProformaModal(true)}
                       disabled={convertToProformaMutation.isPending}
-                      //className="min-w-[160px] text-amber-700 border-amber-300 hover:bg-amber-50 hover:text-amber-800"
-                      className="min-w-[160px] text-amber-50 bg-amber-500 border-amber-300 hover:bg-amber-300 hover:text-amber-800"
+                      //className="min-w-[160px] text-proforma-700 border-proforma-300 hover:bg-proforma-50 hover:text-proforma-800"
+                      className="min-w-[160px] text-proforma-50 bg-proforma-500 border-proforma-300 hover:bg-proforma-300 hover:text-proforma-800"
                     >
                       <FileText className="mr-1.5 h-3.5 w-3.5" />
                       {convertToProformaMutation.isPending
@@ -571,10 +571,10 @@ export default function FacturaDetailPage() {
                 <DataRow label="Base imponible" value={formatCurrency(invoice.subtotal)} />
                 {parseNum(invoice.discountPercent) > 0 && (
                   <div className="flex justify-between items-baseline py-1">
-                    <span className="text-sm text-emerald-600">
+                    <span className="text-sm text-secondary-600">
                       Descuento ({invoice.discountPercent}%)
                     </span>
-                    <span className="text-sm text-emerald-600">
+                    <span className="text-sm text-secondary-600">
                       −{formatCurrency(invoice.discountAmount ?? 0)}
                     </span>
                   </div>
@@ -582,8 +582,10 @@ export default function FacturaDetailPage() {
                 <DataRow label="IVA" value={formatCurrency(invoice.taxTotal)} />
                 {parseNum(invoice.irpfPercent) > 0 && (
                   <div className="flex justify-between items-baseline py-1">
-                    <span className="text-sm text-orange-600">IRPF ({invoice.irpfPercent}%)</span>
-                    <span className="text-sm text-orange-600">
+                    <span className="text-sm text-rectificativa-600">
+                      IRPF ({invoice.irpfPercent}%)
+                    </span>
+                    <span className="text-sm text-rectificativa-600">
                       −{formatCurrency(invoice.irpfTotal ?? 0)}
                     </span>
                   </div>

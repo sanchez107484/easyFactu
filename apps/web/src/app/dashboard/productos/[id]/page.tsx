@@ -72,8 +72,8 @@ function TypeBadge({ type }: { type: ProductType }) {
       className={cn(
         'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold',
         isService
-          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-          : 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
+          ? 'bg-product-100 text-product-700 dark:bg-product-900/30 dark:text-product-400'
+          : 'bg-product-100 text-product-700 dark:bg-product-900/30 dark:text-product-400',
       )}
     >
       <Icon className="h-3 w-3" />

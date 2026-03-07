@@ -36,7 +36,7 @@ export function SetupStepper({ steps, currentStep }: SetupStepperProps) {
                 <div
                   className={cn(
                     'absolute left-[calc(50%+1.5rem)] right-[calc(-50%+1.5rem)] top-5 h-0.5',
-                    isCompleted ? 'bg-primary-600' : 'bg-gray-200',
+                    isCompleted ? 'bg-primary-600' : 'bg-border',
                   )}
                   aria-hidden="true"
                 />
@@ -49,7 +49,7 @@ export function SetupStepper({ steps, currentStep }: SetupStepperProps) {
                     'flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors',
                     isCompleted && 'border-primary-600 bg-primary-600 text-white',
                     isCurrentStep && 'border-primary-600 bg-white text-primary-600',
-                    isUpcoming && 'border-gray-300 bg-white text-gray-500',
+                    isUpcoming && 'border-border bg-background text-muted-foreground',
                   )}
                 >
                   {isCompleted ? (

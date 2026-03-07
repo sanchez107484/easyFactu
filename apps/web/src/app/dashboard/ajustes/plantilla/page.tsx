@@ -880,18 +880,18 @@ export default function PlantillaPage() {
 
       {/* ── Banner cambios sin guardar ── */}
       {hasChanges && (
-        <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">
-          <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-proforma-50 border border-proforma-200 dark:bg-proforma-950/30 dark:border-proforma-800">
+          <div className="flex items-center gap-2 text-proforma-700 dark:text-proforma-400">
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <span className="text-sm font-medium">Tienes cambios sin guardar</span>
-            <span className="text-xs text-amber-600 dark:text-amber-500 hidden sm:inline">
+            <span className="text-xs text-proforma-600 dark:text-proforma-500 hidden sm:inline">
               — No olvides guardar cuando termines de personalizar
             </span>
           </div>
           <div className="flex gap-2 shrink-0">
             <button
               onClick={handleReset}
-              className="text-xs text-amber-600 hover:text-amber-800 dark:text-amber-400 underline underline-offset-2 transition-colors"
+              className="text-xs text-proforma-600 hover:text-proforma-800 dark:text-proforma-400 underline underline-offset-2 transition-colors"
             >
               Descartar
             </button>

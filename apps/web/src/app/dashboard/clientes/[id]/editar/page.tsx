@@ -428,14 +428,14 @@ function EditCustomerForm({ customerId, defaultValues, originalNif }: EditFormPr
 
                 {/* Banner duplicado — solo si el NIF cambió y coincide con OTRO cliente */}
                 {existingCustomer && nifChanged && (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 p-4">
+                  <div className="rounded-lg border border-customer-200 bg-customer-50 dark:border-customer-800 dark:bg-customer-950/40 p-4">
                     <div className="flex items-start gap-3">
-                      <UserCheck className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <UserCheck className="h-5 w-5 text-customer-600 dark:text-customer-400 shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                        <p className="text-sm font-semibold text-customer-800 dark:text-customer-300">
                           Este NIF ya pertenece a otro cliente
                         </p>
-                        <div className="mt-2 rounded-md bg-white/60 dark:bg-black/20 border border-amber-200/50 dark:border-amber-700/50 p-3 space-y-0.5">
+                        <div className="mt-2 rounded-md bg-white/60 dark:bg-black/20 border border-customer-200/50 dark:border-customer-700/50 p-3 space-y-0.5">
                           <p className="text-sm font-medium">{existingCustomer.name}</p>
                           <p className="text-xs text-muted-foreground font-mono">
                             {existingCustomer.nif}
@@ -450,7 +450,7 @@ function EditCustomerForm({ customerId, defaultValues, originalNif }: EditFormPr
                           type="button"
                           size="sm"
                           variant="outline"
-                          className="mt-3 w-full border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40"
+                          className="mt-3 w-full border-customer-300 text-customer-800 hover:bg-customer-100 dark:border-customer-700 dark:text-customer-300 dark:hover:bg-customer-900/40"
                           onClick={() => router.push(`/dashboard/clientes/${existingCustomer.id}`)}
                         >
                           <ArrowRight className="h-3.5 w-3.5 mr-1.5" />

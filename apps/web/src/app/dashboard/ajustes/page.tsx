@@ -146,8 +146,8 @@ export default function AjustesPage() {
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium text-green-600">Válido</span>
+                      <CheckCircle className="h-4 w-4 text-secondary-600" />
+                      <span className="text-sm font-medium text-secondary-600">Válido</span>
                     </>
                   )}
                 </div>

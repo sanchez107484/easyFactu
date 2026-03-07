@@ -287,7 +287,7 @@ export default function HomePage() {
               </div>
 
               <p className="mt-6 text-sm text-muted-foreground">
-                <CheckCircle2 className="mr-1 inline h-4 w-4 text-green-600" />
+                <CheckCircle2 className="mr-1 inline h-4 w-4 text-secondary-600" />
                 Adaptado 100% a los requisitos de la Agencia Tributaria
               </p>
             </div>
@@ -298,7 +298,7 @@ export default function HomePage() {
             <div className="container px-4">
               <div className="mx-auto max-w-3xl">
                 <div className="mb-6 flex items-center justify-center">
-                  <AlertTriangle className="h-12 w-12 text-yellow-600" />
+                  <AlertTriangle className="h-12 w-12 text-proforma-600" />
                 </div>
 
                 <h2 className="mb-6 text-center text-3xl font-bold sm:text-4xl">
@@ -442,14 +442,14 @@ export default function HomePage() {
                         <td className="py-4">{row.feature}</td>
                         <td className="py-4 text-center">
                           {row.traditional ? (
-                            <CheckCircle2 className="mx-auto h-5 w-5 text-green-600" />
+                            <CheckCircle2 className="mx-auto h-5 w-5 text-secondary-600" />
                           ) : (
                             <span className="text-destructive">✕</span>
                           )}
                         </td>
                         <td className="py-4 text-center">
                           {row.easyFactura && (
-                            <CheckCircle2 className="mx-auto h-5 w-5 text-green-600" />
+                            <CheckCircle2 className="mx-auto h-5 w-5 text-secondary-600" />
                           )}
                         </td>
                       </tr>

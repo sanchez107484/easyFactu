@@ -110,7 +110,7 @@ export function PaymentDetailsFields({
             )}
 
             {isDifferentFromTenant && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-2 flex-wrap">
+              <p className="text-xs text-proforma-600 dark:text-proforma-400 flex items-center gap-2 flex-wrap">
                 <span>
                   Diferente al guardado en Empresa ({tenantIban ? formatIban(tenantIban) : ''}).
                 </span>

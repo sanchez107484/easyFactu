@@ -389,10 +389,12 @@ export default function SetupPage() {
                       </Button>
                     </div>
                   ) : (
-                    <label className="flex h-48 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 hover:border-primary-600 transition-colors">
-                      <Upload className="h-12 w-12 text-gray-400" />
-                      <p className="mt-2 text-sm text-gray-600">Haz clic o arrastra tu logo aquí</p>
-                      <p className="text-xs text-gray-500">PNG, JPG, SVG (máx. 2MB)</p>
+                    <label className="flex h-48 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border hover:border-primary-600 transition-colors">
+                      <Upload className="h-12 w-12 text-muted-foreground" />
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Haz clic o arrastra tu logo aquí
+                      </p>
+                      <p className="text-xs text-muted-foreground">PNG, JPG, SVG (máx. 2MB)</p>
                       <input
                         type="file"
                         className="hidden"
@@ -498,8 +500,8 @@ export default function SetupPage() {
                   </div>
                 </div>
 
-                <div className="rounded-lg border bg-blue-50 p-4">
-                  <p className="text-sm text-blue-900">
+                <div className="rounded-lg border bg-primary-50 p-4">
+                  <p className="text-sm text-primary-900">
                     <strong>¿Qué es esto?</strong> El certificado digital te permite firmar tus
                     facturas electrónicamente y enviarlas a la AEAT de forma automática, cumpliendo
                     con VeriFactu.
@@ -515,7 +517,7 @@ export default function SetupPage() {
                       type="file"
                       accept=".pfx,.p12"
                       onChange={handleCertificateChange}
-                      className="block w-full text-sm text-gray-500
+                      className="block w-full text-sm text-muted-foreground
                         file:mr-4 file:py-2 file:px-4
                         file:rounded-md file:border-0
                         file:text-sm file:font-semibold
@@ -523,7 +525,7 @@ export default function SetupPage() {
                         hover:file:bg-primary-100"
                     />
                     {certificate && (
-                      <p className="mt-2 text-sm text-green-600">
+                      <p className="mt-2 text-sm text-secondary-600">
                         ✓ Certificado cargado: {certificate.name}
                       </p>
                     )}

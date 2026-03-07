@@ -1,5 +1,10 @@
 import type { Config } from 'tailwindcss';
-import { brandConfig } from '../../brand.config';
+import { themeConfig } from '../../packages/brand-config/src/theme.config';
+
+/** Expande una escala de color al formato de objeto que entiende Tailwind */
+function scale(s: Record<string | number, string>) {
+  return Object.fromEntries(Object.entries(s));
+}
 
 const config: Config = {
   darkMode: ['class'],
@@ -18,39 +23,12 @@ const config: Config = {
     },
     extend: {
       colors: {
+        // ── shadcn/ui semantic tokens (driven by CSS vars from theme.config) ──
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
-        primary: {
-          50: brandConfig.colors.primary[50],
-          100: brandConfig.colors.primary[100],
-          200: brandConfig.colors.primary[200],
-          300: brandConfig.colors.primary[300],
-          400: brandConfig.colors.primary[400],
-          500: brandConfig.colors.primary[500],
-          600: brandConfig.colors.primary[600],
-          700: brandConfig.colors.primary[700],
-          800: brandConfig.colors.primary[800],
-          900: brandConfig.colors.primary[900],
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
-        },
-        secondary: {
-          50: brandConfig.colors.secondary[50],
-          100: brandConfig.colors.secondary[100],
-          200: brandConfig.colors.secondary[200],
-          300: brandConfig.colors.secondary[300],
-          400: brandConfig.colors.secondary[400],
-          500: brandConfig.colors.secondary[500],
-          600: brandConfig.colors.secondary[600],
-          700: brandConfig.colors.secondary[700],
-          800: brandConfig.colors.secondary[800],
-          900: brandConfig.colors.secondary[900],
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
-        },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
@@ -71,6 +49,26 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+
+        // ── Brand colors (hex scales + shadcn DEFAULT token) ──
+        primary: {
+          ...scale(themeConfig.scales.primary),
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
+        },
+        secondary: {
+          ...scale(themeConfig.scales.secondary),
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        },
+
+        // ── Entity semantic colors ──
+        // Clases disponibles: bg-invoice-100, text-proforma-600, border-customer-200 ...
+        invoice: scale(themeConfig.scales.invoice),
+        proforma: scale(themeConfig.scales.proforma),
+        rectificativa: scale(themeConfig.scales.rectificativa),
+        customer: scale(themeConfig.scales.customer),
+        product: scale(themeConfig.scales.product),
       },
       borderRadius: {
         lg: 'var(--radius)',

@@ -408,11 +408,11 @@ export default function NuevoProductoPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-dashed bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800 px-4 py-4 text-xs leading-relaxed">
-              <p className="font-semibold text-amber-800 dark:text-amber-300 mb-1.5">
+            <div className="rounded-xl border border-dashed bg-product-50 dark:bg-product-950/20 border-product-200 dark:border-product-800 px-4 py-4 text-xs leading-relaxed">
+              <p className="font-semibold text-product-800 dark:text-product-300 mb-1.5">
                 Para que sirve el catalogo
               </p>
-              <p className="text-amber-700 dark:text-amber-400">
+              <p className="text-product-700 dark:text-product-400">
                 Guarda aqui tus servicios y productos habituales. La proxima vez que hagas una
                 factura, podras anadirlos con un solo clic sin tener que escribir nada a mano.
               </p>

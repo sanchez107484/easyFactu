@@ -89,28 +89,28 @@ const INVOICE_TYPE_CONFIG: Record<
   standard: {
     label: 'Factura ordinaria',
     description: 'Oficial con número fiscal',
-    color: 'text-emerald-700 dark:text-emerald-400',
-    bg: 'bg-emerald-50 dark:bg-emerald-950/40',
-    border: 'border-emerald-200 dark:border-emerald-700',
-    hoverBorder: 'hover:border-emerald-400 dark:hover:border-emerald-500',
+    color: 'text-invoice-700 dark:text-invoice-400',
+    bg: 'bg-invoice-50 dark:bg-invoice-950/40',
+    border: 'border-invoice-200 dark:border-invoice-700',
+    hoverBorder: 'hover:border-invoice-400 dark:hover:border-invoice-500',
     icon: <FileCheck className="h-4 w-4" />,
   },
   proforma: {
     label: 'Factura proforma',
     description: 'Sin número hasta su conversión',
-    color: 'text-amber-700 dark:text-amber-400',
-    bg: 'bg-amber-50 dark:bg-amber-950/40',
-    border: 'border-amber-200 dark:border-amber-700',
-    hoverBorder: 'hover:border-amber-400 dark:hover:border-amber-500',
+    color: 'text-proforma-700 dark:text-proforma-400',
+    bg: 'bg-proforma-50 dark:bg-proforma-950/40',
+    border: 'border-proforma-200 dark:border-proforma-700',
+    hoverBorder: 'hover:border-proforma-400 dark:hover:border-proforma-500',
     icon: <FileClock className="h-4 w-4" />,
   },
   simplified: {
     label: 'Factura simplificada',
     description: 'Para operaciones de menor importe',
-    color: 'text-blue-700 dark:text-blue-400',
-    bg: 'bg-blue-50 dark:bg-blue-950/40',
-    border: 'border-blue-200 dark:border-blue-700',
-    hoverBorder: 'hover:border-blue-400 dark:hover:border-blue-500',
+    color: 'text-invoice-700 dark:text-invoice-400',
+    bg: 'bg-invoice-50 dark:bg-invoice-950/40',
+    border: 'border-invoice-200 dark:border-invoice-700',
+    hoverBorder: 'hover:border-invoice-400 dark:hover:border-invoice-500',
     icon: <FileText className="h-4 w-4" />,
   },
 };
@@ -500,13 +500,13 @@ function InvoiceForm({
           {/* LEFT -- Form (60%) */}
           <div className="w-[60%] overflow-y-auto px-6 py-5 space-y-5 border-r">
             {isDuplicate && sourceNumber && (
-              <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/40 px-4 py-3">
-                <Copy className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+              <div className="flex items-start gap-3 rounded-lg border border-invoice-200 bg-invoice-50 dark:border-invoice-800 dark:bg-invoice-950/40 px-4 py-3">
+                <Copy className="h-4 w-4 text-invoice-600 dark:text-invoice-400 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                  <p className="text-sm font-medium text-invoice-700 dark:text-invoice-300">
                     Duplicando factura {sourceNumber}
                   </p>
-                  <p className="text-xs text-blue-600/80 dark:text-blue-400/80 mt-0.5">
+                  <p className="text-xs text-invoice-600/80 dark:text-invoice-400/80 mt-0.5">
                     Los datos se han copiado de la factura original. La fecha de emisión se ha
                     actualizado a hoy. Revisa y confirma antes de guardar.
                   </p>
@@ -514,13 +514,13 @@ function InvoiceForm({
               </div>
             )}
             {editDraftId && (
-              <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 px-4 py-3">
-                <Pencil className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div className="flex items-start gap-3 rounded-lg border border-proforma-200 bg-proforma-50 dark:border-proforma-800 dark:bg-proforma-950/40 px-4 py-3">
+                <Pencil className="h-4 w-4 text-proforma-600 dark:text-proforma-400 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                  <p className="text-sm font-medium text-proforma-700 dark:text-proforma-300">
                     {isProforma ? 'Editando factura proforma' : 'Editando borrador'}
                   </p>
-                  <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">
+                  <p className="text-xs text-proforma-600/80 dark:text-proforma-400/80 mt-0.5">
                     {isProforma
                       ? 'Los cambios se guardarán sobre esta proforma. Cuando el cliente acepte, conviértela a factura oficial.'
                       : 'Los cambios se guardarán sobre este borrador. Puedes confirmarlo cuando esté listo.'}

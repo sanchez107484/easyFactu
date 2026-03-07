@@ -532,11 +532,11 @@ export default function EditarProductoPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-dashed bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 px-4 py-4 text-xs leading-relaxed">
-              <p className="font-semibold text-blue-800 dark:text-blue-300 mb-1.5">
+            <div className="rounded-xl border border-dashed bg-product-50 dark:bg-product-950/20 border-product-200 dark:border-product-800 px-4 py-4 text-xs leading-relaxed">
+              <p className="font-semibold text-product-800 dark:text-product-300 mb-1.5">
                 ¿Qué pasa si cambio el precio?
               </p>
-              <p className="text-blue-700 dark:text-blue-400">
+              <p className="text-product-700 dark:text-product-400">
                 Los cambios solo afectan a las facturas nuevas. Las facturas ya creadas no se
                 modifican.
               </p>

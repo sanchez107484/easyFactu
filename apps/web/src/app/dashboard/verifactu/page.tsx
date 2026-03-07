@@ -77,25 +77,25 @@ const statusConfig = {
     label: 'Pendiente',
     icon: Clock,
     variant: 'secondary' as const,
-    color: 'text-gray-500',
+    color: 'text-muted-foreground',
   },
   SENDING: {
     label: 'Enviando',
     icon: RefreshCw,
     variant: 'default' as const,
-    color: 'text-blue-500',
+    color: 'text-invoice-500',
   },
   ACCEPTED: {
     label: 'Aceptada',
     icon: CheckCircle2,
     variant: 'default' as const,
-    color: 'text-green-500',
+    color: 'text-secondary-500',
   },
   ACCEPTED_WITH_WARNINGS: {
     label: 'Aceptada con avisos',
     icon: AlertCircle,
     variant: 'default' as const,
-    color: 'text-yellow-500',
+    color: 'text-proforma-500',
   },
   REJECTED: {
     label: 'Rechazada',
@@ -153,7 +153,7 @@ export default function VerifactuPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Aceptadas</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <CheckCircle2 className="h-4 w-4 text-secondary-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.accepted}</div>
@@ -163,7 +163,7 @@ export default function VerifactuPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pendientes</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-500" />
+            <Clock className="h-4 w-4 text-proforma-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.pending}</div>
@@ -265,7 +265,7 @@ export default function VerifactuPage() {
                         </TableCell>
                         <TableCell>
                           {log.attempts > 1 ? (
-                            <span className="text-yellow-600">{log.attempts}/3</span>
+                            <span className="text-proforma-600">{log.attempts}/3</span>
                           ) : (
                             <span>{log.attempts}</span>
                           )}

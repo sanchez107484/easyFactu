@@ -51,15 +51,15 @@ export function ConvertProformaModal({
                 </p>
                 <ul className="space-y-1.5 pl-5 list-none">
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-secondary-500 shrink-0 mt-0.5" />
                     <span>El documento pasa a ser una factura ordinaria en estado borrador.</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-secondary-500 shrink-0 mt-0.5" />
                     <span>Podrás editarla y confirmarla para asignarle número fiscal.</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-secondary-500 shrink-0 mt-0.5" />
                     <span>
                       Al confirmarla se enviará a la AEAT vía VeriFactu y tendrá validez legal.
                     </span>

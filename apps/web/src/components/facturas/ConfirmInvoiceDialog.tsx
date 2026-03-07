@@ -67,9 +67,9 @@ export function ConfirmInvoiceDialog({
 
               {/* VeriFactu warnings — only for official invoices */}
               {!isProforma && (
-                <div className="flex gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">
-                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                  <ul className="text-sm text-amber-800 dark:text-amber-400 space-y-1">
+                <div className="flex gap-3 p-3 rounded-lg bg-proforma-50 border border-proforma-200 dark:bg-proforma-950/30 dark:border-proforma-800">
+                  <AlertTriangle className="h-4 w-4 text-proforma-600 shrink-0 mt-0.5" />
+                  <ul className="text-sm text-proforma-800 dark:text-proforma-400 space-y-1">
                     <li>Se generará un registro de alta en VeriFactu con hash encadenado.</li>
                     <li>
                       Se asignará el siguiente número de serie disponible de forma definitiva.

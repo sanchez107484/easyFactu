@@ -3,7 +3,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { Toaster } from 'sonner';
-import { brandConfig } from '@easyfactura/brand-config';
+import { brandConfig, themeConfig } from '@easyfactura/brand-config';
 import './globals.css';
 
 const inter = Inter({
@@ -70,13 +70,32 @@ export const metadata: Metadata = {
   },
 };
 
+/** Builds the CSS custom properties block from a themeConfig cssVars object */
+function buildThemeCss(
+  lightVars: Record<string, string>,
+  darkVars: Record<string, string>,
+): string {
+  const toBlock = (vars: Record<string, string>) =>
+    Object.entries(vars)
+      .map(([k, v]) => `  --${k}: ${v};`)
+      .join('\n');
+
+  return `:root {\n${toBlock(lightVars)}\n}\n.dark {\n${toBlock(darkVars)}\n}`;
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const themeCss = buildThemeCss(themeConfig.cssVars.light, themeConfig.cssVars.dark);
+
   return (
     <html lang="es" suppressHydrationWarning>
+      <head>
+        {/* Theme CSS variables — generated from theme.config.ts at build time */}
+        <style dangerouslySetInnerHTML={{ __html: themeCss }} />
+      </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
