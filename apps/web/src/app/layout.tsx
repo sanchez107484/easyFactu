@@ -61,6 +61,14 @@ export const metadata: Metadata = {
     description:
       'Evita multas de la Ley Antifraude. Sistema VeriFactu con hash encadenado y envío a AEAT automático.',
   },
+  icons: {
+    icon: [
+      { url: brandConfig.logos.favicon, sizes: 'any' },
+      { url: brandConfig.logos.icon, type: 'image/png' },
+    ],
+    apple: { url: brandConfig.logos.icon, type: 'image/png' },
+    shortcut: brandConfig.logos.favicon,
+  },
   robots: {
     index: true,
     follow: true,

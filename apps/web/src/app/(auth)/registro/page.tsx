@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth-store';
@@ -89,7 +90,14 @@ export default function RegisterPage() {
       <Card className="w-full max-w-2xl">
         <CardHeader className="space-y-1 text-center">
           <div className="mb-4 flex justify-center">
-            <span className="text-3xl font-bold text-primary-600">{brandConfig.app.name}</span>
+            <Image
+              src={brandConfig.logos.main}
+              alt={brandConfig.app.name}
+              width={200}
+              height={60}
+              className="object-contain"
+              style={{ width: 'auto', height: '56px' }}
+            />
           </div>
           <CardTitle className="text-2xl">Crear cuenta</CardTitle>
           <CardDescription>Completa el formulario para empezar a facturar</CardDescription>

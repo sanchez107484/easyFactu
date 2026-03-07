@@ -53,9 +53,9 @@ export const brandConfig: BrandConfig = {
   // ==================== LOGOS ====================
   // Los archivos deben existir en apps/web/public/brand/
   logos: {
-    main: '/brand/logo.svg',
-    icon: '/brand/logo-icon.svg',
-    white: '/brand/logo-white.svg',
+    main: '/brand/logo.png',
+    icon: '/brand/logo-icon.png',
+    white: '/brand/logo-white.png',
     email: '/brand/logo-email.png',
     favicon: '/brand/favicon.ico',
     pwa: {

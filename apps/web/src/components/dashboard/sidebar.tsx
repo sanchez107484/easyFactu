@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -78,9 +79,26 @@ export function DashboardSidebar() {
     >
       {/* Logo */}
       <div className="flex h-16 items-center justify-between border-b px-4">
-        {!sidebarCollapsed && (
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="text-lg font-bold text-primary">{brandConfig.app.name}</span>
+        {sidebarCollapsed ? (
+          <Link href="/dashboard" className="flex items-center justify-center">
+            <Image
+              src={brandConfig.logos.icon}
+              alt={brandConfig.app.shortName}
+              width={32}
+              height={32}
+              className="object-contain"
+            />
+          </Link>
+        ) : (
+          <Link href="/dashboard" className="flex items-center">
+            <Image
+              src={brandConfig.logos.main}
+              alt={brandConfig.app.name}
+              width={140}
+              height={40}
+              className="object-contain"
+              style={{ width: 'auto', height: '32px' }}
+            />
           </Link>
         )}
         <Button

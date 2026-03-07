@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -219,7 +220,14 @@ export default function HomePage() {
         <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-16 items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-primary-600">{brandConfig.app.name}</span>
+              <Image
+                src={brandConfig.logos.main}
+                alt={brandConfig.app.name}
+                width={160}
+                height={40}
+                className="object-contain"
+                style={{ width: 'auto', height: '36px' }}
+              />
               <Badge variant="success" className="hidden sm:inline-flex">
                 100% VeriFactu
               </Badge>
