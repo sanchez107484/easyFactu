@@ -523,6 +523,33 @@ export class InvoiceService {
 
   // ==================== PROFORMA CONVERSION ====================
 
+  async convertDraftToProforma(tenantId: string, id: string) {
+    const invoice = await this.findOne(tenantId, id);
+
+    if (invoice.invoiceType === 'proforma') {
+      throw new ConflictException('La factura ya es una proforma.');
+    }
+
+    if (invoice.status !== InvoiceStatus.DRAFT) {
+      throw new ConflictException(
+        'Solo se pueden convertir borradores a proforma. Las facturas confirmadas no se pueden convertir.'
+      );
+    }
+
+    return this.prisma.invoice.update({
+      where: { id },
+      data: {
+        invoiceType: 'proforma',
+        status: PrismaInvoiceStatus.PROFORMA,
+      },
+      include: {
+        lines: { orderBy: { sortOrder: 'asc' } },
+        customer: true,
+        series: true,
+      },
+    });
+  }
+
   async convertToOfficial(tenantId: string, id: string) {
     const invoice = await this.findOne(tenantId, id);
 

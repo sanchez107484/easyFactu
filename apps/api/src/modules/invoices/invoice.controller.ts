@@ -107,6 +107,14 @@ export class InvoiceController {
     return this.invoiceService.convertToOfficial(tenantId, id);
   }
 
+  @Post(':id/convert-to-proforma')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Convertir borrador estándar a factura proforma' })
+  @ApiOkResponse({ description: 'Borrador convertido a proforma correctamente' })
+  convertToProforma(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    return this.invoiceService.convertDraftToProforma(tenantId, id);
+  }
+
   @Post(':id/paid')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Marcar factura como cobrada' })

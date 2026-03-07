@@ -54,8 +54,10 @@ import {
   useDeleteInvoice,
   useRectifyInvoice,
   useConvertProformaToOfficial,
+  useConvertDraftToProforma,
 } from '@/hooks/use-invoices';
 import { ConvertProformaModal } from '@/components/facturas/ConvertProformaModal';
+import { ConvertDraftToProformaModal } from '@/components/facturas/ConvertDraftToProformaModal';
 import { InvoiceStatus, PaymentMethod, Tenant } from '@easyfactura/shared-types';
 import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge';
@@ -157,6 +159,7 @@ export default function FacturaDetailPage() {
   const [showRectifyDialog, setShowRectifyDialog] = useState(false);
   const [rectifyReason, setRectifyReason] = useState('');
   const [showConvertModal, setShowConvertModal] = useState(false);
+  const [showConvertToProformaModal, setShowConvertToProformaModal] = useState(false);
 
   const currentTenant = useAuthStore((s) => s.currentTenant);
   const { data: tenantData } = useTenant();
@@ -167,6 +170,7 @@ export default function FacturaDetailPage() {
   const deleteMutation = useDeleteInvoice();
   const rectifyMutation = useRectifyInvoice();
   const convertMutation = useConvertProformaToOfficial();
+  const convertToProformaMutation = useConvertDraftToProforma();
   // FIX: useDuplicateInvoice eliminado — duplicar es solo navegar a /nueva?duplicate=ID
 
   const templateId = (invoice as any)?.templateId ?? (invoice as any)?.template?.id ?? '';
@@ -202,6 +206,11 @@ export default function FacturaDetailPage() {
     const newInvoice = await convertMutation.mutateAsync(id);
     setShowConvertModal(false);
     router.push(`/dashboard/facturas/nueva?edit=${newInvoice.id}`);
+  };
+
+  const handleConvertToProforma = async () => {
+    await convertToProformaMutation.mutateAsync(id);
+    setShowConvertToProformaModal(false);
   };
 
   const handleRectify = async () => {
@@ -307,6 +316,12 @@ export default function FacturaDetailPage() {
               <DropdownMenuItem onClick={() => setShowConvertModal(true)}>
                 <ArrowRightLeft className="mr-2 h-4 w-4" />
                 Convertir a factura oficial
+              </DropdownMenuItem>
+            )}
+            {isDraft && !isProforma && (
+              <DropdownMenuItem onClick={() => setShowConvertToProformaModal(true)}>
+                <FileText className="mr-2 h-4 w-4" />
+                Convertir a proforma
               </DropdownMenuItem>
             )}
             {canRectify && (
@@ -419,6 +434,21 @@ export default function FacturaDetailPage() {
                     >
                       <ArrowRightLeft className="mr-1.5 h-3.5 w-3.5" />
                       {convertMutation.isPending ? 'Convirtiendo...' : 'Convertir a oficial'}
+                    </Button>
+                  )}
+                  {isDraft && !isProforma && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowConvertToProformaModal(true)}
+                      disabled={convertToProformaMutation.isPending}
+                      //className="min-w-[160px] text-amber-700 border-amber-300 hover:bg-amber-50 hover:text-amber-800"
+                      className="min-w-[160px] text-amber-50 bg-amber-500 border-amber-300 hover:bg-amber-300 hover:text-amber-800"
+                    >
+                      <FileText className="mr-1.5 h-3.5 w-3.5" />
+                      {convertToProformaMutation.isPending
+                        ? 'Convirtiendo...'
+                        : 'Guardar como proforma'}
                     </Button>
                   )}
                   {isDraft && !isProforma && (
@@ -653,6 +683,14 @@ export default function FacturaDetailPage() {
         isPending={convertMutation.isPending}
         onCancel={() => setShowConvertModal(false)}
         onConfirm={handleConvertToOfficial}
+      />
+
+      <ConvertDraftToProformaModal
+        open={showConvertToProformaModal}
+        invoiceCustomerName={invoice.customer?.name ?? '—'}
+        isPending={convertToProformaMutation.isPending}
+        onCancel={() => setShowConvertToProformaModal(false)}
+        onConfirm={handleConvertToProforma}
       />
 
       {/* Rectify dialog */}

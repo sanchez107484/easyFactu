@@ -214,3 +214,19 @@ export function useConvertProformaToOfficial() {
     },
   });
 }
+
+export function useConvertDraftToProforma() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => invoiceApi.convertToProforma(id),
+    onSuccess: (invoice) => {
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
+      queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      toast.success('Borrador convertido a proforma correctamente.');
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}

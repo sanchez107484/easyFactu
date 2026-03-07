@@ -55,5 +55,10 @@ export const invoiceApi = {
       .post<ApiResponse<Invoice>>(`/invoices/${id}/convert-to-official`)
       .then(unwrapApiResponse),
 
+  convertToProforma: (id: string): Promise<Invoice> =>
+    apiClient
+      .post<ApiResponse<Invoice>>(`/invoices/${id}/convert-to-proforma`)
+      .then(unwrapApiResponse),
+
   remove: (id: string): Promise<void> => apiClient.delete(`/invoices/${id}`).then(() => undefined),
 };
