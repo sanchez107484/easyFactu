@@ -5,9 +5,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { toast } from 'sonner';
-import { getPrimaryColor } from '@easyfactura/brand-config';
+import { brandConfig } from '@easyfactura/brand-config';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -18,45 +18,42 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { ArrowLeft, Mail } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Mail, Loader2, CheckCircle2, KeyRound } from 'lucide-react';
 
-const recoverSchema = z.object({
-  email: z.string().email('Email inválido'),
+// ─────────────────────────────────────────────────────────────────────────────
+// Schema
+// ─────────────────────────────────────────────────────────────────────────────
+const resetSchema = z.object({
+  email: z.string().email('Introduce un email válido'),
 });
 
-type RecoverFormData = z.infer<typeof recoverSchema>;
+type ResetFormData = z.infer<typeof resetSchema>;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Page Component
+// ─────────────────────────────────────────────────────────────────────────────
 export default function RecuperarPasswordPage() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
 
-  const form = useForm<RecoverFormData>({
-    resolver: zodResolver(recoverSchema),
+  const form = useForm<ResetFormData>({
+    resolver: zodResolver(resetSchema),
     defaultValues: {
       email: '',
     },
   });
 
-  const onSubmit = async (data: RecoverFormData) => {
+  const onSubmit = async (data: ResetFormData) => {
     setIsLoading(true);
+
     try {
-      // TODO: Implementar endpoint de recuperación de contraseña
-      // await authApi.requestPasswordReset(data.email);
+      // Simular llamada a API
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      // Por ahora, simulamos éxito
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      setEmailSent(true);
-      toast.success('Email enviado. Revisa tu bandeja de entrada.');
+      setSubmittedEmail(data.email);
+      setIsSubmitted(true);
+      toast.success('Instrucciones enviadas a tu email');
     } catch (error) {
       toast.error('Error al enviar el email. Inténtalo de nuevo.');
     } finally {
@@ -65,89 +62,160 @@ export default function RecuperarPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-2xl font-bold">Recuperar contraseña</CardTitle>
-            <div
-              className="flex items-center justify-center rounded-lg p-2"
-              style={{ backgroundColor: getPrimaryColor(600) }}
-            >
-              <Mail className="h-6 w-6 text-white" />
-            </div>
-          </div>
-          <CardDescription>
-            {emailSent
-              ? 'Revisa tu email para restablecer tu contraseña'
-              : 'Introduce tu email para recibir instrucciones'}
-          </CardDescription>
-        </CardHeader>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-muted/50 to-background p-4">
+      {/* Logo */}
+      <Link href="/" className="mb-8">
+        <Image
+          src={brandConfig.logos.main}
+          alt={brandConfig.app.name}
+          width={180}
+          height={50}
+          className="object-contain"
+          style={{ width: 'auto', height: '44px' }}
+        />
+      </Link>
 
-        {emailSent ? (
-          <CardContent className="space-y-4">
-            <div className="rounded-lg bg-green-50 dark:bg-green-900/20 p-4 text-center">
-              <p className="text-sm text-green-800 dark:text-green-200">
-                Hemos enviado un email a <strong>{form.getValues('email')}</strong> con
-                instrucciones para restablecer tu contraseña.
-              </p>
-              <p className="mt-2 text-xs text-green-700 dark:text-green-300">
-                Si no recibes el email en unos minutos, revisa tu carpeta de spam.
+      <div className="w-full max-w-md">
+        {!isSubmitted ? (
+          /* Form State */
+          <div className="rounded-2xl border-2 bg-background p-8 shadow-sm">
+            {/* Icon */}
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+              <KeyRound className="h-8 w-8 text-primary" />
+            </div>
+
+            {/* Header */}
+            <div className="mb-8 text-center">
+              <h1 className="text-2xl font-bold">¿Olvidaste tu contraseña?</h1>
+              <p className="mt-2 text-muted-foreground">
+                Introduce tu email y te enviaremos instrucciones para restablecerla.
               </p>
             </div>
-            <Button variant="outline" className="w-full" onClick={() => setEmailSent(false)}>
-              Enviar a otro email
-            </Button>
-          </CardContent>
-        ) : (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <CardContent className="space-y-4">
+
+            {/* Form */}
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Email de tu cuenta</FormLabel>
                       <FormControl>
-                        <Input
-                          {...field}
-                          type="email"
-                          placeholder="tu@email.com"
-                          disabled={isLoading}
-                          autoComplete="email"
-                        />
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            type="email"
+                            placeholder="tu@email.com"
+                            className="h-12 pl-10"
+                            disabled={isLoading}
+                            {...field}
+                          />
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </CardContent>
 
-              <CardFooter className="flex flex-col space-y-4">
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isLoading}
-                  style={{
-                    backgroundColor: isLoading ? undefined : getPrimaryColor(600),
-                  }}
-                >
-                  {isLoading ? 'Enviando...' : 'Enviar instrucciones'}
+                <Button type="submit" className="h-12 w-full text-base" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      Enviar instrucciones
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
                 </Button>
+              </form>
+            </Form>
 
-                <Link
-                  href="/login"
-                  className="flex items-center justify-center text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-1" />
-                  Volver al login
-                </Link>
-              </CardFooter>
-            </form>
-          </Form>
+            {/* Back link */}
+            <div className="mt-6 text-center">
+              <Link
+                href="/login"
+                className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="mr-1 h-4 w-4" />
+                Volver a iniciar sesión
+              </Link>
+            </div>
+          </div>
+        ) : (
+          /* Success State */
+          <div className="rounded-2xl border-2 bg-background p-8 shadow-sm">
+            {/* Success icon */}
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-100 dark:bg-green-900/30">
+              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            </div>
+
+            {/* Header */}
+            <div className="mb-6 text-center">
+              <h1 className="text-2xl font-bold">¡Email enviado!</h1>
+              <p className="mt-2 text-muted-foreground">
+                Hemos enviado instrucciones para restablecer tu contraseña a:
+              </p>
+              <p className="mt-2 font-medium">{submittedEmail}</p>
+            </div>
+
+            {/* Instructions */}
+            <div className="mb-6 space-y-3 rounded-xl bg-muted/50 p-4 text-sm text-muted-foreground">
+              <p className="flex items-start gap-2">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                  1
+                </span>
+                Revisa tu bandeja de entrada (y spam)
+              </p>
+              <p className="flex items-start gap-2">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                  2
+                </span>
+                Haz clic en el enlace del email
+              </p>
+              <p className="flex items-start gap-2">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                  3
+                </span>
+                Crea tu nueva contraseña
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="space-y-3">
+              <Button
+                variant="outline"
+                className="h-12 w-full"
+                onClick={() => {
+                  setIsSubmitted(false);
+                  form.reset();
+                }}
+              >
+                Enviar de nuevo
+              </Button>
+              <Link href="/login" className="block">
+                <Button className="h-12 w-full">Volver a iniciar sesión</Button>
+              </Link>
+            </div>
+          </div>
         )}
-      </Card>
+
+        {/* Help text */}
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          ¿Necesitas ayuda?{' '}
+          <Link href="/contacto" className="text-primary hover:underline">
+            Contacta con soporte
+          </Link>
+        </p>
+      </div>
+
+      {/* Footer */}
+      <p className="mt-8 text-center text-xs text-muted-foreground">
+        © {new Date().getFullYear()} {brandConfig.app.legalEntity}
+      </p>
     </div>
   );
 }

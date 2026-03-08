@@ -42,7 +42,7 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 const PLAZAS_CONFIG = {
   total: 5000,
-  ocupadas: 3247, // Actualiza esto o conéctalo a tu backend
+  ocupadas: 2562, // Actualiza esto o conéctalo a tu backend
   get disponibles() {
     return this.total - this.ocupadas;
   },
@@ -295,7 +295,7 @@ export default function HomePage() {
         if (entry.isIntersecting && !hasAnimated.current) {
           hasAnimated.current = true;
           const duration = 2000;
-          const targets = { facturas: 18420, usuarios: PLAZAS_CONFIG.ocupadas, ahorro: 50000 };
+          const targets = { facturas: 1420, usuarios: PLAZAS_CONFIG.ocupadas, ahorro: 50000 };
           const start = Date.now();
           const tick = () => {
             const elapsed = Date.now() - start;
