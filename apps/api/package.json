@@ -1,7 +1,7 @@
 {
   "name": "@easyfactura/backend",
   "version": "0.1.0",
-  "description": "EasyFactura API - Backend NestJS",
+  "description": "NovaFactura API - Backend NestJS",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {

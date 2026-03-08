@@ -146,7 +146,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     app(req as any, res as any);
   } catch (error) {
     const err = error as Error;
-    console.error('[EasyFactura] Bootstrap failed:', err.message, '\n', err.stack);
+    console.error('[NovaFactura] Bootstrap failed:', err.message, '\n', err.stack);
 
     // CORS headers are mandatory even on error responses — without them the
     // browser masks the real error with a generic CORS failure message.

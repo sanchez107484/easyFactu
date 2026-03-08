@@ -32,7 +32,7 @@ const benefits = [
 ];
 
 const testimonial = {
-  text: 'Llevaba meses preocupada por VeriFactu. Con EasyFactura me despreocupé en 10 minutos. Lo mejor es que es completamente gratis.',
+  text: `Llevaba meses preocupada por VeriFactu. Con ${brandConfig.app.name} me despreocupé en 10 minutos. Lo mejor es que es completamente gratis.`,
   author: 'Laura García',
   role: 'Diseñadora freelance',
   rating: 5,
@@ -91,7 +91,7 @@ export function AuthSidePanel({ variant = 'login' }: AuthSidePanelProps) {
           <p className="mt-4 text-lg text-white/80">
             {variant === 'login'
               ? 'Accede a tu cuenta y continúa gestionando tu facturación de forma segura.'
-              : 'Únete a más de 3.000 profesionales que ya cumplen con VeriFactu automáticamente.'}
+              : `Únete a más de 3.000 profesionales que ya cumplen con VeriFactu automáticamente con ${brandConfig.app.name}.`}
           </p>
         </div>
 

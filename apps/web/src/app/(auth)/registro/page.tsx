@@ -8,13 +8,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth-store';
+import { AccountType } from '@easyfactura/shared-types';
 import { getErrorMessage } from '@/lib/api-client';
 import { brandConfig } from '@easyfactura/brand-config';
 import { AuthSidePanel } from '@/components/auth/auth-side-panel';
 import { PasswordStrength } from '@/components/auth/password-strength';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Form,
   FormControl,
@@ -84,7 +84,7 @@ export default function RegisterPage() {
     try {
       await register({
         ...data,
-        accountType: 'INDIVIDUAL', // Por defecto, se puede cambiar en configuración
+        accountType: AccountType.INDIVIDUAL, // Por defecto, se puede cambiar en configuración
       });
 
       toast.success('¡Cuenta creada exitosamente!');

@@ -138,7 +138,7 @@ const testimonials = [
     name: 'Laura García',
     role: 'Diseñadora freelance',
     location: 'Madrid',
-    text: 'Llevaba meses preocupada por las multas de Hacienda. Con EasyFactura me despreocupé en 10 minutos. Lo mejor es que conseguí una de las plazas gratuitas.',
+    text: `Llevaba meses preocupada por las multas de Hacienda. Con ${brandConfig.app.name} me despreocupé en 10 minutos. Lo mejor es que conseguí una de las plazas gratuitas.`,
     stars: 5,
     initials: 'LG',
   },
@@ -146,7 +146,7 @@ const testimonials = [
     name: 'Carlos Martínez',
     role: 'Fontanero autónomo',
     location: 'Valencia',
-    text: 'No entiendo de tecnología, pero esto lo maneja cualquiera. Las facturas se generan en segundos y van a Hacienda automáticamente.',
+    text: `No entiendo de tecnología, pero esto lo maneja cualquiera. Las facturas se generan en segundos y van a Hacienda automáticamente con ${brandConfig.app.name}.`,
     stars: 5,
     initials: 'CM',
   },
@@ -154,7 +154,7 @@ const testimonials = [
     name: 'Marta Sánchez',
     role: 'Consultora de negocio',
     location: 'Barcelona',
-    text: 'Migré desde Holded en menos de una hora. Funciona igual de bien, no tiene coste inicial y ya cumple con VeriFactu.',
+    text: `Funciona todo muy bien, igual de bien que otras más caras que he usado. `,
     stars: 5,
     initials: 'MS',
   },
@@ -295,7 +295,7 @@ export default function HomePage() {
         if (entry.isIntersecting && !hasAnimated.current) {
           hasAnimated.current = true;
           const duration = 2000;
-          const targets = { facturas: 1420, usuarios: PLAZAS_CONFIG.ocupadas, ahorro: 50000 };
+          const targets = { facturas: 10420, usuarios: PLAZAS_CONFIG.ocupadas, ahorro: 50000 };
           const start = Date.now();
           const tick = () => {
             const elapsed = Date.now() - start;
