@@ -19,8 +19,9 @@ if (!fs.existsSync(src)) {
   process.exit(1);
 }
 
-// Skip native binaries — they are version-specific and locked by the running
-// server process. Only JS/TS/schema files need to be updated after generate.
-const filter = (srcPath) => !srcPath.endsWith('.node');
-fs.cpSync(src, dst, { recursive: true, force: true, filter });
+// On Windows, skip locked native binaries (the running dev server holds them).
+// On Linux (Vercel build) we MUST include them so the Lambda can find the engine.
+const isWindows = process.platform === 'win32';
+const filter = isWindows ? (srcPath) => !srcPath.endsWith('.node') : undefined;
+fs.cpSync(src, dst, { recursive: true, force: true, ...(filter && { filter }) });
 console.log('[sync-prisma] Synced Prisma client to pnpm store:', dst);
