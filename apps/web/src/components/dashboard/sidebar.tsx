@@ -95,9 +95,9 @@ export function DashboardSidebar() {
               src={brandConfig.logos.main}
               alt={brandConfig.app.name}
               width={140}
-              height={40}
+              height={80}
               className="object-contain"
-              style={{ width: 'auto', height: '32px' }}
+              style={{ width: 'auto', height: '40px' }}
             />
           </Link>
         )}

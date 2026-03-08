@@ -74,26 +74,26 @@ const schemaData = {
         },
         {
           '@type': 'Question',
-          name: '¿Es EasyFactura compatible con el sistema de la AEAT?',
+          name: `¿Es ${brandConfig.app.name} compatible con el sistema de la AEAT?`,
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Sí, EasyFactura tiene conexión API directa con la Agencia Tributaria. Cada factura se envía automáticamente cumpliendo con todos los requisitos del Reglamento de facturación.',
+            text: `Sí, ${brandConfig.app.name} tiene conexión API directa con la Agencia Tributaria. Cada factura se envía automáticamente cumpliendo con todos los requisitos del Reglamento de facturación.`,
           },
         },
         {
           '@type': 'Question',
-          name: '¿Puedo usarlo si soy autónomo en módulos?',
+          name: `¿Puedo usar ${brandConfig.app.name} si soy autónomo en módulos?`,
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Sí, EasyFactura está adaptado a todos los regímenes fiscales: estimación directa, objetiva (módulos) y recargo de equivalencia.',
+            text: `Sí, ${brandConfig.app.name} está adaptado a todos los regímenes fiscales: estimación directa, objetiva (módulos) y recargo de equivalencia.`,
           },
         },
         {
           '@type': 'Question',
-          name: '¿Qué pasa en 2027 con mis datos?',
+          name: `¿Qué pasa en 2027 con mis datos en ${brandConfig.app.name}?`,
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Tus datos son tuyos. Podrás exportarlos en cualquier momento o seguir usando EasyFactura desde 9,99€/mes. Sin permanencia ni letra pequeña.',
+            text: `Tus datos son tuyos. Podrás exportarlos en cualquier momento o seguir usando ${brandConfig.app.name} desde 4,95€/mes. Sin permanencia ni letra pequeña.`,
           },
         },
       ],
@@ -175,19 +175,16 @@ const faqs = [
       'El uso de software no certificado o manipular facturas puede conllevar sanciones de hasta 50.000€ según la Ley General Tributaria. Por eso es crucial usar un sistema VeriFactu homologado.',
   },
   {
-    question: '¿Es EasyFactura compatible con el sistema de la AEAT?',
-    answer:
-      'Sí, EasyFactura tiene conexión API directa con la Agencia Tributaria. Cada factura se envía automáticamente cumpliendo con todos los requisitos del Reglamento de facturación.',
+    question: `¿Es ${brandConfig.app.name} compatible con el sistema de la AEAT?`,
+    answer: `Sí, ${brandConfig.app.name} tiene conexión API directa con la Agencia Tributaria. Cada factura se envía automáticamente cumpliendo con todos los requisitos del Reglamento de facturación.`,
   },
   {
-    question: '¿Puedo usarlo si soy autónomo en módulos?',
-    answer:
-      'Sí, EasyFactura está adaptado a todos los regímenes fiscales: estimación directa, objetiva (módulos) y recargo de equivalencia.',
+    question: `¿Puedo usar ${brandConfig.app.name} si soy autónomo en módulos?`,
+    answer: `Sí, ${brandConfig.app.name} está adaptado a todos los regímenes fiscales: estimación directa, objetiva (módulos) y recargo de equivalencia.`,
   },
   {
-    question: '¿Qué pasa en 2027 con mis datos?',
-    answer:
-      'Tus datos son tuyos. Podrás exportarlos en cualquier momento o seguir usando EasyFactura desde 9,99€/mes. Sin permanencia ni letra pequeña.',
+    question: `¿Qué pasa en 2027 con mis datos en ${brandConfig.app.name}?`,
+    answer: `Tus datos son tuyos. Podrás exportarlos en cualquier momento o seguir usando ${brandConfig.app.name} desde 4,95€/mes. Sin permanencia ni letra pequeña.`,
   },
 ];
 

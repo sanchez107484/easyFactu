@@ -20,11 +20,10 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Software de Facturación VeriFactu | Gratis hasta 2027',
+    default: `${brandConfig.app.name} | Software de Facturación VeriFactu | Gratis hasta 2027`,
     template: `%s | ${brandConfig.app.name}`,
   },
-  description:
-    '¿Buscas un programa de facturación VeriFactu? Evita multas de la Ley Antifraude con EasyFactura. Gratis para autónomos y Pymes hasta 2027. ¡Regístrate!',
+  description: `¿Buscas un programa de facturación VeriFactu? Evita multas de la Ley Antifraude con ${brandConfig.app.name}. Gratis para autónomos y Pymes hasta 2027. ¡Regístrate!`,
   keywords: [
     'facturación verifactu',
     'software verifactu',
@@ -50,14 +49,13 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_ES',
     url: brandConfig.app.url,
-    title: 'Software de Facturación VeriFactu para Autónomos y Pymes',
-    description:
-      'Cumple con la Ley Antifraude 11/2021. Software de facturación VeriFactu 100% gratis hasta 2027. Hash encadenado, QR y envío a AEAT automático.',
+    title: `${brandConfig.app.name} | Software de Facturación VeriFactu para Autónomos y Pymes`,
+    description: `Cumple con la Ley Antifraude 11/2021. Software de facturación VeriFactu 100% gratis hasta 2027. Hash encadenado, QR y envío a AEAT automático.`,
     siteName: brandConfig.app.name,
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Software de Facturación VeriFactu | Gratis hasta 2027',
+    title: `${brandConfig.app.name} | Software de Facturación VeriFactu para Autónomos y Pymes | Gratis hasta 2027`,
     description:
       'Evita multas de la Ley Antifraude. Sistema VeriFactu con hash encadenado y envío a AEAT automático.',
   },
@@ -66,8 +64,7 @@ export const metadata: Metadata = {
       { url: brandConfig.logos.favicon, sizes: 'any' },
       { url: brandConfig.logos.icon, type: 'image/png' },
     ],
-    apple: { url: brandConfig.logos.icon, type: 'image/png' },
-    shortcut: brandConfig.logos.favicon,
+    apple: { url: brandConfig.logos.icon, sizes: '180x180', type: 'image/png' },
   },
   robots: {
     index: true,
