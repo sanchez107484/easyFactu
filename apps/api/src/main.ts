@@ -27,11 +27,23 @@ async function bootstrap() {
 
   // Security
   app.use(helmet());
+
+  // Parse allowed origins: FRONTEND_URL supports comma-separated values
+  const allowedOrigins = new Set([
+    'http://localhost:3000',
+    'https://easyfactu-web.vercel.app',
+    ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map((o) => o.trim()) : []),
+  ]);
+
   app.enableCors({
-    origin: [
-      process.env.FRONTEND_URL || 'http://localhost:3000',
-      'https://easyfactu-web.vercel.app',
-    ],
+    origin: (origin, callback) => {
+      // Allow server-to-server requests (no origin) and listed origins
+      if (!origin || allowedOrigins.has(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+      }
+    },
     credentials: true,
   });
 
