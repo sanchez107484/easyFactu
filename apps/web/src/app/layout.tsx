@@ -1,3 +1,4 @@
+// app/layout.tsx
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import { ThemeProvider } from '@/components/providers/theme-provider';
@@ -20,25 +21,29 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: `${brandConfig.app.name} | Software de Facturación VeriFactu | Gratis hasta 2027`,
+    default: `${brandConfig.app.name} | Factura sin preocuparte de Verifactu | Gratis hasta 2027`,
     template: `%s | ${brandConfig.app.name}`,
   },
-  description: `¿Buscas un programa de facturación VeriFactu? Evita multas de la Ley Antifraude con ${brandConfig.app.name}. Gratis para autónomos y Pymes hasta 2027. ¡Regístrate!`,
+  description: `Tú haces tu factura, nosotros nos encargamos de Verifactu. Software de facturación para autónomos y pymes. 100% gratis hasta 2027. Sin tarjeta. Sin complicaciones.`,
   keywords: [
-    'facturación verifactu',
-    'software verifactu',
+    // Keywords de alta conversión (lo que REALMENTE buscan)
     'programa facturación autónomos',
+    'software facturación gratis',
+    'facturación electrónica autónomos',
+    'programa hacer facturas',
+    'verifactu software',
+    'programa facturación verifactu gratis',
+    'facturación electrónica obligatoria 2025',
+    'evitar multas verifactu',
+    'facturar sin saber contabilidad',
+    'alternativa holded',
+    'software facturación sin tarjeta',
+    // Keywords técnicas (para SEO de autoridad)
+    'verifactu',
     'ley antifraude',
-    'facturación electrónica obligatoria',
-    'software garante',
     'aeat',
-    'reglamento facturación',
-    'hash encadenado',
-    'código qr facturas',
-    'firma electrónica',
-    'certificación aeat',
-    'sistemas informáticos facturación',
-    'ley 11/2021',
+    'facturación electrónica',
+    'sistema garante',
   ],
   authors: [{ name: brandConfig.app.legalEntity }],
   creator: brandConfig.app.legalEntity,
@@ -49,15 +54,23 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_ES',
     url: brandConfig.app.url,
-    title: `${brandConfig.app.name} | Software de Facturación VeriFactu para Autónomos y Pymes`,
-    description: `Cumple con la Ley Antifraude 11/2021. Software de facturación VeriFactu 100% gratis hasta 2027. Hash encadenado, QR y envío a AEAT automático.`,
+    title: `${brandConfig.app.name} | Factura sin preocuparte de Verifactu`,
+    description: `Tú haces tu factura, nosotros nos encargamos de Hacienda. Gratis hasta 2027. Sin tarjeta. Para autónomos y pymes.`,
     siteName: brandConfig.app.name,
+    images: [
+      {
+        url: `${brandConfig.app.url}/og-image.jpg`, // Crea esta imagen: mockup + texto "Gratis hasta 2027"
+        width: 1200,
+        height: 630,
+        alt: `${brandConfig.app.name} - Software de facturación Verifactu`,
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${brandConfig.app.name} | Software de Facturación VeriFactu para Autónomos y Pymes | Gratis hasta 2027`,
-    description:
-      'Evita multas de la Ley Antifraude. Sistema VeriFactu con hash encadenado y envío a AEAT automático.',
+    title: `${brandConfig.app.name} | Factura sin preocuparte de Verifactu`,
+    description: `Gratis hasta 2027. Sin tarjeta. Cumplimiento automático con Hacienda.`,
+    images: [`${brandConfig.app.url}/og-image.jpg`],
   },
   icons: {
     icon: [
@@ -69,9 +82,19 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
   alternates: {
     canonical: brandConfig.app.url,
+  },
+  verification: {
+    google: 'TU_CODIGO_GOOGLE_SEARCH_CONSOLE', // Añade esto cuando tengas GSC
   },
 };
 
