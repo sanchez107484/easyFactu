@@ -1,12 +1,32 @@
 // app/layout.tsx
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
+import Script from 'next/script';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { Toaster } from 'sonner';
 import { brandConfig, themeConfig } from '@easyfactura/brand-config';
 import Analytics from '@/components/analytics/Analytics';
+import CookieBanner from '@/components/analytics/CookieBanner';
 import './globals.css';
+
+const GTM_ID = 'GTM-T8W799T4';
+
+// Consent Mode v2: set defaults synchronously before GTM loads.
+// For returning visitors, read localStorage so GA4 fires immediately.
+const CONSENT_INIT_SCRIPT = `
+  window.dataLayer=window.dataLayer||[];
+  function gtag(){dataLayer.push(arguments);}
+  var _c='denied';
+  try{_c=localStorage.getItem('ef_consent')==='yes'?'granted':'denied';}catch(e){}
+  gtag('consent','default',{
+    analytics_storage:_c,
+    ad_storage:'denied',
+    ad_user_data:'denied',
+    ad_personalization:'denied',
+    wait_for_update:_c==='denied'?500:0
+  });
+`;
 
 const inter = Inter({
   subsets: ['latin'],
@@ -122,10 +142,21 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        {/* Consent Mode v2 defaults — must run before GTM */}
+        <script dangerouslySetInnerHTML={{ __html: CONSENT_INIT_SCRIPT }} />
         {/* Theme CSS variables — generated from theme.config.ts at build time */}
         <style dangerouslySetInnerHTML={{ __html: themeCss }} />
       </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
+        {/* GTM noscript fallback */}
+        <noscript>
+          <iframe
+            src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+            height="0"
+            width="0"
+            style={{ display: 'none', visibility: 'hidden' }}
+          />
+        </noscript>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -135,9 +166,14 @@ export default function RootLayout({
           <QueryProvider>
             {children}
             <Analytics />
+            <CookieBanner />
             <Toaster richColors position="top-right" />
           </QueryProvider>
         </ThemeProvider>
+        {/* GTM script — loads after hydration, Consent Mode v2 controls firing */}
+        <Script id="gtm" strategy="afterInteractive">
+          {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${GTM_ID}');`}
+        </Script>
       </body>
     </html>
   );
