@@ -76,7 +76,7 @@ async function bootstrap() {
 
   // Swagger documentation
   const config = new DocumentBuilder()
-    .setTitle('EasyFactura API')
+    .setTitle('NovaFactura API')
     .setDescription('API para el sistema de facturación con VeriFactu integrado')
     .setVersion('1.0')
     .addBearerAuth()
@@ -99,7 +99,7 @@ async function bootstrap() {
   const port = process.env.APP_PORT || 3001;
   await app.listen(port);
 
-  console.log(`\n🚀 EasyFactura API running on: http://localhost:${port}`);
+  console.log(`\n🚀 NovaFactura API running on: http://localhost:${port}`);
   console.log(`📚 API Docs available at: http://localhost:${port}/api\n`);
 }
 

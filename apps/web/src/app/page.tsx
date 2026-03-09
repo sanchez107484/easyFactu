@@ -151,12 +151,12 @@ const testimonials = [
     initials: 'CM',
   },
   {
-    name: 'Marta Sánchez',
+    name: 'Patricia Gurrea',
     role: 'Consultora de negocio',
-    location: 'Barcelona',
-    text: `Funciona todo muy bien, igual de bien que otras más caras que he usado. `,
+    location: 'Pamplona',
+    text: `Funciona todo muy bien, igual de bien que otras más caras que he usado. Y lo mejor es que es gratis durante 6 meses, una oportunidad que no podía dejar pasar. `,
     stars: 5,
-    initials: 'MS',
+    initials: 'PG',
   },
 ];
 
@@ -1007,7 +1007,7 @@ export default function HomePage() {
                     Preguntas frecuentes
                   </Badge>
                   <h2 className="text-3xl font-bold sm:text-4xl">
-                    Dudas habituales sobre VeriFactu
+                    Dudas habituales sobre {brandConfig.app.name} y VeriFactu
                   </h2>
                 </div>
                 <p className="mx-auto mb-10 max-w-xl text-center text-muted-foreground">

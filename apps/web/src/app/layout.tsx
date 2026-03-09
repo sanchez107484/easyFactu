@@ -6,6 +6,9 @@ import { QueryProvider } from '@/components/providers/query-provider';
 import { Toaster } from 'sonner';
 import { brandConfig, themeConfig } from '@easyfactura/brand-config';
 import './globals.css';
+import dynamic from 'next/dynamic';
+
+const Analytics = dynamic(() => import('@/components/analytics/Analytics'), { ssr: false });
 
 const inter = Inter({
   subsets: ['latin'],
@@ -133,6 +136,7 @@ export default function RootLayout({
         >
           <QueryProvider>
             {children}
+            <Analytics />
             <Toaster richColors position="top-right" />
           </QueryProvider>
         </ThemeProvider>
