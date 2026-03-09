@@ -6,6 +6,7 @@ import { QueryProvider } from '@/components/providers/query-provider';
 import { Toaster } from 'sonner';
 import { brandConfig, themeConfig } from '@easyfactura/brand-config';
 import Analytics from '@/components/analytics/Analytics';
+import { Analytics as VercelAnalytics } from '@vercel/analytics/next';
 import './globals.css';
 
 const inter = Inter({
@@ -135,6 +136,7 @@ export default function RootLayout({
           <QueryProvider>
             {children}
             <Analytics />
+            <VercelAnalytics />
             <Toaster richColors position="top-right" />
           </QueryProvider>
         </ThemeProvider>
