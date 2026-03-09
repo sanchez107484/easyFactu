@@ -5,10 +5,8 @@ import { ThemeProvider } from '@/components/providers/theme-provider';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { Toaster } from 'sonner';
 import { brandConfig, themeConfig } from '@easyfactura/brand-config';
+import Analytics from '@/components/analytics/Analytics';
 import './globals.css';
-import dynamic from 'next/dynamic';
-
-const Analytics = dynamic(() => import('@/components/analytics/Analytics'), { ssr: false });
 
 const inter = Inter({
   subsets: ['latin'],
