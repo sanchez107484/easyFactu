@@ -773,11 +773,6 @@ export default function PlantillaPage() {
     );
   }, [template, localLayout, updateTemplate]);
 
-  const handlePreviewPdf = useCallback(() => {
-    if (!template) return;
-    window.open(invoiceTemplateApi.getPreviewUrl(template.id), '_blank');
-  }, [template]);
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -850,16 +845,6 @@ export default function PlantillaPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePreviewPdf}
-            disabled={!template}
-            className="gap-2"
-          >
-            <Eye className="h-4 w-4" />
-            Ver PDF real
-          </Button>
           <Button
             size="sm"
             onClick={handleSave}

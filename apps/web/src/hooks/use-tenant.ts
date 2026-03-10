@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { AxiosError } from 'axios';
 import { tenantApi } from '@/lib/api/tenant-api';
 import { UpdateTenantInput } from '@easyfactura/shared-types';
+import { useAuthStore } from '@/store/auth-store';
 
 export const tenantKeys = {
   all: ['tenant'] as const,
@@ -96,6 +97,22 @@ export function useDeleteCertificate() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: tenantKeys.all });
       toast.success('Certificado eliminado correctamente');
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useCompleteSetup() {
+  const queryClient = useQueryClient();
+  const updateCurrentTenant = useAuthStore((state) => state.updateCurrentTenant);
+
+  return useMutation({
+    mutationFn: () => tenantApi.completeSetup(),
+    onSuccess: (updatedTenant) => {
+      queryClient.setQueryData(tenantKeys.detail(), updatedTenant);
+      updateCurrentTenant(updatedTenant);
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error));

@@ -50,6 +50,7 @@ export class InvoiceSeriesService {
         year,
         tenantId,
         digits: dto.digits ?? 4,
+        nextNumber: dto.nextNumber ?? 1,
       },
     });
   }

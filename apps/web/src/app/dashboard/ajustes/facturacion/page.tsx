@@ -72,6 +72,11 @@ import {
   PaymentDetailsValues,
 } from '@/components/facturas/PaymentDetailsFields';
 import { Path } from 'react-hook-form';
+import {
+  InvoiceSeriesFormFields,
+  invoiceSeriesEditSchema,
+  InvoiceSeriesEditValues,
+} from '@/components/invoice-series/invoice-series-form-fields';
 
 // ==================== SCHEMA ====================
 
@@ -107,14 +112,7 @@ const seriesSchema = z.object({
   isDefault: z.boolean().optional(),
 });
 
-const editSeriesSchema = z.object({
-  name: z.string().min(2, 'Mínimo 2 caracteres').max(100, 'Máximo 100 caracteres'),
-  prefix: z.string().min(1, 'El prefijo es obligatorio').max(20, 'Máximo 20 caracteres'),
-  isDefault: z.boolean().optional(),
-});
-
 type SeriesFormData = z.infer<typeof seriesSchema>;
-type EditSeriesFormData = z.infer<typeof editSeriesSchema>;
 
 // ==================== INVOICE DEFAULTS FORM ====================
 function InvoiceDefaultsForm() {
@@ -451,14 +449,19 @@ interface EditSeriesDialogProps {
 function EditSeriesDialog({ series, onClose }: EditSeriesDialogProps) {
   const updateSeries = useUpdateSeries();
 
-  const form = useForm<EditSeriesFormData>({
-    resolver: zodResolver(editSeriesSchema),
+  const form = useForm<InvoiceSeriesEditValues>({
+    resolver: zodResolver(invoiceSeriesEditSchema),
     values: series
-      ? { name: series.name, prefix: series.prefix, isDefault: series.isDefault }
-      : { name: '', prefix: '', isDefault: false },
+      ? {
+          name: series.name,
+          prefix: series.prefix,
+          isDefault: series.isDefault,
+          nextNumber: undefined,
+        }
+      : { name: '', prefix: '', isDefault: false, nextNumber: undefined },
   });
 
-  function onSubmit(data: EditSeriesFormData) {
+  function onSubmit(data: InvoiceSeriesEditValues) {
     if (!series) return;
     updateSeries.mutate({ id: series.id, data }, { onSuccess: onClose });
   }
@@ -474,42 +477,12 @@ function EditSeriesDialog({ series, onClose }: EditSeriesDialogProps) {
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <Label htmlFor="edit-name">Nombre descriptivo *</Label>
-            <Input id="edit-name" {...form.register('name')} />
-            {form.formState.errors.name && (
-              <p className="mt-1 text-xs text-destructive">{form.formState.errors.name.message}</p>
-            )}
-          </div>
-
-          <div>
-            <Label htmlFor="edit-prefix">Prefijo de numeración *</Label>
-            <Input id="edit-prefix" {...form.register('prefix')} />
-            {form.watch('prefix') && series && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                Ej:{' '}
-                <span className="font-mono">
-                  {formatSeriesPreview(form.watch('prefix'), series.year, series.nextNumber)}
-                </span>
-              </p>
-            )}
-            {form.formState.errors.prefix && (
-              <p className="mt-1 text-xs text-destructive">
-                {form.formState.errors.prefix.message}
-              </p>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Switch
-              id="edit-isDefault"
-              checked={form.watch('isDefault') ?? false}
-              onCheckedChange={(v) => form.setValue('isDefault', v)}
-            />
-            <Label htmlFor="edit-isDefault" className="cursor-pointer">
-              Usar como serie por defecto
-            </Label>
-          </div>
+          <InvoiceSeriesFormFields
+            form={form}
+            year={series?.year ?? new Date().getFullYear()}
+            showIsDefault
+            showNextNumber
+          />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

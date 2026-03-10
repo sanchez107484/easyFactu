@@ -66,6 +66,16 @@ export class TenantController {
     return this.tenantService.setup(tenantId, userId, dto);
   }
 
+  @Post('complete-setup')
+  @Roles(TenantUserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Marcar configuración inicial como completada',
+    description: 'Marca el tenant como configurado. Llamar tras completar el wizard de onboarding.',
+  })
+  completeSetup(@CurrentTenant() tenantId: string) {
+    return this.tenantService.completeSetup(tenantId);
+  }
+
   @Post('logo')
   @Roles(TenantUserRole.ADMIN)
   @UseInterceptors(FileInterceptor('file'))

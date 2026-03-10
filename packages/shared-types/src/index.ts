@@ -152,6 +152,7 @@ export interface UpdateTenantInput {
   iban?: string;
   bankAccountHolder?: string;
   bic?: string;
+  accountType?: AccountType;
 }
 
 // ==================== USER ====================
@@ -366,12 +367,14 @@ export interface CreateInvoiceSeriesInput {
   prefix: string;
   year: number;
   isDefault?: boolean;
+  nextNumber?: number;
 }
 
 export interface UpdateInvoiceSeriesInput {
   name?: string;
   prefix?: string;
   isDefault?: boolean;
+  nextNumber?: number;
 }
 
 // ==================== INVOICE ====================

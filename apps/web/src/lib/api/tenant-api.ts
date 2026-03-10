@@ -40,4 +40,7 @@ export const tenantApi = {
 
   deleteCertificate: (): Promise<void> =>
     apiClient.delete('/tenant/certificate').then(() => undefined),
+
+  completeSetup: (): Promise<Tenant> =>
+    apiClient.post<ApiResponse<Tenant>>('/tenant/complete-setup', {}).then(unwrapApiResponse),
 };

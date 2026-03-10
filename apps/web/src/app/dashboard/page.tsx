@@ -2,6 +2,8 @@
 
 import { useMemo } from 'react';
 import { useAuthStore } from '@/store/auth-store';
+import { useOnboardingStore } from '@/hooks/use-onboarding';
+import { useTenant } from '@/hooks/use-tenant';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +21,8 @@ import {
   ChevronRight,
   ClipboardList,
   CalendarDays,
+  Zap,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -162,11 +166,92 @@ function StatCard({ title, value, description, icon: Icon, isLoading, href }: St
   return content;
 }
 
+// ==================== SETUP BANNER ====================
+
+const SETUP_STEPS = ['Tipo de cuenta', 'Datos fiscales', 'Serie de facturas', 'Preferencias'];
+
+interface SetupBannerProps {
+  completedSteps: number[];
+  onDismiss: () => void;
+}
+
+function SetupBanner({ completedSteps, onDismiss }: SetupBannerProps) {
+  const doneCount = completedSteps.length;
+  const totalSteps = SETUP_STEPS.length;
+  const progressPct = Math.round((doneCount / totalSteps) * 100);
+
+  return (
+    <div className="relative rounded-xl border border-primary/30 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 p-5">
+      <button
+        onClick={onDismiss}
+        aria-label="Cerrar"
+        className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+      >
+        <X className="h-4 w-4" />
+      </button>
+
+      <div className="flex items-start gap-4">
+        <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
+          <Zap className="h-5 w-5 text-primary" />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm">Completa la configuración de tu cuenta</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Configura tus datos fiscales para emitir facturas válidas con VeriFactu.
+          </p>
+
+          {/* Progress bar */}
+          <div className="mt-3 flex items-center gap-3">
+            <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-500"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+            <span className="text-xs text-muted-foreground shrink-0">
+              {doneCount} de {totalSteps}
+            </span>
+          </div>
+
+          {/* Step pills */}
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {SETUP_STEPS.map((label, i) => {
+              const stepNumber = i + 1;
+              const done = completedSteps.includes(stepNumber);
+              return (
+                <span
+                  key={stepNumber}
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                    done ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground',
+                  )}
+                >
+                  {done && <ChevronRight className="h-3 w-3 -rotate-90" />}
+                  {label}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+
+        <Link href="/dashboard/onboarding" className="shrink-0">
+          <Button size="sm" className="gap-1.5">
+            Continuar
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 // ==================== PAGE ====================
 
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user);
   const tenant = useAuthStore((state) => state.currentTenant);
+  const { completedSteps, isBannerDismissed, dismissBanner } = useOnboardingStore();
 
   const now = new Date();
 
@@ -191,10 +276,16 @@ export default function DashboardPage() {
     useMemo(() => computeStats(allInvoices), [allInvoices]);
 
   const isLoadingStats = loadingInvoices;
+  const isStillLoading = loadingInvoices || loadingCustomers || loadingProducts;
   const hasAnyData = allInvoices.length > 0 || totalCustomers > 0 || totalProducts > 0;
 
   return (
     <div className="space-y-6">
+      {/* Setup banner — shown until setupCompleted is true in the database */}
+      {!tenant?.setupCompleted && !isBannerDismissed && (
+        <SetupBanner completedSteps={completedSteps} onDismiss={dismissBanner} />
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -285,205 +376,209 @@ export default function DashboardPage() {
       </div>
 
       {/* KPIs */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <StatCard
-          title="Facturado este mes"
-          value={formatCurrency(billedThisMonth)}
-          description={`${invoicesThisMonth} factura${invoicesThisMonth !== 1 ? 's' : ''} emitida${invoicesThisMonth !== 1 ? 's' : ''}`}
-          icon={Euro}
-          isLoading={isLoadingStats}
-          href="/dashboard/facturas"
-        />
-        <StatCard
-          title={`Facturado en ${MONTH_LABELS[(now.getMonth() + 11) % 12]}`}
-          value={formatCurrency(billedLastMonth)}
-          description="Mes anterior"
-          icon={CalendarDays}
-          isLoading={isLoadingStats}
-          href="/dashboard/facturas"
-        />
-        <StatCard
-          title="Pendiente de cobro"
-          value={formatCurrency(pendingCollection)}
-          description="Confirmadas y enviadas"
-          icon={Clock}
-          isLoading={isLoadingStats}
-          href="/dashboard/facturas"
-        />
-        <StatCard
-          title="Clientes"
-          value={loadingCustomers ? '...' : String(totalCustomers)}
-          description="En tu cartera"
-          icon={Users}
-          isLoading={loadingCustomers}
-          href="/dashboard/clientes"
-        />
-        <StatCard
-          title="Catalogo"
-          value={loadingProducts ? '...' : String(totalProducts)}
-          description="Productos y servicios"
-          icon={Package}
-          isLoading={loadingProducts}
-          href="/dashboard/productos"
-        />
-      </div>
+      {(isStillLoading || hasAnyData) && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <StatCard
+            title="Facturado este mes"
+            value={formatCurrency(billedThisMonth)}
+            description={`${invoicesThisMonth} factura${invoicesThisMonth !== 1 ? 's' : ''} emitida${invoicesThisMonth !== 1 ? 's' : ''}`}
+            icon={Euro}
+            isLoading={isLoadingStats}
+            href="/dashboard/facturas"
+          />
+          <StatCard
+            title={`Facturado en ${MONTH_LABELS[(now.getMonth() + 11) % 12]}`}
+            value={formatCurrency(billedLastMonth)}
+            description="Mes anterior"
+            icon={CalendarDays}
+            isLoading={isLoadingStats}
+            href="/dashboard/facturas"
+          />
+          <StatCard
+            title="Pendiente de cobro"
+            value={formatCurrency(pendingCollection)}
+            description="Confirmadas y enviadas"
+            icon={Clock}
+            isLoading={isLoadingStats}
+            href="/dashboard/facturas"
+          />
+          <StatCard
+            title="Clientes"
+            value={loadingCustomers ? '...' : String(totalCustomers)}
+            description="En tu cartera"
+            icon={Users}
+            isLoading={loadingCustomers}
+            href="/dashboard/clientes"
+          />
+          <StatCard
+            title="Catalogo"
+            value={loadingProducts ? '...' : String(totalProducts)}
+            description="Productos y servicios"
+            icon={Package}
+            isLoading={loadingProducts}
+            href="/dashboard/productos"
+          />
+        </div>
+      )}
 
       {/* Grafica + Ultimas facturas */}
-      <div className="grid gap-6 lg:grid-cols-5">
-        {/* Grafica mensual */}
-        <Card className="lg:col-span-3">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Facturacion {now.getFullYear()}</CardTitle>
-              <span className="text-xs text-muted-foreground hidden sm:block">
-                Confirmadas, enviadas y cobradas
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoadingStats ? (
-              <div className="flex items-end gap-1 h-[220px] pb-6">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <Skeleton
-                    key={i}
-                    className="flex-1 rounded-sm"
-                    style={{ height: `${30 + Math.random() * 60}%` }}
-                  />
-                ))}
+      {(isStillLoading || hasAnyData) && (
+        <div className="grid gap-6 lg:grid-cols-5">
+          {/* Grafica mensual */}
+          <Card className="lg:col-span-3">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Facturacion {now.getFullYear()}</CardTitle>
+                <span className="text-xs text-muted-foreground hidden sm:block">
+                  Confirmadas, enviadas y cobradas
+                </span>
               </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke="hsl(var(--border))"
-                  />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fontSize: 11 }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 11 }}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(v: number) =>
-                      v === 0 ? '0' : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)
-                    }
-                  />
-                  <Tooltip
-                    formatter={(value: number) => [formatCurrency(value), 'Facturado']}
-                    contentStyle={{
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                      border: '1px solid hsl(var(--border))',
-                      backgroundColor: 'hsl(var(--background))',
-                    }}
-                    cursor={{ fill: 'hsl(var(--muted))' }}
-                  />
-                  <Bar
-                    dataKey="importe"
-                    fill="hsl(var(--primary))"
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={40}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              {isLoadingStats ? (
+                <div className="flex items-end gap-1 h-[220px] pb-6">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <Skeleton
+                      key={i}
+                      className="flex-1 rounded-sm"
+                      style={{ height: `${30 + Math.random() * 60}%` }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="hsl(var(--border))"
+                    />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v: number) =>
+                        v === 0 ? '0' : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)
+                      }
+                    />
+                    <Tooltip
+                      formatter={(value: number) => [formatCurrency(value), 'Facturado']}
+                      contentStyle={{
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        border: '1px solid hsl(var(--border))',
+                        backgroundColor: 'hsl(var(--background))',
+                      }}
+                      cursor={{ fill: 'hsl(var(--muted))' }}
+                    />
+                    <Bar
+                      dataKey="importe"
+                      fill="hsl(var(--primary))"
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={40}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Ultimas facturas */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Ultimas facturas</CardTitle>
-              <Link href="/dashboard/facturas">
-                <Button variant="ghost" size="sm" className="h-7 text-xs gap-1">
-                  Ver todas
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {loadingRecent ? (
-              <div className="space-y-px">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 px-4 py-3">
-                    <div className="flex-1 space-y-1.5">
-                      <Skeleton className="h-3.5 w-20" />
-                      <Skeleton className="h-3 w-28" />
-                    </div>
-                    <Skeleton className="h-3.5 w-16" />
-                  </div>
-                ))}
-              </div>
-            ) : recentInvoices.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-                <FileText className="h-10 w-10 text-muted-foreground/30 mb-3" />
-                <p className="text-sm font-medium">Sin facturas aun</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Crea tu primera factura para empezar
-                </p>
-                <Link href="/dashboard/facturas/nueva?tipo=standard" className="mt-3">
-                  <Button size="sm" variant="outline">
-                    <Plus className="mr-1.5 h-3.5 w-3.5" />
-                    Crear factura
+          {/* Ultimas facturas */}
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Ultimas facturas</CardTitle>
+                <Link href="/dashboard/facturas">
+                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1">
+                    Ver todas
+                    <ArrowUpRight className="h-3.5 w-3.5" />
                   </Button>
                 </Link>
               </div>
-            ) : (
-              <div>
-                {recentInvoices.map((invoice) => {
-                  const statusCfg = INVOICE_STATUS_CONFIG[invoice.status as InvoiceStatus];
-                  return (
-                    <Link key={invoice.id} href={`/dashboard/facturas/${invoice.id}`}>
-                      <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors border-b last:border-b-0 group">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold font-mono">
-                              {invoice.number}
-                            </span>
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                'text-[10px] px-1.5 py-0 h-4 font-normal',
-                                statusCfg?.color,
-                                statusCfg?.bg,
-                                statusCfg?.border,
-                              )}
-                            >
-                              {statusCfg?.label ?? invoice.status}
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground truncate mt-0.5">
-                            {invoice.customer?.name ?? '—'}
-                          </p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-sm font-semibold tabular-nums">
-                            {formatCurrency(Number(invoice.total))}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {new Date(invoice.issueDate).toLocaleDateString('es-ES', {
-                              day: '2-digit',
-                              month: 'short',
-                            })}
-                          </p>
-                        </div>
-                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 group-hover:text-muted-foreground transition-colors" />
+            </CardHeader>
+            <CardContent className="p-0">
+              {loadingRecent ? (
+                <div className="space-y-px">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 px-4 py-3">
+                      <div className="flex-1 space-y-1.5">
+                        <Skeleton className="h-3.5 w-20" />
+                        <Skeleton className="h-3 w-28" />
                       </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                      <Skeleton className="h-3.5 w-16" />
+                    </div>
+                  ))}
+                </div>
+              ) : recentInvoices.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+                  <FileText className="h-10 w-10 text-muted-foreground/30 mb-3" />
+                  <p className="text-sm font-medium">Sin facturas aun</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Crea tu primera factura para empezar
+                  </p>
+                  <Link href="/dashboard/facturas/nueva?tipo=standard" className="mt-3">
+                    <Button size="sm" variant="outline">
+                      <Plus className="mr-1.5 h-3.5 w-3.5" />
+                      Crear factura
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div>
+                  {recentInvoices.map((invoice) => {
+                    const statusCfg = INVOICE_STATUS_CONFIG[invoice.status as InvoiceStatus];
+                    return (
+                      <Link key={invoice.id} href={`/dashboard/facturas/${invoice.id}`}>
+                        <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors border-b last:border-b-0 group">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold font-mono">
+                                {invoice.number}
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  'text-[10px] px-1.5 py-0 h-4 font-normal',
+                                  statusCfg?.color,
+                                  statusCfg?.bg,
+                                  statusCfg?.border,
+                                )}
+                              >
+                                {statusCfg?.label ?? invoice.status}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                              {invoice.customer?.name ?? '—'}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-semibold tabular-nums">
+                              {formatCurrency(Number(invoice.total))}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {new Date(invoice.issueDate).toLocaleDateString('es-ES', {
+                                day: '2-digit',
+                                month: 'short',
+                              })}
+                            </p>
+                          </div>
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 group-hover:text-muted-foreground transition-colors" />
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Empty state primer uso */}
       {!isLoadingStats && !loadingCustomers && !loadingProducts && !hasAnyData && (

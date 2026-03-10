@@ -32,6 +32,7 @@ interface AuthState {
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   switchTenant: (tenantId: string) => Promise<void>;
+  updateCurrentTenant: (tenant: Tenant) => void;
 }
 
 interface RegisterData {
@@ -171,6 +172,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
       });
     }
+  },
+
+  updateCurrentTenant: (tenant: Tenant) => {
+    set({ currentTenant: tenant });
   },
 
   switchTenant: async (tenantId: string) => {

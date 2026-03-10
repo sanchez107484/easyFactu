@@ -56,6 +56,15 @@ export class CreateInvoiceSeriesDto {
   @Max(2100, { message: 'El año no puede superar 2100' })
   year?: number;
 
+  @ApiPropertyOptional({
+    description: 'Número inicial de la serie (para continuar desde un número concreto)',
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt({ message: 'El número inicial debe ser un entero' })
+  @Min(1, { message: 'El número inicial debe ser al menos 1' })
+  nextNumber?: number;
+
   @ApiPropertyOptional({ description: 'Si es la serie por defecto para el tipo', default: false })
   @IsOptional()
   @IsBoolean()

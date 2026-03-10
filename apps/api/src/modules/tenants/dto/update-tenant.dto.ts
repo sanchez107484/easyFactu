@@ -1,5 +1,6 @@
-import { IsString, IsEmail, IsOptional, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsEnum, MinLength, MaxLength } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { AccountType } from '@easyfactura/shared-types';
 import { IsValidNif } from '../../../common/validators/is-valid-nif.validator';
 import { IsValidIban } from '../../../common/validators/is-valid-iban.validator';
 import { IsValidSpanishPostalCode } from '../../../common/validators/is-valid-postal-code.validator';
@@ -89,4 +90,9 @@ export class UpdateTenantDto {
   @IsString()
   @MaxLength(100, { message: 'El sitio web no puede superar los 100 caracteres' })
   website?: string;
+
+  @ApiPropertyOptional({ enum: AccountType, description: 'Tipo de cuenta' })
+  @IsOptional()
+  @IsEnum(AccountType, { message: 'Tipo de cuenta no válido' })
+  accountType?: AccountType;
 }
