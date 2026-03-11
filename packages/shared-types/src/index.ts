@@ -401,6 +401,8 @@ export interface InvoiceLine {
   taxRate: number;
   taxAmount: number;
   lineTotal: number;
+  /** Whether to hide the quantity column for this line in the invoice preview/PDF */
+  hideQty: boolean;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -467,6 +469,8 @@ export interface CreateInvoiceLineInput {
   quantity: number;
   unitPrice: number;
   taxRate: number;
+  /** Whether to hide the quantity in the invoice preview/PDF */
+  hideQty?: boolean;
 }
 
 export interface CreateInvoiceInput {

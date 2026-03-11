@@ -53,16 +53,17 @@ export const EMPTY_LINE: ExtendedLineData = {
 
 /**
  * Strips frontend-only `_*` fields and normalizes quantity before sending to the API.
- * When _hideQty is true (Libre without count), quantity is sent as 1.
+ * Computes `hideQty` from the mode and _hideQty flag so it's persisted to the DB.
  */
 export function stripLineMetaFields(
   line: ExtendedLineData,
-): Omit<ExtendedLineData, '_mode' | '_hideQty'> {
+): Omit<ExtendedLineData, '_mode' | '_hideQty'> & { hideQty: boolean } {
   const { _mode, _hideQty, ...rest } = line;
-  void _mode;
-  void _hideQty;
+  const hideQty =
+    _mode === 'service' || (_mode === 'custom' && (_hideQty === true || rest.quantity === 0));
   return {
     ...rest,
     quantity: rest.quantity > 0 ? rest.quantity : 1,
+    hideQty,
   };
 }

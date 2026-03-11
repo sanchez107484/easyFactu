@@ -75,9 +75,12 @@ export function buildPreviewInvoice(
   const total = round2(subtotalAfterDiscount + taxTotal - (irpfTotal ?? 0));
 
   const previewLines = lines.map((l, i) => {
-    // _hideQty: true = no mostrar cantidad en la vista previa (servicios y libre sin qty)
-    const hideQty = l._mode === 'service' || (l._mode !== 'product' && l._hideQty !== false);
-    const effectiveQty = l.quantity ?? 1;
+    // Determine whether to hide the quantity for this line in the live preview:
+    // - service: always hide (quantity is always 1 and not meaningful)
+    // - product: always show
+    // - custom: hide only when _hideQty=true (user left quantity blank)
+    const hideQty = l._mode === 'service' || (l._mode === 'custom' && l._hideQty === true);
+    const effectiveQty = l.quantity && l.quantity > 0 ? l.quantity : 1;
     const lineSubtotal = round2(effectiveQty * (l.unitPrice ?? 0));
     return {
       id: `preview-${i}`,
@@ -91,6 +94,7 @@ export function buildPreviewInvoice(
       taxRate: l.taxRate ?? 0,
       taxAmount: round2(lineSubtotal * ((l.taxRate ?? 0) / 100)),
       lineTotal: round2(lineSubtotal * (1 + (l.taxRate ?? 0) / 100)),
+      hideQty,
       sortOrder: i,
       createdAt: today,
       updatedAt: today,
@@ -163,6 +167,7 @@ export function buildCreateInput(data: InvoiceFormData) {
         unitPrice: clean.unitPrice,
         taxRate: clean.taxRate,
         productId: clean.productId,
+        hideQty: clean.hideQty,
       };
     }),
   };

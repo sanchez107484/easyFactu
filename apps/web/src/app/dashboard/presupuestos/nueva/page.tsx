@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Plus, AlertCircle, Save, Pencil, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Plus, AlertCircle, Save, Pencil, ClipboardList, X } from 'lucide-react';
 import { InvoiceLineItem } from '@/components/facturas/InvoiceLineItem';
 import { extendedLineSchema, EMPTY_LINE, ExtendedLineData } from '@/lib/invoice-line-types';
 import { useCreateInvoice, useUpdateInvoice, useInvoice } from '@/hooks/use-invoices';
@@ -41,6 +41,7 @@ import { resolveUrl } from '@/lib/utils';
 import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import { buildPreviewInvoice, buildCreateInput, calculateDueDate } from '@/lib/invoice-helpers';
 import { formatSeriesPreview } from '@easyfactura/shared-validators';
+import { DueDatePicker } from '@/components/facturas/DueDatePicker';
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
 import type { PaymentDetails } from '@/components/facturas/LiveInvoicePreview';
 import { QuickCreateCustomerModal } from '@/components/clientes/QuickCreateCustomerModal';
@@ -65,7 +66,7 @@ const paymentDetailsSchema = z
 const formSchema = z.object({
   customerId: z.string().min(1, 'Selecciona un cliente'),
   issueDate: z.string().min(1, 'La fecha es obligatoria'),
-  validUntil: z.string().optional(),
+  dueDate: z.string().optional(),
   seriesId: z.string().optional().default(''),
   discountPercent: z.number().min(0).max(100).optional(),
   irpfPercent: z.number().min(0).max(100).optional(),
@@ -180,7 +181,7 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
         invoiceType: 'quote',
         templateId: defaultTemplate?.id,
       });
-      const input = { ...base, validUntil: data.validUntil || undefined };
+      const input = { ...base, validUntil: data.dueDate || undefined };
 
       if (editId) {
         await updateMutation.mutateAsync({ id: editId, data: input });
@@ -349,12 +350,15 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
                         </p>
                       )}
                     </div>
-                    <div className="space-y-2" id="field-validUntil">
-                      <Label htmlFor="validUntil">Válido hasta</Label>
-                      <Input id="validUntil" type="date" {...form.register('validUntil')} />
-                      <p className="text-xs text-muted-foreground">
-                        Por defecto 30 días desde la emisión
-                      </p>
+                    <div className="space-y-2" id="field-dueDate">
+                      <Label>Válido hasta</Label>
+                      <DueDatePicker
+                        issueDate={watchedValues.issueDate}
+                        value={watchedValues.dueDate}
+                        onChange={(date) => form.setValue('dueDate', date, { shouldDirty: true })}
+                        summaryLabel="Válido hasta el"
+                        defaultPreset={30}
+                      />
                     </div>
                   </section>
 
@@ -416,7 +420,23 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
                     className="space-y-3"
                     onFocus={() => setActiveSection('paymentMethod')}
                   >
-                    <Label>Método de pago</Label>
+                    <div className="flex items-center justify-between">
+                      <Label>Método de pago</Label>
+                      {activePaymentMethod && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            form.setValue('paymentMethod', undefined, { shouldValidate: true });
+                            form.setValue('paymentDetails', {});
+                          }}
+                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
+                          title="Quitar método de pago"
+                        >
+                          <X className="h-3 w-3" />
+                          <span>Quitar</span>
+                        </button>
+                      )}
+                    </div>
                     <Select
                       value={activePaymentMethod || ''}
                       onValueChange={(v) => {
@@ -642,7 +662,7 @@ export default function NuevoPresupuestoPage() {
     ? {
         customerId: sourceQuote.customerId ?? '',
         issueDate: sourceQuote.issueDate?.split('T')[0] ?? new Date().toISOString().split('T')[0],
-        validUntil:
+        dueDate:
           (sourceQuote as unknown as { validUntil?: string }).validUntil?.split('T')[0] ??
           defaultValidUntil,
         seriesId: sourceQuote.seriesId ?? '',
@@ -655,20 +675,25 @@ export default function NuevoPresupuestoPage() {
           (sourceQuote as unknown as { paymentDetails?: Record<string, string | undefined> })
             .paymentDetails ?? {},
         notes: sourceQuote.notes || undefined,
-        lines: (sourceQuote.lines ?? []).map((l) => ({
-          description: l.description ?? '',
-          quantity: Number(l.quantity) || 1,
-          unitPrice: Number(l.unitPrice) || 0,
-          taxRate: Number(l.taxRate) || 0,
-          productId: l.productId ?? undefined,
-          _mode: 'custom' as const,
-          _hideQty: false,
-        })),
+        lines: (sourceQuote.lines ?? []).map((l) => {
+          const qty = Number(l.quantity) || 1;
+          // Use the stored hideQty field from the DB (reliable) instead of a heuristic
+          const hideQty = l.hideQty ?? false;
+          return {
+            description: l.description ?? '',
+            quantity: qty,
+            unitPrice: Number(l.unitPrice) || 0,
+            taxRate: Number(l.taxRate) || 0,
+            productId: l.productId ?? undefined,
+            _mode: (hideQty && !l.productId ? 'service' : 'custom') as 'service' | 'custom',
+            _hideQty: hideQty,
+          };
+        }),
       }
     : {
         customerId: '',
         issueDate: new Date().toISOString().split('T')[0],
-        validUntil: defaultValidUntil,
+        dueDate: defaultValidUntil,
         seriesId: '',
         discountPercent: undefined,
         irpfPercent:

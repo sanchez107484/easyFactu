@@ -8,6 +8,7 @@ import {
   IsEnum,
   IsIn,
   IsNotEmpty,
+  IsBoolean,
   ValidateNested,
   ArrayMinSize,
   ArrayMaxSize,
@@ -32,6 +33,14 @@ export class CreateInvoiceLineDto {
   @MinLength(2, { message: 'La descripción debe tener al menos 2 caracteres' })
   @MaxLength(500, { message: 'La descripción no puede superar los 500 caracteres' })
   description!: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Ocultar cantidad en la vista previa/PDF (servicios y líneas sin cantidad explícita)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  hideQty?: boolean;
 
   @ApiProperty({ description: 'Cantidad (hasta 4 decimales)', minimum: 0.0001 })
   @IsNumber({ maxDecimalPlaces: 4 }, { message: 'La cantidad admite hasta 4 decimales' })
@@ -122,10 +131,14 @@ export class CreateInvoiceDto {
   @Max(100)
   irpfPercent?: number;
 
-  @ApiProperty({ enum: PaymentMethod, description: 'Método de pago' })
+  @ApiPropertyOptional({
+    enum: PaymentMethod,
+    description: 'Método de pago (obligatorio para facturas, opcional para presupuestos)',
+  })
+  @ValidateIf((o) => o.invoiceType !== 'quote' || !!o.paymentMethod)
   @IsNotEmpty({ message: 'El método de pago es obligatorio' })
   @IsEnum(PaymentMethod, { message: 'Método de pago no válido' })
-  paymentMethod!: PaymentMethod;
+  paymentMethod?: PaymentMethod;
 
   @ApiProperty({
     type: [CreateInvoiceLineDto],

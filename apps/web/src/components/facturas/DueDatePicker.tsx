@@ -41,17 +41,28 @@ interface DueDatePickerProps {
   issueDate: string;
   value: string | undefined;
   onChange: (date: string | undefined) => void;
+  /** Label shown in the summary line under the chips. Defaults to "Vence el" */
+  summaryLabel?: string;
+  /** Preset that should be active by default on first render when no value is set */
+  defaultPreset?: number;
 }
 
 // ==================== COMPONENT ====================
 
-export function DueDatePicker({ issueDate, value, onChange }: DueDatePickerProps) {
+export function DueDatePicker({
+  issueDate,
+  value,
+  onChange,
+  summaryLabel = 'Vence el',
+  defaultPreset,
+}: DueDatePickerProps) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
-  const [activePreset, setActivePreset] = useState<number | null>(() =>
-    value ? detectInitialPreset(issueDate, value) : null,
-  );
+  const [activePreset, setActivePreset] = useState<number | null>(() => {
+    if (value) return detectInitialPreset(issueDate, value);
+    return defaultPreset ?? null;
+  });
 
   const [showCustomInput, setShowCustomInput] = useState<boolean>(() => {
     if (!value) return false;
@@ -179,7 +190,8 @@ export function DueDatePicker({ issueDate, value, onChange }: DueDatePickerProps
       {/* ── Selected date summary ── */}
       {value && (
         <p className="text-xs text-muted-foreground leading-none">
-          Vence el <span className="font-medium text-foreground">{formatDateSpanish(value)}</span>
+          {summaryLabel}{' '}
+          <span className="font-medium text-foreground">{formatDateSpanish(value)}</span>
         </p>
       )}
     </div>

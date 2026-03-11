@@ -43,7 +43,7 @@ export class InvoiceService {
   ) {
     return lines.map((line, index) => ({
       tenantId,
-      productId: line.productId ?? null,
+      ...(line.productId ? { product: { connect: { id: line.productId } } } : {}),
       description: line.description,
       quantity: line.quantity,
       unitPrice: line.unitPrice,
@@ -51,6 +51,7 @@ export class InvoiceService {
       subtotal: calculatedLines[index]!.subtotal,
       taxAmount: calculatedLines[index]!.taxAmount,
       lineTotal: calculatedLines[index]!.lineTotal,
+      hideQty: line.hideQty ?? false,
       sortOrder: index,
     }));
   }

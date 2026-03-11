@@ -534,9 +534,11 @@ export default function FacturaDetailPage() {
                     <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
                       Descripción
                     </th>
-                    <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
-                      Cant.
-                    </th>
+                    {(invoice.lines ?? []).some((l) => !l.hideQty) && (
+                      <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
+                        Cant.
+                      </th>
+                    )}
                     <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
                       Precio
                     </th>
@@ -552,7 +554,11 @@ export default function FacturaDetailPage() {
                   {(invoice.lines ?? []).map((line) => (
                     <tr key={line.id}>
                       <td className="py-2.5 pr-4">{line.description}</td>
-                      <td className="py-2.5 text-right tabular-nums">{parseNum(line.quantity)}</td>
+                      {(invoice.lines ?? []).some((l) => !l.hideQty) && (
+                        <td className="py-2.5 text-right tabular-nums">
+                          {line.hideQty ? '' : parseNum(line.quantity)}
+                        </td>
+                      )}
                       <td className="py-2.5 text-right tabular-nums">
                         {formatCurrency(line.unitPrice)}
                       </td>

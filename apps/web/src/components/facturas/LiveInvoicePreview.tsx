@@ -274,7 +274,7 @@ export function LiveInvoicePreview({
                 {invoice.dueDate && (
                   <div>
                     <p className="text-[9px] text-gray-500 uppercase tracking-wide mb-0.5">
-                      Vencimiento
+                      {invoiceType === 'quote' ? 'Válido hasta' : 'Vencimiento'}
                     </p>
                     <p className="font-semibold text-[11px]">{formatDate(invoice.dueDate)}</p>
                   </div>

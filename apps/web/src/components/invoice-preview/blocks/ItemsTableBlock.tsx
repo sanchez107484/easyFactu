@@ -10,9 +10,15 @@ function formatCurrency(value: number): string {
   return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value);
 }
 
-// Tipo local para las líneas de vista previa, que incluyen _hideQty como campo extra
+// Tipo local para las líneas de vista previa, que incluyen _hideQty/_hideQty como campo extra
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PreviewLine = Record<string, any>;
+
+/** Resolves whether to hide qty for a line: uses stored `hideQty` if present, otherwise `_hideQty` */
+function resolveHideQty(line: PreviewLine): boolean {
+  if (typeof line.hideQty === 'boolean') return line.hideQty;
+  return !!line._hideQty;
+}
 
 export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
   const lines = invoice.lines ?? [];
@@ -23,7 +29,7 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
   const isLines = style === 'lines';
 
   // Mostrar columna Cant. solo si al menos una línea tiene cantidad visible
-  const showQtyCol = lines.some((l) => !(l as PreviewLine)._hideQty);
+  const showQtyCol = lines.some((l) => !resolveHideQty(l as PreviewLine));
 
   const thClass = cn(
     'text-[9px] font-semibold text-left py-1 px-2',
@@ -53,7 +59,7 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
       </thead>
       <tbody>
         {lines.map((line) => {
-          const hideQty = (line as PreviewLine)._hideQty;
+          const hideQty = resolveHideQty(line as PreviewLine);
           return (
             <tr key={line.id} className="hover:bg-gray-50/50">
               {showReference && <td className={tdClass}>{line.productId ?? '—'}</td>}

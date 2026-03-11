@@ -353,6 +353,7 @@ model InvoiceLine {
   irpfRate         Decimal? @map("irpf_rate") @db.Decimal(5, 2)
   irpfAmount       Decimal? @map("irpf_amount") @db.Decimal(12, 2)
   lineTotal        Decimal  @map("line_total") @db.Decimal(12, 2)
+  hideQty          Boolean  @default(false) @map("hide_qty")
   sortOrder        Int      @default(0) @map("sort_order")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")

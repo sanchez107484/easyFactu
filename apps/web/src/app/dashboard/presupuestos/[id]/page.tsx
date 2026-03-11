@@ -291,6 +291,10 @@ export default function PresupuestoDetailPage() {
   const series = (quote as unknown as { series?: { name: string } }).series;
   const pdfFileName = [quote.number, quote.customer?.name].filter(Boolean).join(' - ');
 
+  // The `hideQty` field is stored in the DB and returned by the API for every line.
+  // ItemsTableBlock reads it via resolveHideQty — no extra mapping needed here.
+  const quoteForPreview = quote;
+
   // ==================== RENDER ====================
 
   return (
@@ -592,9 +596,11 @@ export default function PresupuestoDetailPage() {
                     <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
                       Descripción
                     </th>
-                    <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
-                      Cant.
-                    </th>
+                    {(quote.lines ?? []).some((l) => !l.hideQty) && (
+                      <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
+                        Cant.
+                      </th>
+                    )}
                     <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
                       Precio
                     </th>
@@ -607,21 +613,27 @@ export default function PresupuestoDetailPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {(quote.lines ?? []).map((line) => (
-                    <tr key={line.id}>
-                      <td className="py-2.5 pr-4">{line.description}</td>
-                      <td className="py-2.5 text-right tabular-nums">{parseNum(line.quantity)}</td>
-                      <td className="py-2.5 text-right tabular-nums">
-                        {formatCurrency(line.unitPrice)}
-                      </td>
-                      <td className="py-2.5 text-right tabular-nums text-muted-foreground">
-                        {parseNum(line.taxRate)}%
-                      </td>
-                      <td className="py-2.5 text-right tabular-nums font-medium">
-                        {formatCurrency(line.subtotal)}
-                      </td>
-                    </tr>
-                  ))}
+                  {(quote.lines ?? []).map((line) => {
+                    return (
+                      <tr key={line.id}>
+                        <td className="py-2.5 pr-4">{line.description}</td>
+                        {(quote.lines ?? []).some((l) => !l.hideQty) && (
+                          <td className="py-2.5 text-right tabular-nums">
+                            {line.hideQty ? '' : parseNum(line.quantity)}
+                          </td>
+                        )}
+                        <td className="py-2.5 text-right tabular-nums">
+                          {formatCurrency(line.unitPrice)}
+                        </td>
+                        <td className="py-2.5 text-right tabular-nums text-muted-foreground">
+                          {parseNum(line.taxRate)}%
+                        </td>
+                        <td className="py-2.5 text-right tabular-nums font-medium">
+                          {formatCurrency(line.subtotal)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
 
@@ -729,7 +741,7 @@ export default function PresupuestoDetailPage() {
         {/* RIGHT — Preview */}
         <div className="w-[40%] flex flex-col overflow-hidden">
           <LiveInvoicePreview
-            invoice={quote}
+            invoice={quoteForPreview}
             template={template ?? null}
             tenant={(() => {
               const src = tenantData ?? currentTenant;
