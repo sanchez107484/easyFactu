@@ -148,6 +148,7 @@ function resolveDocumentTitle(isRectificative: boolean, invoiceType?: string | n
   if (isRectificative) return 'FACTURA RECTIFICATIVA';
   if (invoiceType === 'proforma') return 'FACTURA PROFORMA';
   if (invoiceType === 'simplified') return 'FACTURA SIMPLIFICADA';
+  if (invoiceType === 'quote') return 'PRESUPUESTO';
   return 'FACTURA';
 }
 

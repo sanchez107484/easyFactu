@@ -373,6 +373,7 @@ function CreateSeriesDialog({ open, onClose }: CreateSeriesDialogProps) {
                 <SelectContent>
                   <SelectItem value={SeriesType.INVOICE}>Factura</SelectItem>
                   <SelectItem value={SeriesType.RECTIFICATIVE}>Rectificativa</SelectItem>
+                  <SelectItem value={SeriesType.QUOTE}>Presupuesto</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -511,8 +512,11 @@ export default function AjustesFacturacionPage() {
 
   const series = seriesData?.data ?? [];
 
-  const typeLabel = (type: SeriesType) =>
-    type === SeriesType.INVOICE ? 'Factura' : 'Rectificativa';
+  const typeLabel = (type: SeriesType) => {
+    if (type === SeriesType.INVOICE) return 'Factura';
+    if (type === SeriesType.RECTIFICATIVE) return 'Rectificativa';
+    return 'Presupuesto';
+  };
 
   return (
     <div className="space-y-6">

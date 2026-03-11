@@ -19,6 +19,13 @@ export const INVOICE_STATUS_CONFIG: Record<
     border: 'border-proforma-200 dark:border-proforma-800',
     dot: 'bg-proforma-500',
   },
+  [InvoiceStatus.QUOTE]: {
+    label: 'Presupuesto',
+    color: 'text-proforma-700 dark:text-proforma-300',
+    bg: 'bg-proforma-100 dark:bg-proforma-900/40',
+    border: 'border-proforma-300 dark:border-proforma-700',
+    dot: 'bg-proforma-600',
+  },
   [InvoiceStatus.CONFIRMED]: {
     label: 'Confirmada',
     color: 'text-invoice-600 dark:text-invoice-400',

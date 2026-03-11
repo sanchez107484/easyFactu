@@ -35,15 +35,25 @@ export enum ProductType {
 export enum SeriesType {
   INVOICE = 'INVOICE',
   RECTIFICATIVE = 'RECTIFICATIVE',
+  QUOTE = 'QUOTE',
 }
 
 export enum InvoiceStatus {
   DRAFT = 'DRAFT',
   PROFORMA = 'PROFORMA',
+  QUOTE = 'QUOTE',
   CONFIRMED = 'CONFIRMED',
   SENT = 'SENT',
   PAID = 'PAID',
   RECTIFIED = 'RECTIFIED',
+}
+
+export enum QuoteAcceptanceStatus {
+  PENDING = 'PENDING',
+  SENT = 'SENT',
+  ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED',
+  CONVERTED = 'CONVERTED',
 }
 
 export enum VerifactuStatus {
@@ -402,10 +412,16 @@ export interface Invoice {
   seriesId: string;
   customerId: string;
   /**
-   * Tipo de factura: 'standard' | 'proforma' | 'simplified'
-   * Por defecto 'standard'. Solo las proformas pueden convertirse a oficial.
+   * Tipo de factura: 'standard' | 'proforma' | 'simplified' | 'quote'
+   * Por defecto 'standard'. Solo las proformas y presupuestos pueden convertirse a oficial.
    */
   invoiceType?: string | null;
+  /** Fecha límite de validez del presupuesto (solo relevante cuando invoiceType = 'quote') */
+  validUntil?: string | null;
+  /** Estado de aceptación del presupuesto (solo relevante cuando invoiceType = 'quote') */
+  quoteAcceptanceStatus?: QuoteAcceptanceStatus | null;
+  /** ID de la factura/proforma generada al convertir el presupuesto */
+  convertedToInvoiceId?: string | null;
   /**
    * ID de la plantilla asociada a la factura (puede ser null si legacy)
    */
@@ -459,8 +475,10 @@ export interface CreateInvoiceInput {
   issueDate: string;
   dueDate?: string;
   lines: CreateInvoiceLineInput[];
-  /** Tipo de factura: 'standard' | 'proforma' | 'simplified'. Por defecto 'standard'. */
+  /** Tipo de factura: 'standard' | 'proforma' | 'simplified' | 'quote'. Por defecto 'standard'. */
   invoiceType?: string;
+  /** Fecha límite de validez (solo presupuestos). Formato YYYY-MM-DD. */
+  validUntil?: string;
   discountPercent?: number;
   irpfPercent?: number;
   paymentMethod?: PaymentMethod;
@@ -477,8 +495,12 @@ export interface UpdateInvoiceInput {
   issueDate?: string;
   dueDate?: string;
   lines?: CreateInvoiceLineInput[];
-  /** Tipo de factura: 'standard' | 'proforma' | 'simplified'. */
+  /** Tipo de factura: 'standard' | 'proforma' | 'simplified' | 'quote'. */
   invoiceType?: string;
+  /** Fecha límite de validez (solo presupuestos). Formato YYYY-MM-DD. */
+  validUntil?: string;
+  /** Estado de aceptación del presupuesto */
+  quoteAcceptanceStatus?: QuoteAcceptanceStatus;
   discountPercent?: number;
   irpfPercent?: number;
   paymentMethod?: PaymentMethod;

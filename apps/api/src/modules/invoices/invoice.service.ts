@@ -2,11 +2,16 @@
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
   Inject,
   forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma, InvoiceStatus as PrismaInvoiceStatus } from '@prisma/client';
+import {
+  Prisma,
+  InvoiceStatus as PrismaInvoiceStatus,
+  QuoteAcceptanceStatus as PrismaQuoteAcceptanceStatus,
+} from '@prisma/client';
 import { CreateInvoiceDto, CreateInvoiceLineDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { RectifyInvoiceDto } from './dto/rectify-invoice.dto';
@@ -17,6 +22,7 @@ import { InvoiceNumberService } from './invoice-number.service';
 import { InvoiceCalculationService } from './invoice-calculation.service';
 
 const RECTIFIABLE_STATUSES = [InvoiceStatus.CONFIRMED, InvoiceStatus.SENT, InvoiceStatus.PAID];
+const EDITABLE_STATUSES = [InvoiceStatus.DRAFT, InvoiceStatus.PROFORMA, InvoiceStatus.QUOTE];
 
 @Injectable()
 export class InvoiceService {
@@ -87,17 +93,25 @@ export class InvoiceService {
   // ==================== PUBLIC CRUD ====================
 
   async create(tenantId: string, dto: CreateInvoiceDto) {
+    const isQuote = dto.invoiceType === 'quote';
+    const isProforma = dto.invoiceType === 'proforma';
+
+    // For quotes the series is auto-resolved inside the transaction; skip the default lookup.
     const [seriesId, customer] = await Promise.all([
-      this.resolveSeriesId(tenantId, dto.seriesId),
+      isQuote ? Promise.resolve('') : this.resolveSeriesId(tenantId, dto.seriesId),
       this.validateCustomer(tenantId, dto.customerId),
       this.validateProductIds(tenantId, dto.lines),
     ]);
-
-    const isProforma = dto.invoiceType === 'proforma';
-    const invoiceStatus = isProforma ? PrismaInvoiceStatus.PROFORMA : PrismaInvoiceStatus.DRAFT;
-    // Proformas don't get a legal invoice number — keeping them null avoids the
-    // @@unique([tenantId, number]) constraint when the same customer has multiple proformas.
-    // The UI derives the display label "ClienteName - Proforma" from invoice data.
+    let invoiceStatus: PrismaInvoiceStatus;
+    if (isProforma) {
+      invoiceStatus = PrismaInvoiceStatus.PROFORMA;
+    } else if (isQuote) {
+      invoiceStatus = PrismaInvoiceStatus.QUOTE;
+    } else {
+      invoiceStatus = PrismaInvoiceStatus.DRAFT;
+    }
+    // Proformas and regular DRAFT invoices don't get a legal number at creation.
+    // Quotes get a PRE- sequential number immediately.
     const invoiceNumber = null;
 
     const totals = this.calculationService.calculateTotals(
@@ -106,36 +120,53 @@ export class InvoiceService {
       dto.irpfPercent
     );
 
-    return this.prisma.invoice.create({
-      data: {
-        tenantId,
-        seriesId,
-        customerId: dto.customerId,
-        number: invoiceNumber,
-        issueDate: new Date(dto.issueDate),
-        dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
-        status: invoiceStatus,
-        invoiceType: dto.invoiceType ?? 'standard',
-        templateId: dto.templateId ?? null,
-        subtotal: totals.subtotal,
-        discountPercent: dto.discountPercent ?? null,
-        discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
-        taxTotal: totals.taxTotal,
-        irpfPercent: dto.irpfPercent ?? null,
-        irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
-        total: totals.total,
-        paymentMethod: (dto.paymentMethod ?? null) as any,
-        notes: dto.notes ?? null,
-        paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : undefined,
-        lines: {
-          create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
+    return this.prisma.$transaction(async (tx) => {
+      let quoteNumber: string | null = invoiceNumber;
+      let resolvedSeriesId = seriesId;
+
+      if (isQuote) {
+        const quoteSeries = await this.invoiceNumberService.findOrCreateQuoteSeries(tenantId, tx);
+        quoteNumber = await this.invoiceNumberService.generateNextNumber(
+          tenantId,
+          quoteSeries.id,
+          tx
+        );
+        resolvedSeriesId = quoteSeries.id;
+      }
+
+      return tx.invoice.create({
+        data: {
+          tenantId,
+          seriesId: resolvedSeriesId,
+          customerId: dto.customerId,
+          number: quoteNumber,
+          issueDate: new Date(dto.issueDate),
+          dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+          status: invoiceStatus,
+          invoiceType: dto.invoiceType ?? 'standard',
+          templateId: dto.templateId ?? null,
+          validUntil: isQuote && dto.validUntil ? new Date(dto.validUntil) : null,
+          quoteAcceptanceStatus: isQuote ? PrismaQuoteAcceptanceStatus.PENDING : null,
+          subtotal: totals.subtotal,
+          discountPercent: dto.discountPercent ?? null,
+          discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
+          taxTotal: totals.taxTotal,
+          irpfPercent: dto.irpfPercent ?? null,
+          irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+          total: totals.total,
+          paymentMethod: (dto.paymentMethod ?? null) as any,
+          notes: dto.notes ?? null,
+          paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : undefined,
+          lines: {
+            create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
+          },
         },
-      },
-      include: {
-        lines: { orderBy: { sortOrder: 'asc' } },
-        customer: true,
-        series: true,
-      },
+        include: {
+          lines: { orderBy: { sortOrder: 'asc' } },
+          customer: true,
+          series: true,
+        },
+      });
     });
   }
 
@@ -162,7 +193,12 @@ export class InvoiceService {
       ];
     }
 
-    if (status) where.status = status;
+    if (status) {
+      where.status = status;
+    } else {
+      // Exclude quotes from the invoices list — they have their own section
+      where.status = { not: PrismaInvoiceStatus.QUOTE };
+    }
     if (customerId) where.customerId = customerId;
 
     if (fromDate || toDate) {
@@ -234,7 +270,7 @@ export class InvoiceService {
   async update(tenantId: string, id: string, dto: UpdateInvoiceDto) {
     const invoice = await this.findOne(tenantId, id);
 
-    if (invoice.status !== InvoiceStatus.DRAFT && invoice.status !== InvoiceStatus.PROFORMA) {
+    if (!EDITABLE_STATUSES.includes(invoice.status as InvoiceStatus)) {
       throw new ConflictException(
         'No se puede editar una factura confirmada. Crea una factura rectificativa si necesitas corregirla.'
       );
@@ -282,6 +318,8 @@ export class InvoiceService {
           seriesId,
           // Auto-correct status if a proforma was erroneously saved as DRAFT
           ...(invoice.invoiceType === 'proforma' ? { status: PrismaInvoiceStatus.PROFORMA } : {}),
+          // Auto-correct status if a quote was erroneously saved as DRAFT
+          ...(invoice.invoiceType === 'quote' ? { status: PrismaInvoiceStatus.QUOTE } : {}),
           issueDate: dto.issueDate ? new Date(dto.issueDate) : undefined,
           dueDate:
             dto.dueDate !== undefined ? (dto.dueDate ? new Date(dto.dueDate) : null) : undefined,
@@ -295,6 +333,12 @@ export class InvoiceService {
           notes: dto.notes !== undefined ? dto.notes : undefined,
           ...(dto.paymentDetails !== undefined
             ? { paymentDetails: { ...dto.paymentDetails } }
+            : {}),
+          ...(dto.validUntil !== undefined
+            ? { validUntil: dto.validUntil ? new Date(dto.validUntil) : null }
+            : {}),
+          ...(dto.quoteAcceptanceStatus !== undefined
+            ? { quoteAcceptanceStatus: dto.quoteAcceptanceStatus as PrismaQuoteAcceptanceStatus }
             : {}),
           subtotal: totals.subtotal,
           taxTotal: totals.taxTotal,
@@ -322,6 +366,12 @@ export class InvoiceService {
     if (invoice.invoiceType === 'proforma') {
       throw new ConflictException(
         'Las facturas proforma no se pueden confirmar directamente. Primero conviértela a factura oficial.'
+      );
+    }
+
+    if (invoice.invoiceType === 'quote') {
+      throw new ConflictException(
+        'Los presupuestos no se pueden confirmar directamente. Primero conviértelo a factura oficial.'
       );
     }
 
@@ -512,7 +562,7 @@ export class InvoiceService {
   async remove(tenantId: string, id: string) {
     const invoice = await this.findOne(tenantId, id);
 
-    if (invoice.status !== InvoiceStatus.DRAFT && invoice.status !== InvoiceStatus.PROFORMA) {
+    if (!EDITABLE_STATUSES.includes(invoice.status as InvoiceStatus)) {
       throw new ConflictException(
         'No se puede eliminar una factura confirmada. Crea una factura rectificativa.'
       );
@@ -599,6 +649,164 @@ export class InvoiceService {
         customer: true,
         series: true,
       },
+    });
+  }
+
+  // ==================== QUOTE CONVERSION ====================
+
+  async updateQuoteAcceptanceStatus(
+    tenantId: string,
+    id: string,
+    quoteAcceptanceStatus: PrismaQuoteAcceptanceStatus
+  ) {
+    const invoice = await this.findOne(tenantId, id);
+
+    if (invoice.invoiceType !== 'quote') {
+      throw new BadRequestException('Solo los presupuestos tienen estado de aceptación');
+    }
+
+    if (invoice.quoteAcceptanceStatus === 'CONVERTED') {
+      throw new ConflictException('El presupuesto ya ha sido convertido y no se puede modificar');
+    }
+
+    return this.prisma.invoice.update({
+      where: { id },
+      data: { quoteAcceptanceStatus },
+      include: {
+        lines: { orderBy: { sortOrder: 'asc' } },
+        customer: true,
+        series: true,
+      },
+    });
+  }
+
+  async convertQuoteToProforma(tenantId: string, id: string) {
+    const invoice = await this.findOne(tenantId, id);
+
+    if (invoice.invoiceType !== 'quote') {
+      throw new BadRequestException('Solo se pueden convertir presupuestos');
+    }
+
+    if (invoice.quoteAcceptanceStatus === 'CONVERTED') {
+      throw new ConflictException('El presupuesto ya ha sido convertido anteriormente');
+    }
+
+    const lines = invoice.lines as unknown as CreateInvoiceLineDto[];
+    const totals = this.calculationService.calculateTotals(
+      lines,
+      invoice.discountPercent ? Number(invoice.discountPercent) : undefined,
+      invoice.irpfPercent ? Number(invoice.irpfPercent) : undefined
+    );
+    const paymentDetails = invoice.paymentDetails;
+
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const proforma = await tx.invoice.create({
+        data: {
+          tenantId,
+          seriesId: invoice.seriesId,
+          customerId: invoice.customerId,
+          number: null,
+          issueDate: new Date(),
+          dueDate: invoice.dueDate ?? null,
+          status: PrismaInvoiceStatus.PROFORMA,
+          invoiceType: 'proforma',
+          subtotal: totals.subtotal,
+          discountPercent: invoice.discountPercent,
+          discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
+          taxTotal: totals.taxTotal,
+          irpfPercent: invoice.irpfPercent,
+          irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+          total: totals.total,
+          paymentMethod: invoice.paymentMethod as any,
+          ...(paymentDetails != null ? { paymentDetails } : {}),
+          notes: invoice.notes
+            ? `${invoice.notes}\n\nGenerada desde presupuesto ${invoice.number ?? invoice.id.slice(0, 8).toUpperCase()}`
+            : `Generada desde presupuesto ${invoice.number ?? invoice.id.slice(0, 8).toUpperCase()}`,
+          lines: {
+            create: this.buildLineCreateData(tenantId, lines, totals.lines),
+          },
+        },
+        include: {
+          lines: { orderBy: { sortOrder: 'asc' } },
+          customer: true,
+          series: true,
+        },
+      });
+
+      await tx.invoice.update({
+        where: { id },
+        data: {
+          quoteAcceptanceStatus: PrismaQuoteAcceptanceStatus.CONVERTED,
+          convertedToInvoiceId: proforma.id,
+        },
+      });
+
+      return proforma;
+    });
+  }
+
+  async convertQuoteToOfficial(tenantId: string, id: string) {
+    const invoice = await this.findOne(tenantId, id);
+
+    if (invoice.invoiceType !== 'quote') {
+      throw new BadRequestException('Solo se pueden convertir presupuestos');
+    }
+
+    if (invoice.quoteAcceptanceStatus === 'CONVERTED') {
+      throw new ConflictException('El presupuesto ya ha sido convertido anteriormente');
+    }
+
+    const lines = invoice.lines as unknown as CreateInvoiceLineDto[];
+    const totals = this.calculationService.calculateTotals(
+      lines,
+      invoice.discountPercent ? Number(invoice.discountPercent) : undefined,
+      invoice.irpfPercent ? Number(invoice.irpfPercent) : undefined
+    );
+    const paymentDetails = invoice.paymentDetails;
+
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const draft = await tx.invoice.create({
+        data: {
+          tenantId,
+          seriesId: invoice.seriesId,
+          customerId: invoice.customerId,
+          number: null,
+          issueDate: new Date(),
+          dueDate: invoice.dueDate ?? null,
+          status: PrismaInvoiceStatus.DRAFT,
+          invoiceType: 'standard',
+          subtotal: totals.subtotal,
+          discountPercent: invoice.discountPercent,
+          discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
+          taxTotal: totals.taxTotal,
+          irpfPercent: invoice.irpfPercent,
+          irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+          total: totals.total,
+          paymentMethod: invoice.paymentMethod as any,
+          ...(paymentDetails != null ? { paymentDetails } : {}),
+          notes: invoice.notes
+            ? `${invoice.notes}\n\nGenerada desde presupuesto ${invoice.number ?? invoice.id.slice(0, 8).toUpperCase()}`
+            : `Generada desde presupuesto ${invoice.number ?? invoice.id.slice(0, 8).toUpperCase()}`,
+          lines: {
+            create: this.buildLineCreateData(tenantId, lines, totals.lines),
+          },
+        },
+        include: {
+          lines: { orderBy: { sortOrder: 'asc' } },
+          customer: true,
+          series: true,
+        },
+      });
+
+      await tx.invoice.update({
+        where: { id },
+        data: {
+          quoteAcceptanceStatus: PrismaQuoteAcceptanceStatus.CONVERTED,
+          convertedToInvoiceId: draft.id,
+        },
+      });
+
+      return draft;
     });
   }
 }

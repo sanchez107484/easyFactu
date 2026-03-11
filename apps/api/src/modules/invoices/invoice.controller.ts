@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -28,8 +29,18 @@ import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { RectifyInvoiceDto } from './dto/rectify-invoice.dto';
 import { QueryInvoiceDto } from './dto/query-invoice.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { IsIn, IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+class UpdateQuoteStatusDto {
+  @ApiProperty({ enum: ['PENDING', 'SENT', 'ACCEPTED', 'REJECTED'] })
+  @IsNotEmpty()
+  @IsString()
+  @IsIn(['PENDING', 'SENT', 'ACCEPTED', 'REJECTED'])
+  quoteAcceptanceStatus!: string;
+}
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('invoices')
 @Controller('invoices')
@@ -147,5 +158,39 @@ export class InvoiceController {
   @ApiNoContentResponse({ description: 'Factura eliminada correctamente' })
   remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.invoiceService.remove(tenantId, id);
+  }
+
+  // ==================== QUOTE ENDPOINTS ====================
+
+  @Patch(':id/quote-status')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Actualizar estado de aceptación de un presupuesto' })
+  @ApiOkResponse({ description: 'Estado del presupuesto actualizado' })
+  updateQuoteStatus(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateQuoteStatusDto
+  ) {
+    return this.invoiceService.updateQuoteAcceptanceStatus(
+      tenantId,
+      id,
+      dto.quoteAcceptanceStatus as any
+    );
+  }
+
+  @Post(':id/convert-quote-to-proforma')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Convertir presupuesto a factura proforma' })
+  @ApiOkResponse({ description: 'Presupuesto convertido a proforma' })
+  convertQuoteToProforma(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    return this.invoiceService.convertQuoteToProforma(tenantId, id);
+  }
+
+  @Post(':id/convert-quote-to-official')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Convertir presupuesto a borrador de factura oficial' })
+  @ApiOkResponse({ description: 'Presupuesto convertido a borrador de factura oficial' })
+  convertQuoteToOfficial(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    return this.invoiceService.convertQuoteToOfficial(tenantId, id);
   }
 }

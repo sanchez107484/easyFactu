@@ -230,3 +230,60 @@ export function useConvertDraftToProforma() {
     },
   });
 }
+
+export function useUpdateQuoteStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      invoiceApi.updateQuoteStatus(id, status),
+    onSuccess: (invoice) => {
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
+      queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      toast.success('Estado del presupuesto actualizado');
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useConvertQuoteToProforma() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => invoiceApi.convertQuoteToProforma(id),
+    onSuccess: (proforma) => {
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
+      toast.success('Proforma creada. Revísala y confírmala cuando esté lista.', {
+        action: {
+          label: 'Ver proforma',
+          onClick: () => window.location.assign(`/dashboard/facturas/${proforma.id}`),
+        },
+      });
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useConvertQuoteToOfficial() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => invoiceApi.convertQuoteToOfficial(id),
+    onSuccess: (draft) => {
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
+      toast.success('Borrador de factura creado. Revísalo y confírmalo cuando esté listo.', {
+        action: {
+          label: 'Ver factura',
+          onClick: () => window.location.assign(`/dashboard/facturas/${draft.id}`),
+        },
+      });
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}

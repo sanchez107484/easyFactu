@@ -60,9 +60,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .textContent()
       .catch(() => null);
 
+    // Detect document type from the rendered title to use the right filename prefix
+    const documentTitle = await page
+      .locator('h1')
+      .textContent()
+      .catch(() => null);
+    const isQuote = documentTitle?.toUpperCase().includes('PRESUPUESTO');
+    const filePrefix = isQuote ? 'Presupuesto' : 'Factura';
+
     const safeFilename = invoiceNumber
-      ? `Factura-${invoiceNumber.replace(/[^a-zA-Z0-9\-_]/g, '_')}.pdf`
-      : `Factura-${id}.pdf`;
+      ? `${filePrefix}-${invoiceNumber.replace(/[^a-zA-Z0-9\-_]/g, '_')}.pdf`
+      : `${filePrefix}-${id}.pdf`;
 
     const pdf = await page.pdf({
       // Use the same 595×842 dimensions as the preview (PDF points)

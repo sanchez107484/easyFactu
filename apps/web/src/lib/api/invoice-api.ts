@@ -60,5 +60,20 @@ export const invoiceApi = {
       .post<ApiResponse<Invoice>>(`/invoices/${id}/convert-to-proforma`)
       .then(unwrapApiResponse),
 
+  updateQuoteStatus: (id: string, quoteAcceptanceStatus: string): Promise<Invoice> =>
+    apiClient
+      .patch<ApiResponse<Invoice>>(`/invoices/${id}/quote-status`, { quoteAcceptanceStatus })
+      .then(unwrapApiResponse),
+
+  convertQuoteToProforma: (id: string): Promise<Invoice> =>
+    apiClient
+      .post<ApiResponse<Invoice>>(`/invoices/${id}/convert-quote-to-proforma`)
+      .then(unwrapApiResponse),
+
+  convertQuoteToOfficial: (id: string): Promise<Invoice> =>
+    apiClient
+      .post<ApiResponse<Invoice>>(`/invoices/${id}/convert-quote-to-official`)
+      .then(unwrapApiResponse),
+
   remove: (id: string): Promise<void> => apiClient.delete(`/invoices/${id}`).then(() => undefined),
 };

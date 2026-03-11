@@ -83,6 +83,35 @@ export class InvoiceNumberService {
   }
 
   /**
+   * Finds or creates the QUOTE series for a tenant in the current year.
+   * Auto-creates with prefix "PRE-" and 4 digits if it doesn't exist yet.
+   * This avoids requiring the user to create a quote series before using quotes.
+   */
+  async findOrCreateQuoteSeries(tenantId: string, tx: Prisma.TransactionClient) {
+    const currentYear = new Date().getFullYear();
+
+    const existing = await tx.invoiceSeries.findFirst({
+      where: { tenantId, type: SeriesType.QUOTE, year: currentYear },
+    });
+
+    if (existing) return existing;
+
+    return tx.invoiceSeries.create({
+      data: {
+        tenantId,
+        code: `PRE-${currentYear}`,
+        name: `Presupuestos ${currentYear}`,
+        type: SeriesType.QUOTE,
+        prefix: 'PRE-',
+        nextNumber: 1,
+        digits: 4,
+        year: currentYear,
+        isDefault: true,
+      },
+    });
+  }
+
+  /**
    * Validates that a series belongs to a tenant and has not been used for the current year.
    * Used to validate the seriesId provided by the user.
    */

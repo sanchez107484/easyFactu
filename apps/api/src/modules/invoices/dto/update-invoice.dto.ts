@@ -85,15 +85,31 @@ export class UpdateInvoiceDto {
   paymentDetails?: PaymentDetailsDto;
 
   @ApiPropertyOptional({
-    enum: ['standard', 'proforma', 'simplified'],
-    description: "Tipo de documento: 'standard' | 'proforma' | 'simplified'",
+    enum: ['standard', 'proforma', 'simplified', 'quote'],
+    description: "Tipo de documento: 'standard' | 'proforma' | 'simplified' | 'quote'",
   })
   @IsOptional()
   @IsString()
-  @IsIn(['standard', 'proforma', 'simplified'], {
-    message: "El tipo de factura debe ser 'standard', 'proforma' o 'simplified'",
+  @IsIn(['standard', 'proforma', 'simplified', 'quote'], {
+    message: "El tipo de factura debe ser 'standard', 'proforma', 'simplified' o 'quote'",
   })
   invoiceType?: string;
+
+  @ApiPropertyOptional({ description: 'Fecha límite de validez del presupuesto (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  validUntil?: string;
+
+  @ApiPropertyOptional({
+    enum: ['PENDING', 'SENT', 'ACCEPTED', 'REJECTED', 'CONVERTED'],
+    description: 'Estado de aceptación del presupuesto',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['PENDING', 'SENT', 'ACCEPTED', 'REJECTED', 'CONVERTED'], {
+    message: 'Estado de presupuesto no válido',
+  })
+  quoteAcceptanceStatus?: string;
 
   @ApiPropertyOptional({ description: 'ID de la plantilla de diseño a utilizar' })
   @IsOptional()

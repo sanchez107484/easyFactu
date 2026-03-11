@@ -154,16 +154,21 @@ export class CreateInvoiceDto {
   paymentDetails?: PaymentDetailsDto;
 
   @ApiPropertyOptional({
-    enum: ['standard', 'proforma', 'simplified'],
-    description: "Tipo de documento: 'standard' | 'proforma' | 'simplified'",
+    enum: ['standard', 'proforma', 'simplified', 'quote'],
+    description: "Tipo de documento: 'standard' | 'proforma' | 'simplified' | 'quote'",
     default: 'standard',
   })
   @IsOptional()
   @IsString()
-  @IsIn(['standard', 'proforma', 'simplified'], {
-    message: "El tipo de factura debe ser 'standard', 'proforma' o 'simplified'",
+  @IsIn(['standard', 'proforma', 'simplified', 'quote'], {
+    message: "El tipo de factura debe ser 'standard', 'proforma', 'simplified' o 'quote'",
   })
   invoiceType?: string;
+
+  @ApiPropertyOptional({ description: 'Fecha límite de validez del presupuesto (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  validUntil?: string;
 
   @ApiPropertyOptional({ description: 'ID de la plantilla de diseño a utilizar' })
   @IsOptional()

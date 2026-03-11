@@ -18,6 +18,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -47,6 +48,11 @@ const navItems: NavItem[] = [
     title: 'Productos',
     href: '/dashboard/productos',
     icon: Package,
+  },
+  {
+    title: 'Presupuestos',
+    href: '/dashboard/presupuestos',
+    icon: ClipboardList,
   },
   /*{
     title: 'VeriFactu',

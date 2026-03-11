@@ -232,6 +232,7 @@ model InvoiceSeries {
 enum SeriesType {
   INVOICE
   RECTIFICATIVE
+  QUOTE
 }
 
 // ==================== INVOICES ====================
@@ -257,6 +258,11 @@ model Invoice {
   paymentDetails      Json?          @map("payment_details")
 
   invoiceType         String?        @default("standard") @map("invoice_type")
+
+  // Quote-specific fields
+  validUntil          DateTime?      @map("valid_until") @db.Date
+  quoteAcceptanceStatus QuoteAcceptanceStatus? @map("quote_acceptance_status")
+  convertedToInvoiceId String?        @map("converted_to_invoice_id")
 
   templateId          String?        @map("template_id")
   pdfUrl              String?        @map("pdf_url")
@@ -297,10 +303,19 @@ model Invoice {
 enum InvoiceStatus {
   DRAFT
   PROFORMA
+  QUOTE
   CONFIRMED
   SENT
   PAID
   RECTIFIED
+}
+
+enum QuoteAcceptanceStatus {
+  PENDING
+  SENT
+  ACCEPTED
+  REJECTED
+  CONVERTED
 }
 
 enum VerifactuStatus {
