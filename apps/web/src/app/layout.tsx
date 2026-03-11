@@ -42,10 +42,10 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: `${brandConfig.app.name} | Factura sin preocuparte de Verifactu | Gratis hasta 2027`,
+    default: `${brandConfig.app.name} | Factura sin preocuparte de Verifactu | Gratis tus primeros 6 meses`,
     template: `%s | ${brandConfig.app.name}`,
   },
-  description: `Tú haces tu factura, nosotros nos encargamos de Verifactu. Software de facturación para autónomos y pymes. 100% gratis hasta 2027. Sin tarjeta. Sin complicaciones.`,
+  description: `Tú haces tu factura, nosotros nos encargamos de Verifactu. Software de facturación para autónomos y pymes. 100% Gratis tus primeros 6 meses. Sin tarjeta. Sin complicaciones.`,
   keywords: [
     // Keywords de alta conversión (lo que REALMENTE buscan)
     'programa facturación autónomos',
@@ -76,11 +76,11 @@ export const metadata: Metadata = {
     locale: 'es_ES',
     url: brandConfig.app.url,
     title: `${brandConfig.app.name} | Factura sin preocuparte de Verifactu`,
-    description: `Tú haces tu factura, nosotros nos encargamos de Hacienda. Gratis hasta 2027. Sin tarjeta. Para autónomos y pymes.`,
+    description: `Tú haces tu factura, nosotros nos encargamos de Hacienda. Gratis tus primeros 6 meses. Sin tarjeta. Para autónomos y pymes.`,
     siteName: brandConfig.app.name,
     images: [
       {
-        url: `${brandConfig.app.url}/og-image.jpg`, // Crea esta imagen: mockup + texto "Gratis hasta 2027"
+        url: `${brandConfig.app.url}/og-image.jpg`, // Crea esta imagen: mockup + texto "Gratis tus primeros 6 meses"
         width: 1200,
         height: 630,
         alt: `${brandConfig.app.name} - Software de facturación Verifactu`,
@@ -90,7 +90,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: `${brandConfig.app.name} | Factura sin preocuparte de Verifactu`,
-    description: `Gratis hasta 2027. Sin tarjeta. Cumplimiento automático con Hacienda.`,
+    description: `Gratis tus primeros 6 meses. Sin tarjeta. Cumplimiento automático con Hacienda.`,
     images: [`${brandConfig.app.url}/og-image.jpg`],
   },
   icons: {
