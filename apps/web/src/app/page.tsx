@@ -243,7 +243,7 @@ const faqs = [
   },
   {
     q: '¿Cuánto cuesta después de los 6 meses gratuitos?',
-    a: 'El plan profesional tiene un coste de 4,95€/mes. Sin permanencia ni compromisos.',
+    a: 'El plan profesional tiene un coste de 9,90€/mes. Sin permanencia ni compromisos.',
   },
   {
     q: '¿Qué sanciones existen por no usar software certificado?',
@@ -832,7 +832,7 @@ export default function HomePage() {
                       {[
                         { icon: Clock, value: '6 meses', label: 'Acceso completo' },
                         { icon: CreditCard, value: '0€', label: 'Sin tarjeta' },
-                        { icon: TrendingUp, value: '4,95€/mes', label: 'Después, opcional' },
+                        { icon: TrendingUp, value: '9,90€/mes', label: 'Después, opcional' },
                       ].map(({ icon: Icon, value, label }) => (
                         <div
                           key={label}
