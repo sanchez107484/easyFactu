@@ -258,6 +258,7 @@ export default function PresupuestoDetailPage() {
   };
 
   const handleRequestConvertToProforma = () => {
+    if (!quote) return;
     if (!quote.paymentMethod) {
       toast.error(
         'Debes añadir un método de pago al presupuesto antes de convertirlo a proforma.',
@@ -269,6 +270,7 @@ export default function PresupuestoDetailPage() {
   };
 
   const handleRequestConvertToOfficial = () => {
+    if (!quote) return;
     if (!quote.paymentMethod) {
       toast.error('Debes añadir un método de pago al presupuesto antes de convertirlo a factura.', {
         description: 'Edita el presupuesto y selecciona un método de pago.',
