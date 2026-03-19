@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +42,8 @@ import {
   Hash,
   Pencil,
   ArrowRightLeft,
+  Save,
+  X,
 } from 'lucide-react';
 import { DownloadInvoiceButton } from '@/components/ui/download-invoice-button';
 import { Label } from '@/components/ui/label';
@@ -55,6 +58,7 @@ import {
   useRectifyInvoice,
   useConvertProformaToOfficial,
   useConvertDraftToProforma,
+  useUpdateInvoiceNotes,
 } from '@/hooks/use-invoices';
 import { ConvertProformaModal } from '@/components/facturas/ConvertProformaModal';
 import { ConvertDraftToProformaModal } from '@/components/facturas/ConvertDraftToProformaModal';
@@ -160,6 +164,8 @@ export default function FacturaDetailPage() {
   const [rectifyReason, setRectifyReason] = useState('');
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [showConvertToProformaModal, setShowConvertToProformaModal] = useState(false);
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [editingNotesValue, setEditingNotesValue] = useState('');
 
   const currentTenant = useAuthStore((s) => s.currentTenant);
   const { data: tenantData } = useTenant();
@@ -171,6 +177,7 @@ export default function FacturaDetailPage() {
   const rectifyMutation = useRectifyInvoice();
   const convertMutation = useConvertProformaToOfficial();
   const convertToProformaMutation = useConvertDraftToProforma();
+  const updateNotesMutation = useUpdateInvoiceNotes();
   // FIX: useDuplicateInvoice eliminado — duplicar es solo navegar a /nueva?duplicate=ID
 
   const templateId = (invoice as any)?.templateId ?? (invoice as any)?.template?.id ?? '';
@@ -183,6 +190,24 @@ export default function FacturaDetailPage() {
   const activePaymentMethod = invoice?.paymentMethod as string | null | undefined;
 
   // ==================== HANDLERS ====================
+
+  const handleStartEditNotes = () => {
+    setEditingNotesValue(invoice?.notes ?? '');
+    setIsEditingNotes(true);
+  };
+
+  const handleCancelEditNotes = () => {
+    setIsEditingNotes(false);
+    setEditingNotesValue('');
+  };
+
+  const handleSaveNotes = async () => {
+    await updateNotesMutation.mutateAsync({
+      id,
+      notes: editingNotesValue.trim() || null,
+    });
+    setIsEditingNotes(false);
+  };
 
   const handleConfirm = async () => {
     await confirmMutation.mutateAsync(id);
@@ -645,12 +670,65 @@ export default function FacturaDetailPage() {
             )}
 
             {/* Notas */}
-            {invoice.notes && (
-              <div className="rounded-xl border bg-card p-5">
+            <div className="rounded-xl border bg-card p-5">
+              <div className="flex items-center justify-between mb-3">
                 <SectionLabel>Notas</SectionLabel>
-                <p className="text-sm text-muted-foreground leading-relaxed">{invoice.notes}</p>
+                {!isEditingNotes && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-muted-foreground hover:text-foreground"
+                    onClick={handleStartEditNotes}
+                  >
+                    <Pencil className="h-3.5 w-3.5 mr-1" />
+                    {invoice.notes ? 'Editar' : 'Añadir nota'}
+                  </Button>
+                )}
               </div>
-            )}
+              {isEditingNotes ? (
+                <div className="space-y-2">
+                  <Textarea
+                    value={editingNotesValue}
+                    onChange={(e) => setEditingNotesValue(e.target.value)}
+                    placeholder="Añade una nota visible en la factura..."
+                    className="text-sm resize-none"
+                    rows={4}
+                    maxLength={1000}
+                    autoFocus
+                  />
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      {editingNotesValue.length}/1000
+                    </span>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCancelEditNotes}
+                        disabled={updateNotesMutation.isPending}
+                      >
+                        <X className="h-3.5 w-3.5 mr-1" />
+                        Cancelar
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleSaveNotes}
+                        disabled={updateNotesMutation.isPending}
+                      >
+                        <Save className="h-3.5 w-3.5 mr-1" />
+                        {updateNotesMutation.isPending ? 'Guardando...' : 'Guardar nota'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : invoice.notes ? (
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                  {invoice.notes}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground/50 italic">Sin notas</p>
+              )}
+            </div>
 
             {/* VeriFactu */}
             {(invoice as any).verifactuQr && (

@@ -45,6 +45,7 @@ model Tenant {
   invoiceTemplates InvoiceTemplate[]
   verifactuLogs    VerifactuLog[]
   invoiceDefaults  InvoiceDefaults?
+  invoiceNoteLogs  InvoiceNoteLog[]
 
   @@map("tenants")
 }
@@ -286,6 +287,7 @@ model Invoice {
   rectificativeInvoices Invoice[]    @relation("RectifiedInvoice")
   lines               InvoiceLine[]
   verifactuLogs       VerifactuLog[]
+  noteLogs            InvoiceNoteLog[]
 
   // Uniqueness on (tenantId, number) is enforced via a raw partial unique index
   // (WHERE number IS NOT NULL) defined in migration 20260304220000_fix_invoice_number_partial_unique.
@@ -405,4 +407,23 @@ model InvoiceDefaults {
   tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("invoice_defaults")
+}
+
+// ==================== INVOICE NOTE LOGS ====================
+
+model InvoiceNoteLog {
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  invoiceId     String   @map("invoice_id")
+  userId        String   @map("user_id")
+  previousNotes String?  @map("previous_notes") @db.Text
+  newNotes      String?  @map("new_notes") @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([tenantId])
+  @@map("invoice_note_logs")
 }

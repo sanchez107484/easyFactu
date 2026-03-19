@@ -75,5 +75,10 @@ export const invoiceApi = {
       .post<ApiResponse<Invoice>>(`/invoices/${id}/convert-quote-to-official`)
       .then(unwrapApiResponse),
 
+  updateNotes: (id: string, notes: string | null): Promise<Invoice> =>
+    apiClient
+      .patch<ApiResponse<Invoice>>(`/invoices/${id}/notes`, { notes })
+      .then(unwrapApiResponse),
+
   remove: (id: string): Promise<void> => apiClient.delete(`/invoices/${id}`).then(() => undefined),
 };

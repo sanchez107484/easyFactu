@@ -54,6 +54,7 @@ import {
   useConvertQuoteToProforma,
   useConvertQuoteToOfficial,
 } from '@/hooks/use-invoices';
+import { toast } from 'sonner';
 import { QuoteAcceptanceStatus, PaymentMethod, Tenant } from '@easyfactura/shared-types';
 import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import { useInvoiceTemplate, useDefaultTemplate } from '@/hooks/use-invoice-templates';
@@ -256,6 +257,27 @@ export default function PresupuestoDetailPage() {
     router.push(`/dashboard/facturas/nueva?edit=${newInvoice.id}`);
   };
 
+  const handleRequestConvertToProforma = () => {
+    if (!quote.paymentMethod) {
+      toast.error(
+        'Debes añadir un método de pago al presupuesto antes de convertirlo a proforma.',
+        { description: 'Edita el presupuesto y selecciona un método de pago.' },
+      );
+      return;
+    }
+    setShowConvertToProformaDialog(true);
+  };
+
+  const handleRequestConvertToOfficial = () => {
+    if (!quote.paymentMethod) {
+      toast.error('Debes añadir un método de pago al presupuesto antes de convertirlo a factura.', {
+        description: 'Edita el presupuesto y selecciona un método de pago.',
+      });
+      return;
+    }
+    setShowConvertToOfficialDialog(true);
+  };
+
   // ==================== LOADING / ERROR ====================
 
   if (isLoading) return <QuoteDetailSkeleton />;
@@ -440,7 +462,7 @@ export default function PresupuestoDetailPage() {
                   {!isConverted && (
                     <Button
                       size="sm"
-                      onClick={() => setShowConvertToProformaDialog(true)}
+                      onClick={handleRequestConvertToProforma}
                       disabled={convertToProformaMutation.isPending}
                       className="min-w-[160px] text-proforma-50 bg-proforma-500 border-proforma-300 hover:bg-proforma-400"
                     >
@@ -452,7 +474,7 @@ export default function PresupuestoDetailPage() {
                   {!isConverted && (
                     <Button
                       size="sm"
-                      onClick={() => setShowConvertToOfficialDialog(true)}
+                      onClick={handleRequestConvertToOfficial}
                       disabled={convertToOfficialMutation.isPending}
                       className="min-w-[160px]"
                     >

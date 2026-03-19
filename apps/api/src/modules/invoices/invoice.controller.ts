@@ -29,6 +29,7 @@ import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { RectifyInvoiceDto } from './dto/rectify-invoice.dto';
 import { QueryInvoiceDto } from './dto/query-invoice.dto';
+import { UpdateInvoiceNotesDto } from './dto/update-invoice-notes.dto';
 import { IsIn, IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -40,6 +41,7 @@ class UpdateQuoteStatusDto {
   quoteAcceptanceStatus!: string;
 }
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('invoices')
@@ -158,6 +160,19 @@ export class InvoiceController {
   @ApiNoContentResponse({ description: 'Factura eliminada correctamente' })
   remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.invoiceService.remove(tenantId, id);
+  }
+
+  @Patch(':id/notes')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Actualizar notas de una factura (cualquier estado)' })
+  @ApiOkResponse({ description: 'Notas actualizadas correctamente' })
+  updateNotes(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateInvoiceNotesDto
+  ) {
+    return this.invoiceService.updateNotes(tenantId, userId, id, dto);
   }
 
   // ==================== QUOTE ENDPOINTS ====================

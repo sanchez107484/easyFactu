@@ -17,6 +17,7 @@ import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { RectifyInvoiceDto } from './dto/rectify-invoice.dto';
 import { QueryInvoiceDto } from './dto/query-invoice.dto';
 import { InvoiceStatus, SeriesType } from '@easyfactura/shared-types';
+import { UpdateInvoiceNotesDto } from './dto/update-invoice-notes.dto';
 import { VerifactuService } from '../verifactu/services/verifactu.service';
 import { InvoiceNumberService } from './invoice-number.service';
 import { InvoiceCalculationService } from './invoice-calculation.service';
@@ -653,6 +654,38 @@ export class InvoiceService {
     });
   }
 
+  // ==================== NOTE OPERATIONS ====================
+
+  async updateNotes(tenantId: string, userId: string, id: string, dto: UpdateInvoiceNotesDto) {
+    const invoice = await this.findOne(tenantId, id);
+
+    const previousNotes = invoice.notes ?? null;
+    const newNotes = dto.notes !== undefined ? (dto.notes ?? null) : previousNotes;
+
+    const updated = await this.prisma.invoice.update({
+      where: { id },
+      data: { notes: newNotes },
+      include: {
+        lines: { orderBy: { sortOrder: 'asc' } },
+        customer: true,
+        series: true,
+        verifactuLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
+      },
+    });
+
+    await this.prisma.invoiceNoteLog.create({
+      data: {
+        tenantId,
+        invoiceId: id,
+        userId,
+        previousNotes,
+        newNotes,
+      },
+    });
+
+    return updated;
+  }
+
   // ==================== QUOTE CONVERSION ====================
 
   async updateQuoteAcceptanceStatus(
@@ -692,6 +725,17 @@ export class InvoiceService {
       throw new ConflictException('El presupuesto ya ha sido convertido anteriormente');
     }
 
+    if (!invoice.paymentMethod) {
+      throw new BadRequestException(
+        'El presupuesto debe tener un método de pago configurado antes de convertirlo a factura'
+      );
+    }
+
+    const defaultSeries = await this.invoiceNumberService.findDefaultSeries(
+      tenantId,
+      SeriesType.INVOICE
+    );
+
     const lines = invoice.lines as unknown as CreateInvoiceLineDto[];
     const totals = this.calculationService.calculateTotals(
       lines,
@@ -704,7 +748,7 @@ export class InvoiceService {
       const proforma = await tx.invoice.create({
         data: {
           tenantId,
-          seriesId: invoice.seriesId,
+          seriesId: defaultSeries.id,
           customerId: invoice.customerId,
           number: null,
           issueDate: new Date(),
@@ -757,6 +801,17 @@ export class InvoiceService {
       throw new ConflictException('El presupuesto ya ha sido convertido anteriormente');
     }
 
+    if (!invoice.paymentMethod) {
+      throw new BadRequestException(
+        'El presupuesto debe tener un método de pago configurado antes de convertirlo a factura'
+      );
+    }
+
+    const defaultSeries = await this.invoiceNumberService.findDefaultSeries(
+      tenantId,
+      SeriesType.INVOICE
+    );
+
     const lines = invoice.lines as unknown as CreateInvoiceLineDto[];
     const totals = this.calculationService.calculateTotals(
       lines,
@@ -769,7 +824,7 @@ export class InvoiceService {
       const draft = await tx.invoice.create({
         data: {
           tenantId,
-          seriesId: invoice.seriesId,
+          seriesId: defaultSeries.id,
           customerId: invoice.customerId,
           number: null,
           issueDate: new Date(),

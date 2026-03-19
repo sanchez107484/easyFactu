@@ -287,3 +287,19 @@ export function useConvertQuoteToOfficial() {
     },
   });
 }
+
+export function useUpdateInvoiceNotes() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, notes }: { id: string; notes: string | null }) =>
+      invoiceApi.updateNotes(id, notes),
+    onSuccess: (invoice) => {
+      queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      toast.success('Nota actualizada correctamente');
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
