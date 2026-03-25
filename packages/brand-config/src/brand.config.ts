@@ -46,7 +46,7 @@ export const brandConfig: BrandConfig = {
     tagline: 'Factura sin complicaciones. VeriFactu automático.',
     url: 'https://novafactura.es',
     domain: 'novafactura.es',
-    supportEmail: 'soporte@novafactura.es',
+    supportEmail: 'info@novafactura.es',
     legalEntity: 'NovaFactura S.L.',
   },
 
@@ -65,3 +65,33 @@ export const brandConfig: BrandConfig = {
     },
   },
 };
+
+// ============================================================
+// PLAZAS CONFIG — actualiza `ocupadas` desde tu backend
+// ============================================================
+export const PLAZAS_CONFIG = {
+  total: 5000,
+  ocupadas: 2562,
+  get disponibles() {
+    return this.total - this.ocupadas;
+  },
+  get porcentaje() {
+    return Math.round((this.ocupadas / this.total) * 100);
+  },
+};
+
+// ============================================================
+// PRICING CONFIG — única fuente de precios
+// ============================================================
+export const PRICING = {
+  monthly: 9.9,
+  annualMonthly: 7.9, // precio por mes en plan anual
+  get annualTotal() {
+    return parseFloat((this.annualMonthly * 12).toFixed(2)); // 94.80
+  },
+  get annualSaving() {
+    return parseFloat(((this.monthly - this.annualMonthly) * 12).toFixed(2)); // 24.00
+  },
+  freePeriodMonths: 6,
+  freePeriodSlots: 5000,
+} as const;

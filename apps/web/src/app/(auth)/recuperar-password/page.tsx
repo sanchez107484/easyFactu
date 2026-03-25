@@ -8,6 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { brandConfig } from '@easyfactura/brand-config';
+import PreAuthLayout from '@/components/pre-auth-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -32,7 +33,7 @@ type ResetFormData = z.infer<typeof resetSchema>;
 // ─────────────────────────────────────────────────────────────────────────────
 // Page Component
 // ─────────────────────────────────────────────────────────────────────────────
-export default function RecuperarPasswordPage() {
+function RecuperarPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState('');
@@ -212,10 +213,15 @@ export default function RecuperarPasswordPage() {
         </p>
       </div>
 
-      {/* Footer */}
-      <p className="mt-8 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} {brandConfig.app.legalEntity}
-      </p>
+      {/* Footer moved to PreAuthLayout */}
     </div>
+  );
+}
+
+export default function RecuperarPasswordWrapper() {
+  return (
+    <PreAuthLayout>
+      <RecuperarPasswordPage />
+    </PreAuthLayout>
   );
 }
