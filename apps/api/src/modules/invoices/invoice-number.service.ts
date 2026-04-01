@@ -76,10 +76,12 @@ export class InvoiceNumberService {
 
   /**
    * Formats a number into the standard invoice number format.
-   * Example: prefix="F-", year=2025, number=1, digits=4 → "F-2025-0001"
+   * The year is NOT added automatically — the prefix must include it if desired.
+   * Example: prefix="F-2026-", number=1, digits=4 → "F-2026-0001"
+   * Example: prefix="F-", number=1, digits=4 → "F-0001"
    */
-  formatNumber(prefix: string, year: number, number: number, digits: number): string {
-    return `${prefix}${year}-${number.toString().padStart(digits, '0')}`;
+  formatNumber(prefix: string, _year: number, number: number, digits: number): string {
+    return `${prefix}${number.toString().padStart(digits, '0')}`;
   }
 
   /**

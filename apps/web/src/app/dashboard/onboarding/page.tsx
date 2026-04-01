@@ -46,6 +46,10 @@ import {
   invoiceSeriesEditSchema,
   InvoiceSeriesEditValues,
 } from '@/components/invoice-series/invoice-series-form-fields';
+import {
+  PrefixYearWarningDialog,
+  prefixContainsYear,
+} from '@/components/invoice-series/prefix-year-warning-dialog';
 
 // --------------------------------
 // Schemas
@@ -409,6 +413,7 @@ function Step3InvoiceSeries({ onSuccess, onBack }: { onSuccess: () => void; onBa
   const { data: seriesData, isLoading: isLoadingSeries } = useInvoiceSeries(currentYear);
   const createSeries = useCreateSeries();
   const updateSeries = useUpdateSeries();
+  const [pendingData, setPendingData] = useState<InvoiceSeriesEditValues | null>(null);
 
   const existingSeries = seriesData?.data?.find((s) => s.type === SeriesType.INVOICE);
 
@@ -424,7 +429,7 @@ function Step3InvoiceSeries({ onSuccess, onBack }: { onSuccess: () => void; onBa
       : { name: '', prefix: '', isDefault: true, nextNumber: undefined },
   });
 
-  async function handleSubmit(data: InvoiceSeriesEditValues) {
+  async function performSubmit(data: InvoiceSeriesEditValues) {
     if (existingSeries) {
       await updateSeries.mutateAsync({
         id: existingSeries.id,
@@ -449,6 +454,14 @@ function Step3InvoiceSeries({ onSuccess, onBack }: { onSuccess: () => void; onBa
     onSuccess();
   }
 
+  async function handleSubmit(data: InvoiceSeriesEditValues) {
+    if (!prefixContainsYear(data.prefix, currentYear)) {
+      setPendingData(data);
+      return;
+    }
+    await performSubmit(data);
+  }
+
   const isSaving = createSeries.isPending || updateSeries.isPending;
 
   if (isLoadingSeries) {
@@ -468,6 +481,7 @@ function Step3InvoiceSeries({ onSuccess, onBack }: { onSuccess: () => void; onBa
   }
 
   return (
+    <>
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold">Configura tu numeración de facturas</h2>
@@ -495,6 +509,17 @@ function Step3InvoiceSeries({ onSuccess, onBack }: { onSuccess: () => void; onBa
 
       <StepActions isSaving={isSaving} onBack={onBack} />
     </form>
+
+    <PrefixYearWarningDialog
+      open={pendingData !== null}
+      onClose={() => setPendingData(null)}
+      onConfirm={() => pendingData && performSubmit(pendingData)}
+      prefix={pendingData?.prefix ?? ''}
+      year={currentYear}
+      confirmLabel="Sí, continuar sin año"
+      isPending={isSaving}
+    />
+    </>
   );
 }
 

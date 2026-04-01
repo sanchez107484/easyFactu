@@ -45,6 +45,7 @@ import {
   LayoutTemplate,
   ExternalLink,
   Settings2,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -77,6 +78,10 @@ import {
   invoiceSeriesEditSchema,
   InvoiceSeriesEditValues,
 } from '@/components/invoice-series/invoice-series-form-fields';
+import {
+  PrefixYearWarningDialog,
+  prefixContainsYear,
+} from '@/components/invoice-series/prefix-year-warning-dialog';
 
 // ==================== SCHEMA ====================
 
@@ -101,18 +106,97 @@ const defaultsSchema = z.object({
 type DefaultsFormData = z.infer<typeof defaultsSchema>;
 
 const seriesSchema = z.object({
-  code: z
-    .string()
-    .min(1, 'El código es obligatorio')
-    .max(10, 'Máximo 10 caracteres')
-    .regex(/^[A-Z0-9]+$/, 'Solo letras mayúsculas y números'),
   name: z.string().min(2, 'Mínimo 2 caracteres').max(100, 'Máximo 100 caracteres'),
   type: z.nativeEnum(SeriesType),
   prefix: z.string().min(1, 'El prefijo es obligatorio').max(20, 'Máximo 20 caracteres'),
   isDefault: z.boolean().optional(),
+  nextNumber: z
+    .number()
+    .int()
+    .min(1, 'El número inicial debe ser al menos 1')
+    .optional()
+    .or(z.nan().transform(() => undefined)),
 });
 
 type SeriesFormData = z.infer<typeof seriesSchema>;
+
+// ==================== SERIES CREATE CONFIRM DIALOG ====================
+
+interface SeriesCreateConfirmDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  data: SeriesFormData;
+  year: number;
+  isPending: boolean;
+}
+
+function SeriesCreateConfirmDialog({
+  open,
+  onClose,
+  onConfirm,
+  data,
+  year,
+  isPending,
+}: SeriesCreateConfirmDialogProps) {
+  const startAt =
+    data.nextNumber && !isNaN(data.nextNumber) ? data.nextNumber : 1;
+  const previewNumber = `${data.prefix}${String(startAt).padStart(4, '0')}`;
+  const hasYearWarning = !prefixContainsYear(data.prefix, year);
+
+  const typeLabels: Record<string, string> = {
+    [SeriesType.INVOICE]: 'Factura',
+    [SeriesType.RECTIFICATIVE]: 'Rectificativa',
+    [SeriesType.QUOTE]: 'Presupuesto',
+  };
+
+  return (
+    <AlertDialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Confirmar nueva serie</AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div className="space-y-3 text-sm">
+              <p className="text-muted-foreground">
+                Revisa la configuración antes de crear la serie.
+              </p>
+              <div className="rounded-md border bg-muted/50 p-3 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Tipo</span>
+                  <span>{typeLabels[data.type] ?? data.type}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Nombre</span>
+                  <span>{data.name}</span>
+                </div>
+                <div className="flex justify-between items-center border-t pt-2 mt-1">
+                  <span className="text-muted-foreground">Primera factura</span>
+                  <span className="font-mono font-semibold text-base">{previewNumber}</span>
+                </div>
+              </div>
+              {hasYearWarning && (
+                <div className="flex gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p>
+                    El prefijo no contiene el año {year}. Las facturas no llevarán referencia al
+                    año en el número.
+                  </p>
+                </div>
+              )}
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm} disabled={isPending} className="gap-2">
+            {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            Crear serie
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
 
 // ==================== INVOICE DEFAULTS FORM ====================
 function InvoiceDefaultsForm() {
@@ -315,31 +399,39 @@ interface CreateSeriesDialogProps {
 function CreateSeriesDialog({ open, onClose }: CreateSeriesDialogProps) {
   const createSeries = useCreateSeries();
   const currentYear = new Date().getFullYear();
+  const [pendingData, setPendingData] = useState<SeriesFormData | null>(null);
 
   const form = useForm<SeriesFormData>({
     resolver: zodResolver(seriesSchema),
     defaultValues: {
-      code: '',
       name: '',
       type: SeriesType.INVOICE,
       prefix: '',
       isDefault: false,
+      nextNumber: undefined,
     },
   });
 
-  function onSubmit(data: SeriesFormData) {
+  function submitData(data: SeriesFormData) {
+    const code = data.prefix.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 10) || 'SERIE';
     createSeries.mutate(
-      { ...data, year: currentYear },
+      { ...data, code, year: currentYear },
       {
         onSuccess: () => {
           form.reset();
+          setPendingData(null);
           onClose();
         },
       },
     );
   }
 
+  function onSubmit(data: SeriesFormData) {
+    setPendingData(data);
+  }
+
   return (
+    <>
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -350,33 +442,21 @@ function CreateSeriesDialog({ open, onClose }: CreateSeriesDialogProps) {
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="code">Código *</Label>
-              <Input id="code" placeholder="F" {...form.register('code')} />
-              {form.formState.errors.code && (
-                <p className="mt-1 text-xs text-destructive">
-                  {form.formState.errors.code.message}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="type">Tipo *</Label>
-              <Select
-                value={form.watch('type')}
-                onValueChange={(v) => form.setValue('type', v as SeriesType)}
-              >
-                <SelectTrigger id="type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={SeriesType.INVOICE}>Factura</SelectItem>
-                  <SelectItem value={SeriesType.RECTIFICATIVE}>Rectificativa</SelectItem>
-                  <SelectItem value={SeriesType.QUOTE}>Presupuesto</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div>
+            <Label htmlFor="type">Tipo *</Label>
+            <Select
+              value={form.watch('type')}
+              onValueChange={(v) => form.setValue('type', v as SeriesType)}
+            >
+              <SelectTrigger id="type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SeriesType.INVOICE}>Factura</SelectItem>
+                <SelectItem value={SeriesType.RECTIFICATIVE}>Rectificativa</SelectItem>
+                <SelectItem value={SeriesType.QUOTE}>Presupuesto</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
@@ -414,6 +494,25 @@ function CreateSeriesDialog({ open, onClose }: CreateSeriesDialogProps) {
             )}
           </div>
 
+          <div>
+            <Label htmlFor="nextNumber">Número inicial</Label>
+            <Input
+              id="nextNumber"
+              type="number"
+              min={1}
+              placeholder="1"
+              {...form.register('nextNumber', { valueAsNumber: true })}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Útil si ya has emitido facturas este año y quieres continuar desde ese número
+            </p>
+            {form.formState.errors.nextNumber && (
+              <p className="mt-1 text-xs text-destructive">
+                {form.formState.errors.nextNumber.message}
+              </p>
+            )}
+          </div>
+
           <div className="flex items-center gap-3">
             <Switch
               id="isDefault"
@@ -437,6 +536,18 @@ function CreateSeriesDialog({ open, onClose }: CreateSeriesDialogProps) {
         </form>
       </DialogContent>
     </Dialog>
+
+    {pendingData && (
+      <SeriesCreateConfirmDialog
+        open
+        onClose={() => setPendingData(null)}
+        onConfirm={() => submitData(pendingData)}
+        data={pendingData}
+        year={currentYear}
+        isPending={createSeries.isPending}
+      />
+    )}
+    </>
   );
 }
 
