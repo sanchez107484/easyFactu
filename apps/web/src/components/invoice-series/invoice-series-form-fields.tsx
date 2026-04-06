@@ -50,7 +50,7 @@ export function InvoiceSeriesFormFields({
 
       <div>
         <Label htmlFor="series-prefix">Prefijo de numeración *</Label>
-        <Input id="series-prefix" placeholder="F-" {...form.register('prefix')} />
+        <Input id="series-prefix" placeholder={`F${year}-`} {...form.register('prefix')} />
         {watchedPrefix ? (
           <p className="mt-1 text-xs text-muted-foreground">
             Ej:{' '}
