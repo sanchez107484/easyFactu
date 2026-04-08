@@ -42,21 +42,21 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
   return (
     <div className="flex justify-end">
       <div className="w-52">
-        <TotalsRow label="Base imponible" value={formatCurrency(invoice.subtotal)} />
+        <TotalsRow label="Base imponible total" value={formatCurrency(invoice.subtotal)} />
 
-        {invoice.discountAmount && invoice.discountAmount > 0 && (
+        {(invoice.discountAmount ?? 0) > 0 && (
           <TotalsRow
             label={`Descuento (${invoice.discountPercent ?? 0}%)`}
-            value={`-${formatCurrency(invoice.discountAmount)}`}
+            value={`-${formatCurrency(invoice.discountAmount ?? 0)}`}
           />
         )}
 
         {showTaxBreakdown && <TotalsRow label="IVA" value={formatCurrency(invoice.taxTotal)} />}
 
-        {showIrpf && invoice.irpfTotal && invoice.irpfTotal > 0 && (
+        {showIrpf && (invoice.irpfTotal ?? 0) > 0 && (
           <TotalsRow
             label={`IRPF (${invoice.irpfPercent ?? 0}%)`}
-            value={`-${formatCurrency(invoice.irpfTotal)}`}
+            value={`-${formatCurrency(invoice.irpfTotal ?? 0)}`}
           />
         )}
 

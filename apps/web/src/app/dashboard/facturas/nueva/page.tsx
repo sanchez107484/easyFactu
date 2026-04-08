@@ -71,6 +71,7 @@ import {
   PaymentDetailsValues,
 } from '@/components/facturas/PaymentDetailsFields';
 import { SaveAsDefaultBanner } from '@/components/facturas/SaveAsDefaultBanner';
+import { useInvoiceFormKeyDown } from '@/hooks/use-invoice-form-key-down';
 
 // ==================== CONSTANTS ====================
 
@@ -297,6 +298,8 @@ function InvoiceForm({
     const el = document.getElementById(`field-${fieldId}`);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
+
+  const handleFormKeyDown = useInvoiceFormKeyDown();
 
   const triggerSubmit = () => {
     const submitBtn = document.getElementById('form-submit-trigger');
@@ -531,6 +534,7 @@ function InvoiceForm({
 
             <form
               onSubmit={form.handleSubmit(handleSaveDraft, onInvalid)}
+              onKeyDown={handleFormKeyDown}
               noValidate
               className="space-y-5"
             >

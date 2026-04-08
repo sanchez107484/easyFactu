@@ -316,6 +316,7 @@ export function InvoiceLineItem({
                 min={mode === 'product' ? '1' : '0'}
                 placeholder="Cant."
                 className="w-[96px] text-sm h-9 pr-1"
+                data-invoice-qty={index}
                 value={
                   mode === 'product'
                     ? (line.quantity ?? 1)

@@ -363,12 +363,12 @@ export function createInvoicePdfElement(
             <Text style={styles.totalsValue}>{formatCurrency(invoice.subtotal)}</Text>
           </View>
 
-          {invoice.discountAmount && invoice.discountAmount > 0 && (
+          {(invoice.discountAmount ?? 0) > 0 && (
             <View style={styles.totalsRow}>
               <Text style={styles.totalsLabel}>
                 Descuento ({formatPercent(invoice.discountPercent ?? 0)})
               </Text>
-              <Text style={styles.totalsValue}>-{formatCurrency(invoice.discountAmount)}</Text>
+              <Text style={styles.totalsValue}>-{formatCurrency(invoice.discountAmount ?? 0)}</Text>
             </View>
           )}
 
@@ -379,12 +379,12 @@ export function createInvoicePdfElement(
             </View>
           )}
 
-          {layout.totals.showIrpf && invoice.irpfTotal && invoice.irpfTotal > 0 && (
+          {(invoice.irpfTotal ?? 0) > 0 && (
             <View style={styles.totalsRow}>
               <Text style={styles.totalsLabel}>
                 IRPF ({formatPercent(invoice.irpfPercent ?? 0)})
               </Text>
-              <Text style={styles.totalsValue}>-{formatCurrency(invoice.irpfTotal)}</Text>
+              <Text style={styles.totalsValue}>-{formatCurrency(invoice.irpfTotal ?? 0)}</Text>
             </View>
           )}
 

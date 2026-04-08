@@ -49,6 +49,7 @@ import {
   PaymentDetailsFields,
   PaymentDetailsValues,
 } from '@/components/facturas/PaymentDetailsFields';
+import { useInvoiceFormKeyDown } from '@/hooks/use-invoice-form-key-down';
 
 // ==================== SCHEMA ====================
 
@@ -150,6 +151,8 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
     const el = document.getElementById(`field-${fieldId}`);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
+
+  const handleFormKeyDown = useInvoiceFormKeyDown();
 
   const triggerSubmit = () => {
     const submitBtn = document.getElementById('form-submit-trigger');
@@ -272,6 +275,7 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
 
             <form
               onSubmit={form.handleSubmit(handleSave, onInvalid)}
+              onKeyDown={handleFormKeyDown}
               noValidate
               className="space-y-5"
             >
