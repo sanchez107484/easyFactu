@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -12,6 +13,7 @@ import { InvoiceSeriesModule } from './modules/invoice-series/invoice-series.mod
 import { VerifactuModule } from './modules/verifactu/verifactu.module';
 import { InvoiceTemplateModule } from './modules/invoice-templates/invoice-template.module';
 import { InvoiceDefaultsModule } from './modules/invoice-defaults/invoice-defaults.module';
+import { RecurringInvoiceModule } from './modules/recurring-invoices/recurring-invoice.module';
 
 @Module({
   imports: [
@@ -29,6 +31,9 @@ import { InvoiceDefaultsModule } from './modules/invoice-defaults/invoice-defaul
       },
     ]),
 
+    // Task scheduling (cron jobs)
+    ScheduleModule.forRoot(),
+
     // Prisma
     PrismaModule,
 
@@ -42,6 +47,7 @@ import { InvoiceDefaultsModule } from './modules/invoice-defaults/invoice-defaul
     VerifactuModule,
     InvoiceTemplateModule,
     InvoiceDefaultsModule,
+    RecurringInvoiceModule,
   ],
   controllers: [],
   providers: [

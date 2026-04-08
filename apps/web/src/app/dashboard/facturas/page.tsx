@@ -23,6 +23,7 @@ import {
   CalendarClock,
   X,
   Pencil,
+  RefreshCw,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -372,6 +373,12 @@ export default function FacturasPage() {
                             {invoice.isRectificative && (
                               <span className="ml-2 text-[10px] text-muted-foreground bg-muted rounded px-1 py-0.5">
                                 rectif.
+                              </span>
+                            )}
+                            {invoice.recurringInvoiceId && (
+                              <span className="ml-2 text-[10px] font-medium text-primary bg-primary/10 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5">
+                                <RefreshCw className="h-2.5 w-2.5" />
+                                recurrente
                               </span>
                             )}
                             {(invoice as any).invoiceType === 'proforma' && (

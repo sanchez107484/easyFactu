@@ -44,6 +44,7 @@ import {
   ArrowRightLeft,
   Save,
   X,
+  RefreshCw,
 } from 'lucide-react';
 import { DownloadInvoiceButton } from '@/components/ui/download-invoice-button';
 import { Label } from '@/components/ui/label';
@@ -62,6 +63,11 @@ import {
 } from '@/hooks/use-invoices';
 import { ConvertProformaModal } from '@/components/facturas/ConvertProformaModal';
 import { ConvertDraftToProformaModal } from '@/components/facturas/ConvertDraftToProformaModal';
+import {
+  ConvertToRecurringModal,
+  type RecurringSettings,
+} from '@/components/facturas/ConvertToRecurringModal';
+import { useCreateRecurringInvoice } from '@/hooks/use-recurring-invoices';
 import { InvoiceStatus, PaymentMethod, Tenant } from '@easyfactura/shared-types';
 import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge';
@@ -164,6 +170,7 @@ export default function FacturaDetailPage() {
   const [rectifyReason, setRectifyReason] = useState('');
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [showConvertToProformaModal, setShowConvertToProformaModal] = useState(false);
+  const [showConvertToRecurringModal, setShowConvertToRecurringModal] = useState(false);
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [editingNotesValue, setEditingNotesValue] = useState('');
 
@@ -178,6 +185,7 @@ export default function FacturaDetailPage() {
   const convertMutation = useConvertProformaToOfficial();
   const convertToProformaMutation = useConvertDraftToProforma();
   const updateNotesMutation = useUpdateInvoiceNotes();
+  const createRecurringMutation = useCreateRecurringInvoice();
   // FIX: useDuplicateInvoice eliminado — duplicar es solo navegar a /nueva?duplicate=ID
 
   const templateId = (invoice as any)?.templateId ?? (invoice as any)?.template?.id ?? '';
@@ -236,6 +244,30 @@ export default function FacturaDetailPage() {
   const handleConvertToProforma = async () => {
     await convertToProformaMutation.mutateAsync(id);
     setShowConvertToProformaModal(false);
+  };
+
+  const handleConvertToRecurring = async (settings: RecurringSettings) => {
+    await createRecurringMutation.mutateAsync({
+      customerId: invoice!.customerId!,
+      frequency: settings.frequency,
+      dayOfMonth: settings.dayOfMonth,
+      startDate: settings.startDate,
+      endDate: settings.hasEndDate && settings.endDate ? settings.endDate : undefined,
+      autoConfirm: settings.autoConfirm,
+      lines: (invoice!.lines ?? []).map((l) => ({
+        description: l.description,
+        quantity: l.quantity,
+        unitPrice: l.unitPrice,
+        taxRate: l.taxRate,
+        hideQty: (l as any).hideQty ?? false,
+      })),
+      paymentMethod: invoice!.paymentMethod ?? undefined,
+      discountPercent: invoice!.discountPercent ? Number(invoice!.discountPercent) : undefined,
+      irpfPercent: invoice!.irpfPercent ? Number(invoice!.irpfPercent) : undefined,
+      notes: invoice!.notes ?? undefined,
+      sourceInvoiceId: id,
+    });
+    setShowConvertToRecurringModal(false);
   };
 
   const handleRectify = async () => {
@@ -320,91 +352,108 @@ export default function FacturaDetailPage() {
           )}
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="h-8 w-8">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleDuplicate}>
-              <Copy className="mr-2 h-4 w-4" />
-              Duplicar factura
-            </DropdownMenuItem>
-            {isDraft && (
-              <DropdownMenuItem onClick={() => router.push(`/dashboard/facturas/nueva?edit=${id}`)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                {isProforma ? 'Editar proforma' : 'Editar borrador'}
+        <div className="flex items-center gap-2">
+          {/* Repetir — visible para facturas confirmadas */}
+          {(isConfirmed || isSent || invoice.status === InvoiceStatus.PAID) && !isProforma && (
+            <button
+              type="button"
+              onClick={() => setShowConvertToRecurringModal(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-dashed border-muted-foreground/30 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-150 hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Repetir
+            </button>
+          )}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleDuplicate}>
+                <Copy className="mr-2 h-4 w-4" />
+                Duplicar factura
               </DropdownMenuItem>
-            )}
-            {isDraft && isProforma && (
-              <DropdownMenuItem onClick={() => setShowConvertModal(true)}>
-                <ArrowRightLeft className="mr-2 h-4 w-4" />
-                Convertir a factura oficial
-              </DropdownMenuItem>
-            )}
-            {isDraft && !isProforma && (
-              <DropdownMenuItem onClick={() => setShowConvertToProformaModal(true)}>
-                <FileText className="mr-2 h-4 w-4" />
-                Convertir a proforma
-              </DropdownMenuItem>
-            )}
-            {canRectify && (
-              <DropdownMenuItem onClick={() => setShowRectifyDialog(true)}>
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Emitir rectificativa
-              </DropdownMenuItem>
-            )}
-            {!isDraft && (
-              <DropdownMenuItem asChild>
-                <DownloadInvoiceButton
-                  invoiceId={id}
-                  fileName={pdfFileName}
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start px-2 cursor-pointer font-normal"
-                />
-              </DropdownMenuItem>
-            )}
-            {isDraft && (
-              <>
-                <DropdownMenuSeparator />
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem
-                      onSelect={(e) => e.preventDefault()}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      {isProforma ? 'Eliminar proforma' : 'Eliminar borrador'}
-                    </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        {isProforma ? '¿Eliminar proforma?' : '¿Eliminar borrador?'}
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta acción no se puede deshacer.{' '}
-                        {isProforma ? 'La proforma' : 'El borrador'} será eliminado permanentemente.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDelete}
-                        disabled={deleteMutation.isPending}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              {isDraft && (
+                <DropdownMenuItem
+                  onClick={() => router.push(`/dashboard/facturas/nueva?edit=${id}`)}
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  {isProforma ? 'Editar proforma' : 'Editar borrador'}
+                </DropdownMenuItem>
+              )}
+              {isDraft && isProforma && (
+                <DropdownMenuItem onClick={() => setShowConvertModal(true)}>
+                  <ArrowRightLeft className="mr-2 h-4 w-4" />
+                  Convertir a factura oficial
+                </DropdownMenuItem>
+              )}
+              {isDraft && !isProforma && (
+                <DropdownMenuItem onClick={() => setShowConvertToProformaModal(true)}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Convertir a proforma
+                </DropdownMenuItem>
+              )}
+              {canRectify && (
+                <DropdownMenuItem onClick={() => setShowRectifyDialog(true)}>
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Emitir rectificativa
+                </DropdownMenuItem>
+              )}
+              {!isDraft && (
+                <DropdownMenuItem asChild>
+                  <DownloadInvoiceButton
+                    invoiceId={id}
+                    fileName={pdfFileName}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start px-2 cursor-pointer font-normal"
+                  />
+                </DropdownMenuItem>
+              )}
+              {isDraft && (
+                <>
+                  <DropdownMenuSeparator />
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem
+                        onSelect={(e) => e.preventDefault()}
+                        className="text-destructive focus:text-destructive"
                       >
-                        {deleteMutation.isPending ? 'Eliminando...' : 'Sí, eliminar'}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {isProforma ? 'Eliminar proforma' : 'Eliminar borrador'}
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          {isProforma ? '¿Eliminar proforma?' : '¿Eliminar borrador?'}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta acción no se puede deshacer.{' '}
+                          {isProforma ? 'La proforma' : 'El borrador'} será eliminado
+                          permanentemente.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDelete}
+                          disabled={deleteMutation.isPending}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {deleteMutation.isPending ? 'Eliminando...' : 'Sí, eliminar'}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* ── Split panel ── */}
@@ -531,6 +580,30 @@ export default function FacturaDetailPage() {
                 )}
               </div>
             </div>
+
+            {/* ZONA A.5 — Vinculada a recurrente */}
+            {invoice.recurringInvoiceId && (
+              <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                <RefreshCw className="h-4 w-4 text-primary shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-primary leading-tight">
+                    Vinculada a factura recurrente
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Esta factura está asociada a una regla de facturación automática
+                  </p>
+                </div>
+                <Link href={`/dashboard/recurrentes/${invoice.recurringInvoiceId}`}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 text-xs text-primary border-primary/30 hover:bg-primary/10"
+                  >
+                    Ver recurrente →
+                  </Button>
+                </Link>
+              </div>
+            )}
 
             {/* ZONA B — Cliente */}
             <div className="rounded-xl border bg-card p-5">
@@ -777,6 +850,14 @@ export default function FacturaDetailPage() {
         isPending={convertToProformaMutation.isPending}
         onCancel={() => setShowConvertToProformaModal(false)}
         onConfirm={handleConvertToProforma}
+      />
+
+      <ConvertToRecurringModal
+        open={showConvertToRecurringModal}
+        customerName={(invoice as any).customer?.name ?? '—'}
+        isPending={createRecurringMutation.isPending}
+        onCancel={() => setShowConvertToRecurringModal(false)}
+        onConfirm={handleConvertToRecurring}
       />
 
       {/* Rectify dialog */}

@@ -456,6 +456,8 @@ export interface Invoice {
   isRectificative: boolean;
   rectifiedInvoiceId: string | null;
   rectificationReason: string | null;
+  /** ID of the recurring invoice that generated this invoice (or from which this was converted) */
+  recurringInvoiceId?: string | null;
   createdAt: string;
   updatedAt: string;
   series?: InvoiceSeries;
@@ -666,6 +668,109 @@ export interface CreateInvoiceTemplateInput {
   name?: string;
   layout: InvoiceLayout;
   isDefault?: boolean;
+}
+
+// ==================== RECURRING INVOICES ====================
+
+export enum Frequency {
+  MONTHLY = 'MONTHLY',
+  QUARTERLY = 'QUARTERLY',
+  SEMIANNUAL = 'SEMIANNUAL',
+  ANNUAL = 'ANNUAL',
+}
+
+export enum RecurringStatus {
+  ACTIVE = 'ACTIVE',
+  PAUSED = 'PAUSED',
+  COMPLETED = 'COMPLETED',
+}
+
+export interface RecurringInvoiceLine {
+  id: string;
+  tenantId: string;
+  recurringInvoiceId: string;
+  productId: string | null;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  taxRate: number;
+  irpfRate: number | null;
+  hideQty: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecurringInvoice {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  seriesId: string | null;
+  frequency: Frequency;
+  dayOfMonth: number;
+  startDate: string;
+  endDate: string | null;
+  nextRunDate: string;
+  autoConfirm: boolean;
+  status: RecurringStatus;
+  discountPercent: number | null;
+  irpfPercent: number | null;
+  paymentMethod: PaymentMethod | null;
+  paymentDetails: Record<string, unknown> | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  customer?: Customer;
+  series?: InvoiceSeries;
+  lines?: RecurringInvoiceLine[];
+}
+
+export interface CreateRecurringInvoiceLineInput {
+  productId?: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  taxRate: number;
+  irpfRate?: number;
+  hideQty?: boolean;
+}
+
+export interface CreateRecurringInvoiceInput {
+  customerId: string;
+  seriesId?: string;
+  frequency: Frequency;
+  dayOfMonth?: number;
+  startDate: string;
+  endDate?: string;
+  autoConfirm?: boolean;
+  discountPercent?: number;
+  irpfPercent?: number;
+  paymentMethod?: PaymentMethod;
+  paymentDetails?: Record<string, unknown>;
+  notes?: string;
+  lines: CreateRecurringInvoiceLineInput[];
+  /** When provided, links this original invoice to the new recurring invoice */
+  sourceInvoiceId?: string;
+}
+
+export interface UpdateRecurringInvoiceInput {
+  frequency?: Frequency;
+  dayOfMonth?: number;
+  endDate?: string | null;
+  autoConfirm?: boolean;
+  discountPercent?: number | null;
+  irpfPercent?: number | null;
+  paymentMethod?: PaymentMethod | null;
+  paymentDetails?: Record<string, unknown> | null;
+  notes?: string | null;
+  lines?: CreateRecurringInvoiceLineInput[];
+}
+
+export interface QueryRecurringInvoicesInput {
+  page?: number;
+  limit?: number;
+  status?: RecurringStatus;
+  customerId?: string;
 }
 
 export interface UpdateInvoiceTemplateInput {

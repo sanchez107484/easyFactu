@@ -454,6 +454,13 @@ export class InvoiceService {
     });
   }
 
+  async linkToRecurringInvoice(invoiceId: string, recurringInvoiceId: string) {
+    await this.prisma.invoice.update({
+      where: { id: invoiceId },
+      data: { recurringInvoiceId },
+    });
+  }
+
   async duplicate(tenantId: string, id: string) {
     const original = await this.findOne(tenantId, id);
 

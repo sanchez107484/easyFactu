@@ -10,13 +10,42 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
-import { AlertTriangle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { Frequency } from '@easyfactura/shared-types';
+import { FREQUENCY_OPTIONS } from '@easyfactura/shared-constants';
 
 // ==================== TYPES ====================
 
 export interface ConfirmInvoiceSummary {
   customerName: string;
   total: number;
+}
+
+export interface RecurringConfig {
+  isRecurring: boolean;
+  onToggle: (v: boolean) => void;
+  frequency: Frequency;
+  onFrequencyChange: (v: Frequency) => void;
+  dayOfMonth: number;
+  onDayOfMonthChange: (v: number) => void;
+  startDate: string;
+  onStartDateChange: (v: string) => void;
+  hasEndDate: boolean;
+  onHasEndDateChange: (v: boolean) => void;
+  endDate: string;
+  onEndDateChange: (v: string) => void;
+  autoConfirm: boolean;
+  onAutoConfirmChange: (v: boolean) => void;
 }
 
 interface ConfirmInvoiceDialogProps {
@@ -26,9 +55,8 @@ interface ConfirmInvoiceDialogProps {
   isPending: boolean;
   summary: ConfirmInvoiceSummary;
   invoiceType?: string;
+  recurringConfig?: RecurringConfig;
 }
-
-// ==================== COMPONENT ====================
 
 export function ConfirmInvoiceDialog({
   open,
@@ -37,6 +65,7 @@ export function ConfirmInvoiceDialog({
   isPending,
   summary,
   invoiceType,
+  recurringConfig,
 }: ConfirmInvoiceDialogProps) {
   const isProforma = invoiceType === 'proforma';
   const formattedTotal = summary.total.toLocaleString('es-ES', {
@@ -46,7 +75,7 @@ export function ConfirmInvoiceDialog({
 
   return (
     <AlertDialog open={open}>
-      <AlertDialogContent className="sm:max-w-md">
+      <AlertDialogContent className="sm:max-w-md max-h-[calc(100vh-4rem)] overflow-y-auto">
         <AlertDialogHeader>
           <AlertDialogTitle>
             {isProforma ? 'Guardar como proforma' : '¿Confirmar la factura?'}
@@ -65,7 +94,6 @@ export function ConfirmInvoiceDialog({
                 </p>
               )}
 
-              {/* VeriFactu warnings — only for official invoices */}
               {!isProforma && (
                 <div className="flex gap-3 p-3 rounded-lg bg-proforma-50 border border-proforma-200 dark:bg-proforma-950/30 dark:border-proforma-800">
                   <AlertTriangle className="h-4 w-4 text-proforma-600 shrink-0 mt-0.5" />
@@ -98,6 +126,120 @@ export function ConfirmInvoiceDialog({
                   <span className="font-bold text-base">{formattedTotal}</span>
                 </div>
               </div>
+
+              {/* ── Recurring section (only for non-proforma) ── */}
+              {recurringConfig && (
+                <div className="rounded-lg border border-dashed px-4 py-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <RefreshCw
+                        className={`h-4 w-4 shrink-0 ${recurringConfig.isRecurring ? 'text-primary' : 'text-muted-foreground'}`}
+                      />
+                      <div>
+                        <p className="text-sm font-medium leading-tight">
+                          ¿Se repite esta factura?
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Crea un patrón recurrente automático
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={recurringConfig.isRecurring}
+                      onCheckedChange={recurringConfig.onToggle}
+                    />
+                  </div>
+
+                  {recurringConfig.isRecurring && (
+                    <div className="space-y-3 pt-1">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="grid gap-1.5">
+                          <Label className="text-xs">Frecuencia</Label>
+                          <Select
+                            value={recurringConfig.frequency}
+                            onValueChange={(v) => recurringConfig.onFrequencyChange(v as Frequency)}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {FREQUENCY_OPTIONS.map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-1.5">
+                          <Label className="text-xs">Día del mes</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={28}
+                            className="h-8 text-xs"
+                            value={recurringConfig.dayOfMonth}
+                            onChange={(e) =>
+                              recurringConfig.onDayOfMonthChange(Number(e.target.value))
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div className="grid gap-1.5">
+                        <Label className="text-xs">Fecha de inicio</Label>
+                        <Input
+                          type="date"
+                          className="h-8 text-xs"
+                          value={recurringConfig.startDate}
+                          onChange={(e) => recurringConfig.onStartDateChange(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="dialog-recurring-hasEndDate"
+                          checked={recurringConfig.hasEndDate}
+                          onCheckedChange={recurringConfig.onHasEndDateChange}
+                        />
+                        <Label
+                          htmlFor="dialog-recurring-hasEndDate"
+                          className="text-xs cursor-pointer font-normal"
+                        >
+                          Tiene fecha de fin
+                        </Label>
+                      </div>
+                      {recurringConfig.hasEndDate && (
+                        <div className="grid gap-1.5">
+                          <Label className="text-xs">Fecha de fin</Label>
+                          <Input
+                            type="date"
+                            className="h-8 text-xs"
+                            value={recurringConfig.endDate}
+                            onChange={(e) => recurringConfig.onEndDateChange(e.target.value)}
+                          />
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="dialog-recurring-autoConfirm"
+                          checked={recurringConfig.autoConfirm}
+                          onCheckedChange={recurringConfig.onAutoConfirmChange}
+                        />
+                        <div>
+                          <Label
+                            htmlFor="dialog-recurring-autoConfirm"
+                            className="text-xs cursor-pointer"
+                          >
+                            Confirmar automáticamente
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Si está desactivado, se crea como borrador.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>

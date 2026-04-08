@@ -7,6 +7,23 @@ import { ThemeToggle } from './theme-toggle';
 import { TenantSelector } from './tenant-selector';
 import { ChevronRight } from 'lucide-react';
 
+// Human-readable labels for route segments. Add new routes here — one place, used everywhere.
+const SEGMENT_LABELS: Record<string, string> = {
+  dashboard: 'Inicio',
+  facturas: 'Facturas',
+  clientes: 'Clientes',
+  productos: 'Productos',
+  presupuestos: 'Presupuestos',
+  recurrentes: 'Recurrentes',
+  ajustes: 'Ajustes',
+  nueva: 'Nueva',
+  editar: 'Editar',
+};
+
+function resolveSegmentLabel(segment: string): string {
+  return SEGMENT_LABELS[segment] ?? segment.charAt(0).toUpperCase() + segment.slice(1);
+}
+
 export function DashboardHeader() {
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
@@ -15,8 +32,7 @@ export function DashboardHeader() {
   const segments = pathname.split('/').filter(Boolean);
   const breadcrumbs = segments.map((segment, index) => {
     const href = '/' + segments.slice(0, index + 1).join('/');
-    const title = segment.charAt(0).toUpperCase() + segment.slice(1);
-    return { title, href };
+    return { title: resolveSegmentLabel(segment), href };
   });
 
   return (
