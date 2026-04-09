@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
     '@easyfactura/shared-constants',
     '@easyfactura/brand-config',
   ],
+  // Exclude Node.js-only packages with native binaries from webpack bundling.
+  // These are used only in API routes at runtime, never in client-side code.
+  serverExternalPackages: ['playwright', 'playwright-core', '@sparticuz/chromium'],
   images: {
     remotePatterns: [
       {
