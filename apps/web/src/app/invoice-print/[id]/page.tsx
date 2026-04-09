@@ -153,7 +153,23 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
         }
         @page { size: 595px 842px; margin: 0; }
         img { max-width: 100%; }
+        /* Suppress web-font downloads — invoice uses system fonts only */
+        @font-face { font-family: '__suppress__'; src: local('Arial'); }
       `}</style>
+
+      {/*
+        Hidden metadata consumed by the PDF API route to build the filename
+        without making a second round-trip to the NestJS API.
+        data-pdf-ready signals that the server-rendered content is complete.
+      */}
+      <span
+        aria-hidden="true"
+        style={{ display: 'none' }}
+        data-pdf-ready="true"
+        data-invoice-number={invoice.number ?? ''}
+        data-invoice-type={invoice.invoiceType ?? ''}
+        data-invoice-customer={invoice.customer?.name ?? ''}
+      />
 
       {/* A4 canvas — exact dimensions match the live preview */}
       <div

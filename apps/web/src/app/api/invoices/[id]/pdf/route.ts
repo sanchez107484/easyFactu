@@ -46,6 +46,23 @@ async function getBrowser(): Promise<Browser> {
   return _launching;
 }
 
+// ==================== HELPERS ====================
+
+function buildSafeFilename(invoiceNumber: string, customerName: string): string {
+  // Replace filesystem-unsafe characters with '-', then collapse multiple dashes and trim.
+  const safePart = (s: string) =>
+    s
+      .replace(/[<>:"/\\|?*]/g, '-')
+      .replace(/-{2,}/g, '-')
+      .trim();
+  const number = safePart(invoiceNumber);
+  const customer = safePart(customerName);
+  if (!number && !customer) return 'Factura.pdf';
+  if (!customer) return `${number}.pdf`;
+  if (!number) return `${customer}.pdf`;
+  return `${number} - ${customer}.pdf`;
+}
+
 // ==================== HANDLER ====================
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -69,24 +86,29 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Forward the bearer token so the server component can authenticate with the NestJS API
     await page.setExtraHTTPHeaders({ authorization: authHeader });
 
-    // Fetch invoice metadata for the filename in parallel with page navigation
-    const { origin } = new URL(request.url);
-    const [, invoiceData] = await Promise.all([
-      page.goto(`${origin}/invoice-print/${id}`, { waitUntil: 'networkidle' }),
-      fetch(
-        `${process.env.NEXT_PUBLIC_API_URL?.replace(/\/v1$/, '') ?? 'http://localhost:3001/api'}/v1/invoices/${id}`,
-        { headers: { authorization: authHeader } },
-      )
-        .then((r) => r.json())
-        .catch(() => null),
-    ]);
+    // Block web-font downloads — the invoice uses system fonts (Helvetica / Times / Courier)
+    // only. Aborting these requests removes them from the critical path of the load event.
+    await page.route(/\.(woff2?|ttf|otf|eot)(\?.*)?$/i, (route) => route.abort());
 
-    const invoice = invoiceData?.data ?? null;
-    const isQuote = invoice?.invoiceType === 'quote';
-    const filePrefix = isQuote ? 'Presupuesto' : 'Factura';
-    const safeFilename = invoice?.number
-      ? `${filePrefix}-${String(invoice.number).replace(/[^a-zA-Z0-9\-_]/g, '_')}.pdf`
-      : `${filePrefix}-${id}.pdf`;
+    const { origin } = new URL(request.url);
+
+    // 'load' fires once the DOM + stylesheets + images are ready.
+    // Unlike 'networkidle', it does NOT wait for Next.js background prefetch requests,
+    // which can hold networkidle for 1-3 extra seconds on every request.
+    await page.goto(`${origin}/invoice-print/${id}`, { waitUntil: 'load' });
+
+    // Read the filename metadata injected by the print page server component.
+    // This replaces the earlier parallel fetch to /v1/invoices/:id that existed
+    // only to extract the invoice number and type for the filename.
+    const { invoiceNumber, customerName } = await page.evaluate(() => {
+      const el = document.querySelector('[data-pdf-ready]');
+      return {
+        invoiceNumber: el?.getAttribute('data-invoice-number') ?? '',
+        customerName: el?.getAttribute('data-invoice-customer') ?? '',
+      };
+    });
+
+    const safeFilename = buildSafeFilename(invoiceNumber, customerName);
 
     const pdf = await page.pdf({
       width: '595px',
@@ -95,8 +117,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       margin: { top: '0', right: '0', bottom: '0', left: '0' },
     });
 
-    // Use RFC 5987 encoding for the filename to ensure all browsers handle it correctly.
-    // The ASCII fallback (filename=) covers older clients; filename*= covers modern ones.
     const encodedFilename = encodeURIComponent(safeFilename);
     return new NextResponse(new Uint8Array(pdf), {
       headers: {
