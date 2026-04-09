@@ -151,7 +151,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
           overflow: hidden !important;
           width: 595px !important;
         }
-        @page { size: 595px 842px; margin: 0; }
+        @page { size: A4; margin: 0; }
         img { max-width: 100%; }
         /* Suppress web-font downloads — invoice uses system fonts only */
         @font-face { font-family: '__suppress__'; src: local('Arial'); }
