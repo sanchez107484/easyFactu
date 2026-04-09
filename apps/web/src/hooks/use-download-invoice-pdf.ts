@@ -34,11 +34,13 @@ export function useDownloadInvoicePdf({ invoiceId, fileName }: UseDownloadInvoic
           throw new Error('Error al generar el PDF');
         }
 
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
+        const arrayBuffer = await res.arrayBuffer();
+        const pdfBlob = new Blob([arrayBuffer], { type: 'application/pdf' });
+        const url = URL.createObjectURL(pdfBlob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = fileName || `Factura-${invoiceId}.pdf`;
+        const rawName = fileName || `Factura-${invoiceId}`;
+        link.download = rawName.endsWith('.pdf') ? rawName : `${rawName}.pdf`;
         document.body.appendChild(link);
         link.click();
         setTimeout(() => {

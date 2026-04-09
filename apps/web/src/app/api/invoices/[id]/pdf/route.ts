@@ -95,10 +95,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       margin: { top: '0', right: '0', bottom: '0', left: '0' },
     });
 
+    // Use RFC 5987 encoding for the filename to ensure all browsers handle it correctly.
+    // The ASCII fallback (filename=) covers older clients; filename*= covers modern ones.
+    const encodedFilename = encodeURIComponent(safeFilename);
     return new NextResponse(new Uint8Array(pdf), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${safeFilename}"`,
+        'Content-Disposition': `attachment; filename="${safeFilename}"; filename*=UTF-8''${encodedFilename}`,
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } finally {
