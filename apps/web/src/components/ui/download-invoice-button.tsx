@@ -1,5 +1,5 @@
 import { Button } from './button';
-import { Download } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import { useDownloadInvoicePdf } from '@/hooks/use-download-invoice-pdf';
 import { cn } from '@/lib/utils';
 
@@ -18,7 +18,7 @@ export function DownloadInvoiceButton({
   variant = 'default',
   size = 'sm',
 }: DownloadInvoiceButtonProps) {
-  const { download } = useDownloadInvoicePdf({ invoiceId, fileName });
+  const { download, isLoading } = useDownloadInvoicePdf({ invoiceId, fileName });
 
   return (
     <Button
@@ -27,9 +27,14 @@ export function DownloadInvoiceButton({
       size={size}
       className={cn(className)}
       onClick={download}
+      disabled={isLoading}
     >
-      <Download className="mr-1.5 h-4 w-4" />
-      Descargar PDF
+      {isLoading ? (
+        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+      ) : (
+        <Download className="mr-1.5 h-4 w-4" />
+      )}
+      {isLoading ? 'Generando...' : 'Descargar PDF'}
     </Button>
   );
 }

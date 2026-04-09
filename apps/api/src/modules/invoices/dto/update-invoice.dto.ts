@@ -7,6 +7,7 @@ import {
   IsArray,
   IsEnum,
   IsIn,
+  IsObject,
   ValidateNested,
   ArrayMinSize,
   ArrayMaxSize,
@@ -115,4 +116,12 @@ export class UpdateInvoiceDto {
   @IsOptional()
   @IsUUID()
   templateId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Override parcial del layout de plantilla para esta factura (ej: ocultar columnas de tabla)',
+  })
+  @IsOptional()
+  @IsObject()
+  layoutOverride?: object;
 }

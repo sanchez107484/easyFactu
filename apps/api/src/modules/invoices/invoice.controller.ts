@@ -83,25 +83,24 @@ export class InvoiceController {
     @Param('id') id: string,
     @Res() res: Response
   ) {
-    const [buffer, invoice] = await Promise.all([
-      this.pdfService.generate(tenantId, id),
-      this.invoiceService.findOne(tenantId, id),
-    ]);
-    const pdfTitle = [invoice.number, invoice.customer?.name].filter(Boolean).join(' - ');
-    const safeFilename = pdfTitle.replace(/[\/\\:*?"<>|]/g, '').trim();
-    res.setHeader('Content-Disposition', `inline; filename="${safeFilename}.pdf"`);
+    const { buffer, filename } = await this.pdfService.generate(tenantId, id);
+    res.setHeader('Content-Disposition', `inline; filename="${filename}.pdf"`);
     res.send(buffer);
   }
 
   @Put(':id')
   @ApiOperation({ summary: 'Actualizar factura (solo borradores)' })
   @ApiOkResponse({ description: 'Factura actualizada correctamente' })
-  update(
+  async update(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
     @Body() dto: UpdateInvoiceDto
   ) {
-    return this.invoiceService.update(tenantId, id, dto);
+    const [result] = await Promise.all([
+      this.invoiceService.update(tenantId, id, dto),
+      this.pdfService.invalidateCache(id),
+    ]);
+    return result;
   }
 
   @Post(':id/confirm')
@@ -158,8 +157,11 @@ export class InvoiceController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Eliminar factura (solo borradores)' })
   @ApiNoContentResponse({ description: 'Factura eliminada correctamente' })
-  remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
-    return this.invoiceService.remove(tenantId, id);
+  async remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    await Promise.all([
+      this.invoiceService.remove(tenantId, id),
+      this.pdfService.invalidateCache(id),
+    ]);
   }
 
   @Patch(':id/notes')

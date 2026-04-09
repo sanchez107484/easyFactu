@@ -68,17 +68,11 @@ import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge'
 import { useInvoiceTemplate, useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useAuthStore } from '@/store/auth-store';
 import { useTenant } from '@/hooks/use-tenant';
-import { cn, resolveUrl } from '@/lib/utils';
+import { cn, resolveUrl, formatCurrency } from '@/lib/utils';
 
 // ==================== CONSTANTS ====================
 
 // ==================== HELPERS ====================
-
-function formatCurrency(amount: number | string | null | undefined): string {
-  const n = typeof amount === 'string' ? parseFloat(amount) : (amount ?? 0);
-  if (isNaN(n)) return '—';
-  return n.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
-}
 
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return '—';
@@ -184,7 +178,32 @@ export default function FacturaDetailPage() {
   const { data: specificTemplate } = useInvoiceTemplate(templateId);
   const { data: defaultTemplate } = useDefaultTemplate();
   // When the invoice has no templateId (existing data), fall back to the tenant's default template
-  const template = specificTemplate ?? defaultTemplate;
+  const baseTemplate = specificTemplate ?? defaultTemplate;
+
+  // Apply per-invoice layoutOverride on top of the base template
+  const invoiceLayoutOverride = (invoice as any)?.layoutOverride as
+    | {
+        itemsTable?: Partial<{
+          showUnitPrice: boolean;
+          showTaxColumn: boolean;
+          showLineTotal: boolean;
+        }>;
+      }
+    | null
+    | undefined;
+  const template =
+    baseTemplate && invoiceLayoutOverride?.itemsTable
+      ? {
+          ...baseTemplate,
+          layout: {
+            ...baseTemplate.layout,
+            itemsTable: {
+              ...baseTemplate.layout.itemsTable,
+              ...invoiceLayoutOverride.itemsTable,
+            },
+          },
+        }
+      : baseTemplate;
 
   const paymentDetails = (invoice as any)?.paymentDetails as PaymentDetails | undefined;
   const activePaymentMethod = invoice?.paymentMethod as string | null | undefined;
@@ -564,15 +583,21 @@ export default function FacturaDetailPage() {
                         Cant.
                       </th>
                     )}
-                    <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
-                      Precio
-                    </th>
-                    <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
-                      IVA
-                    </th>
-                    <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
-                      Subtotal
-                    </th>
+                    {(template?.layout.itemsTable.showUnitPrice ?? true) && (
+                      <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
+                        Precio
+                      </th>
+                    )}
+                    {(template?.layout.itemsTable.showTaxColumn ?? true) && (
+                      <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
+                        IVA
+                      </th>
+                    )}
+                    {(template?.layout.itemsTable.showLineTotal ?? true) && (
+                      <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
+                        Subtotal
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -584,15 +609,21 @@ export default function FacturaDetailPage() {
                           {line.hideQty ? '' : parseNum(line.quantity)}
                         </td>
                       )}
-                      <td className="py-2.5 text-right tabular-nums">
-                        {formatCurrency(line.unitPrice)}
-                      </td>
-                      <td className="py-2.5 text-right tabular-nums text-muted-foreground">
-                        {parseNum(line.taxRate)}%
-                      </td>
-                      <td className="py-2.5 text-right tabular-nums font-medium">
-                        {formatCurrency(line.subtotal)}
-                      </td>
+                      {(template?.layout.itemsTable.showUnitPrice ?? true) && (
+                        <td className="py-2.5 text-right tabular-nums">
+                          {formatCurrency(line.unitPrice)}
+                        </td>
+                      )}
+                      {(template?.layout.itemsTable.showTaxColumn ?? true) && (
+                        <td className="py-2.5 text-right tabular-nums text-muted-foreground">
+                          {parseNum(line.taxRate)}%
+                        </td>
+                      )}
+                      {(template?.layout.itemsTable.showLineTotal ?? true) && (
+                        <td className="py-2.5 text-right tabular-nums font-medium">
+                          {formatCurrency(line.subtotal)}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

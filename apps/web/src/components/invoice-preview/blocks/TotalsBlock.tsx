@@ -1,12 +1,9 @@
 import { InvoiceLayout, Invoice } from '@easyfactura/shared-types';
+import { formatCurrency } from '@/lib/utils';
 
 interface TotalsBlockProps {
   layout: InvoiceLayout;
   invoice: Invoice;
-}
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value);
 }
 
 interface TotalsRowProps {

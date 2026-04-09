@@ -1,46 +1,68 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import {
   DEFAULT_INVOICE_LAYOUT,
   Invoice,
+  InvoiceLayout,
+  LayoutOverride,
   InvoiceTemplate,
   Tenant,
 } from '@easyfactura/shared-types';
 import PDFDocument from 'pdfkit';
 import { readFileSync } from 'fs';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { PdfStorageService } from './pdf-storage.service';
+import { formatCurrency } from '../../../common/utils/format';
 
 @Injectable()
 export class InvoicePdfService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(InvoicePdfService.name);
 
-  async generate(tenantId: string, invoiceId: string): Promise<Buffer> {
-    const invoice = await this.prisma.invoice.findFirst({
-      where: { id: invoiceId, tenantId },
-      include: {
-        customer: true,
-        lines: { orderBy: { sortOrder: 'asc' } },
-        series: true,
-      },
-    });
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pdfStorage: PdfStorageService
+  ) {}
+
+  async generate(
+    tenantId: string,
+    invoiceId: string
+  ): Promise<{ buffer: Buffer; filename: string }> {
+    // Fetch invoice and tenant in parallel to minimize round trips
+    const [invoice, tenant] = await Promise.all([
+      this.prisma.invoice.findFirst({
+        where: { id: invoiceId, tenantId },
+        include: {
+          customer: true,
+          lines: { orderBy: { sortOrder: 'asc' } },
+          series: true,
+          template: true,
+        },
+      }),
+      this.prisma.tenant.findUnique({ where: { id: tenantId } }),
+    ]);
 
     if (!invoice) {
       throw new NotFoundException(`Factura con id ${invoiceId} no encontrada`);
     }
-
-    const [tenant, template] = await Promise.all([
-      this.prisma.tenant.findUnique({ where: { id: tenantId } }),
-      this.prisma.invoiceTemplate.findFirst({
-        where: { tenantId, isDefault: true },
-      }),
-    ]);
-
     if (!tenant) {
       throw new NotFoundException(`Tenant ${tenantId} no encontrado`);
     }
 
-    const resolvedTemplate = template ?? {
+    const filename = this.buildFilename(invoice);
+
+    // Cache hit: only confirmed invoices are cached (drafts change frequently)
+    const isCacheable =
+      invoice.status === 'CONFIRMED' || invoice.status === 'PAID' || invoice.status === 'SENT';
+    if (isCacheable && invoice.pdfUrl) {
+      const cached = await this.pdfStorage.download(invoice.pdfUrl);
+      if (cached) {
+        this.logger.debug(`PDF cache hit for invoice ${invoiceId}`);
+        return { buffer: cached, filename };
+      }
+    }
+
+    const resolvedTemplate = invoice.template ?? {
       id: 'default',
       tenantId,
       name: 'Plantilla predeterminada',
@@ -50,11 +72,56 @@ export class InvoicePdfService {
       updatedAt: new Date().toISOString(),
     };
 
-    return this.renderPdf(
+    const buffer = await this.renderPdf(
       invoice as unknown as Invoice,
       resolvedTemplate as unknown as InvoiceTemplate,
       tenant as unknown as Tenant
     );
+
+    // Store in cache for confirmed/paid/sent invoices (fire and forget)
+    if (isCacheable && this.pdfStorage.isEnabled) {
+      this.pdfStorage
+        .upload(tenantId, invoiceId, buffer)
+        .then((storagePath) =>
+          this.prisma.invoice.update({
+            where: { id: invoiceId },
+            data: { pdfUrl: storagePath },
+          })
+        )
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          this.logger.error(`Failed to cache PDF for invoice ${invoiceId}: ${msg}`);
+        });
+    }
+
+    return { buffer, filename };
+  }
+
+  private buildFilename(invoice: {
+    number: string | null;
+    customer?: { name: string } | null;
+  }): string {
+    const raw = [invoice.number, invoice.customer?.name].filter(Boolean).join(' - ');
+    return raw.replace(/[/\\:*?"<>|]/g, '').trim() || 'factura';
+  }
+
+  /**
+   * Invalidates the cached PDF for an invoice (call after update or re-confirmation).
+   */
+  async invalidateCache(invoiceId: string): Promise<void> {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      select: { pdfUrl: true },
+    });
+    if (!invoice?.pdfUrl) return;
+
+    await Promise.all([
+      this.pdfStorage.delete(invoice.pdfUrl),
+      this.prisma.invoice.update({
+        where: { id: invoiceId },
+        data: { pdfUrl: null },
+      }),
+    ]);
   }
 
   async generatePreview(tenantId: string, templateId: string): Promise<Buffer> {
@@ -91,6 +158,19 @@ export class InvoicePdfService {
     const doc = new PDFDocument({ size: 'A4', margin: 40, info: { Title: pdfTitle } });
     const buffers: Buffer[] = [];
     doc.on('data', buffers.push.bind(buffers));
+
+    // Resolve effective itemsTable config (template layout → invoice layoutOverride)
+    const templateItemsTable =
+      (template?.layout as InvoiceLayout)?.itemsTable ?? DEFAULT_INVOICE_LAYOUT.itemsTable;
+    const overrideItemsTable = (invoice.layoutOverride as LayoutOverride)?.itemsTable;
+    const tableConfig = {
+      ...DEFAULT_INVOICE_LAYOUT.itemsTable,
+      ...templateItemsTable,
+      ...overrideItemsTable,
+    };
+    const showUnitPrice = tableConfig.showUnitPrice ?? true;
+    const showTaxColumn = tableConfig.showTaxColumn ?? true;
+    const showLineTotal = tableConfig.showLineTotal ?? true;
 
     // Logo
     if (logoBuffer) {
@@ -129,13 +209,21 @@ export class InvoicePdfService {
     doc.moveDown(1);
     doc.fontSize(12).font('Helvetica-Bold').text('Conceptos:', 40, undefined);
     doc.fontSize(10);
-    doc.text('Descripción                Cantidad   Precio   IVA   Total');
+    const headerParts = ['Descripción'.padEnd(25)];
+    headerParts.push('Cant.'.padStart(5));
+    if (showUnitPrice) headerParts.push('Precio'.padStart(8));
+    if (showTaxColumn) headerParts.push('IVA'.padStart(5));
+    if (showLineTotal) headerParts.push('Total'.padStart(8));
+    doc.text(headerParts.join('  '));
     doc.moveDown(0.2);
     if (Array.isArray(invoice.lines)) {
       invoice.lines.forEach((line) => {
-        doc.text(
-          `${(line.description || '').padEnd(25).slice(0, 25)}  ${line.quantity?.toString().padStart(3)}   ${line.unitPrice?.toFixed(2).padStart(7)}   ${line.taxRate?.toFixed(0).padStart(2)}%   ${line.lineTotal?.toFixed(2).padStart(7)}`
-        );
+        const rowParts = [(line.description || '').padEnd(25).slice(0, 25)];
+        rowParts.push((line.quantity?.toString() ?? '').padStart(5));
+        if (showUnitPrice) rowParts.push(formatCurrency(line.unitPrice).padStart(12));
+        if (showTaxColumn) rowParts.push(`${line.taxRate?.toFixed(0) ?? ''}%`.padStart(5));
+        if (showLineTotal) rowParts.push(formatCurrency(line.lineTotal).padStart(12));
+        doc.text(rowParts.join('  '));
       });
     }
 
@@ -143,11 +231,11 @@ export class InvoicePdfService {
     doc.moveDown(1);
     doc.fontSize(12).font('Helvetica-Bold').text('Totales:', 40, undefined);
     doc.fontSize(10);
-    doc.text(`Subtotal: ${invoice.subtotal?.toFixed(2) || '0.00'} €`);
-    doc.text(`IVA: ${invoice.taxTotal?.toFixed(2) || '0.00'} €`);
-    if (invoice.irpfTotal) doc.text(`IRPF: ${invoice.irpfTotal.toFixed(2)} €`);
-    if (invoice.discountAmount) doc.text(`Descuento: ${invoice.discountAmount.toFixed(2)} €`);
-    doc.text(`Total: ${invoice.total?.toFixed(2) || '0.00'} €`);
+    doc.text(`Subtotal: ${formatCurrency(invoice.subtotal)}`);
+    doc.text(`IVA: ${formatCurrency(invoice.taxTotal)}`);
+    if (invoice.irpfTotal) doc.text(`IRPF: ${formatCurrency(invoice.irpfTotal)}`);
+    if (invoice.discountAmount) doc.text(`Descuento: ${formatCurrency(invoice.discountAmount)}`);
+    doc.text(`Total: ${formatCurrency(invoice.total)}`);
 
     // Notas
     if (invoice.notes) {

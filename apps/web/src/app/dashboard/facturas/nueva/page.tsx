@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -71,6 +71,7 @@ import {
   PaymentDetailsValues,
 } from '@/components/facturas/PaymentDetailsFields';
 import { SaveAsDefaultBanner } from '@/components/facturas/SaveAsDefaultBanner';
+import { Switch } from '@/components/ui/switch';
 import { useInvoiceFormKeyDown } from '@/hooks/use-invoice-form-key-down';
 
 // ==================== CONSTANTS ====================
@@ -228,6 +229,7 @@ function InvoiceForm({
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [pendingDraftId, setPendingDraftId] = useState<string | null>(editDraftId ?? null);
   const [showQuickClient, setShowQuickClient] = useState(false);
+  const [simplifyTable, setSimplifyTable] = useState(false);
 
   const isProforma = invoiceType === 'proforma';
 
@@ -285,6 +287,38 @@ function InvoiceForm({
   const selectedCustomer = customers.find((c) => c.id === watchedValues.customerId);
   const activePaymentMethod = watchedValues.paymentMethod as PaymentMethod | undefined;
 
+  // ── Simplify-table toggle ──────────────────────────────────────────────────
+  const linesData = watchedValues.lines ?? [];
+  const allLinesSameTax =
+    linesData.length > 0 && linesData.every((l) => l.taxRate === linesData[0].taxRate);
+  const showSimplifyToggle = linesData.length === 1 || (linesData.length > 1 && allLinesSameTax);
+
+  // Reset when toggle becomes irrelevant (e.g. user adds line with different VAT)
+  useEffect(() => {
+    if (!showSimplifyToggle) setSimplifyTable(false);
+  }, [showSimplifyToggle]);
+
+  const previewTemplate: typeof effectiveTemplate = effectiveTemplate
+    ? {
+        ...effectiveTemplate,
+        layout: {
+          ...effectiveTemplate.layout,
+          itemsTable: {
+            ...effectiveTemplate.layout.itemsTable,
+            showUnitPrice: simplifyTable
+              ? false
+              : (effectiveTemplate.layout.itemsTable.showUnitPrice ?? true),
+            showTaxColumn: simplifyTable
+              ? false
+              : (effectiveTemplate.layout.itemsTable.showTaxColumn ?? true),
+            showLineTotal: simplifyTable
+              ? false
+              : (effectiveTemplate.layout.itemsTable.showLineTotal ?? true),
+          },
+        },
+      }
+    : null;
+
   // ==================== HANDLERS ====================
 
   const handleTypeSelect = useCallback((type: InvoiceTypeOption, template?: InvoiceTemplate) => {
@@ -325,11 +359,15 @@ function InvoiceForm({
 
   const handleSaveDraft = async (data: FormData) => {
     try {
+      const layoutOverride = simplifyTable
+        ? { itemsTable: { showUnitPrice: false, showTaxColumn: false, showLineTotal: false } }
+        : undefined;
       const input = buildCreateInput({
         ...data,
         seriesId: data.seriesId || defaultSeriesId,
         invoiceType: invoiceType ?? 'standard',
         templateId: defaultTemplate?.id,
+        layoutOverride,
       });
       if (editDraftId) {
         await updateMutation.mutateAsync({ id: editDraftId, data: input });
@@ -362,10 +400,14 @@ function InvoiceForm({
 
     if (isProforma) {
       try {
+        const layoutOverride = simplifyTable
+          ? { itemsTable: { showUnitPrice: false, showTaxColumn: false, showLineTotal: false } }
+          : undefined;
         const input = buildCreateInput({
           ...resolvedData,
           invoiceType: 'proforma',
           templateId: defaultTemplate?.id,
+          layoutOverride,
         });
         if (editDraftId) {
           await updateMutation.mutateAsync({ id: editDraftId, data: input });
@@ -384,10 +426,14 @@ function InvoiceForm({
 
     let draftId = pendingDraftId;
     try {
+      const layoutOverride = simplifyTable
+        ? { itemsTable: { showUnitPrice: false, showTaxColumn: false, showLineTotal: false } }
+        : undefined;
       const input = buildCreateInput({
         ...resolvedData,
         invoiceType: invoiceType ?? 'standard',
         templateId: defaultTemplate?.id,
+        layoutOverride,
       });
       if (editDraftId) {
         await updateMutation.mutateAsync({ id: editDraftId, data: input });
@@ -803,6 +849,26 @@ function InvoiceForm({
                     <Plus className="h-4 w-4" />
                     Añadir línea
                   </button>
+
+                  {/* ── Simplify toggle ── */}
+                  {showSimplifyToggle && (
+                    <div className="flex items-center justify-between rounded-lg border border-dashed bg-muted/30 px-3 py-2.5">
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-medium leading-tight">
+                          Simplificar tabla en la factura
+                        </p>
+                        <p className="text-[11px] text-muted-foreground leading-tight">
+                          Oculta precio unitario, % IVA y total por línea (el desglose de totales
+                          siempre aparece)
+                        </p>
+                      </div>
+                      <Switch
+                        checked={simplifyTable}
+                        onCheckedChange={setSimplifyTable}
+                        aria-label="Simplificar tabla de líneas"
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -871,7 +937,7 @@ function InvoiceForm({
           <div className="w-[40%] flex flex-col overflow-hidden">
             <LiveInvoicePreview
               invoice={previewInvoice}
-              template={effectiveTemplate}
+              template={previewTemplate}
               tenant={previewTenant}
               activeFieldSection={activeSection}
               onSectionClick={handlePreviewSectionClick}

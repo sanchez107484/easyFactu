@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { getAccessToken } from '@/lib/api-client';
 
@@ -8,41 +8,54 @@ interface UseDownloadInvoicePdfOptions {
 }
 
 export function useDownloadInvoicePdf({ invoiceId, fileName }: UseDownloadInvoicePdfOptions) {
-  const download = useCallback(async () => {
-    try {
-      // Usar el mismo método que Axios/apiClient para obtener el token
-      const token = getAccessToken();
-      const res = await fetch(`/api/invoices/${invoiceId}/pdf`, {
-        method: 'GET',
-        headers: {
-          Accept: 'application/pdf',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        credentials: 'include',
-      });
-      if (!res.ok) {
-        if (res.status === 401) {
-          toast.error('Sesión caducada. Por favor, inicia sesión de nuevo.');
-          return;
-        }
-        throw new Error('Error al descargar el PDF');
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName || `Factura-${invoiceId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 100);
-      toast.success('Factura descargada correctamente');
-    } catch (error) {
-      toast.error('Error al descargar el PDF');
-    }
-  }, [invoiceId, fileName]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  return { download };
+  const download = useCallback(async () => {
+    if (isLoading) return;
+
+    const token = getAccessToken();
+
+    const fetchPdf = async (): Promise<void> => {
+      setIsLoading(true);
+      try {
+        const res = await fetch(`/api/invoices/${invoiceId}/pdf`, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/pdf',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          credentials: 'include',
+        });
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            throw new Error('Sesión caducada. Por favor, inicia sesión de nuevo.');
+          }
+          throw new Error('Error al generar el PDF');
+        }
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName || `Factura-${invoiceId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 100);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    toast.promise(fetchPdf(), {
+      loading: 'Generando PDF...',
+      success: 'PDF descargado correctamente',
+      error: (err: unknown) => (err instanceof Error ? err.message : 'Error al descargar el PDF'),
+    });
+  }, [invoiceId, fileName, isLoading]);
+
+  return { download, isLoading };
 }

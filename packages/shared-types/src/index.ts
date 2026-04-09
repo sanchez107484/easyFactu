@@ -429,6 +429,12 @@ export interface Invoice {
    */
   templateId?: string | null;
   /**
+   * Override parcial del layout de la plantilla (almacenado por factura).
+   * Permite que configuraciones como "simplificar tabla" se persistan por factura
+   * sin modificar la plantilla global del tenant.
+   */
+  layoutOverride?: LayoutOverride | null;
+  /**
    * Plantilla asociada (opcional, solo si se incluye en el include de Prisma)
    */
   template?: InvoiceTemplate | null;
@@ -491,6 +497,11 @@ export interface CreateInvoiceInput {
    * Detalles adicionales del método de pago (según tipo)
    */
   paymentDetails?: Record<string, any>;
+  /**
+   * Override parcial del layout de plantilla para esta factura concreta.
+   * Se persiste en la BD y se aplica al generar el PDF.
+   */
+  layoutOverride?: LayoutOverride;
 }
 
 export interface UpdateInvoiceInput {
@@ -513,6 +524,10 @@ export interface UpdateInvoiceInput {
    * Detalles adicionales del método de pago (según tipo)
    */
   paymentDetails?: Record<string, any>;
+  /**
+   * Override parcial del layout de plantilla para esta factura concreta.
+   */
+  layoutOverride?: LayoutOverride;
 }
 
 export interface QueryInvoicesInput {
@@ -593,6 +608,9 @@ export interface InvoiceLayout {
     style: 'grid' | 'lines' | 'minimal';
     showDiscount: boolean;
     showReference: boolean;
+    showUnitPrice: boolean;
+    showTaxColumn: boolean;
+    showLineTotal: boolean;
   };
   totals: {
     showTaxBreakdown: boolean;
@@ -608,6 +626,10 @@ export interface InvoiceLayout {
     showLabel: boolean;
   };
 }
+
+export type LayoutOverride = {
+  itemsTable?: Partial<InvoiceLayout['itemsTable']>;
+};
 
 // ==================== INVOICE DEFAULTS ====================
 
@@ -642,7 +664,14 @@ export const DEFAULT_INVOICE_LAYOUT: InvoiceLayout = {
   },
   logo: { visible: true, position: 'top-left', widthMm: 40 },
   header: { senderSide: 'left', showPhone: true, showIban: false },
-  itemsTable: { style: 'lines', showDiscount: false, showReference: false },
+  itemsTable: {
+    style: 'lines',
+    showDiscount: false,
+    showReference: false,
+    showUnitPrice: true,
+    showTaxColumn: true,
+    showLineTotal: true,
+  },
   totals: { showTaxBreakdown: true, showIrpf: true },
   footer: {
     text: 'Gracias por confiar en nosotros.',

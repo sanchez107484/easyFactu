@@ -266,6 +266,7 @@ model Invoice {
   convertedToInvoiceId String?        @map("converted_to_invoice_id")
 
   templateId          String?        @map("template_id")
+  layoutOverride      Json?          @map("layout_override")
   pdfUrl              String?        @map("pdf_url")
   hash                String?        @unique
   prevHash            String?        @map("prev_hash")

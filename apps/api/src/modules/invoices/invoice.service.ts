@@ -147,6 +147,7 @@ export class InvoiceService {
           status: invoiceStatus,
           invoiceType: dto.invoiceType ?? 'standard',
           templateId: dto.templateId ?? null,
+          layoutOverride: dto.layoutOverride ? { ...dto.layoutOverride } : undefined,
           validUntil: isQuote && dto.validUntil ? new Date(dto.validUntil) : null,
           quoteAcceptanceStatus: isQuote ? PrismaQuoteAcceptanceStatus.PENDING : null,
           subtotal: totals.subtotal,
@@ -313,44 +314,50 @@ export class InvoiceService {
         await tx.invoiceLine.deleteMany({ where: { invoiceId: id } });
       }
 
+      const updateData: Prisma.InvoiceUncheckedUpdateInput = {
+        customerId,
+        seriesId: seriesId as string,
+        // Auto-correct status if a proforma was erroneously saved as DRAFT
+        ...(invoice.invoiceType === 'proforma' ? { status: PrismaInvoiceStatus.PROFORMA } : {}),
+        // Auto-correct status if a quote was erroneously saved as DRAFT
+        ...(invoice.invoiceType === 'quote' ? { status: PrismaInvoiceStatus.QUOTE } : {}),
+        issueDate: dto.issueDate ? new Date(dto.issueDate) : undefined,
+        dueDate:
+          dto.dueDate !== undefined ? (dto.dueDate ? new Date(dto.dueDate) : null) : undefined,
+        invoiceType: dto.invoiceType !== undefined ? dto.invoiceType : undefined,
+        templateId: dto.templateId !== undefined ? dto.templateId : undefined,
+        layoutOverride:
+          dto.layoutOverride !== undefined
+            ? dto.layoutOverride
+              ? { ...dto.layoutOverride }
+              : Prisma.DbNull
+            : undefined,
+        discountPercent: dto.discountPercent !== undefined ? dto.discountPercent : undefined,
+        discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
+        irpfPercent: dto.irpfPercent !== undefined ? dto.irpfPercent : undefined,
+        irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+        paymentMethod: (dto.paymentMethod !== undefined ? dto.paymentMethod : null) as any,
+        notes: dto.notes !== undefined ? dto.notes : undefined,
+        ...(dto.paymentDetails !== undefined ? { paymentDetails: { ...dto.paymentDetails } } : {}),
+        ...(dto.validUntil !== undefined
+          ? { validUntil: dto.validUntil ? new Date(dto.validUntil) : null }
+          : {}),
+        ...(dto.quoteAcceptanceStatus !== undefined
+          ? { quoteAcceptanceStatus: dto.quoteAcceptanceStatus as PrismaQuoteAcceptanceStatus }
+          : {}),
+        subtotal: totals.subtotal,
+        taxTotal: totals.taxTotal,
+        total: totals.total,
+        ...(dto.lines && {
+          lines: {
+            create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
+          },
+        }),
+      };
+
       return tx.invoice.update({
         where: { id },
-        data: {
-          customerId,
-          seriesId,
-          // Auto-correct status if a proforma was erroneously saved as DRAFT
-          ...(invoice.invoiceType === 'proforma' ? { status: PrismaInvoiceStatus.PROFORMA } : {}),
-          // Auto-correct status if a quote was erroneously saved as DRAFT
-          ...(invoice.invoiceType === 'quote' ? { status: PrismaInvoiceStatus.QUOTE } : {}),
-          issueDate: dto.issueDate ? new Date(dto.issueDate) : undefined,
-          dueDate:
-            dto.dueDate !== undefined ? (dto.dueDate ? new Date(dto.dueDate) : null) : undefined,
-          invoiceType: dto.invoiceType !== undefined ? dto.invoiceType : undefined,
-          templateId: dto.templateId !== undefined ? dto.templateId : undefined,
-          discountPercent: dto.discountPercent !== undefined ? dto.discountPercent : undefined,
-          discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
-          irpfPercent: dto.irpfPercent !== undefined ? dto.irpfPercent : undefined,
-          irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
-          paymentMethod: (dto.paymentMethod !== undefined ? dto.paymentMethod : null) as any,
-          notes: dto.notes !== undefined ? dto.notes : undefined,
-          ...(dto.paymentDetails !== undefined
-            ? { paymentDetails: { ...dto.paymentDetails } }
-            : {}),
-          ...(dto.validUntil !== undefined
-            ? { validUntil: dto.validUntil ? new Date(dto.validUntil) : null }
-            : {}),
-          ...(dto.quoteAcceptanceStatus !== undefined
-            ? { quoteAcceptanceStatus: dto.quoteAcceptanceStatus as PrismaQuoteAcceptanceStatus }
-            : {}),
-          subtotal: totals.subtotal,
-          taxTotal: totals.taxTotal,
-          total: totals.total,
-          ...(dto.lines && {
-            lines: {
-              create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
-            },
-          }),
-        },
+        data: updateData,
         include: {
           lines: { orderBy: { sortOrder: 'asc' } },
           customer: true,

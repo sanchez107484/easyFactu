@@ -31,7 +31,7 @@ import { useCustomers } from '@/hooks/use-customers';
 import { useProducts } from '@/hooks/use-products';
 import { Invoice, InvoiceStatus } from '@easyfactura/shared-types';
 import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 
 // ==================== HELPERS ====================
 
@@ -49,10 +49,6 @@ const MONTH_LABELS = [
   'Nov',
   'Dic',
 ];
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value);
-}
 
 function getGreeting(): string {
   const hour = new Date().getHours();

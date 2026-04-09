@@ -211,7 +211,14 @@ const BASE_TEMPLATES: {
         textSecondary: '#64748b',
       },
       typography: { fontFamily: 'helvetica', baseFontSize: 10 },
-      itemsTable: { style: 'grid', showDiscount: false, showReference: false },
+      itemsTable: {
+        style: 'grid',
+        showDiscount: false,
+        showReference: false,
+        showUnitPrice: true,
+        showTaxColumn: true,
+        showLineTotal: true,
+      },
       logo: { visible: true, position: 'top-left', widthMm: 40 },
       header: { senderSide: 'left', showPhone: true, showIban: true },
       totals: { showTaxBreakdown: true, showIrpf: false },
@@ -230,7 +237,14 @@ const BASE_TEMPLATES: {
         textSecondary: '#64748b',
       },
       typography: { fontFamily: 'helvetica', baseFontSize: 10 },
-      itemsTable: { style: 'minimal', showDiscount: false, showReference: false },
+      itemsTable: {
+        style: 'minimal',
+        showDiscount: false,
+        showReference: false,
+        showUnitPrice: true,
+        showTaxColumn: true,
+        showLineTotal: true,
+      },
       logo: { visible: true, position: 'top-center', widthMm: 45 },
       header: { senderSide: 'left', showPhone: false, showIban: true },
       totals: { showTaxBreakdown: false, showIrpf: false },
@@ -249,7 +263,14 @@ const BASE_TEMPLATES: {
         textSecondary: '#6b7280',
       },
       typography: { fontFamily: 'times-roman', baseFontSize: 11 },
-      itemsTable: { style: 'lines', showDiscount: false, showReference: false },
+      itemsTable: {
+        style: 'lines',
+        showDiscount: false,
+        showReference: false,
+        showUnitPrice: true,
+        showTaxColumn: true,
+        showLineTotal: true,
+      },
       logo: { visible: true, position: 'top-right', widthMm: 35 },
       header: { senderSide: 'left', showPhone: true, showIban: true },
       totals: { showTaxBreakdown: true, showIrpf: true },
@@ -272,7 +293,14 @@ const BASE_TEMPLATES: {
         textSecondary: '#64748b',
       },
       typography: { fontFamily: 'helvetica', baseFontSize: 10 },
-      itemsTable: { style: 'grid', showDiscount: true, showReference: false },
+      itemsTable: {
+        style: 'grid',
+        showDiscount: true,
+        showReference: false,
+        showUnitPrice: true,
+        showTaxColumn: true,
+        showLineTotal: true,
+      },
       logo: { visible: true, position: 'top-left', widthMm: 50 },
       header: { senderSide: 'right', showPhone: true, showIban: true },
       totals: { showTaxBreakdown: true, showIrpf: false },
@@ -642,6 +670,24 @@ function SettingsPanel({
             label="Mostrar columna de descuento"
             checked={layout.itemsTable.showDiscount}
             onChange={(v) => patchItemsTable({ showDiscount: v })}
+          />
+          <ToggleRow
+            label="Mostrar precio unitario en cada línea"
+            description="Útil para facturas de un único servicio"
+            checked={layout.itemsTable.showUnitPrice ?? true}
+            onChange={(v) => patchItemsTable({ showUnitPrice: v })}
+          />
+          <ToggleRow
+            label="Mostrar % de IVA en cada línea"
+            description="El desglose de IVA en totales siempre aparece"
+            checked={layout.itemsTable.showTaxColumn ?? true}
+            onChange={(v) => patchItemsTable({ showTaxColumn: v })}
+          />
+          <ToggleRow
+            label="Mostrar total por línea"
+            description="Útil cuando todas las líneas tienen el mismo valor"
+            checked={layout.itemsTable.showLineTotal ?? true}
+            onChange={(v) => patchItemsTable({ showLineTotal: v })}
           />
         </div>
       </SectionCard>

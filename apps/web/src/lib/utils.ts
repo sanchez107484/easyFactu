@@ -5,11 +5,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(amount);
+export function formatCurrency(amount: number | string | null | undefined): string {
+  const n = Number(amount ?? 0);
+  if (isNaN(n)) return '—';
+  return (
+    new Intl.NumberFormat('es-ES', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: true,
+    }).format(n) + '\u00A0€'
+  );
 }
 
 export function formatDate(date: string | Date): string {
