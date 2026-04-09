@@ -379,12 +379,20 @@ export function createInvoicePdfElement(
             </View>
           )}
 
-          {layout.totals.showTaxBreakdown && (
-            <View style={styles.totalsRow}>
-              <Text style={styles.totalsLabel}>IVA</Text>
-              <Text style={styles.totalsValue}>{formatCurrency(invoice.taxTotal)}</Text>
-            </View>
-          )}
+          {layout.totals.showTaxBreakdown && (() => {
+            const lines = invoice.lines ?? [];
+            const taxRates = [...new Set(lines.map((l) => l.taxRate))];
+            const ivaLabel =
+              taxRates.length === 1
+                ? `IVA (${formatPercent(taxRates[0])})`
+                : 'IVA';
+            return (
+              <View style={styles.totalsRow}>
+                <Text style={styles.totalsLabel}>{ivaLabel}</Text>
+                <Text style={styles.totalsValue}>{formatCurrency(invoice.taxTotal)}</Text>
+              </View>
+            );
+          })()}
 
           {(invoice.irpfTotal ?? 0) > 0 && (
             <View style={styles.totalsRow}>

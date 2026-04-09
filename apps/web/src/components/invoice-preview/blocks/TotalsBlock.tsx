@@ -36,6 +36,9 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
   const { showTaxBreakdown, showIrpf } = layout.totals;
   const { primary } = layout.colors;
 
+  const taxRates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
+  const ivaLabel = taxRates.length === 1 ? `IVA (${taxRates[0]}%)` : 'IVA';
+
   return (
     <div className="flex justify-end">
       <div className="w-52">
@@ -48,7 +51,9 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
           />
         )}
 
-        {showTaxBreakdown && <TotalsRow label="IVA" value={formatCurrency(invoice.taxTotal)} />}
+        {showTaxBreakdown && (
+          <TotalsRow label={ivaLabel} value={formatCurrency(invoice.taxTotal)} />
+        )}
 
         {showIrpf && (invoice.irpfTotal ?? 0) > 0 && (
           <TotalsRow

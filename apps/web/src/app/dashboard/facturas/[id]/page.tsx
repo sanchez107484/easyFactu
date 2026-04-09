@@ -450,8 +450,12 @@ export default function FacturaDetailPage() {
                     {formatCurrency(invoice.total)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Base: {formatCurrency(invoice.subtotal)} · IVA:{' '}
-                    {formatCurrency(invoice.taxTotal)}
+                    Base: {formatCurrency(invoice.subtotal)} ·{' '}
+                    {(() => {
+                      const rates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
+                      return rates.length === 1 ? `IVA (${rates[0]}%)` : 'IVA';
+                    })()}
+                    : {formatCurrency(invoice.taxTotal)}
                     {parseNum(invoice.irpfPercent) > 0 && (
                       <> · IRPF: −{formatCurrency(invoice.irpfTotal)}</>
                     )}
@@ -641,7 +645,13 @@ export default function FacturaDetailPage() {
                     </span>
                   </div>
                 )}
-                <DataRow label="IVA" value={formatCurrency(invoice.taxTotal)} />
+                <DataRow
+                  label={(() => {
+                    const rates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
+                    return rates.length === 1 ? `IVA (${rates[0]}%)` : 'IVA';
+                  })()}
+                  value={formatCurrency(invoice.taxTotal)}
+                />
                 {parseNum(invoice.irpfPercent) > 0 && (
                   <div className="flex justify-between items-baseline py-1">
                     <span className="text-sm text-rectificativa-600">
