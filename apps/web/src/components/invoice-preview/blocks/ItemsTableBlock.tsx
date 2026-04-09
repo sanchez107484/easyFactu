@@ -69,7 +69,7 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
           return (
             <tr key={line.id} className="hover:bg-gray-50/50">
               {showReference && <td className={tdClass}>{line.productId ?? '—'}</td>}
-              <td className={tdClass}>{line.description}</td>
+              <td className={cn(tdClass, 'whitespace-pre-wrap')}>{line.description}</td>
               {showQtyCol && (
                 <td className={cn(tdClass, 'text-right')}>{hideQty ? '' : line.quantity}</td>
               )}
