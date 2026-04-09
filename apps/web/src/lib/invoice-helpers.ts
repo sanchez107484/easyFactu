@@ -1,5 +1,6 @@
 import {
   Invoice,
+  LayoutOverride,
   InvoiceStatus,
   Customer,
   PaymentMethod,
@@ -30,6 +31,7 @@ export interface InvoiceFormData {
   invoiceType?: string;
   seriesId?: string;
   templateId?: string;
+  layoutOverride?: LayoutOverride;
   discountPercent?: number;
   irpfPercent?: number;
   paymentMethod?: PaymentMethod;
@@ -151,6 +153,7 @@ export function buildCreateInput(data: InvoiceFormData) {
     customerId: data.customerId,
     seriesId: data.seriesId || undefined,
     templateId: data.templateId || undefined,
+    layoutOverride: data.layoutOverride || undefined,
     issueDate: data.issueDate,
     dueDate: data.dueDate || undefined,
     invoiceType: data.invoiceType ?? 'standard',

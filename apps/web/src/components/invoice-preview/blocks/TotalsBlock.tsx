@@ -1,12 +1,9 @@
 import { InvoiceLayout, Invoice } from '@easyfactura/shared-types';
+import { formatCurrency } from '@/lib/utils';
 
 interface TotalsBlockProps {
   layout: InvoiceLayout;
   invoice: Invoice;
-}
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value);
 }
 
 interface TotalsRowProps {
@@ -39,24 +36,29 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
   const { showTaxBreakdown, showIrpf } = layout.totals;
   const { primary } = layout.colors;
 
+  const taxRates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
+  const ivaLabel = taxRates.length === 1 ? `IVA (${taxRates[0]}%)` : 'IVA';
+
   return (
     <div className="flex justify-end">
       <div className="w-52">
-        <TotalsRow label="Base imponible" value={formatCurrency(invoice.subtotal)} />
+        <TotalsRow label="Base imponible total" value={formatCurrency(invoice.subtotal)} />
 
-        {invoice.discountAmount && invoice.discountAmount > 0 && (
+        {(invoice.discountAmount ?? 0) > 0 && (
           <TotalsRow
             label={`Descuento (${invoice.discountPercent ?? 0}%)`}
-            value={`-${formatCurrency(invoice.discountAmount)}`}
+            value={`-${formatCurrency(invoice.discountAmount ?? 0)}`}
           />
         )}
 
-        {showTaxBreakdown && <TotalsRow label="IVA" value={formatCurrency(invoice.taxTotal)} />}
+        {showTaxBreakdown && (
+          <TotalsRow label={ivaLabel} value={formatCurrency(invoice.taxTotal)} />
+        )}
 
-        {showIrpf && invoice.irpfTotal && invoice.irpfTotal > 0 && (
+        {showIrpf && (invoice.irpfTotal ?? 0) > 0 && (
           <TotalsRow
             label={`IRPF (${invoice.irpfPercent ?? 0}%)`}
-            value={`-${formatCurrency(invoice.irpfTotal)}`}
+            value={`-${formatCurrency(invoice.irpfTotal ?? 0)}`}
           />
         )}
 

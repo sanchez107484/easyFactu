@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -9,18 +8,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  FileText,
-  FileCheck,
-  Receipt,
-  LayoutTemplate,
-  Settings2,
-  ChevronRight,
-} from 'lucide-react';
-import { useInvoiceTemplates } from '@/hooks/use-invoice-templates';
+import { FileText, FileCheck, LayoutTemplate, ChevronRight, Info } from 'lucide-react';
 import { InvoiceTemplate } from '@easyfactura/shared-types';
+import { useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { cn } from '@/lib/utils';
 
 // ==================== TYPES ====================
@@ -65,65 +55,6 @@ function TypeCard({ icon, title, description, onClick, active }: TypeCardProps) 
   );
 }
 
-interface TemplateListProps {
-  onSelect: (template: InvoiceTemplate) => void;
-}
-
-function TemplateList({ onSelect }: TemplateListProps) {
-  const { data, isLoading, error } = useInvoiceTemplates();
-  const templates: InvoiceTemplate[] = data ?? [];
-
-  if (isLoading) {
-    return (
-      <div className="space-y-2 mt-3">
-        {[1, 2].map((i) => (
-          <Skeleton key={i} className="h-12 w-full rounded-lg" />
-        ))}
-      </div>
-    );
-  }
-
-  if (error || templates.length === 0) {
-    return (
-      <div className="mt-3 p-3 bg-muted rounded-lg text-sm text-muted-foreground">
-        No tienes plantillas creadas.{' '}
-        <Link href="/dashboard/ajustes/plantilla" className="text-primary hover:underline">
-          Crear primera plantilla
-        </Link>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-3 space-y-2">
-      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-        Selecciona una plantilla
-      </p>
-      {templates.map((template) => (
-        <button
-          key={template.id}
-          type="button"
-          onClick={() => onSelect(template)}
-          className={cn(
-            'w-full text-left p-3 rounded-lg border transition-all text-sm',
-            'hover:border-primary hover:bg-primary/5',
-            'border-border bg-background',
-          )}
-        >
-          <div className="flex items-center justify-between">
-            <span className="font-medium">{template.name}</span>
-            {template.isDefault && (
-              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
-                Por defecto
-              </span>
-            )}
-          </div>
-        </button>
-      ))}
-    </div>
-  );
-}
-
 // ==================== MAIN COMPONENT ====================
 
 interface InvoiceTypeModalProps {
@@ -133,22 +64,20 @@ interface InvoiceTypeModalProps {
 }
 
 export function InvoiceTypeModal({ open, onSelect, onClose }: InvoiceTypeModalProps) {
-  const [showTemplates, setShowTemplates] = useState(false);
+  const router = useRouter();
+  const { data: defaultTemplate } = useDefaultTemplate();
 
   const handleTypeSelect = (type: Exclude<InvoiceTypeOption, 'template'>) => {
     onSelect(type);
   };
 
-  const handleTemplateCardClick = () => {
-    setShowTemplates((prev) => !prev);
-  };
-
-  const handleTemplateSelect = (template: InvoiceTemplate) => {
-    onSelect('template', template);
-  };
-
   const handleClose = () => {
     if (onClose) onClose();
+  };
+
+  const handleCreateTemplate = () => {
+    handleClose();
+    router.push('/dashboard/ajustes/plantilla');
   };
 
   return (
@@ -180,30 +109,35 @@ export function InvoiceTypeModal({ open, onSelect, onClose }: InvoiceTypeModalPr
             onClick={() => handleTypeSelect('proforma')}
           />
           <TypeCard
-            icon={<Receipt className="h-5 w-5" />}
-            title="Factura simplificada"
-            description="Para operaciones menores a 400 €. No requiere datos del cliente."
-            onClick={() => handleTypeSelect('simplified')}
-          />
-          <TypeCard
             icon={<LayoutTemplate className="h-5 w-5" />}
-            title="Usar plantilla"
-            description="Elige una plantilla predefinida con tu diseño y datos habituales."
-            onClick={handleTemplateCardClick}
-            active={showTemplates}
+            title="Crear plantilla"
+            description="Diseña y guarda una plantilla con tu diseño y datos habituales."
+            onClick={handleCreateTemplate}
           />
-
-          {showTemplates && <TemplateList onSelect={handleTemplateSelect} />}
         </div>
 
-        <div className="flex items-center justify-end pt-2 border-t mt-2">
-          <Link
-            href="/dashboard/ajustes/plantilla"
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <Settings2 className="h-3.5 w-3.5" />
-            Gestionar plantillas
-          </Link>
+        <div className="flex items-start gap-2 rounded-lg bg-muted/50 px-3 py-2.5 mt-1">
+          <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {defaultTemplate ? (
+              <>
+                El diseño se aplicará usando tu plantilla{' '}
+                <span className="font-medium text-foreground">{defaultTemplate.name}</span>.
+              </>
+            ) : (
+              <>
+                Se usará el diseño estándar. Puedes personalizarlo en{' '}
+                <button
+                  type="button"
+                  onClick={handleCreateTemplate}
+                  className="font-medium text-primary hover:underline"
+                >
+                  Crear plantilla
+                </button>
+                .
+              </>
+            )}
+          </p>
         </div>
       </DialogContent>
     </Dialog>

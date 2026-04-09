@@ -26,7 +26,7 @@ export function FooterBlock({ layout, invoice, tenant }: FooterBlockProps) {
 
       {text && <p className="text-[9px] text-gray-500 mt-0.5">{text}</p>}
 
-      {showVerifactuQr && invoice.verifactuQr && (
+      {/* {showVerifactuQr && invoice.verifactuQr && (
         <p className="text-[9px] text-gray-400 mt-1">
           Verificación VeriFactu: {invoice.verifactuQr}
         </p>
@@ -42,7 +42,7 @@ export function FooterBlock({ layout, invoice, tenant }: FooterBlockProps) {
             </span>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

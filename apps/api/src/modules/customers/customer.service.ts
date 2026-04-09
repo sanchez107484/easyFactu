@@ -126,9 +126,14 @@ export class CustomerService {
       }
     }
 
+    const data = {
+      ...dto,
+      legalName: dto.legalName !== undefined ? dto.legalName.trim() || null : undefined,
+    };
+
     return this.prisma.customer.update({
       where: { id },
-      data: dto,
+      data,
     });
   }
 

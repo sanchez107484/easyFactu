@@ -6,19 +6,76 @@ import { DashboardUserMenu } from './user-menu';
 import { ThemeToggle } from './theme-toggle';
 import { TenantSelector } from './tenant-selector';
 import { ChevronRight } from 'lucide-react';
+import { useInvoice } from '@/hooks/use-invoices';
+import { useCustomer } from '@/hooks/use-customers';
+import { useProduct } from '@/hooks/use-products';
 
-// Human-readable labels for route segments. Add new routes here — one place, used everywhere.
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const SEGMENT_LABELS: Record<string, string> = {
-  dashboard: 'Inicio',
+  dashboard: 'Dashboard',
   facturas: 'Facturas',
+  presupuestos: 'Presupuestos',
   clientes: 'Clientes',
   productos: 'Productos',
-  presupuestos: 'Presupuestos',
-  recurrentes: 'Recurrentes',
   ajustes: 'Ajustes',
+  empresa: 'Empresa',
+  facturacion: 'Facturación',
+  plantilla: 'Plantilla',
+  seguridad: 'Seguridad',
+  usuarios: 'Usuarios',
+  notificaciones: 'Notificaciones',
+  plan: 'Plan',
+  verifactu: 'VeriFactu',
+  informes: 'Informes',
+  onboarding: 'Primeros pasos',
+  setup: 'Configuración',
   nueva: 'Nueva',
+  nuevo: 'Nuevo',
   editar: 'Editar',
 };
+
+function InvoiceBreadcrumbLabel({ id }: { id: string }) {
+  const { data } = useInvoice(id);
+  return <>{data?.number ?? '…'}</>;
+}
+
+function CustomerBreadcrumbLabel({ id }: { id: string }) {
+  const { data } = useCustomer(id);
+  return <>{data?.name ?? '…'}</>;
+}
+
+function ProductBreadcrumbLabel({ id }: { id: string }) {
+  const { data } = useProduct(id);
+  return <>{data?.name ?? '…'}</>;
+}
+
+function DynamicSegmentLabel({ id, parentSegment }: { id: string; parentSegment: string | null }) {
+  if (parentSegment === 'facturas' || parentSegment === 'presupuestos') {
+    return <InvoiceBreadcrumbLabel id={id} />;
+  }
+  if (parentSegment === 'clientes') {
+    return <CustomerBreadcrumbLabel id={id} />;
+  }
+  if (parentSegment === 'productos') {
+    return <ProductBreadcrumbLabel id={id} />;
+  }
+  return <>{id}</>;
+}
+
+function SegmentLabel({
+  segment,
+  parentSegment,
+}: {
+  segment: string;
+  parentSegment: string | null;
+}) {
+  if (UUID_REGEX.test(segment)) {
+    return <DynamicSegmentLabel id={segment} parentSegment={parentSegment} />;
+  }
+  const label = SEGMENT_LABELS[segment];
+  return <>{label ?? segment.charAt(0).toUpperCase() + segment.slice(1)}</>;
+}
 
 function resolveSegmentLabel(segment: string): string {
   return SEGMENT_LABELS[segment] ?? segment.charAt(0).toUpperCase() + segment.slice(1);
@@ -28,12 +85,12 @@ export function DashboardHeader() {
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
 
-  // Generate breadcrumbs from pathname
   const segments = pathname.split('/').filter(Boolean);
-  const breadcrumbs = segments.map((segment, index) => {
-    const href = '/' + segments.slice(0, index + 1).join('/');
-    return { title: resolveSegmentLabel(segment), href };
-  });
+  const breadcrumbs = segments.map((segment, index) => ({
+    segment,
+    parentSegment: index > 0 ? segments[index - 1] : null,
+    href: '/' + segments.slice(0, index + 1).join('/'),
+  }));
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-6">
@@ -45,7 +102,7 @@ export function DashboardHeader() {
             <span
               className={index === breadcrumbs.length - 1 ? 'font-medium' : 'text-muted-foreground'}
             >
-              {crumb.title}
+              <SegmentLabel segment={crumb.segment} parentSegment={crumb.parentSegment} />
             </span>
           </div>
         ))}

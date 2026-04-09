@@ -60,7 +60,7 @@ import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import { useInvoiceTemplate, useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useAuthStore } from '@/store/auth-store';
 import { useTenant } from '@/hooks/use-tenant';
-import { cn, resolveUrl } from '@/lib/utils';
+import { cn, resolveUrl, formatCurrency } from '@/lib/utils';
 
 // ==================== CONSTANTS ====================
 
@@ -106,12 +106,6 @@ const QUOTE_ACCEPTANCE_CONFIG: Record<
 };
 
 // ==================== HELPERS ====================
-
-function formatCurrency(amount: number | string | null | undefined): string {
-  const n = typeof amount === 'string' ? parseFloat(amount) : (amount ?? 0);
-  if (isNaN(n)) return '—';
-  return n.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
-}
 
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return '—';

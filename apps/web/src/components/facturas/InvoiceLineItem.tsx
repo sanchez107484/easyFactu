@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Trash2, Copy, ChevronUp, ChevronDown, BookOpen } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import { round2 } from '@/lib/math';
 import { useProducts } from '@/hooks/use-products';
 import { Product, ProductType } from '@easyfactura/shared-types';
@@ -316,6 +316,7 @@ export function InvoiceLineItem({
                 min={mode === 'product' ? '1' : '0'}
                 placeholder="Cant."
                 className="w-[96px] text-sm h-9 pr-1"
+                data-invoice-qty={index}
                 value={
                   mode === 'product'
                     ? (line.quantity ?? 1)
@@ -391,9 +392,7 @@ export function InvoiceLineItem({
 
           {/* Total */}
           <div className="text-sm font-semibold tabular-nums text-right min-w-[72px]">
-            {lineTotal > 0
-              ? lineTotal.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })
-              : '—'}
+            {lineTotal > 0 ? formatCurrency(lineTotal) : '—'}
           </div>
         </div>
       </div>

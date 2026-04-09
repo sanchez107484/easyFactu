@@ -51,7 +51,7 @@ import { InvoiceStatusFilterPills } from '@/components/common/invoice-status-fil
 import { CustomerType, InvoiceStatus, Customer, Invoice } from '@easyfactura/shared-types';
 import { useCustomer, useDeleteCustomer } from '@/hooks/use-customers';
 import { useInvoices } from '@/hooks/use-invoices';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 
 // ==================== CONSTANTS ====================
 
@@ -99,10 +99,6 @@ function getInvoiceSortValue(invoice: Invoice, key: string): string | number {
 }
 
 // ==================== HELPERS ====================
-
-function formatCurrency(amount: number) {
-  return amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
-}
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('es-ES', {

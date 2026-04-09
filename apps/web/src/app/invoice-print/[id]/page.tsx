@@ -3,6 +3,7 @@ import {
   Invoice,
   InvoiceLayout,
   InvoiceTemplate,
+  LayoutOverride,
   Tenant,
   DEFAULT_INVOICE_LAYOUT,
 } from '@easyfactura/shared-types';
@@ -88,7 +89,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
 
   const apiUrl = buildApiUrl();
 
-  const [invoice, template, tenant] = await Promise.all([
+  const [invoice, defaultTemplate, tenant] = await Promise.all([
     fetchJson<Invoice>(`${apiUrl}/invoices/${id}`, authHeader),
     fetchJson<InvoiceTemplate>(`${apiUrl}/invoice-templates/default`, authHeader),
     fetchJson<Tenant>(`${apiUrl}/tenant`, authHeader),
@@ -110,7 +111,29 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
     );
   }
 
-  const layout = (template?.layout ?? DEFAULT_INVOICE_LAYOUT) as InvoiceLayout;
+  // Fetch the invoice's specific template if it has a templateId
+  const invoiceTemplateId = (invoice as Invoice & { templateId?: string }).templateId;
+  const specificTemplate = invoiceTemplateId
+    ? await fetchJson<InvoiceTemplate>(
+        `${apiUrl}/invoice-templates/${invoiceTemplateId}`,
+        authHeader,
+      )
+    : null;
+
+  const baseTemplate = specificTemplate ?? defaultTemplate;
+  const baseLayout = (baseTemplate?.layout ?? DEFAULT_INVOICE_LAYOUT) as InvoiceLayout;
+
+  // Apply per-invoice layoutOverride (e.g. simplifyTable toggle) on top of the template
+  const invoiceLayoutOverride = invoice.layoutOverride as LayoutOverride | null | undefined;
+  const layout: InvoiceLayout = invoiceLayoutOverride?.itemsTable
+    ? {
+        ...baseLayout,
+        itemsTable: {
+          ...baseLayout.itemsTable,
+          ...invoiceLayoutOverride.itemsTable,
+        },
+      }
+    : baseLayout;
   const { page, typography, colors } = layout;
   const fontFamily = FONT_FAMILY_MAP[typography.fontFamily] ?? FONT_FAMILY_MAP['helvetica'];
   const paymentDetails = invoice.paymentDetails as PaymentDetails | undefined;
@@ -130,7 +153,23 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
         }
         @page { size: 595px 842px; margin: 0; }
         img { max-width: 100%; }
+        /* Suppress web-font downloads — invoice uses system fonts only */
+        @font-face { font-family: '__suppress__'; src: local('Arial'); }
       `}</style>
+
+      {/*
+        Hidden metadata consumed by the PDF API route to build the filename
+        without making a second round-trip to the NestJS API.
+        data-pdf-ready signals that the server-rendered content is complete.
+      */}
+      <span
+        aria-hidden="true"
+        style={{ display: 'none' }}
+        data-pdf-ready="true"
+        data-invoice-number={invoice.number ?? ''}
+        data-invoice-type={invoice.invoiceType ?? ''}
+        data-invoice-customer={invoice.customer?.name ?? ''}
+      />
 
       {/* A4 canvas — exact dimensions match the live preview */}
       <div

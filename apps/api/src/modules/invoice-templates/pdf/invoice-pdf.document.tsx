@@ -4,6 +4,7 @@
 // The `renderer` object is injected at runtime via the `createInvoicePdfElement` factory.
 import { Invoice, InvoiceLayout, InvoiceTemplate, Tenant } from '@easyfactura/shared-types';
 import { formatIban } from '@easyfactura/shared-validators';
+import { formatCurrency } from '../../../common/utils/format';
 
 interface InvoicePdfDocumentProps {
   invoice: Invoice;
@@ -17,10 +18,6 @@ function hexToRgb(hex: string): string {
   return result
     ? `rgb(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)})`
     : hex;
-}
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value);
 }
 
 function formatDate(dateStr: string): string {
@@ -251,6 +248,10 @@ export function createInvoicePdfElement(
   const styles = buildStyles(StyleSheet, layout);
   const lines = invoice.lines ?? [];
 
+  const showUnitPrice = layout.itemsTable.showUnitPrice ?? true;
+  const showTaxColumn = layout.itemsTable.showTaxColumn ?? true;
+  const showLineTotal = layout.itemsTable.showLineTotal ?? true;
+
   const senderBlock = (
     <View style={styles.senderBlock}>
       {layout.logo.visible && logoAbsolutePath && (
@@ -334,24 +335,30 @@ export function createInvoicePdfElement(
               <Text style={[styles.headerCell, styles.colRef]}>Ref.</Text>
             )}
             <Text style={[styles.headerCell, styles.colQty]}>Cant.</Text>
-            <Text style={[styles.headerCell, styles.colPrice]}>Precio</Text>
-            <Text style={[styles.headerCell, styles.colTax]}>IVA</Text>
+            {showUnitPrice && <Text style={[styles.headerCell, styles.colPrice]}>Precio</Text>}
+            {showTaxColumn && <Text style={[styles.headerCell, styles.colTax]}>IVA</Text>}
             {layout.itemsTable.showDiscount && (
               <Text style={[styles.headerCell, styles.colDiscount]}>Dto.</Text>
             )}
-            <Text style={[styles.headerCell, styles.colTotal]}>Total</Text>
+            {showLineTotal && <Text style={[styles.headerCell, styles.colTotal]}>Total</Text>}
           </View>
 
           {lines.map((line) => (
             <View key={line.id} style={styles.tableRow}>
               <Text style={[styles.cell, styles.colDescription]}>{line.description}</Text>
               <Text style={[styles.cell, styles.colQty]}>{line.quantity}</Text>
-              <Text style={[styles.cell, styles.colPrice]}>{formatCurrency(line.unitPrice)}</Text>
-              <Text style={[styles.cell, styles.colTax]}>{formatPercent(line.taxRate)}</Text>
+              {showUnitPrice && (
+                <Text style={[styles.cell, styles.colPrice]}>{formatCurrency(line.unitPrice)}</Text>
+              )}
+              {showTaxColumn && (
+                <Text style={[styles.cell, styles.colTax]}>{formatPercent(line.taxRate)}</Text>
+              )}
               {layout.itemsTable.showDiscount && (
                 <Text style={[styles.cell, styles.colDiscount]}>—</Text>
               )}
-              <Text style={[styles.cell, styles.colTotal]}>{formatCurrency(line.lineTotal)}</Text>
+              {showLineTotal && (
+                <Text style={[styles.cell, styles.colTotal]}>{formatCurrency(line.lineTotal)}</Text>
+              )}
             </View>
           ))}
         </View>
@@ -363,28 +370,36 @@ export function createInvoicePdfElement(
             <Text style={styles.totalsValue}>{formatCurrency(invoice.subtotal)}</Text>
           </View>
 
-          {invoice.discountAmount && invoice.discountAmount > 0 && (
+          {(invoice.discountAmount ?? 0) > 0 && (
             <View style={styles.totalsRow}>
               <Text style={styles.totalsLabel}>
                 Descuento ({formatPercent(invoice.discountPercent ?? 0)})
               </Text>
-              <Text style={styles.totalsValue}>-{formatCurrency(invoice.discountAmount)}</Text>
+              <Text style={styles.totalsValue}>-{formatCurrency(invoice.discountAmount ?? 0)}</Text>
             </View>
           )}
 
-          {layout.totals.showTaxBreakdown && (
-            <View style={styles.totalsRow}>
-              <Text style={styles.totalsLabel}>IVA</Text>
-              <Text style={styles.totalsValue}>{formatCurrency(invoice.taxTotal)}</Text>
-            </View>
-          )}
+          {layout.totals.showTaxBreakdown && (() => {
+            const lines = invoice.lines ?? [];
+            const taxRates = [...new Set(lines.map((l) => l.taxRate))];
+            const ivaLabel =
+              taxRates.length === 1
+                ? `IVA (${formatPercent(taxRates[0])})`
+                : 'IVA';
+            return (
+              <View style={styles.totalsRow}>
+                <Text style={styles.totalsLabel}>{ivaLabel}</Text>
+                <Text style={styles.totalsValue}>{formatCurrency(invoice.taxTotal)}</Text>
+              </View>
+            );
+          })()}
 
-          {layout.totals.showIrpf && invoice.irpfTotal && invoice.irpfTotal > 0 && (
+          {(invoice.irpfTotal ?? 0) > 0 && (
             <View style={styles.totalsRow}>
               <Text style={styles.totalsLabel}>
                 IRPF ({formatPercent(invoice.irpfPercent ?? 0)})
               </Text>
-              <Text style={styles.totalsValue}>-{formatCurrency(invoice.irpfTotal)}</Text>
+              <Text style={styles.totalsValue}>-{formatCurrency(invoice.irpfTotal ?? 0)}</Text>
             </View>
           )}
 
@@ -415,11 +430,11 @@ export function createInvoicePdfElement(
             </View>
           )}
           {layout.footer.text && <Text style={styles.footerText}>{layout.footer.text}</Text>}
-          {layout.footer.showVerifactuQr && invoice.verifactuQr && (
+          {/* {layout.footer.showVerifactuQr && invoice.verifactuQr && (
             <Text style={[styles.footerText, { marginTop: 4 }]}>
               Verificación VeriFactu: {invoice.verifactuQr}
             </Text>
-          )}
+          )} */}
         </View>
       </Page>
     </Document>

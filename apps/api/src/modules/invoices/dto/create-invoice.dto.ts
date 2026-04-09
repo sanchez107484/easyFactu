@@ -9,6 +9,8 @@ import {
   IsIn,
   IsNotEmpty,
   IsBoolean,
+  IsObject,
+  ValidateIf,
   ValidateNested,
   ArrayMinSize,
   ArrayMaxSize,
@@ -57,8 +59,6 @@ export class CreateInvoiceLineDto {
   @IsEnum(VALID_TAX_RATES, { message: 'El tipo de IVA debe ser 0, 4, 10 o 21' })
   taxRate!: number;
 }
-
-import { ValidateIf, IsObject } from 'class-validator';
 
 export class PaymentDetailsDto {
   @ApiPropertyOptional({ description: 'IBAN para transferencia bancaria' })
@@ -187,4 +187,12 @@ export class CreateInvoiceDto {
   @IsOptional()
   @IsUUID()
   templateId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Override parcial del layout de plantilla para esta factura (ej: ocultar columnas de tabla)',
+  })
+  @IsOptional()
+  @IsObject()
+  layoutOverride?: object;
 }

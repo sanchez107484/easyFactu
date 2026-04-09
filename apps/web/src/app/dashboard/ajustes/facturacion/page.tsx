@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -139,8 +140,9 @@ function SeriesCreateConfirmDialog({
   year,
   isPending,
 }: SeriesCreateConfirmDialogProps) {
-  const startAt =
-    data.nextNumber && !isNaN(data.nextNumber) ? data.nextNumber : 1;
+  const [acknowledged, setAcknowledged] = useState(false);
+
+  const startAt = data.nextNumber && !isNaN(data.nextNumber) ? data.nextNumber : 1;
   const previewNumber = `${data.prefix}${String(startAt).padStart(4, '0')}`;
   const hasYearWarning = !prefixContainsYear(data.prefix, year);
 
@@ -150,8 +152,22 @@ function SeriesCreateConfirmDialog({
     [SeriesType.QUOTE]: 'Presupuesto',
   };
 
+  function handleOpenChange(value: boolean) {
+    if (!value) {
+      setAcknowledged(false);
+      onClose();
+    }
+  }
+
+  function handleConfirm() {
+    setAcknowledged(false);
+    onConfirm();
+  }
+
+  const canConfirm = !hasYearWarning || acknowledged;
+
   return (
-    <AlertDialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Confirmar nueva serie</AlertDialogTitle>
@@ -175,20 +191,40 @@ function SeriesCreateConfirmDialog({
                 </div>
               </div>
               {hasYearWarning && (
-                <div className="flex gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <p>
-                    El prefijo no contiene el año {year}. Las facturas no llevarán referencia al
-                    año en el número.
-                  </p>
-                </div>
+                <>
+                  <div className="flex gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <p>
+                      El prefijo no contiene el año {year}. Las facturas no llevarán referencia al
+                      año en el número.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2 rounded-md border bg-muted/50 p-3">
+                    <Checkbox
+                      id="series-confirm-ack"
+                      checked={acknowledged}
+                      onCheckedChange={(checked) => setAcknowledged(checked === true)}
+                      className="mt-0.5"
+                    />
+                    <Label
+                      htmlFor="series-confirm-ack"
+                      className="text-sm font-normal leading-snug cursor-pointer"
+                    >
+                      Entiendo que las facturas de esta serie no llevarán el año en el número
+                    </Label>
+                  </div>
+                </>
               )}
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={isPending} className="gap-2">
+          <AlertDialogAction
+            onClick={handleConfirm}
+            disabled={isPending || !canConfirm}
+            className="gap-2"
+          >
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             Crear serie
           </AlertDialogAction>
@@ -413,7 +449,11 @@ function CreateSeriesDialog({ open, onClose }: CreateSeriesDialogProps) {
   });
 
   function submitData(data: SeriesFormData) {
-    const code = data.prefix.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 10) || 'SERIE';
+    const code =
+      data.prefix
+        .replace(/[^A-Z0-9]/gi, '')
+        .toUpperCase()
+        .slice(0, 10) || 'SERIE';
     createSeries.mutate(
       { ...data, code, year: currentYear },
       {
@@ -432,121 +472,123 @@ function CreateSeriesDialog({ open, onClose }: CreateSeriesDialogProps) {
 
   return (
     <>
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Nueva serie de facturación</DialogTitle>
-          <DialogDescription>
-            Crea una serie de numeración para tus facturas del año {currentYear}
-          </DialogDescription>
-        </DialogHeader>
+      <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nueva serie de facturación</DialogTitle>
+            <DialogDescription>
+              Crea una serie de numeración para tus facturas del año {currentYear}
+            </DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <Label htmlFor="type">Tipo *</Label>
-            <Select
-              value={form.watch('type')}
-              onValueChange={(v) => form.setValue('type', v as SeriesType)}
-            >
-              <SelectTrigger id="type">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={SeriesType.INVOICE}>Factura</SelectItem>
-                <SelectItem value={SeriesType.RECTIFICATIVE}>Rectificativa</SelectItem>
-                <SelectItem value={SeriesType.QUOTE}>Presupuesto</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <Label htmlFor="type">Tipo *</Label>
+              <Select
+                value={form.watch('type')}
+                onValueChange={(v) => form.setValue('type', v as SeriesType)}
+              >
+                <SelectTrigger id="type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SeriesType.INVOICE}>Factura</SelectItem>
+                  <SelectItem value={SeriesType.RECTIFICATIVE}>Rectificativa</SelectItem>
+                  <SelectItem value={SeriesType.QUOTE}>Presupuesto</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div>
-            <Label htmlFor="name">Nombre descriptivo *</Label>
-            <Input id="name" placeholder="Facturas generales" {...form.register('name')} />
-            {form.formState.errors.name && (
-              <p className="mt-1 text-xs text-destructive">{form.formState.errors.name.message}</p>
-            )}
-          </div>
+            <div>
+              <Label htmlFor="name">Nombre descriptivo *</Label>
+              <Input id="name" placeholder="Facturas generales" {...form.register('name')} />
+              {form.formState.errors.name && (
+                <p className="mt-1 text-xs text-destructive">
+                  {form.formState.errors.name.message}
+                </p>
+              )}
+            </div>
 
-          <div>
-            <Label htmlFor="prefix">Prefijo de numeración *</Label>
-            <Input id="prefix" placeholder="F-" {...form.register('prefix')} />
-            {form.watch('prefix') ? (
+            <div>
+              <Label htmlFor="prefix">Prefijo de numeración *</Label>
+              <Input id="prefix" placeholder="F-" {...form.register('prefix')} />
+              {form.watch('prefix') ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Ej:{' '}
+                  <span className="font-mono">
+                    {formatSeriesPreview(form.watch('prefix'), currentYear, 1)}
+                  </span>
+                  ,{' '}
+                  <span className="font-mono">
+                    {formatSeriesPreview(form.watch('prefix'), currentYear, 2)}
+                  </span>
+                  ...
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Escribe un prefijo para ver cómo quedarán las facturas
+                </p>
+              )}
+              {form.formState.errors.prefix && (
+                <p className="mt-1 text-xs text-destructive">
+                  {form.formState.errors.prefix.message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="nextNumber">Número inicial</Label>
+              <Input
+                id="nextNumber"
+                type="number"
+                min={1}
+                placeholder="1"
+                {...form.register('nextNumber', { valueAsNumber: true })}
+              />
               <p className="mt-1 text-xs text-muted-foreground">
-                Ej:{' '}
-                <span className="font-mono">
-                  {formatSeriesPreview(form.watch('prefix'), currentYear, 1)}
-                </span>
-                ,{' '}
-                <span className="font-mono">
-                  {formatSeriesPreview(form.watch('prefix'), currentYear, 2)}
-                </span>
-                ...
+                Útil si ya has emitido facturas este año y quieres continuar desde ese número
               </p>
-            ) : (
-              <p className="mt-1 text-xs text-muted-foreground">
-                Escribe un prefijo para ver cómo quedarán las facturas
-              </p>
-            )}
-            {form.formState.errors.prefix && (
-              <p className="mt-1 text-xs text-destructive">
-                {form.formState.errors.prefix.message}
-              </p>
-            )}
-          </div>
+              {form.formState.errors.nextNumber && (
+                <p className="mt-1 text-xs text-destructive">
+                  {form.formState.errors.nextNumber.message}
+                </p>
+              )}
+            </div>
 
-          <div>
-            <Label htmlFor="nextNumber">Número inicial</Label>
-            <Input
-              id="nextNumber"
-              type="number"
-              min={1}
-              placeholder="1"
-              {...form.register('nextNumber', { valueAsNumber: true })}
-            />
-            <p className="mt-1 text-xs text-muted-foreground">
-              Útil si ya has emitido facturas este año y quieres continuar desde ese número
-            </p>
-            {form.formState.errors.nextNumber && (
-              <p className="mt-1 text-xs text-destructive">
-                {form.formState.errors.nextNumber.message}
-              </p>
-            )}
-          </div>
+            <div className="flex items-center gap-3">
+              <Switch
+                id="isDefault"
+                checked={form.watch('isDefault') ?? false}
+                onCheckedChange={(v) => form.setValue('isDefault', v)}
+              />
+              <Label htmlFor="isDefault" className="cursor-pointer">
+                Usar como serie por defecto
+              </Label>
+            </div>
 
-          <div className="flex items-center gap-3">
-            <Switch
-              id="isDefault"
-              checked={form.watch('isDefault') ?? false}
-              onCheckedChange={(v) => form.setValue('isDefault', v)}
-            />
-            <Label htmlFor="isDefault" className="cursor-pointer">
-              Usar como serie por defecto
-            </Label>
-          </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={createSeries.isPending} className="gap-2">
+                {createSeries.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                Crear serie
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={createSeries.isPending} className="gap-2">
-              {createSeries.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              Crear serie
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-
-    {pendingData && (
-      <SeriesCreateConfirmDialog
-        open
-        onClose={() => setPendingData(null)}
-        onConfirm={() => submitData(pendingData)}
-        data={pendingData}
-        year={currentYear}
-        isPending={createSeries.isPending}
-      />
-    )}
+      {pendingData && (
+        <SeriesCreateConfirmDialog
+          open
+          onClose={() => setPendingData(null)}
+          onConfirm={() => submitData(pendingData)}
+          data={pendingData}
+          year={currentYear}
+          isPending={createSeries.isPending}
+        />
+      )}
     </>
   );
 }
@@ -560,6 +602,8 @@ interface EditSeriesDialogProps {
 
 function EditSeriesDialog({ series, onClose }: EditSeriesDialogProps) {
   const updateSeries = useUpdateSeries();
+  const [pendingData, setPendingData] = useState<InvoiceSeriesEditValues | null>(null);
+  const seriesYear = series?.year ?? new Date().getFullYear();
 
   const form = useForm<InvoiceSeriesEditValues>({
     resolver: zodResolver(invoiceSeriesEditSchema),
@@ -573,41 +617,57 @@ function EditSeriesDialog({ series, onClose }: EditSeriesDialogProps) {
       : { name: '', prefix: '', isDefault: false, nextNumber: undefined },
   });
 
-  function onSubmit(data: InvoiceSeriesEditValues) {
+  function performUpdate(data: InvoiceSeriesEditValues) {
     if (!series) return;
     updateSeries.mutate({ id: series.id, data }, { onSuccess: onClose });
   }
 
+  function onSubmit(data: InvoiceSeriesEditValues) {
+    if (!series) return;
+    if (!prefixContainsYear(data.prefix, seriesYear)) {
+      setPendingData(data);
+      return;
+    }
+    performUpdate(data);
+  }
+
   return (
-    <Dialog open={Boolean(series)} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Editar serie — {series?.code}</DialogTitle>
-          <DialogDescription>
-            Modifica el nombre, prefijo o si es la serie por defecto
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={Boolean(series)} onOpenChange={(v) => !v && onClose()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar serie — {series?.code}</DialogTitle>
+            <DialogDescription>
+              Modifica el nombre, prefijo o si es la serie por defecto
+            </DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <InvoiceSeriesFormFields
-            form={form}
-            year={series?.year ?? new Date().getFullYear()}
-            showIsDefault
-            showNextNumber
-          />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <InvoiceSeriesFormFields form={form} year={seriesYear} showIsDefault showNextNumber />
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={updateSeries.isPending} className="gap-2">
-              {updateSeries.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              Guardar cambios
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={updateSeries.isPending} className="gap-2">
+                {updateSeries.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                Guardar cambios
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <PrefixYearWarningDialog
+        open={pendingData !== null}
+        onClose={() => setPendingData(null)}
+        onConfirm={() => pendingData && performUpdate(pendingData)}
+        prefix={pendingData?.prefix ?? ''}
+        year={seriesYear}
+        confirmLabel="Sí, guardar sin año"
+        isPending={updateSeries.isPending}
+      />
+    </>
   );
 }
 
