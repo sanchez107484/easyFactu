@@ -298,7 +298,7 @@ export default function DashboardPage() {
             })}
           </p>
         </div>
-        <Link href="/dashboard/facturas/nueva?tipo=standard">
+        <Link href="/dashboard/facturas/nueva">
           <Button className="shrink-0">
             <Plus className="mr-1.5 h-4 w-4" />
             Nueva factura

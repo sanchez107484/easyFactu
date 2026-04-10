@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
 import { useDefaultTemplate, useUpdateTemplate } from '@/hooks/use-invoice-templates';
-import { useInvoiceDefaults } from '@/hooks/use-invoice-defaults';
+import { useInvoiceDefaults, useUpdateInvoiceDefaults } from '@/hooks/use-invoice-defaults';
 import { useAuthStore } from '@/store/auth-store';
 import { useTenant } from '@/hooks/use-tenant';
 import {
@@ -794,6 +794,7 @@ function SettingsPanel({
 export default function PlantillaPage() {
   const { data: template, isLoading } = useDefaultTemplate();
   const updateTemplate = useUpdateTemplate();
+  const updateInvoiceDefaults = useUpdateInvoiceDefaults();
   const currentTenant = useAuthStore((s) => s.currentTenant);
   const { data: tenantData } = useTenant();
   const { data: invoiceDefaults } = useInvoiceDefaults();
@@ -839,10 +840,17 @@ export default function PlantillaPage() {
           setHasChanges(false);
           setJustSaved(true);
           setTimeout(() => setJustSaved(false), 3000);
+
+          // Sincronizar las notas predeterminadas con invoice_defaults
+          const newNotesText = localLayout.notes?.defaultText ?? null;
+          const currentNotesText = invoiceDefaults?.notes ?? null;
+          if (newNotesText !== currentNotesText) {
+            updateInvoiceDefaults.mutate({ notes: newNotesText });
+          }
         },
       },
     );
-  }, [template, localLayout, updateTemplate]);
+  }, [template, localLayout, updateTemplate, updateInvoiceDefaults, invoiceDefaults]);
 
   if (isLoading) {
     return (

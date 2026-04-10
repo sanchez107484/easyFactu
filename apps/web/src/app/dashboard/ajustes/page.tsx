@@ -14,6 +14,7 @@ import {
   ChevronRight,
   CheckCircle,
   AlertCircle,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { useTenant } from '@/hooks/use-tenant';
 import { useAuthStore } from '@/store/auth-store';
@@ -32,6 +33,12 @@ const SETTINGS_SECTIONS = [
     icon: Building2,
     title: 'Empresa',
     description: 'Datos fiscales, logo y certificado digital',
+  },
+  {
+    href: '/dashboard/ajustes/predeterminados',
+    icon: SlidersHorizontal,
+    title: 'Predeterminados',
+    description: 'Valores que se pre-rellenan al crear nuevas facturas',
   },
   {
     href: '/dashboard/ajustes/facturacion',
