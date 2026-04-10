@@ -65,8 +65,10 @@ export function useCreateCustomer() {
           };
         },
       );
-      // Also invalidate so the server state is eventually reconciled
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      // Mark as stale so the next visit/mount reconciles with the server,
+      // but do NOT trigger an immediate background refetch — that would race
+      // with the parent form's setValue and could briefly clear the Select value.
+      queryClient.invalidateQueries({ queryKey: ['customers'], refetchType: 'none' });
       toast.success('Cliente creado correctamente');
     },
     onError: (error: unknown) => {

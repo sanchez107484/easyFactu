@@ -229,6 +229,7 @@ function InvoiceForm({
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [pendingDraftId, setPendingDraftId] = useState<string | null>(editDraftId ?? null);
   const [showQuickClient, setShowQuickClient] = useState(false);
+  const [pendingCustomerId, setPendingCustomerId] = useState<string | null>(null);
   const [simplifyTable, setSimplifyTable] = useState(false);
 
   const isProforma = invoiceType === 'proforma';
@@ -287,6 +288,15 @@ function InvoiceForm({
   const selectedCustomer = customers.find((c) => c.id === watchedValues.customerId);
   const activePaymentMethod = watchedValues.paymentMethod as PaymentMethod | undefined;
 
+  // Cuando el listado se actualiza y hay un cliente pendiente de seleccionar, lo seleccionamos.
+  useEffect(() => {
+    if (!pendingCustomerId) return;
+    if (customers.some((c) => c.id === pendingCustomerId)) {
+      form.setValue('customerId', pendingCustomerId, { shouldValidate: true });
+      setPendingCustomerId(null);
+    }
+  }, [customers, pendingCustomerId, form]);
+
   // ── Simplify-table toggle ──────────────────────────────────────────────────
   const linesData = watchedValues.lines ?? [];
   const allLinesSameTax =
@@ -297,6 +307,17 @@ function InvoiceForm({
   useEffect(() => {
     if (!showSimplifyToggle) setSimplifyTable(false);
   }, [showSimplifyToggle]);
+
+  // Pre-populate notes from template default when creating a fresh invoice
+  useEffect(() => {
+    if (isDuplicate || editDraftId) return;
+    const templateDefaultText = effectiveTemplate?.layout.notes?.defaultText;
+    if (!templateDefaultText) return;
+    if (!form.getValues('notes')) {
+      form.setValue('notes', templateDefaultText, { shouldDirty: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveTemplate?.id]);
 
   const previewTemplate: typeof effectiveTemplate = effectiveTemplate
     ? {
@@ -479,7 +500,7 @@ function InvoiceForm({
         open={showQuickClient}
         onClose={() => setShowQuickClient(false)}
         onCustomerReady={(customer) => {
-          form.setValue('customerId', customer.id, { shouldValidate: true });
+          setPendingCustomerId(customer.id);
           setShowQuickClient(false);
         }}
       />
@@ -960,6 +981,7 @@ export default function NuevaFacturaPage() {
   const duplicateId = searchParams.get('duplicate');
   const editId = searchParams.get('edit');
   const tipoParam = searchParams.get('tipo');
+  const preselectedCustomerId = searchParams.get('customerId') ?? '';
 
   // Si hay ?tipo= válido lo usamos directamente
   const initialTypeFromParam = VALID_INVOICE_TYPES.includes(tipoParam as InvoiceTypeOption)
@@ -1012,7 +1034,7 @@ export default function NuevaFacturaPage() {
         })),
       }
     : {
-        customerId: '',
+        customerId: preselectedCustomerId,
         paymentMethod: (invoiceDefaults?.paymentMethod as PaymentMethod) ?? undefined,
         paymentDetails:
           (invoiceDefaults?.paymentDetails as Record<string, string | undefined>) ?? {},
