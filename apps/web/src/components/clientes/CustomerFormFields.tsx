@@ -130,6 +130,8 @@ export interface CustomerFormFieldsProps {
   duplicateBannerTitle: string;
   /** Callback para navegar a la ficha del cliente duplicado */
   onDuplicateNavigate: (customerId: string) => void;
+  /** Texto del botón de acción del banner de duplicado. Por defecto: "Ver ficha del cliente" */
+  duplicateBannerActionLabel?: string;
 }
 
 // ==================== COMPONENT ====================
@@ -142,6 +144,7 @@ export function CustomerFormFields({
   showDuplicateBanner,
   duplicateBannerTitle,
   onDuplicateNavigate,
+  duplicateBannerActionLabel = 'Ver ficha del cliente',
 }: CustomerFormFieldsProps) {
   const selectedType = form.watch('type');
   const currentTypeOption = TYPE_OPTIONS.find((o) => o.value === selectedType) ?? TYPE_OPTIONS[0]!;
@@ -180,9 +183,7 @@ export function CustomerFormFields({
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <p className="font-semibold text-sm">{option.label}</p>
-                    {isSelected && (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                    )}
+                    {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
                     {option.description}
@@ -219,7 +220,10 @@ export function CustomerFormFields({
 
             {currentTypeOption.showLegalName && (
               <div className="space-y-2">
-                <Label htmlFor="legalName">{currentTypeOption.legalNameLabel}</Label>
+                <Label htmlFor="legalName">
+                  {currentTypeOption.legalNameLabel}{' '}
+                  <span className="text-muted-foreground text-xs font-normal">(opcional)</span>
+                </Label>
                 <Input
                   id="legalName"
                   {...form.register('legalName')}
@@ -289,7 +293,7 @@ export function CustomerFormFields({
                       onClick={() => onDuplicateNavigate(existingCustomer.id)}
                     >
                       <ArrowRight className="h-3.5 w-3.5 mr-1.5" />
-                      Ver ficha del cliente
+                      {duplicateBannerActionLabel}
                     </Button>
                   </div>
                 </div>
@@ -303,7 +307,9 @@ export function CustomerFormFields({
           <SectionLabel icon={Briefcase}>Información de contacto</SectionLabel>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">
+                Email <span className="text-muted-foreground text-xs font-normal">(opcional)</span>
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -314,7 +320,10 @@ export function CustomerFormFields({
               <FieldError message={form.formState.errors.email?.message} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Teléfono</Label>
+              <Label htmlFor="phone">
+                Teléfono{' '}
+                <span className="text-muted-foreground text-xs font-normal">(opcional)</span>
+              </Label>
               <Input
                 id="phone"
                 type="tel"
@@ -332,7 +341,10 @@ export function CustomerFormFields({
         <SectionLabel icon={Globe}>Dirección fiscal</SectionLabel>
         <div className="grid grid-cols-12 gap-4">
           <div className="col-span-6 space-y-2">
-            <Label htmlFor="address">Calle y número</Label>
+            <Label htmlFor="address">
+              Calle y número{' '}
+              <span className="text-muted-foreground text-xs font-normal">(opcional)</span>
+            </Label>
             <Input
               id="address"
               {...form.register('address')}
@@ -343,7 +355,10 @@ export function CustomerFormFields({
 
           {!currentTypeOption.isIntracommunity && (
             <div className="col-span-2 space-y-2">
-              <Label htmlFor="postalCode">C. Postal</Label>
+              <Label htmlFor="postalCode">
+                C. Postal{' '}
+                <span className="text-muted-foreground text-xs font-normal">(opcional)</span>
+              </Label>
               <Input
                 id="postalCode"
                 {...form.register('postalCode')}
@@ -361,7 +376,9 @@ export function CustomerFormFields({
               currentTypeOption.isIntracommunity ? 'col-span-6' : 'col-span-4',
             )}
           >
-            <Label htmlFor="city">Ciudad</Label>
+            <Label htmlFor="city">
+              Ciudad <span className="text-muted-foreground text-xs font-normal">(opcional)</span>
+            </Label>
             <Input
               id="city"
               {...form.register('city')}
@@ -372,7 +389,10 @@ export function CustomerFormFields({
 
           {!currentTypeOption.isIntracommunity && (
             <div className="col-span-4 space-y-2">
-              <Label>Provincia</Label>
+              <Label>
+                Provincia{' '}
+                <span className="text-muted-foreground text-xs font-normal">(opcional)</span>
+              </Label>
               <Select
                 value={form.watch('province') ?? ''}
                 onValueChange={(v) => form.setValue('province', v)}
@@ -399,8 +419,10 @@ export function CustomerFormFields({
           >
             <Label htmlFor="country">
               País
-              {currentTypeOption.isIntracommunity && (
+              {currentTypeOption.isIntracommunity ? (
                 <span className="text-destructive"> *</span>
+              ) : (
+                <span className="text-muted-foreground text-xs font-normal"> (opcional)</span>
               )}
             </Label>
             <Input
@@ -421,7 +443,12 @@ export function CustomerFormFields({
 
       {/* ── FILA 4: Notas internas ── */}
       <div className="rounded-xl border bg-card p-5">
-        <SectionLabel>Notas internas</SectionLabel>
+        <SectionLabel>
+          Notas internas{' '}
+          <span className="text-muted-foreground text-xs font-normal normal-case tracking-normal">
+            (opcional)
+          </span>
+        </SectionLabel>
         <Textarea
           {...form.register('notes')}
           placeholder="Información adicional sobre este cliente (no aparece en las facturas)..."

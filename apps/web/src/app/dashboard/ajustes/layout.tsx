@@ -12,6 +12,7 @@ import {
   Settings,
   Bell,
   LayoutTemplate,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 const settingsSections = [
@@ -24,6 +25,11 @@ const settingsSections = [
     title: 'Empresa',
     href: '/dashboard/ajustes/empresa',
     icon: Building2,
+  },
+  {
+    title: 'Predeterminados',
+    href: '/dashboard/ajustes/predeterminados',
+    icon: SlidersHorizontal,
   },
   {
     title: 'Facturación',

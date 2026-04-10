@@ -111,8 +111,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const safeFilename = buildSafeFilename(invoiceNumber, customerName);
 
     const pdf = await page.pdf({
-      width: '595px',
-      height: '842px',
+      format: 'A4',
+      // The viewport is 595 CSS-px wide. A4 at 96 dpi is ~794 CSS-px wide.
+      // scale projects the viewport onto the A4 canvas so content fills the full page.
+      scale: 794 / 595,
       printBackground: true,
       margin: { top: '0', right: '0', bottom: '0', left: '0' },
     });

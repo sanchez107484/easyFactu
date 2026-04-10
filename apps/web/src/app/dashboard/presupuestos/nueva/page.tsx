@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -95,6 +95,7 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
 
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [showQuickClient, setShowQuickClient] = useState(false);
+  const [pendingCustomerId, setPendingCustomerId] = useState<string | null>(null);
 
   const { data: customersData, isLoading: loadingCustomers } = useCustomers();
   const { data: defaultTemplate } = useDefaultTemplate();
@@ -144,6 +145,7 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
   const effectiveSeriesId = watchedValues.seriesId || defaultSeriesId;
   const selectedSeries = availableSeries.find((s) => s.id === effectiveSeriesId) ?? null;
   const previewInvoice = buildPreviewInvoice(watchedValues, customers, selectedSeries);
+  const selectedCustomer = customers.find((c) => c.id === watchedValues.customerId);
   const activePaymentMethod = watchedValues.paymentMethod as PaymentMethod | undefined;
 
   const handlePreviewSectionClick = useCallback((fieldId: string) => {
@@ -213,7 +215,7 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
         open={showQuickClient}
         onClose={() => setShowQuickClient(false)}
         onCustomerReady={(customer) => {
-          form.setValue('customerId', customer.id, { shouldValidate: true });
+          setPendingCustomerId(customer.id);
           setShowQuickClient(false);
         }}
       />

@@ -626,6 +626,7 @@ export interface InvoiceLayout {
   notes?: {
     show: boolean;
     showLabel: boolean;
+    defaultText?: string;
   };
 }
 

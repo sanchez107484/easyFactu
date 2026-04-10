@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
 import { useDefaultTemplate, useUpdateTemplate } from '@/hooks/use-invoice-templates';
-import { useInvoiceDefaults } from '@/hooks/use-invoice-defaults';
+import { useInvoiceDefaults, useUpdateInvoiceDefaults } from '@/hooks/use-invoice-defaults';
 import { useAuthStore } from '@/store/auth-store';
 import { useTenant } from '@/hooks/use-tenant';
 import {
@@ -402,6 +402,16 @@ function SettingsPanel({
   function patchFooter(patch: Partial<InvoiceLayout['footer']>) {
     onChange({ footer: { ...layout.footer, ...patch } });
   }
+  function patchNotes(patch: Partial<NonNullable<InvoiceLayout['notes']>>) {
+    onChange({
+      notes: {
+        show: layout.notes?.show !== false,
+        showLabel: layout.notes?.showLabel !== false,
+        defaultText: layout.notes?.defaultText,
+        ...patch,
+      },
+    });
+  }
 
   function handleApplyTemplate(tpl: (typeof BASE_TEMPLATES)[0]) {
     setActiveTemplate(tpl.name);
@@ -723,17 +733,30 @@ function SettingsPanel({
             label="Sección de notas"
             description="Muestra las notas de la factura"
             checked={layout.notes?.show !== false}
-            onChange={(v) =>
-              onChange({ notes: { show: v, showLabel: layout.notes?.showLabel !== false } })
-            }
+            onChange={(v) => patchNotes({ show: v })}
           />
           {layout.notes?.show !== false && (
-            <ToggleRow
-              label="Etiqueta 'Notas'"
-              description="Muestra el título de la sección"
-              checked={layout.notes?.showLabel !== false}
-              onChange={(v) => onChange({ notes: { show: true, showLabel: v } })}
-            />
+            <>
+              <ToggleRow
+                label="Etiqueta 'Notas'"
+                description="Muestra el título de la sección"
+                checked={layout.notes?.showLabel !== false}
+                onChange={(v) => patchNotes({ showLabel: v })}
+              />
+              <div className="pt-2.5 pb-1">
+                <label className="text-xs font-medium block mb-1.5">Notas predeterminadas</label>
+                <textarea
+                  value={layout.notes?.defaultText ?? ''}
+                  onChange={(e) => patchNotes({ defaultText: e.target.value || undefined })}
+                  placeholder="Ej: Gracias por su confianza..."
+                  rows={2}
+                  className="w-full text-xs rounded-md border border-input bg-background px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Se usará como notas por defecto en nuevas facturas
+                </p>
+              </div>
+            </>
           )}
         </div>
       </SectionCard>
@@ -771,6 +794,7 @@ function SettingsPanel({
 export default function PlantillaPage() {
   const { data: template, isLoading } = useDefaultTemplate();
   const updateTemplate = useUpdateTemplate();
+  const updateInvoiceDefaults = useUpdateInvoiceDefaults();
   const currentTenant = useAuthStore((s) => s.currentTenant);
   const { data: tenantData } = useTenant();
   const { data: invoiceDefaults } = useInvoiceDefaults();
@@ -816,10 +840,17 @@ export default function PlantillaPage() {
           setHasChanges(false);
           setJustSaved(true);
           setTimeout(() => setJustSaved(false), 3000);
+
+          // Sincronizar las notas predeterminadas con invoice_defaults
+          const newNotesText = localLayout.notes?.defaultText ?? null;
+          const currentNotesText = invoiceDefaults?.notes ?? null;
+          if (newNotesText !== currentNotesText) {
+            updateInvoiceDefaults.mutate({ notes: newNotesText });
+          }
         },
       },
     );
-  }, [template, localLayout, updateTemplate]);
+  }, [template, localLayout, updateTemplate, updateInvoiceDefaults, invoiceDefaults]);
 
   if (isLoading) {
     return (
@@ -831,7 +862,7 @@ export default function PlantillaPage() {
 
   const exampleInvoice = {
     ...buildExampleInvoice(currentTenant?.id ?? 'preview'),
-    notes: invoiceDefaults?.notes ?? 'Gracias por su confianza.',
+    notes: localLayout.notes?.defaultText || invoiceDefaults?.notes || 'Gracias por su confianza.',
   };
 
   // ── Logo URL: siempre resuelta con resolveUrl ──────────────────────────────
