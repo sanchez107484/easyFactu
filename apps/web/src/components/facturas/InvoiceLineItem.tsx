@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Trash2, Copy, ChevronUp, ChevronDown, BookOpen } from 'lucide-react';
+import { Trash2, Copy, ChevronUp, ChevronDown, BookOpen, Plus, Sparkles } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
 import { round2 } from '@/lib/math';
 import { useProducts } from '@/hooks/use-products';
@@ -27,6 +27,7 @@ import {
 import { useState } from 'react';
 import { Package, Wrench } from 'lucide-react';
 import { LineMode, LINE_MODE_META, ExtendedLineData } from '@/lib/invoice-line-types';
+import { QuickCreateProductModal } from '@/components/facturas/QuickCreateProductModal';
 
 // ==================== TYPES ====================
 
@@ -60,74 +61,136 @@ const TAX_OPTIONS = [
 
 function CatalogPicker({
   selectedProductId,
+  defaultType,
   onSelect,
 }: {
   selectedProductId?: string;
+  defaultType: ProductType;
   onSelect: (product: Product) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
   const { data } = useProducts({ limit: 100 });
   const products = data?.data ?? [];
 
-  if (products.length === 0) return null;
+  const handleProductCreated = (product: Product) => {
+    onSelect(product);
+    setShowCreate(false);
+  };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-all shrink-0',
-            selectedProductId
-              ? 'bg-primary/10 text-primary border-primary/30 hover:bg-primary/20'
-              : 'bg-primary/5 text-primary border-primary/20 hover:bg-primary/10',
-          )}
-        >
-          <BookOpen className="h-3.5 w-3.5" />
-          {selectedProductId ? 'Cambia del catálogo' : 'Del catálogo'}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="start" side="bottom">
-        <Command>
-          <CommandInput placeholder="Buscar en catálogo..." className="h-9" />
-          <CommandList>
-            <CommandEmpty>No se encontraron resultados.</CommandEmpty>
-            <CommandGroup>
-              {products.map((product) => {
-                const Icon = product.type === ProductType.PRODUCT ? Package : Wrench;
-                const pvp = Number(product.unitPrice) * (1 + Number(product.taxRate) / 100);
-                return (
-                  <CommandItem
-                    key={product.id}
-                    value={`${product.name} ${product.reference ?? ''}`}
-                    onSelect={() => {
-                      onSelect(product);
+    <>
+      <QuickCreateProductModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        onProductReady={handleProductCreated}
+        defaultType={defaultType}
+      />
+
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-all shrink-0',
+              selectedProductId
+                ? 'bg-primary/10 text-primary border-primary/30 hover:bg-primary/20'
+                : 'bg-primary/5 text-primary border-primary/20 hover:bg-primary/10',
+            )}
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            {selectedProductId ? 'Cambia del catálogo' : 'Del catálogo'}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 p-0" align="start" side="bottom">
+          <Command>
+            <CommandInput placeholder="Buscar en catálogo..." className="h-9" />
+            <CommandList>
+              {products.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-6 px-4 text-center">
+                  <Sparkles className="h-7 w-7 text-muted-foreground/30" />
+                  <div>
+                    <p className="text-xs font-medium text-foreground">
+                      Facturas más rápidas con tu catálogo
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                      Guarda tus productos y servicios para añadirlos a cualquier factura con un
+                      clic, sin tener que repetir nombre, precio e IVA cada vez.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
                       setOpen(false);
+                      setShowCreate(true);
                     }}
-                    className="flex items-center gap-2 py-2 cursor-pointer"
+                    className="mt-1 flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                   >
-                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium truncate">{product.name}</span>
-                        <span className="text-xs font-semibold text-primary shrink-0">
-                          {pvp.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
-                        </span>
-                      </div>
-                      {product.reference && (
-                        <span className="text-xs text-muted-foreground font-mono">
-                          {product.reference}
-                        </span>
-                      )}
-                    </div>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                    <Plus className="h-3.5 w-3.5" />
+                    Crear primer elemento
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+                  <CommandGroup>
+                    {products.map((product) => {
+                      const Icon = product.type === ProductType.PRODUCT ? Package : Wrench;
+                      const pvp = Number(product.unitPrice) * (1 + Number(product.taxRate) / 100);
+                      return (
+                        <CommandItem
+                          key={product.id}
+                          value={`${product.name} ${product.reference ?? ''}`}
+                          onSelect={() => {
+                            onSelect(product);
+                            setOpen(false);
+                          }}
+                          className="flex items-center gap-2 py-2 cursor-pointer"
+                        >
+                          <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-medium truncate">{product.name}</span>
+                              <span className="text-xs font-semibold text-primary shrink-0">
+                                {pvp.toLocaleString('es-ES', {
+                                  style: 'currency',
+                                  currency: 'EUR',
+                                })}
+                              </span>
+                            </div>
+                            {product.reference && (
+                              <span className="text-xs text-muted-foreground font-mono">
+                                {product.reference}
+                              </span>
+                            )}
+                          </div>
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                </>
+              )}
+            </CommandList>
+            {/* ── Footer: save current line to catalog ── */}
+            {products.length > 0 && (
+              <div className="border-t p-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    setShowCreate(true);
+                  }}
+                  className="w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                >
+                  <Plus className="h-3.5 w-3.5 shrink-0" />
+                  Guardar nuevo elemento en el catálogo
+                </button>
+              </div>
+            )}
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </>
   );
 }
 
@@ -222,10 +285,9 @@ export function InvoiceLineItem({
         {/* Catalog button â€” always visible */}
         <CatalogPicker
           selectedProductId={line.productId}
+          defaultType={mode === 'product' ? ProductType.PRODUCT : ProductType.SERVICE}
           onSelect={(product) => {
-            const desc = product.description
-              ? `${product.name}\n${product.description}`
-              : product.name;
+            const desc = product.description || product.name;
             form.setValue(`lines.${index}.description`, desc, { shouldValidate: true });
             form.setValue(`lines.${index}.unitPrice`, Number(product.unitPrice), {
               shouldValidate: true,

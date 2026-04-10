@@ -207,19 +207,19 @@ export default function NuevoProductoPage() {
                     className="text-sm font-medium flex items-center gap-2"
                   >
                     <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                    Descripcion{' '}
-                    <span className="text-xs text-muted-foreground font-normal">
-                      (opcional - aparecer en la factura)
-                    </span>
+                    Descripción
                   </Label>
                   <Textarea
                     id="description"
                     {...form.register('description')}
-                    placeholder="Detalla en que consiste este elemento. Este texto aparecer en la factura."
+                    placeholder="Detalla en qué consiste este elemento. Este texto es el que el cliente verá en la factura."
                     rows={3}
                     disabled={createMutation.isPending}
                     className="resize-none text-sm"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Este texto es el que aparecerá en la línea de la factura.
+                  </p>
                 </div>
 
                 {/* Referencia + Unidad */}
