@@ -24,6 +24,7 @@ export interface SanityBlogPostCard {
 }
 
 export interface SanityBlogPost extends SanityBlogPostCard {
+  _updatedAt: string;
   body: PortableTextBlock[];
   seoTitle: string | null;
   seoDescription: string | null;
@@ -56,6 +57,7 @@ export const POST_QUERY = groq`
     "categories": categories[]->{ title, "slug": slug.current },
     "featuredImageUrl": featuredImage.asset->url,
     "featuredImageAlt": featuredImage.alt,
+    _updatedAt,
     seoTitle,
     seoDescription
   }

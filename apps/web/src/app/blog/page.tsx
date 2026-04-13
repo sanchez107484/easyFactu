@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
-import { Rss } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
 import { BlogCard } from '@/components/blog/BlogCard';
-import { sanityClient, fetchWithRevalidation } from '@/sanity/lib/client';
+import { BlogCardFeatured } from '@/components/blog/BlogCardFeatured';
+import { fetchWithRevalidation } from '@/sanity/lib/client';
 import { POSTS_QUERY } from '@/sanity/lib/queries';
 import type { SanityBlogPostCard } from '@/sanity/lib/queries';
 import { brandConfig } from '@easyfactura/brand-config';
@@ -32,50 +34,104 @@ async function getPosts(): Promise<SanityBlogPostCard[]> {
   return fetchWithRevalidation<SanityBlogPostCard[]>(POSTS_QUERY);
 }
 
+const blogJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Blog',
+  name: `Blog — ${brandConfig.app.name}`,
+  description:
+    'Artículos sobre facturación electrónica, VeriFactu, impuestos para autónomos y novedades de la AEAT.',
+  url: `${brandConfig.app.url}/blog`,
+  publisher: {
+    '@type': 'Organization',
+    name: brandConfig.app.name,
+    url: brandConfig.app.url,
+  },
+};
+
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Inicio', item: brandConfig.app.url },
+    { '@type': 'ListItem', position: 2, name: 'Blog', item: `${brandConfig.app.url}/blog` },
+  ],
+};
+
 export default async function BlogPage() {
   const posts = await getPosts();
+  const [featured, ...rest] = posts;
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <SiteHeader />
 
-      <main className="min-h-screen">
-        {/* Hero */}
-        <section className="border-b bg-muted/30 py-14">
-          <div className="container mx-auto max-w-6xl px-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-primary">
-              <Rss className="h-4 w-4" />
-              <span>Blog</span>
-            </div>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-              Recursos para autónomos
+      <main className="min-h-screen bg-background">
+        {/* ── Hero ── */}
+        <section className="relative overflow-hidden border-b">
+          {/* Subtle background texture */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,hsl(var(--primary)/0.08),transparent)]" />
+          <div className="relative container mx-auto max-w-6xl px-4 py-16 sm:py-24">
+            <p className="text-sm font-semibold uppercase tracking-[0.15em] text-primary">
+              El blog de {brandConfig.app.name}
+            </p>
+            <h1 className="mt-3 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+              Todo lo que necesitas
+              <br className="hidden sm:block" /> saber como autónomo
             </h1>
-            <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
-              Artículos sobre facturación electrónica, VeriFactu, impuestos y todo lo que necesitas
-              para gestionar tu negocio con tranquilidad.
+            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">
+              Facturación electrónica, VeriFactu, deducciones fiscales y guías prácticas. Sin
+              tecnicismos. Sin rodeos.
             </p>
           </div>
         </section>
 
-        {/* Artículos */}
-        <section className="container mx-auto max-w-6xl px-4 py-14">
-          {posts.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-24 text-center">
-              <p className="text-lg font-medium text-muted-foreground">
-                Próximamente nuevos artículos
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Estamos preparando contenido útil para ti. ¡Vuelve pronto!
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {posts.map((post) => (
-                <BlogCard key={post._id} post={post} />
-              ))}
-            </div>
-          )}
-        </section>
+        {posts.length === 0 ? (
+          <section className="container mx-auto max-w-6xl px-4 py-32 text-center">
+            <p className="text-xl font-medium text-foreground">Próximamente</p>
+            <p className="mt-2 text-muted-foreground">
+              Estamos preparando contenido útil para ti. ¡Vuelve pronto!
+            </p>
+          </section>
+        ) : (
+          <>
+            {/* ── Artículo destacado ── */}
+            {featured && (
+              <section className="container mx-auto max-w-6xl px-4 py-12">
+                <BlogCardFeatured post={featured} />
+              </section>
+            )}
+
+            {/* ── Resto de artículos ── */}
+            {rest.length > 0 && (
+              <section className="container mx-auto max-w-6xl px-4 pb-20">
+                <div className="mb-8 flex items-center justify-between border-b pb-4">
+                  <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    Más artículos
+                  </h2>
+                  <Link
+                    href="/blog"
+                    className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                  >
+                    Ver todos <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {rest.map((post) => (
+                    <BlogCard key={post._id} post={post} />
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
+        )}
       </main>
 
       <FooterLanding />

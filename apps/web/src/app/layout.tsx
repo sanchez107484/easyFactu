@@ -114,9 +114,6 @@ export const metadata: Metadata = {
   alternates: {
     canonical: brandConfig.app.url,
   },
-  verification: {
-    google: 'TU_CODIGO_GOOGLE_SEARCH_CONSOLE', // Añade esto cuando tengas GSC
-  },
 };
 
 /** Builds the CSS custom properties block from a themeConfig cssVars object */
