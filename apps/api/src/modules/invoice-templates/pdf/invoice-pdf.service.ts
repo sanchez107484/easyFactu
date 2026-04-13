@@ -99,10 +99,12 @@ export class InvoicePdfService {
 
   private buildFilename(invoice: {
     number: string | null;
+    invoiceType?: string | null;
     customer?: { name: string } | null;
   }): string {
-    const raw = [invoice.number, invoice.customer?.name].filter(Boolean).join(' - ');
-    return raw.replace(/[/\\:*?"<>|]/g, '').trim() || 'factura';
+    const typeLabel = this.resolveDocumentTypeLabel(invoice.invoiceType);
+    const raw = [invoice.number ?? typeLabel, invoice.customer?.name].filter(Boolean).join(' - ');
+    return raw.replace(/[/\\:*?"<>|]/g, '').trim() || 'documento';
   }
 
   /**
@@ -190,8 +192,10 @@ export class InvoicePdfService {
     doc.text(`Email: ${tenant.email || ''}`, 200, 120, { align: 'right' });
 
     // Datos factura
+    const docTypeLabel = this.resolveDocumentTypeLabel(invoice.invoiceType);
+    const docNumber = invoice.number ? `${docTypeLabel} Nº: ${invoice.number}` : docTypeLabel;
     doc.moveDown(2);
-    doc.fontSize(14).text(`Factura Nº: ${invoice.number}`, 40, undefined, { align: 'left' });
+    doc.fontSize(14).text(docNumber, 40, undefined, { align: 'left' });
     doc.fontSize(10).text(`Fecha emisión: ${invoice.issueDate?.toString().slice(0, 10) || ''}`);
     if (invoice.dueDate) doc.text(`Fecha vencimiento: ${invoice.dueDate.toString().slice(0, 10)}`);
 
@@ -250,6 +254,12 @@ export class InvoicePdfService {
       });
       doc.on('error', reject);
     });
+  }
+
+  private resolveDocumentTypeLabel(invoiceType?: string | null): string {
+    if (invoiceType === 'proforma') return 'Proforma';
+    if (invoiceType === 'quote') return 'Presupuesto';
+    return 'Factura';
   }
 
   private resolveLogo(logoUrl: string | null): Buffer | undefined {

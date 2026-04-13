@@ -374,7 +374,7 @@ export default function FacturaDetailPage() {
                 Emitir rectificativa
               </DropdownMenuItem>
             )}
-            {!isDraft && (
+            {(!isDraft || isProforma) && (
               <DropdownMenuItem asChild>
                 <DownloadInvoiceButton
                   invoiceId={id}
@@ -521,7 +521,7 @@ export default function FacturaDetailPage() {
                       {paidMutation.isPending ? 'Procesando...' : 'Marcar como pagada'}
                     </Button>
                   )}
-                  {!isDraft && (
+                  {(!isDraft || isProforma) && (
                     <DownloadInvoiceButton
                       invoiceId={id}
                       fileName={pdfFileName}
