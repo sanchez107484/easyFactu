@@ -1,5 +1,7 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
+const DEFAULT_SECRET = 'change-me-in-production';
 
 /**
  * BUG-06 fix: Protects POST /recurring-invoices/trigger-scheduler so that only
@@ -11,22 +13,29 @@ import { ConfigService } from '@nestjs/config';
  */
 @Injectable()
 export class SchedulerSecretGuard implements CanActivate {
+  private readonly logger = new Logger(SchedulerSecretGuard.name);
+
   constructor(private readonly configService: ConfigService) {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
-    const secret = (request.headers as Record<string, string>)['x-scheduler-secret'];
+    const provided = (request.headers as Record<string, string>)['x-scheduler-secret'];
     const expected = this.configService.get<string>('SCHEDULER_SECRET');
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
 
-    if (!expected || expected === 'change-me-in-production') {
-      // Fail open in dev — fail closed in production
-      if (this.configService.get<string>('NODE_ENV') === 'production') {
-        throw new UnauthorizedException('SCHEDULER_SECRET no configurado en producción');
-      }
-      return true;
+    // Always reject if using default secret
+    if (!expected || expected === DEFAULT_SECRET) {
+      this.logger.warn(
+        'SCHEDULER_SECRET is not configured or uses the default value. ' +
+          'Set a strong secret in your environment variables.',
+      );
+      // Fail closed unconditionally — using the default secret is always insecure
+      throw new UnauthorizedException(
+        'SCHEDULER_SECRET debe configurarse con un valor seguro antes de usar este endpoint',
+      );
     }
 
-    if (!secret || secret !== expected) {
+    if (!provided || provided !== expected) {
       throw new UnauthorizedException('Acceso denegado al endpoint del scheduler');
     }
 

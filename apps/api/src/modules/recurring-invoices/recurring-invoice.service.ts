@@ -5,12 +5,61 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RecurringFrequency, RecurringInvoiceStatus } from '@prisma/client';
-import { CreateRecurringInvoiceDto } from './dto/create-recurring-invoice.dto';
+import { CreateRecurringInvoiceDto, RecurringInvoiceLineDto } from './dto/create-recurring-invoice.dto';
 import { UpdateRecurringInvoiceDto } from './dto/update-recurring-invoice.dto';
 import { QueryRecurringInvoiceDto } from './dto/query-recurring-invoice.dto';
 import { InvoiceService } from '../invoices/invoice.service';
 import { CreateInvoiceDto, CreateInvoiceLineDto } from '../invoices/dto/create-invoice.dto';
 import { PaymentMethod } from '@easyfactura/shared-types';
+
+// ==================== INTERNAL TYPES ====================
+
+/**
+ * Shape of the JSON stored in recurring_invoices.template_data.
+ * Must match buildTemplateData output exactly.
+ */
+interface RecurringTemplateData {
+  lines: Array<{
+    productId?: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    taxRate: number;
+    irpfRate?: number;
+    hideQty?: boolean;
+  }>;
+  discountPercent?: number;
+  irpfPercent?: number;
+  paymentMethod?: string;
+  paymentDetails?: Record<string, unknown>;
+  notes?: string;
+  dueDays?: number;
+}
+
+type BuildTemplateInput = {
+  lines: RecurringInvoiceLineDto[];
+  discountPercent?: number;
+  irpfPercent?: number;
+  paymentMethod?: PaymentMethod;
+  paymentDetails?: Record<string, unknown>;
+  notes?: string;
+  dueDays?: number;
+};
+
+/** Minimal shape of a Prisma RecurringInvoice row as returned by findMany/findFirst */
+interface RecurringInvoiceRow {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  seriesId: string | null;
+  frequency: RecurringFrequency;
+  dayOfMonth: number;
+  nextRunDate: Date;
+  generatedCount: number;
+  maxOccurrences: number | null;
+  endDate: Date | null;
+  templateData: RecurringTemplateData;
+}
 
 // ==================== HELPERS ====================
 
@@ -218,9 +267,9 @@ export class RecurringInvoiceService {
       nextRunDate = computeNextRunDate(newFrequency, newDayOfMonth);
     }
 
-    const updatedTemplateData = dto.lines
-      ? this.buildTemplateData(dto as CreateRecurringInvoiceDto)
-      : existing.templateData;
+    const updatedTemplateData: RecurringTemplateData = dto.lines
+      ? this.buildTemplateData(dto)
+      : (existing.templateData as RecurringTemplateData);
 
     return this.prisma.recurringInvoice.update({
       where: { id },
@@ -233,7 +282,7 @@ export class RecurringInvoiceService {
         nextRunDate,
         maxOccurrences: dto.maxOccurrences !== undefined ? dto.maxOccurrences : undefined,
         description: dto.description !== undefined ? dto.description : undefined,
-        templateData: updatedTemplateData as any,
+        templateData: updatedTemplateData,
       },
       include: this.defaultInclude(),
     });
@@ -312,7 +361,10 @@ export class RecurringInvoiceService {
       throw new ConflictException('No se puede generar una factura de una recurrente cancelada');
     }
 
-    const invoice = await this.generateInvoiceFromTemplate(tenantId, existing);
+    const invoice = await this.generateInvoiceFromTemplate(
+      tenantId,
+      existing as unknown as RecurringInvoiceRow,
+    );
 
     // Advance nextRunDate after immediate generation
     const nextRunDate = computeNextRunDate(
@@ -354,26 +406,28 @@ export class RecurringInvoiceService {
   /**
    * Returns all ACTIVE recurring invoices due for generation today (UTC).
    */
-  async findDueForGeneration(): Promise<any[]> {
+  async findDueForGeneration(): Promise<RecurringInvoiceRow[]> {
     const today = new Date();
     const todayUtc = new Date(
       Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
     );
 
-    return this.prisma.recurringInvoice.findMany({
+    const rows = await this.prisma.recurringInvoice.findMany({
       where: {
         status: RecurringInvoiceStatus.ACTIVE,
         nextRunDate: { lte: todayUtc },
       },
     });
+    // Cast is safe: templateData JSON field always contains RecurringTemplateData (written by buildTemplateData)
+    return rows as unknown as RecurringInvoiceRow[];
   }
 
   /**
    * Generates an invoice from a recurring template and records the log.
    * Used by both the scheduler and generateNow().
    */
-  async generateInvoiceFromTemplate(tenantId: string, recurring: any) {
-    const templateData = recurring.templateData as any;
+  async generateInvoiceFromTemplate(tenantId: string, recurring: RecurringInvoiceRow) {
+    const templateData: RecurringTemplateData = recurring.templateData;
     const issueDate = new Date();
     const issueDateStr = issueDate.toISOString().split('T')[0];
 
@@ -394,7 +448,7 @@ export class RecurringInvoiceService {
       paymentMethod: templateData.paymentMethod as PaymentMethod | undefined,
       paymentDetails: templateData.paymentDetails,
       notes: templateData.notes,
-      lines: (templateData.lines as any[]).map((line: any) => {
+      lines: templateData.lines.map((line) => {
         const lineDto: CreateInvoiceLineDto = {
           description: line.description,
           quantity: line.quantity,
@@ -478,7 +532,7 @@ export class RecurringInvoiceService {
     return customer;
   }
 
-  private buildTemplateData(dto: CreateRecurringInvoiceDto) {
+  private buildTemplateData(dto: BuildTemplateInput): RecurringTemplateData {
     return {
       lines: dto.lines.map((l) => ({
         productId: l.productId,

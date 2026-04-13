@@ -43,6 +43,8 @@ import {
   RecurringInvoice,
   RecurringInvoiceStatus,
   RecurringFrequency,
+  RecurringInvoiceTemplateData,
+  RecurringInvoiceLog,
   InvoiceStatus,
 } from '@easyfactura/shared-types';
 import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
@@ -221,7 +223,7 @@ export default function RecurrenteDetailPage() {
   const isPaused = recurring.status === RecurringInvoiceStatus.PAUSED;
   const isEditable = isActive || isPaused;
 
-  const templateData = recurring.templateData as any;
+  const templateData = recurring.templateData as RecurringInvoiceTemplateData;
   const paymentDetails = templateData?.paymentDetails as Record<string, string> | undefined;
 
   async function handleDelete() {
@@ -470,7 +472,7 @@ export default function RecurrenteDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {(templateData.lines as any[]).map((line: any, i: number) => (
+                {templateData.lines.map((line, i) => (
                   <tr key={i} className="border-b last:border-0 py-2">
                     <td className="py-2">{line.description}</td>
                     <td className="py-2 text-right">{line.quantity}</td>
@@ -521,7 +523,7 @@ export default function RecurrenteDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {recurring.generatedInvoices.map((log: any) => (
+                {recurring.generatedInvoices.map((log: RecurringInvoiceLog) => (
                   <tr key={log.id} className="border-b last:border-0 hover:bg-muted/20">
                     <td className="py-2">{log.invoice?.number ?? 'Borrador'}</td>
                     <td className="py-2">
