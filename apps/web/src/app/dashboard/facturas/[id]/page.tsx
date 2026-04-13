@@ -372,7 +372,7 @@ export default function FacturaDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Repetir — visible para facturas confirmadas */}
+          {/* Hacer recurrente — visible para facturas confirmadas */}
           {(isConfirmed || isSent || invoice.status === InvoiceStatus.PAID) && !isProforma && (
             <button
               type="button"
@@ -380,7 +380,7 @@ export default function FacturaDetailPage() {
               className="flex items-center gap-1.5 rounded-lg border border-dashed border-muted-foreground/30 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-150 hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
             >
               <RefreshCw className="h-3 w-3" />
-              Repetir
+              Hacer recurrente
             </button>
           )}
 

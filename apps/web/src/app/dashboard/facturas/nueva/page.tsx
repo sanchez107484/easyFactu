@@ -633,7 +633,7 @@ function InvoiceForm({
                 {isRecurring
                   ? (FREQUENCY_OPTIONS.find((o) => o.value === recurringFrequency)?.label ??
                     'Recurrente')
-                  : 'Repetir'}
+                  : 'Hacer recurrente'}
               </button>
             )}
 

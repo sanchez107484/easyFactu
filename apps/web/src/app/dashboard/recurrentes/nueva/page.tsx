@@ -597,146 +597,10 @@ function RecurringInvoiceForm({
             </CardContent>
           </Card>
 
-          {/* ── Repetición ── */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <RefreshCw className="h-4 w-4 text-muted-foreground" />
-                Repetición
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <section className="space-y-2">
-                  <Label htmlFor="frequency">
-                    Frecuencia <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={watchedValues.frequency}
-                    onValueChange={(v) => form.setValue('frequency', v as Frequency)}
-                  >
-                    <SelectTrigger id="frequency">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FREQUENCY_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </section>
-
-                <section className="space-y-2">
-                  <Label htmlFor="dayOfMonth">Día del mes</Label>
-                  <Input
-                    id="dayOfMonth"
-                    type="number"
-                    min={1}
-                    max={28}
-                    {...form.register('dayOfMonth')}
-                    className={errors.dayOfMonth ? 'border-destructive' : ''}
-                  />
-                  {errors.dayOfMonth ? (
-                    <p className="text-xs text-destructive">{errors.dayOfMonth.message}</p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Máx. 28 para compatibilidad con febrero
-                    </p>
-                  )}
-                </section>
-              </div>
-
-              {isEdit ? (
-                <ReadonlyField
-                  label="Fecha de inicio"
-                  value={
-                    readonlyStartDate
-                      ? new Date(readonlyStartDate + 'T00:00:00').toLocaleDateString('es-ES', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        })
-                      : '—'
-                  }
-                  icon={Calendar}
-                />
-              ) : (
-                <section className="space-y-2">
-                  <Label htmlFor="startDate">
-                    Fecha de inicio <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    {...form.register('startDate')}
-                    className={cn('max-w-[200px]', errors.startDate ? 'border-destructive' : '')}
-                  />
-                  {errors.startDate && (
-                    <p className="text-sm text-destructive">{errors.startDate.message}</p>
-                  )}
-                </section>
-              )}
-
-              <div className="flex items-center gap-3">
-                <Switch
-                  id="hasEndDate"
-                  checked={hasEndDate}
-                  onCheckedChange={(v) => form.setValue('hasEndDate', v)}
-                />
-                <Label htmlFor="hasEndDate" className="cursor-pointer font-normal">
-                  Tiene fecha de fin
-                </Label>
-              </div>
-
-              {hasEndDate && (
-                <section className="space-y-2">
-                  <Label htmlFor="endDate">Fecha de fin</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    {...form.register('endDate')}
-                    className={cn('max-w-[200px]', errors.endDate ? 'border-destructive' : '')}
-                  />
-                  {errors.endDate && (
-                    <p className="text-sm text-destructive">{errors.endDate.message}</p>
-                  )}
-                </section>
-              )}
-
-              <div className="rounded-lg border bg-muted/40 p-4">
-                <div className="flex items-center gap-3">
-                  <Switch
-                    id="autoConfirm"
-                    checked={watchedValues.autoConfirm}
-                    onCheckedChange={(v) => form.setValue('autoConfirm', v)}
-                  />
-                  <div>
-                    <Label htmlFor="autoConfirm" className="cursor-pointer">
-                      Confirmar automáticamente
-                    </Label>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Si está desactivado, cada factura se crea como borrador para revisión.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <NextRunSummary
-                frequency={watchedValues.frequency}
-                dayOfMonth={watchedValues.dayOfMonth}
-                startDate={isEdit ? (readonlyStartDate ?? today) : watchedValues.startDate}
-                hasEndDate={hasEndDate}
-                endDate={hasEndDate ? watchedValues.endDate : undefined}
-              />
-            </CardContent>
-          </Card>
-
           {/* ── Líneas de factura ── */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Líneas de la factura</CardTitle>
+              <CardTitle className="text-base">Líneas de factura</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div id="field-lines-section" className="space-y-3">
@@ -815,6 +679,146 @@ function RecurringInvoiceForm({
                   />
                 </div>
               </section>
+            </CardContent>
+          </Card>
+
+          {/* ── Programación de repetición ── */}
+          <Card className="border-primary/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 text-primary" />
+                Programación de repetición
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Define cuándo y con qué frecuencia se generarán las facturas automáticamente.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <section className="space-y-2">
+                  <Label htmlFor="frequency">
+                    Frecuencia <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={watchedValues.frequency}
+                    onValueChange={(v) => form.setValue('frequency', v as Frequency)}
+                  >
+                    <SelectTrigger id="frequency">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FREQUENCY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </section>
+
+                <section className="space-y-2">
+                  <Label htmlFor="dayOfMonth">Día de emisión</Label>
+                  <Input
+                    id="dayOfMonth"
+                    type="number"
+                    min={1}
+                    max={28}
+                    {...form.register('dayOfMonth')}
+                    className={errors.dayOfMonth ? 'border-destructive' : ''}
+                  />
+                  {errors.dayOfMonth ? (
+                    <p className="text-xs text-destructive">{errors.dayOfMonth.message}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Máx. 28 para compatibilidad con febrero
+                    </p>
+                  )}
+                </section>
+              </div>
+
+              {isEdit ? (
+                <ReadonlyField
+                  label="Fecha de inicio"
+                  value={
+                    readonlyStartDate
+                      ? new Date(readonlyStartDate + 'T00:00:00').toLocaleDateString('es-ES', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })
+                      : '—'
+                  }
+                  icon={Calendar}
+                />
+              ) : (
+                <section className="space-y-2">
+                  <Label htmlFor="startDate">
+                    Fecha de inicio <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    {...form.register('startDate')}
+                    className={cn('max-w-[200px]', errors.startDate ? 'border-destructive' : '')}
+                  />
+                  {errors.startDate && (
+                    <p className="text-sm text-destructive">{errors.startDate.message}</p>
+                  )}
+                </section>
+              )}
+
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="hasEndDate"
+                  checked={hasEndDate}
+                  onCheckedChange={(v) => form.setValue('hasEndDate', v)}
+                />
+                <Label htmlFor="hasEndDate" className="cursor-pointer font-normal">
+                  Establecer fecha de fin
+                </Label>
+              </div>
+
+              {hasEndDate && (
+                <section className="space-y-2">
+                  <Label htmlFor="endDate">Fecha de fin</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    {...form.register('endDate')}
+                    className={cn('max-w-[200px]', errors.endDate ? 'border-destructive' : '')}
+                  />
+                  {errors.endDate && (
+                    <p className="text-sm text-destructive">{errors.endDate.message}</p>
+                  )}
+                </section>
+              )}
+
+              <div className="rounded-lg border bg-muted/40 p-4">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="autoConfirm"
+                    checked={watchedValues.autoConfirm}
+                    onCheckedChange={(v) => form.setValue('autoConfirm', v)}
+                  />
+                  <div>
+                    <Label htmlFor="autoConfirm" className="cursor-pointer">
+                      Confirmar automáticamente
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Si está activado, cada factura generada se confirma directamente. Si no,
+                      se crea como borrador para que puedas revisarla antes de enviar.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <NextRunSummary
+                frequency={watchedValues.frequency}
+                dayOfMonth={watchedValues.dayOfMonth}
+                startDate={isEdit ? (readonlyStartDate ?? today) : watchedValues.startDate}
+                hasEndDate={hasEndDate}
+                endDate={hasEndDate ? watchedValues.endDate : undefined}
+              />
             </CardContent>
           </Card>
 
