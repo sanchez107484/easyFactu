@@ -46,6 +46,8 @@ model Tenant {
   verifactuLogs    VerifactuLog[]
   invoiceDefaults  InvoiceDefaults?
   invoiceNoteLogs  InvoiceNoteLog[]
+  recurringInvoices RecurringInvoice[]
+  recurringInvoiceLogs RecurringInvoiceLog[]
 
   @@map("tenants")
 }
@@ -141,6 +143,7 @@ model Customer {
 
   tenant           Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoices         Invoice[]
+  recurringInvoices RecurringInvoice[]
 
   @@unique([tenantId, nif])
   @@index([tenantId])
@@ -223,6 +226,7 @@ model InvoiceSeries {
 
   tenant           Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoices         Invoice[]
+  recurringInvoices RecurringInvoice[]
 
   @@unique([tenantId, code, year])
   @@index([tenantId])
@@ -289,6 +293,7 @@ model Invoice {
   lines               InvoiceLine[]
   verifactuLogs       VerifactuLog[]
   noteLogs            InvoiceNoteLog[]
+  recurringInvoiceLogs RecurringInvoiceLog[]
 
   // Uniqueness on (tenantId, number) is enforced via a raw partial unique index
   // (WHERE number IS NOT NULL) defined in migration 20260304220000_fix_invoice_number_partial_unique.
@@ -408,6 +413,80 @@ model InvoiceDefaults {
   tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("invoice_defaults")
+}
+
+// ==================== RECURRING INVOICES ====================
+
+enum RecurringFrequency {
+  MONTHLY
+  BIMONTHLY   // Every 2 months
+  QUARTERLY   // Every 3 months
+  SEMIANNUAL  // Every 6 months
+  ANNUAL
+}
+
+enum RecurringStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+model RecurringInvoice {
+  id               String             @id @default(uuid())
+  tenantId         String             @map("tenant_id")
+  customerId       String             @map("customer_id")
+  seriesId         String?            @map("series_id")
+  name             String
+  frequency        RecurringFrequency
+  dayOfMonth       Int                @map("day_of_month")
+  startDate        DateTime           @map("start_date") @db.Date
+  endDate          DateTime?          @map("end_date") @db.Date
+  maxOccurrences   Int?               @map("max_occurrences")
+  occurrencesCount Int                @default(0) @map("occurrences_count")
+  status           RecurringStatus    @default(ACTIVE)
+  nextRunDate      DateTime?          @map("next_run_date") @db.Date
+  pausedAt         DateTime?          @map("paused_at")
+  lastRunAt        DateTime?          @map("last_run_at")
+
+  // Template invoice data (stored as JSON)
+  lines            Json
+  discountPercent  Decimal?           @map("discount_percent") @db.Decimal(5, 2)
+  irpfPercent      Decimal?           @map("irpf_percent") @db.Decimal(5, 2)
+  paymentMethod    PaymentMethod?     @map("payment_method")
+  paymentDetails   Json?              @map("payment_details")
+  notes            String?            @db.Text
+  dueDays          Int?               @map("due_days")
+
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer         Customer           @relation(fields: [customerId], references: [id])
+  series           InvoiceSeries?     @relation(fields: [seriesId], references: [id])
+  generatedInvoices RecurringInvoiceLog[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([status, nextRunDate])
+  @@map("recurring_invoices")
+}
+
+model RecurringInvoiceLog {
+  id                 String           @id @default(uuid())
+  tenantId           String           @map("tenant_id")
+  recurringInvoiceId String           @map("recurring_invoice_id")
+  invoiceId          String           @map("invoice_id")
+  runDate            DateTime         @map("run_date") @db.Date
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  tenant             Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  recurringInvoice   RecurringInvoice @relation(fields: [recurringInvoiceId], references: [id], onDelete: Cascade)
+  invoice            Invoice          @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([recurringInvoiceId])
+  @@index([tenantId])
+  @@map("recurring_invoice_logs")
 }
 
 // ==================== INVOICE NOTE LOGS ====================

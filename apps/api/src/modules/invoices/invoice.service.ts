@@ -42,19 +42,29 @@ export class InvoiceService {
     lines: CreateInvoiceLineDto[],
     calculatedLines: { subtotal: number; taxAmount: number; lineTotal: number }[]
   ) {
-    return lines.map((line, index) => ({
-      tenantId,
-      ...(line.productId ? { product: { connect: { id: line.productId } } } : {}),
-      description: line.description,
-      quantity: line.quantity,
-      unitPrice: line.unitPrice,
-      taxRate: line.taxRate,
-      subtotal: calculatedLines[index]!.subtotal,
-      taxAmount: calculatedLines[index]!.taxAmount,
-      lineTotal: calculatedLines[index]!.lineTotal,
-      hideQty: line.hideQty ?? false,
-      sortOrder: index,
-    }));
+    return lines.map((line, index) => {
+      const subtotal = calculatedLines[index]!.subtotal;
+      // Per-line IRPF (BUG-03 fix): calculate irpfAmount when irpfRate is provided
+      const irpfRate = line.irpfRate != null ? Number(line.irpfRate) : null;
+      const irpfAmount =
+        irpfRate != null ? Math.round(subtotal * (irpfRate / 100) * 100) / 100 : null;
+
+      return {
+        tenantId,
+        ...(line.productId ? { product: { connect: { id: line.productId } } } : {}),
+        description: line.description,
+        quantity: line.quantity,
+        unitPrice: line.unitPrice,
+        taxRate: line.taxRate,
+        subtotal,
+        taxAmount: calculatedLines[index]!.taxAmount,
+        lineTotal: calculatedLines[index]!.lineTotal,
+        hideQty: line.hideQty ?? false,
+        sortOrder: index,
+        ...(irpfRate != null && { irpfRate }),
+        ...(irpfAmount != null && { irpfAmount }),
+      };
+    });
   }
 
   private async resolveSeriesId(tenantId: string, seriesId?: string): Promise<string> {

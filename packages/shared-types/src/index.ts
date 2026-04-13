@@ -739,3 +739,126 @@ export interface QuarterlyReport {
   totalIrpf: number;
   invoicesCount: number;
 }
+
+// ==================== RECURRING INVOICES ====================
+
+export enum RecurringFrequency {
+  MONTHLY = 'MONTHLY',
+  BIMONTHLY = 'BIMONTHLY',
+  QUARTERLY = 'QUARTERLY',
+  SEMIANNUAL = 'SEMIANNUAL',
+  ANNUAL = 'ANNUAL',
+}
+
+export enum RecurringStatus {
+  ACTIVE = 'ACTIVE',
+  PAUSED = 'PAUSED',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
+export interface RecurringInvoiceLine {
+  productId?: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  taxRate: number;
+  irpfRate?: number;
+  hideQty?: boolean;
+}
+
+export interface RecurringInvoice {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  seriesId?: string | null;
+  name: string;
+  frequency: RecurringFrequency;
+  dayOfMonth: number;
+  startDate: string;
+  endDate?: string | null;
+  maxOccurrences?: number | null;
+  occurrencesCount: number;
+  status: RecurringStatus;
+  nextRunDate?: string | null;
+  pausedAt?: string | null;
+  lastRunAt?: string | null;
+  lines: RecurringInvoiceLine[];
+  discountPercent?: number | null;
+  irpfPercent?: number | null;
+  paymentMethod?: PaymentMethod | null;
+  paymentDetails?: {
+    iban?: string;
+    bic?: string;
+    accountHolder?: string;
+    bizumPhone?: string;
+    paypalEmail?: string;
+    paymentNote?: string;
+  } | null;
+  notes?: string | null;
+  dueDays?: number | null;
+  customer?: {
+    id: string;
+    name: string;
+    nif: string;
+  };
+  series?: {
+    id: string;
+    code: string;
+    prefix: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecurringInvoiceLog {
+  id: string;
+  tenantId: string;
+  recurringInvoiceId: string;
+  invoiceId: string;
+  runDate: string;
+  createdAt: string;
+  invoice?: {
+    id: string;
+    number: string | null;
+    issueDate: string;
+    total: number;
+    status: InvoiceStatus;
+  };
+}
+
+export interface CreateRecurringInvoiceInput {
+  name: string;
+  customerId: string;
+  seriesId?: string;
+  frequency: RecurringFrequency;
+  dayOfMonth: number;
+  startDate: string;
+  endDate?: string;
+  maxOccurrences?: number;
+  lines: RecurringInvoiceLine[];
+  discountPercent?: number;
+  irpfPercent?: number;
+  paymentMethod?: PaymentMethod;
+  paymentDetails?: {
+    iban?: string;
+    bic?: string;
+    accountHolder?: string;
+    bizumPhone?: string;
+    paypalEmail?: string;
+    paymentNote?: string;
+  };
+  notes?: string;
+  dueDays?: number;
+}
+
+export interface UpdateRecurringInvoiceInput extends Partial<CreateRecurringInvoiceInput> {
+  nextRunDate?: string;
+}
+
+export interface QueryRecurringInvoicesInput {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: RecurringStatus;
+}
