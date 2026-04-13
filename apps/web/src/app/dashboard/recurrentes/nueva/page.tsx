@@ -805,8 +805,8 @@ function RecurringInvoiceForm({
                       Confirmar automáticamente
                     </Label>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Si está activado, cada factura generada se confirma directamente. Si no,
-                      se crea como borrador para que puedas revisarla antes de enviar.
+                      Si está activado, cada factura generada se confirma directamente. Si no, se
+                      crea como borrador para que puedas revisarla antes de enviar.
                     </p>
                   </div>
                 </div>
