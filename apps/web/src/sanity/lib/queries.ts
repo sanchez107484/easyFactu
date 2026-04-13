@@ -18,7 +18,7 @@ export interface SanityBlogPostCard {
   excerpt: string;
   publishedAt: string;
   author: SanityBlogAuthor | null;
-  categories: SanityBlogCategory[];
+  categories: SanityBlogCategory[] | null;
   featuredImageUrl: string | null;
   featuredImageAlt: string | null;
 }

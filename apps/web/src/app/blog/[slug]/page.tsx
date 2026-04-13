@@ -163,9 +163,9 @@ export default async function BlogPostPage({ params }: PageProps) {
 
           {/* Cabecera del artículo */}
           <header className="mb-10">
-            {post.categories.length > 0 && (
+            {(post.categories?.length ?? 0) > 0 && (
               <div className="mb-3 flex flex-wrap gap-1.5">
-                {post.categories.map((cat) => (
+                {post.categories!.map((cat) => (
                   <Badge key={cat.slug} variant="secondary" className="text-xs font-medium">
                     {cat.title}
                   </Badge>

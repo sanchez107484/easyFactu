@@ -35,9 +35,9 @@ export function BlogCard({ post }: BlogCardProps) {
       </Link>
 
       <div className="flex flex-1 flex-col gap-3 p-5">
-        {post.categories.length > 0 && (
+        {(post.categories?.length ?? 0) > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {post.categories.map((cat) => (
+            {post.categories!.map((cat) => (
               <Badge key={cat.slug} variant="secondary" className="text-xs font-medium">
                 {cat.title}
               </Badge>
