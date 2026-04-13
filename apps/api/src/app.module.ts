@@ -12,6 +12,8 @@ import { InvoiceSeriesModule } from './modules/invoice-series/invoice-series.mod
 import { VerifactuModule } from './modules/verifactu/verifactu.module';
 import { InvoiceTemplateModule } from './modules/invoice-templates/invoice-template.module';
 import { InvoiceDefaultsModule } from './modules/invoice-defaults/invoice-defaults.module';
+import { AgencyModule } from './modules/agency/agency.module';
+import { EmailModule } from './common/email/email.module';
 
 @Module({
   imports: [
@@ -42,6 +44,8 @@ import { InvoiceDefaultsModule } from './modules/invoice-defaults/invoice-defaul
     VerifactuModule,
     InvoiceTemplateModule,
     InvoiceDefaultsModule,
+    AgencyModule,
+    EmailModule,
   ],
   controllers: [],
   providers: [

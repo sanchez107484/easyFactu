@@ -47,6 +47,11 @@ model Tenant {
   invoiceDefaults  InvoiceDefaults?
   invoiceNoteLogs  InvoiceNoteLog[]
 
+  // Agency relations
+  agencyRelations  AgencyClientRelation[] @relation("AgencyRelations")
+  clientRelations  AgencyClientRelation[] @relation("ClientRelations")
+  agencyInvitations AgencyInvitation[]
+
   @@map("tenants")
 }
 
@@ -277,6 +282,7 @@ model Invoice {
   isRectificative     Boolean        @default(false) @map("is_rectificative")
   rectifiedInvoiceId  String?        @map("rectified_invoice_id")
   rectificationReason String?        @map("rectification_reason") @db.Text
+  createdByUserId     String?        @map("created_by_user_id")
   createdAt           DateTime       @default(now()) @map("created_at")
   updatedAt           DateTime       @updatedAt @map("updated_at")
 
@@ -300,6 +306,7 @@ model Invoice {
   @@index([tenantId, status])
   @@index([tenantId, customerId])
   @@index([tenantId, seriesId])
+  @@index([createdByUserId])
   @@map("invoices")
 }
 
@@ -427,4 +434,56 @@ model InvoiceNoteLog {
   @@index([invoiceId])
   @@index([tenantId])
   @@map("invoice_note_logs")
+}
+
+// ==================== AGENCY MODULE ====================
+
+enum AgencyClientStatus {
+  ACTIVE
+  SUSPENDED
+  REVOKED
+}
+
+enum AgencyInvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
+model AgencyClientRelation {
+  id             String             @id @default(uuid())
+  agencyTenantId String             @map("agency_tenant_id")
+  clientTenantId String             @map("client_tenant_id")
+  status         AgencyClientStatus @default(ACTIVE)
+  addedByUserId  String             @map("added_by_user_id")
+  notes          String?            @db.Text
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  agencyTenant   Tenant             @relation("AgencyRelations", fields: [agencyTenantId], references: [id], onDelete: Cascade)
+  clientTenant   Tenant             @relation("ClientRelations", fields: [clientTenantId], references: [id], onDelete: Cascade)
+
+  @@unique([agencyTenantId, clientTenantId])
+  @@index([agencyTenantId])
+  @@index([clientTenantId])
+  @@map("agency_client_relations")
+}
+
+model AgencyInvitation {
+  id             String                 @id @default(uuid())
+  agencyTenantId String                 @map("agency_tenant_id")
+  inviteeEmail   String                 @map("invitee_email")
+  inviteeName    String?                @map("invitee_name")
+  token          String                 @unique
+  status         AgencyInvitationStatus @default(PENDING)
+  expiresAt      DateTime               @map("expires_at")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  agencyTenant   Tenant                 @relation(fields: [agencyTenantId], references: [id], onDelete: Cascade)
+
+  @@index([agencyTenantId])
+  @@index([token])
+  @@map("agency_invitations")
 }

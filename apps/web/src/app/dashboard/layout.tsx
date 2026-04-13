@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { useUIStore } from '@/store/ui-store';
 import { DashboardSidebar } from '@/components/dashboard/sidebar';
 import { DashboardHeader } from '@/components/dashboard/header';
+import { ActingAsBanner } from '@/components/dashboard/acting-as-banner';
 import { cn } from '@/lib/utils';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -59,6 +60,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       >
         <DashboardHeader />
+
+        <ActingAsBanner />
 
         <main className="flex-1 overflow-y-auto bg-muted/40 p-6">{children}</main>
       </div>

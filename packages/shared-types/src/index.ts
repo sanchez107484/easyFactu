@@ -75,6 +75,19 @@ export enum PaymentMethod {
   BIZUM = 'BIZUM',
 }
 
+export enum AgencyClientStatus {
+  ACTIVE = 'ACTIVE',
+  SUSPENDED = 'SUSPENDED',
+  REVOKED = 'REVOKED',
+}
+
+export enum AgencyInvitationStatus {
+  PENDING = 'PENDING',
+  ACCEPTED = 'ACCEPTED',
+  EXPIRED = 'EXPIRED',
+  CANCELLED = 'CANCELLED',
+}
+
 // ==================== BASE TYPES ====================
 
 export interface PaginatedResponse<T> {
@@ -738,4 +751,101 @@ export interface QuarterlyReport {
   totalTax: number;
   totalIrpf: number;
   invoicesCount: number;
+}
+
+// ==================== AGENCY ====================
+
+export interface AgencyClientRelation {
+  id: string;
+  agencyTenantId: string;
+  clientTenantId: string;
+  status: AgencyClientStatus;
+  addedByUserId: string;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  clientTenant?: Tenant;
+  agencyTenant?: Tenant;
+}
+
+export interface AgencyClientWithDetails extends AgencyClientRelation {
+  clientTenant: Tenant;
+  stats?: {
+    totalInvoices: number;
+    pendingInvoices: number;
+    monthlyRevenue: number;
+    lastActivity: string | null;
+  };
+}
+
+export interface AgencyInvitation {
+  id: string;
+  agencyTenantId: string;
+  inviteeEmail: string;
+  inviteeName: string | null;
+  token: string;
+  status: AgencyInvitationStatus;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDirectClientInput {
+  businessName: string;
+  nif: string;
+  email: string;
+  address?: string;
+  postalCode?: string;
+  city?: string;
+  province?: string;
+  phone?: string;
+  notes?: string;
+}
+
+export interface InviteClientInput {
+  inviteeEmail: string;
+  inviteeName?: string;
+}
+
+export interface QueryAgencyClientsInput {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: AgencyClientStatus;
+}
+
+export interface AgencyClientRecentInvoice {
+  id: string;
+  number: string | null;
+  issueDate: string;
+  total: number;
+  status: InvoiceStatus;
+  customer: { name: string } | null;
+}
+
+export interface AgencyClientDetail extends Omit<
+  AgencyClientRelation,
+  'clientTenant' | 'agencyTenant'
+> {
+  clientTenant: Pick<
+    Tenant,
+    | 'id'
+    | 'businessName'
+    | 'nif'
+    | 'email'
+    | 'phone'
+    | 'address'
+    | 'city'
+    | 'province'
+    | 'postalCode'
+    | 'setupCompleted'
+    | 'isActive'
+    | 'createdAt'
+  >;
+  stats: {
+    totalInvoices: number;
+    pendingInvoices: number;
+    monthlyRevenue: number;
+  };
+  recentInvoices: AgencyClientRecentInvoice[];
 }

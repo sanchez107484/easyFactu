@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { InvoiceSeriesService } from '../invoice-series/invoice-series.service';
+import { EmailService } from '../../common/email/email.service';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { RegisterDto } from './dto/register.dto';
@@ -22,7 +23,8 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
-    private invoiceSeriesService: InvoiceSeriesService
+    private invoiceSeriesService: InvoiceSeriesService,
+    private emailService: EmailService
   ) {}
 
   async register(dto: RegisterDto) {
@@ -98,8 +100,12 @@ export class AuthService {
     // Create default invoice series (F and R) outside transaction
     await this.invoiceSeriesService.createDefaultSeries(result.tenant.id);
 
-    // TODO: Send verification email
-    // await this.emailService.sendVerificationEmail(result.user.email, emailVerifyToken);
+    // Send verification email (fire-and-forget)
+    this.emailService.sendEmailVerification({
+      to: result.user.email,
+      firstName: result.user.firstName,
+      verifyToken: emailVerifyToken,
+    });
 
     // Generate tokens
     const tokens = await this.generateTokens(result.user.id, result.user.email, result.tenant.id);
@@ -378,8 +384,12 @@ export class AuthService {
       },
     });
 
-    // TODO: Send reset email
-    // await this.emailService.sendPasswordResetEmail(user.email, resetToken);
+    // Send reset email (fire-and-forget)
+    this.emailService.sendPasswordReset({
+      to: user.email,
+      firstName: user.firstName,
+      resetToken,
+    });
 
     return { message: 'Si el email existe, recibirás un enlace de recuperación' };
   }
