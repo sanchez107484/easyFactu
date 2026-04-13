@@ -155,7 +155,9 @@ export class RecurringInvoiceSchedulerService
       discountPercent: recurring.discountPercent ? Number(recurring.discountPercent) : undefined,
       irpfPercent: recurring.irpfPercent ? Number(recurring.irpfPercent) : undefined,
       paymentMethod: recurring.paymentMethod as PaymentMethod | undefined,
-      paymentDetails: recurring.paymentDetails as CreateInvoiceDto['paymentDetails'] ?? undefined,
+      paymentDetails: recurring.paymentDetails
+        ? (recurring.paymentDetails as CreateInvoiceDto['paymentDetails'])
+        : undefined,
       notes: recurring.notes ?? undefined,
       invoiceType: 'standard',
     };

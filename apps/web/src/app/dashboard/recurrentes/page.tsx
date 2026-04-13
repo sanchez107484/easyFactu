@@ -453,7 +453,7 @@ export default function RecurrentesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar factura recurrente?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se eliminará permanentemente &ldquo;{deleteTarget?.name}&rdquo; y no se generarán
+              Se eliminará permanentemente "{deleteTarget?.name}" y no se generarán
               más facturas. Las facturas ya generadas no se verán afectadas.
             </AlertDialogDescription>
           </AlertDialogHeader>

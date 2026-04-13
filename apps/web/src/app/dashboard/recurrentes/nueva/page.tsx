@@ -55,9 +55,9 @@ const FREQUENCY_MONTHS: Record<RecurringFrequency, number> = {
 /**
  * BUG-05 FIX: Computes the first run date in UTC (not local time) to match backend behavior.
  *
- * When a user in UTC+2 picks startDate=2025-07-01 and dayOfMonth=1:
- * - OLD (local): new Date('2025-07-01') → may parse as 2025-06-30T22:00:00Z → picks wrong day
- * - NEW (UTC):   builds Date.UTC(2025, 6, 1) directly → always 2025-07-01T00:00:00Z
+ * When a user in UTC+2 picks startDate=YYYY-07-01 and dayOfMonth=1:
+ * - OLD (local): new Date('YYYY-07-01') → may parse as YYYY-06-30T22:00:00Z → picks wrong day
+ * - NEW (UTC):   builds Date.UTC(YYYY, 6, 1) directly → always YYYY-07-01T00:00:00Z
  */
 function computeFirstRunDateUTC(
   startDateStr: string,

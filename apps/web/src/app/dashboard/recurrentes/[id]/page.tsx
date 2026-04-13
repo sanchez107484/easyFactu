@@ -634,7 +634,7 @@ export default function RecurrenteDetailPage({ params }: { params: { id: string 
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar factura recurrente?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se eliminará permanentemente &ldquo;{recurring.name}&rdquo;. Las facturas ya
+              Se eliminará permanentemente "{recurring.name}". Las facturas ya
               generadas no se verán afectadas.
             </AlertDialogDescription>
           </AlertDialogHeader>
