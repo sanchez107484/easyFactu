@@ -629,39 +629,47 @@ export class InvoiceService {
 
     const paymentDetails = invoice.paymentDetails;
 
-    // Crear una factura nueva (borrador estándar) con los datos de la proforma.
-    // La proforma original queda intacta — el autónomo puede seguir consultándola.
-    return this.prisma.invoice.create({
-      data: {
-        tenantId,
-        seriesId: invoice.seriesId,
-        customerId: invoice.customerId,
-        number: null,
-        issueDate: new Date(),
-        dueDate: invoice.dueDate ?? null,
-        status: PrismaInvoiceStatus.DRAFT,
-        invoiceType: 'standard',
-        templateId: invoice.templateId ?? null,
-        ...(invoice.layoutOverride != null ? { layoutOverride: invoice.layoutOverride } : {}),
-        subtotal: totals.subtotal,
-        discountPercent: invoice.discountPercent,
-        discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
-        taxTotal: totals.taxTotal,
-        irpfPercent: invoice.irpfPercent,
-        irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
-        total: totals.total,
-        paymentMethod: invoice.paymentMethod as any,
-        ...(paymentDetails != null ? { paymentDetails } : {}),
-        notes: invoice.notes,
-        lines: {
-          create: this.buildLineCreateData(tenantId, lines, totals.lines),
+    // Crear la factura ordinaria (borrador) y eliminar la proforma en la misma transacción.
+    // La proforma es un documento no vinculante: una vez convertida a oficial deja de tener
+    // sentido y se elimina para evitar confusión. Las líneas, logs y notas se borran en
+    // cascada según las relaciones definidas en el schema de Prisma.
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const newInvoice = await tx.invoice.create({
+        data: {
+          tenantId,
+          seriesId: invoice.seriesId,
+          customerId: invoice.customerId,
+          number: null,
+          issueDate: new Date(),
+          dueDate: invoice.dueDate ?? null,
+          status: PrismaInvoiceStatus.DRAFT,
+          invoiceType: 'standard',
+          templateId: invoice.templateId ?? null,
+          ...(invoice.layoutOverride != null ? { layoutOverride: invoice.layoutOverride } : {}),
+          subtotal: totals.subtotal,
+          discountPercent: invoice.discountPercent,
+          discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
+          taxTotal: totals.taxTotal,
+          irpfPercent: invoice.irpfPercent,
+          irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+          total: totals.total,
+          paymentMethod: invoice.paymentMethod as any,
+          ...(paymentDetails != null ? { paymentDetails } : {}),
+          notes: invoice.notes,
+          lines: {
+            create: this.buildLineCreateData(tenantId, lines, totals.lines),
+          },
         },
-      },
-      include: {
-        lines: { orderBy: { sortOrder: 'asc' } },
-        customer: true,
-        series: true,
-      },
+        include: {
+          lines: { orderBy: { sortOrder: 'asc' } },
+          customer: true,
+          series: true,
+        },
+      });
+
+      await tx.invoice.delete({ where: { id } });
+
+      return newInvoice;
     });
   }
 

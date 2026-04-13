@@ -202,9 +202,10 @@ export function useConvertProformaToOfficial() {
 
   return useMutation({
     mutationFn: (id: string) => invoiceApi.convertToOfficial(id),
-    onSuccess: (invoice) => {
+    onSuccess: (invoice, proformaId) => {
       queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
       queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      queryClient.removeQueries({ queryKey: invoiceKeys.detail(proformaId) });
       toast.success(
         'Factura oficial creada como borrador. Revísala y confírmala cuando esté lista.',
       );
