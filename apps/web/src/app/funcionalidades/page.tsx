@@ -130,12 +130,6 @@ const softwareAppJsonLd = {
     'Cumplimiento RGPD y servidores europeos',
     'Cifrado SSL de 256 bits',
   ],
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.9',
-    reviewCount: '312',
-    bestRating: '5',
-  },
   publisher: {
     '@type': 'Organization',
     name: brandConfig.app.name,
