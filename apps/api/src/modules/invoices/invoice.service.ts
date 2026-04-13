@@ -52,6 +52,8 @@ export class InvoiceService {
       subtotal: calculatedLines[index]!.subtotal,
       taxAmount: calculatedLines[index]!.taxAmount,
       lineTotal: calculatedLines[index]!.lineTotal,
+      // BUG-03 fix: persist per-line irpfRate so it survives duplication/scheduler generation
+      ...(line.irpfRate != null ? { irpfRate: line.irpfRate } : {}),
       hideQty: line.hideQty ?? false,
       sortOrder: index,
     }));

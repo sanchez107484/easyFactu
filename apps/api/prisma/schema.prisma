@@ -37,15 +37,16 @@ model Tenant {
   createdAt        DateTime    @default(now()) @map("created_at")
   updatedAt        DateTime    @updatedAt @map("updated_at")
 
-  tenantUsers      TenantUser[]
-  customers        Customer[]
-  products         Product[]
-  invoices         Invoice[]
-  invoiceSeries    InvoiceSeries[]
-  invoiceTemplates InvoiceTemplate[]
-  verifactuLogs    VerifactuLog[]
-  invoiceDefaults  InvoiceDefaults?
-  invoiceNoteLogs  InvoiceNoteLog[]
+  tenantUsers       TenantUser[]
+  customers         Customer[]
+  products          Product[]
+  invoices          Invoice[]
+  invoiceSeries     InvoiceSeries[]
+  invoiceTemplates  InvoiceTemplate[]
+  verifactuLogs     VerifactuLog[]
+  invoiceDefaults   InvoiceDefaults?
+  invoiceNoteLogs   InvoiceNoteLog[]
+  recurringInvoices RecurringInvoice[]
 
   @@map("tenants")
 }
@@ -139,8 +140,9 @@ model Customer {
   createdAt        DateTime     @default(now()) @map("created_at")
   updatedAt        DateTime     @updatedAt @map("updated_at")
 
-  tenant           Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  invoices         Invoice[]
+  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices           Invoice[]
+  recurringInvoices  RecurringInvoice[]
 
   @@unique([tenantId, nif])
   @@index([tenantId])
@@ -221,8 +223,9 @@ model InvoiceSeries {
   createdAt        DateTime   @default(now()) @map("created_at")
   updatedAt        DateTime   @updatedAt @map("updated_at")
 
-  tenant           Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  invoices         Invoice[]
+  tenant            Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices          Invoice[]
+  recurringInvoices RecurringInvoice[]
 
   @@unique([tenantId, code, year])
   @@index([tenantId])
@@ -427,4 +430,66 @@ model InvoiceNoteLog {
   @@index([invoiceId])
   @@index([tenantId])
   @@map("invoice_note_logs")
+}
+
+// ==================== RECURRING INVOICES ====================
+
+enum RecurringFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum RecurringInvoiceStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+model RecurringInvoice {
+  id               String                 @id @default(uuid())
+  tenantId         String                 @map("tenant_id")
+  customerId       String                 @map("customer_id")
+  seriesId         String?                @map("series_id")
+  frequency        RecurringFrequency
+  dayOfMonth       Int                    @map("day_of_month")
+  startDate        DateTime               @map("start_date") @db.Date
+  endDate          DateTime?              @map("end_date") @db.Date
+  nextRunDate      DateTime               @map("next_run_date") @db.Date
+  lastRunDate      DateTime?              @map("last_run_date") @db.Date
+  status           RecurringInvoiceStatus @default(ACTIVE)
+  generatedCount   Int                    @default(0) @map("generated_count")
+  maxOccurrences   Int?                   @map("max_occurrences")
+  description      String?                @db.Text
+  // Template data (stored as JSON — mirrors CreateInvoiceDto fields)
+  templateData     Json                   @map("template_data")
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @updatedAt @map("updated_at")
+
+  tenant           Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer         Customer               @relation(fields: [customerId], references: [id])
+  series           InvoiceSeries?         @relation(fields: [seriesId], references: [id])
+  generatedInvoices RecurringInvoiceLog[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([nextRunDate, status])
+  @@map("recurring_invoices")
+}
+
+model RecurringInvoiceLog {
+  id                 String           @id @default(uuid())
+  tenantId           String           @map("tenant_id")
+  recurringInvoiceId String           @map("recurring_invoice_id")
+  invoiceId          String           @map("invoice_id")
+  generatedAt        DateTime         @default(now()) @map("generated_at")
+
+  recurringInvoice   RecurringInvoice @relation(fields: [recurringInvoiceId], references: [id], onDelete: Cascade)
+
+  @@index([recurringInvoiceId])
+  @@index([tenantId])
+  @@map("recurring_invoice_logs")
 }

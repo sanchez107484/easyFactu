@@ -12,6 +12,7 @@ import { InvoiceSeriesModule } from './modules/invoice-series/invoice-series.mod
 import { VerifactuModule } from './modules/verifactu/verifactu.module';
 import { InvoiceTemplateModule } from './modules/invoice-templates/invoice-template.module';
 import { InvoiceDefaultsModule } from './modules/invoice-defaults/invoice-defaults.module';
+import { RecurringInvoiceModule } from './modules/recurring-invoices/recurring-invoice.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { InvoiceDefaultsModule } from './modules/invoice-defaults/invoice-defaul
     VerifactuModule,
     InvoiceTemplateModule,
     InvoiceDefaultsModule,
+    RecurringInvoiceModule,
   ],
   controllers: [],
   providers: [
