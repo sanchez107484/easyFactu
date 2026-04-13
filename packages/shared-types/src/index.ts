@@ -801,6 +801,7 @@ export interface QueryRecurringInvoicesInput {
   limit?: number;
   status?: RecurringStatus;
   customerId?: string;
+  search?: string;
 }
 
 export interface UpdateInvoiceTemplateInput {

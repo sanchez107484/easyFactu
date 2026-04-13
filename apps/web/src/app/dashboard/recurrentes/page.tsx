@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Plus, RefreshCw, Pause, Play, Trash2, MoreVertical } from 'lucide-react';
+import { Plus, RefreshCw, Pause, Play, Trash2, MoreVertical, Pencil, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -74,9 +76,14 @@ function RecurringTableSkeleton() {
 // ==================== PAGE ====================
 
 export default function RecurrentesPage() {
+  const router = useRouter();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
-  const { data, isLoading, error } = useRecurringInvoices({ limit: 50 });
+  const { data, isLoading, error } = useRecurringInvoices({
+    limit: 50,
+    search: search || undefined,
+  });
   const pauseMutation = usePauseRecurringInvoice();
   const resumeMutation = useResumeRecurringInvoice();
   const deleteMutation = useDeleteRecurringInvoice();
@@ -89,7 +96,7 @@ export default function RecurrentesPage() {
   if (isLoading) {
     return (
       <div className="p-6 space-y-6">
-        <PageHeader />
+        <PageHeader search={search} onSearchChange={setSearch} />
         <RecurringTableSkeleton />
       </div>
     );
@@ -98,7 +105,7 @@ export default function RecurrentesPage() {
   if (error) {
     return (
       <div className="p-6">
-        <PageHeader />
+        <PageHeader search={search} onSearchChange={setSearch} />
         <div className="mt-6 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
           Error al cargar las facturas recurrentes. Inténtalo de nuevo.
         </div>
@@ -110,20 +117,30 @@ export default function RecurrentesPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <PageHeader />
+      <PageHeader search={search} onSearchChange={setSearch} />
 
       {items.length === 0 ? (
         <EmptyState
           icon={RefreshCw}
-          title="Sin facturas recurrentes"
-          description="Automatiza tus facturas mensuales. Configura una vez y se generarán solas."
+          title={search ? 'Sin resultados' : 'Sin facturas recurrentes'}
+          description={
+            search
+              ? `No hay recurrentes que coincidan con "${search}".`
+              : 'Automatiza tus facturas mensuales. Configura una vez y se generarán solas.'
+          }
           action={
-            <Link href="/dashboard/recurrentes/nueva">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Nueva recurrente
+            search ? (
+              <Button variant="outline" onClick={() => setSearch('')}>
+                Limpiar búsqueda
               </Button>
-            </Link>
+            ) : (
+              <Link href="/dashboard/recurrentes/nueva">
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nueva recurrente
+                </Button>
+              </Link>
+            )
           }
         />
       ) : (
@@ -134,6 +151,7 @@ export default function RecurrentesPage() {
               onPause={(id) => pauseMutation.mutate(id)}
               onResume={(id) => resumeMutation.mutate(id)}
               onDelete={(id) => setDeleteId(id)}
+              onEdit={(id) => router.push(`/dashboard/recurrentes/nueva?edit=${id}`)}
             />
           </CardContent>
         </Card>
@@ -165,21 +183,38 @@ export default function RecurrentesPage() {
 
 // ==================== SUB-COMPONENTS ====================
 
-function PageHeader() {
+function PageHeader({
+  search,
+  onSearchChange,
+}: {
+  search: string;
+  onSearchChange: (v: string) => void;
+}) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-4">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Facturas recurrentes</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Se generan automáticamente cada período sin que tengas que hacer nada.
         </p>
       </div>
-      <Link href="/dashboard/recurrentes/nueva">
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Nueva recurrente
-        </Button>
-      </Link>
+      <div className="flex items-center gap-3">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            className="pl-8 w-52"
+            placeholder="Buscar cliente..."
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </div>
+        <Link href="/dashboard/recurrentes/nueva">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Nueva recurrente
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }
@@ -189,9 +224,10 @@ interface RecurringTableProps {
   onPause: (id: string) => void;
   onResume: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit: (id: string) => void;
 }
 
-function RecurringTable({ items, onPause, onResume, onDelete }: RecurringTableProps) {
+function RecurringTable({ items, onPause, onResume, onDelete, onEdit }: RecurringTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -217,6 +253,7 @@ function RecurringTable({ items, onPause, onResume, onDelete }: RecurringTablePr
               onPause={onPause}
               onResume={onResume}
               onDelete={onDelete}
+              onEdit={onEdit}
             />
           ))}
         </tbody>
@@ -230,9 +267,10 @@ interface RecurringRowProps {
   onPause: (id: string) => void;
   onResume: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit: (id: string) => void;
 }
 
-function RecurringRow({ item, onPause, onResume, onDelete }: RecurringRowProps) {
+function RecurringRow({ item, onPause, onResume, onDelete, onEdit }: RecurringRowProps) {
   const amount = calculateMonthlyAmount(item.lines);
   const isActive = item.status === RecurringStatus.ACTIVE;
   const isPaused = item.status === RecurringStatus.PAUSED;
@@ -275,6 +313,12 @@ function RecurringRow({ item, onPause, onResume, onDelete }: RecurringRowProps) 
             <DropdownMenuItem asChild>
               <Link href={`/dashboard/recurrentes/${item.id}`}>Ver detalle</Link>
             </DropdownMenuItem>
+            {item.status !== RecurringStatus.COMPLETED && (
+              <DropdownMenuItem onClick={() => onEdit(item.id)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             {isActive && (
               <DropdownMenuItem onClick={() => onPause(item.id)}>

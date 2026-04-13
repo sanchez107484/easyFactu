@@ -25,6 +25,7 @@ export class RecurringInvoiceService {
         lines: { orderBy: { sortOrder: 'asc' } },
         customer: true,
         series: true,
+        _count: { select: { generatedInvoices: true } },
       },
     });
     if (!recurring) {
@@ -91,13 +92,20 @@ export class RecurringInvoiceService {
   // ==================== CRUD ====================
 
   async findAll(tenantId: string, query: QueryRecurringInvoiceDto) {
-    const { page = 1, limit = 20, status, customerId } = query;
+    const { page = 1, limit = 20, status, customerId, search } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.RecurringInvoiceWhereInput = {
       tenantId,
       ...(status ? { status: status as PrismaRecurringStatus } : {}),
       ...(customerId ? { customerId } : {}),
+      ...(search
+        ? {
+            customer: {
+              name: { contains: search, mode: 'insensitive' as Prisma.QueryMode },
+            },
+          }
+        : {}),
     };
 
     const [data, total] = await Promise.all([

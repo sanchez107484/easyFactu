@@ -1,4 +1,4 @@
-import { IsOptional, IsEnum, IsUUID, IsInt, Min } from 'class-validator';
+import { IsOptional, IsEnum, IsUUID, IsInt, Min, IsString, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { RecurringStatus } from '@easyfactura/shared-types';
 
@@ -22,4 +22,9 @@ export class QueryRecurringInvoiceDto {
   @IsOptional()
   @IsUUID()
   customerId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
 }

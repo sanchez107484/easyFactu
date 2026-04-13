@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import {
   Pause,
   Play,
+  Pencil,
   Trash2,
   AlertCircle,
   Building2,
@@ -15,6 +16,7 @@ import {
   MoreVertical,
   Hash,
   Banknote,
+  TicketCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -290,28 +292,16 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
     RECURRING_STATUS_CONFIG[recurring.status as RecurringStatus] ??
     RECURRING_STATUS_CONFIG[RecurringStatus.ACTIVE];
   const lines = recurring.lines ?? [];
+  const generatedCount =
+    (recurring as RecurringInvoice & { _count?: { generatedInvoices: number } })._count
+      ?.generatedInvoices ?? null;
 
-  const discountAmount = recurring.discountPercent
-    ? round2(
-        lines.reduce((acc, l) => acc + round2(Number(l.quantity) * Number(l.unitPrice)), 0) *
-          (Number(recurring.discountPercent) / 100),
-      )
-    : 0;
-  const subtotal = round2(
-    lines.reduce((acc, l) => acc + round2(Number(l.quantity) * Number(l.unitPrice)), 0),
-  );
-  const subtotalAfterDiscount = round2(subtotal - discountAmount);
-  const discFactor = subtotal > 0 ? subtotalAfterDiscount / subtotal : 1;
-  const taxTotal = round2(
-    lines.reduce((acc, l) => {
-      const base = round2(Number(l.quantity) * Number(l.unitPrice));
-      return acc + round2(base * discFactor * (Number(l.taxRate) / 100));
-    }, 0),
-  );
-  const irpfTotal = recurring.irpfPercent
-    ? round2(subtotalAfterDiscount * (Number(recurring.irpfPercent) / 100))
-    : null;
-  const total = round2(subtotalAfterDiscount + taxTotal - (irpfTotal ?? 0));
+  // Use values already computed by buildRecurringPreviewInvoice to avoid duplication
+  const subtotal = previewInvoice!.subtotal;
+  const discountAmount = previewInvoice!.discountAmount ?? 0;
+  const taxTotal = previewInvoice!.taxTotal;
+  const irpfTotal = previewInvoice!.irpfTotal;
+  const total = previewInvoice!.total;
 
   return (
     <>
@@ -326,6 +316,16 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
         }
         headerRight={
           <>
+            {!isCompleted && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push(`/dashboard/recurrentes/nueva?edit=${id}`)}
+              >
+                <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                Editar
+              </Button>
+            )}
             {isActive && (
               <Button
                 variant="outline"
@@ -354,6 +354,14 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {!isCompleted && (
+                  <DropdownMenuItem
+                    onClick={() => router.push(`/dashboard/recurrentes/nueva?edit=${id}`)}
+                  >
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Editar
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
@@ -398,31 +406,15 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
                   <p className="text-3xl font-bold tracking-tight">Finalizada</p>
                 )}
               </div>
-              <div className="flex flex-col gap-2 items-end shrink-0">
-                {isActive && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => pauseMutation.mutate(id)}
-                    disabled={pauseMutation.isPending}
-                    className="min-w-[120px]"
-                  >
-                    <Pause className="mr-1.5 h-3.5 w-3.5" />
-                    {pauseMutation.isPending ? 'Pausando...' : 'Pausar'}
-                  </Button>
-                )}
-                {isPaused && (
-                  <Button
-                    size="sm"
-                    onClick={() => resumeMutation.mutate(id)}
-                    disabled={resumeMutation.isPending}
-                    className="min-w-[120px]"
-                  >
-                    <Play className="mr-1.5 h-3.5 w-3.5" />
-                    {resumeMutation.isPending ? 'Reactivando...' : 'Reactivar'}
-                  </Button>
-                )}
-              </div>
+              {generatedCount !== null && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <TicketCheck className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    {generatedCount} factura{generatedCount !== 1 ? 's' : ''} generada
+                    {generatedCount !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-4 mt-4 pt-4 border-t border-current/10">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

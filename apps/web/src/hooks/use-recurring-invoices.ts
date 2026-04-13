@@ -87,8 +87,9 @@ export function usePauseRecurringInvoice() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => recurringInvoiceApi.pause(id),
-    onSuccess: () => {
+    onSuccess: (updated, id) => {
       queryClient.invalidateQueries({ queryKey: recurringInvoiceKeys.lists() });
+      queryClient.setQueryData(recurringInvoiceKeys.detail(id), updated);
       toast.success('Factura recurrente pausada');
     },
     onError: (error) => {
@@ -101,8 +102,9 @@ export function useResumeRecurringInvoice() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => recurringInvoiceApi.resume(id),
-    onSuccess: () => {
+    onSuccess: (updated, id) => {
       queryClient.invalidateQueries({ queryKey: recurringInvoiceKeys.lists() });
+      queryClient.setQueryData(recurringInvoiceKeys.detail(id), updated);
       toast.success('Factura recurrente reactivada');
     },
     onError: (error) => {
@@ -115,8 +117,9 @@ export function useDeleteRecurringInvoice() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => recurringInvoiceApi.remove(id),
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: recurringInvoiceKeys.lists() });
+      queryClient.removeQueries({ queryKey: recurringInvoiceKeys.detail(id) });
       toast.success('Factura recurrente eliminada');
     },
     onError: (error) => {
