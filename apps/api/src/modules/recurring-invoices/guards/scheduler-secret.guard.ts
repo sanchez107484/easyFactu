@@ -1,8 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-const DEFAULT_SECRET = 'change-me-in-production';
-
 /**
  * BUG-06 fix: Protects POST /recurring-invoices/trigger-scheduler so that only
  * callers who know the SCHEDULER_SECRET can trigger invoice generation.
@@ -10,6 +8,9 @@ const DEFAULT_SECRET = 'change-me-in-production';
  * The secret must be passed in the X-Scheduler-Secret request header.
  * This prevents any authenticated user (or even unauthenticated requests that
  * bypass the JwtAuthGuard) from firing the scheduler arbitrarily.
+ *
+ * The guard fails closed if SCHEDULER_SECRET is not configured or is empty —
+ * see .env.example for the expected environment variable.
  */
 @Injectable()
 export class SchedulerSecretGuard implements CanActivate {
@@ -21,17 +22,13 @@ export class SchedulerSecretGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const provided = (request.headers as Record<string, string>)['x-scheduler-secret'];
     const expected = this.configService.get<string>('SCHEDULER_SECRET');
-    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
 
-    // Always reject if using default secret
-    if (!expected || expected === DEFAULT_SECRET) {
+    if (!expected) {
       this.logger.warn(
-        'SCHEDULER_SECRET is not configured or uses the default value. ' +
-          'Set a strong secret in your environment variables.',
+        'SCHEDULER_SECRET is not configured. Set it in your environment variables.',
       );
-      // Fail closed unconditionally — using the default secret is always insecure
       throw new UnauthorizedException(
-        'SCHEDULER_SECRET debe configurarse con un valor seguro antes de usar este endpoint',
+        'SCHEDULER_SECRET debe configurarse antes de usar este endpoint',
       );
     }
 

@@ -224,7 +224,9 @@ export default function RecurrenteDetailPage() {
   const isEditable = isActive || isPaused;
 
   const templateData = recurring.templateData as RecurringInvoiceTemplateData;
-  const paymentDetails = templateData?.paymentDetails as Record<string, string> | undefined;
+  const paymentDetails = templateData?.paymentDetails as
+    | Record<string, string | undefined>
+    | undefined;
 
   async function handleDelete() {
     await deleteMutation.mutateAsync(id);

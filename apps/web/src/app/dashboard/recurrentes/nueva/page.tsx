@@ -95,15 +95,18 @@ function computeFirstRunDateUTC(
   if (!startDateStr) return '';
 
   const safeDay = Math.min(dayOfMonth, 28);
-  const [yearStr, monthStr] = startDateStr.split('-');
-  if (!yearStr || !monthStr) return '';
+  const [yearStr, monthStr, dayStr] = startDateStr.split('-');
+  if (!yearStr || !monthStr || !dayStr) return '';
 
   const year = parseInt(yearStr, 10);
   const month = parseInt(monthStr, 10) - 1; // 0-indexed
+  const startDay = parseInt(dayStr, 10);
+
+  if (isNaN(year) || isNaN(month) || isNaN(startDay)) return '';
 
   // Candidate: same month as startDate, on the target day (all UTC)
   let candidateTs = Date.UTC(year, month, safeDay);
-  const refTs = Date.UTC(year, month, parseInt(startDateStr.split('-')[2] ?? '1', 10));
+  const refTs = Date.UTC(year, month, startDay);
 
   if (candidateTs <= refTs) {
     // Advance by one period

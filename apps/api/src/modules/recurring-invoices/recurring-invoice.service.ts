@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { RecurringFrequency, RecurringInvoiceStatus } from '@prisma/client';
+import { RecurringFrequency, RecurringInvoiceStatus, Prisma } from '@prisma/client';
 import { CreateRecurringInvoiceDto, RecurringInvoiceLineDto } from './dto/create-recurring-invoice.dto';
 import { UpdateRecurringInvoiceDto } from './dto/update-recurring-invoice.dto';
 import { QueryRecurringInvoiceDto } from './dto/query-recurring-invoice.dto';
@@ -58,7 +58,8 @@ interface RecurringInvoiceRow {
   generatedCount: number;
   maxOccurrences: number | null;
   endDate: Date | null;
-  templateData: RecurringTemplateData;
+  /** JSON field — runtime value is always RecurringTemplateData when written via buildTemplateData */
+  templateData: Prisma.JsonValue;
 }
 
 // ==================== HELPERS ====================
@@ -363,7 +364,7 @@ export class RecurringInvoiceService {
 
     const invoice = await this.generateInvoiceFromTemplate(
       tenantId,
-      existing as unknown as RecurringInvoiceRow,
+      existing as RecurringInvoiceRow,
     );
 
     // Advance nextRunDate after immediate generation
@@ -418,8 +419,7 @@ export class RecurringInvoiceService {
         nextRunDate: { lte: todayUtc },
       },
     });
-    // Cast is safe: templateData JSON field always contains RecurringTemplateData (written by buildTemplateData)
-    return rows as unknown as RecurringInvoiceRow[];
+    return rows as RecurringInvoiceRow[];
   }
 
   /**
@@ -427,7 +427,8 @@ export class RecurringInvoiceService {
    * Used by both the scheduler and generateNow().
    */
   async generateInvoiceFromTemplate(tenantId: string, recurring: RecurringInvoiceRow) {
-    const templateData: RecurringTemplateData = recurring.templateData;
+    // templateData is Prisma.JsonValue at the type level but always a RecurringTemplateData at runtime
+    const templateData = recurring.templateData as RecurringTemplateData;
     const issueDate = new Date();
     const issueDateStr = issueDate.toISOString().split('T')[0];
 
