@@ -29,6 +29,7 @@ import {
   type PaymentDetailsValues,
 } from '@/components/facturas/PaymentDetailsFields';
 import { QuickCreateCustomerModal } from '@/components/clientes/QuickCreateCustomerModal';
+import { CustomerCombobox } from '@/components/clientes/CustomerCombobox';
 import { InvoiceSplitLayout } from '@/components/common/InvoiceSplitLayout';
 import { extendedLineSchema, EMPTY_LINE, ExtendedLineData } from '@/lib/invoice-line-types';
 import { buildPreviewInvoice } from '@/lib/invoice-helpers';
@@ -655,29 +656,12 @@ function RecurringInvoiceForm({
                     {loadingCustomers ? (
                       <Skeleton className="h-10 w-full" />
                     ) : (
-                      <Select
+                      <CustomerCombobox
+                        customers={customers}
                         value={watchedValues.customerId || ''}
-                        onValueChange={(v) =>
-                          form.setValue('customerId', v, { shouldValidate: true })
-                        }
-                      >
-                        <SelectTrigger className={errors.customerId ? 'border-destructive' : ''}>
-                          <SelectValue placeholder="Selecciona un cliente" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {customers.length === 0 && (
-                            <div className="p-3 text-sm text-muted-foreground flex gap-2 items-start">
-                              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                              No tienes clientes activos. Crea uno primero.
-                            </div>
-                          )}
-                          {customers.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.name} — {c.nif}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        onChange={(v) => form.setValue('customerId', v, { shouldValidate: true })}
+                        hasError={!!errors.customerId}
+                      />
                     )}
                     {errors.customerId && (
                       <p className="text-sm text-destructive">{errors.customerId.message}</p>

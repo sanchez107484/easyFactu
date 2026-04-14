@@ -45,6 +45,7 @@ import { DueDatePicker } from '@/components/facturas/DueDatePicker';
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
 import type { PaymentDetails } from '@/components/facturas/LiveInvoicePreview';
 import { QuickCreateCustomerModal } from '@/components/clientes/QuickCreateCustomerModal';
+import { CustomerCombobox } from '@/components/clientes/CustomerCombobox';
 import {
   PaymentDetailsFields,
   PaymentDetailsValues,
@@ -301,29 +302,12 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
                     {loadingCustomers ? (
                       <Skeleton className="h-10 w-full" />
                     ) : (
-                      <Select
+                      <CustomerCombobox
+                        customers={customers}
                         value={watchedValues.customerId || ''}
-                        onValueChange={(v) =>
-                          form.setValue('customerId', v, { shouldValidate: true })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona un cliente" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {customers.length === 0 && (
-                            <div className="p-3 text-sm text-muted-foreground flex gap-2 items-start">
-                              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                              No tienes clientes activos. Crea uno primero.
-                            </div>
-                          )}
-                          {customers.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.name} — {c.nif}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        onChange={(v) => form.setValue('customerId', v, { shouldValidate: true })}
+                        hasError={!!form.formState.errors.customerId}
+                      />
                     )}
                     {form.formState.errors.customerId && (
                       <p className="text-sm text-destructive">
