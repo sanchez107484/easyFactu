@@ -18,12 +18,13 @@ export interface SanityBlogPostCard {
   excerpt: string;
   publishedAt: string;
   author: SanityBlogAuthor | null;
-  categories: SanityBlogCategory[];
+  categories: SanityBlogCategory[] | null;
   featuredImageUrl: string | null;
   featuredImageAlt: string | null;
 }
 
 export interface SanityBlogPost extends SanityBlogPostCard {
+  _updatedAt: string;
   body: PortableTextBlock[];
   seoTitle: string | null;
   seoDescription: string | null;
@@ -56,6 +57,7 @@ export const POST_QUERY = groq`
     "categories": categories[]->{ title, "slug": slug.current },
     "featuredImageUrl": featuredImage.asset->url,
     "featuredImageAlt": featuredImage.alt,
+    _updatedAt,
     seoTitle,
     seoDescription
   }

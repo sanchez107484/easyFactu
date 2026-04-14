@@ -204,6 +204,21 @@ export class RecurringInvoiceService {
       throw new ConflictException('No se puede modificar una factura recurrente completada');
     }
 
+    // BUG-01: Recalculate nextRunDate when scheduling params (frequency or dayOfMonth) change
+    // to avoid generating invoices on the wrong date after an update.
+    const newFrequency = (dto.frequency ?? existing.frequency) as Frequency;
+    const newDayOfMonth = dto.dayOfMonth ?? existing.dayOfMonth;
+    const schedulingParamsChanged =
+      (dto.frequency !== undefined && dto.frequency !== existing.frequency) ||
+      (dto.dayOfMonth !== undefined && dto.dayOfMonth !== existing.dayOfMonth);
+    const recalculatedNextRunDate = schedulingParamsChanged
+      ? this.calculateInitialNextRunDate(
+          new Date().toISOString().split('T')[0]!,
+          newDayOfMonth,
+          newFrequency
+        )
+      : undefined;
+
     return this.prisma.$transaction(async (tx) => {
       if (dto.lines) {
         await tx.recurringInvoiceLine.deleteMany({
@@ -216,6 +231,7 @@ export class RecurringInvoiceService {
         data: {
           ...(dto.frequency !== undefined ? { frequency: dto.frequency } : {}),
           ...(dto.dayOfMonth !== undefined ? { dayOfMonth: dto.dayOfMonth } : {}),
+          ...(recalculatedNextRunDate ? { nextRunDate: recalculatedNextRunDate } : {}),
           ...(dto.endDate !== undefined
             ? { endDate: dto.endDate ? new Date(dto.endDate) : null }
             : {}),
@@ -262,9 +278,17 @@ export class RecurringInvoiceService {
     if (recurring.status !== PrismaRecurringStatus.PAUSED) {
       throw new ConflictException('Solo se pueden reactivar facturas recurrentes pausadas');
     }
+    // BUG-02: Recalculate nextRunDate from today when resuming to avoid scheduling
+    // past dates (e.g. if the recurring invoice was paused for several periods).
+    const today = new Date().toISOString().split('T')[0]!;
+    const nextRunDate = this.calculateInitialNextRunDate(
+      today,
+      recurring.dayOfMonth,
+      recurring.frequency as Frequency
+    );
     return this.prisma.recurringInvoice.update({
       where: { id },
-      data: { status: PrismaRecurringStatus.ACTIVE },
+      data: { status: PrismaRecurringStatus.ACTIVE, nextRunDate },
     });
   }
 
