@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RecurringStatus, Frequency } from '@easyfactura/shared-types';
-import { getNextRunDate } from '@easyfactura/shared-constants';
 import { CreateRecurringInvoiceDto } from './dto/create-recurring-invoice.dto';
 import { UpdateRecurringInvoiceDto } from './dto/update-recurring-invoice.dto';
 import { QueryRecurringInvoiceDto } from './dto/query-recurring-invoice.dto';
@@ -15,6 +14,60 @@ import { Prisma, RecurringStatus as PrismaRecurringStatus } from '@prisma/client
 @Injectable()
 export class RecurringInvoiceService {
   constructor(private readonly prisma: PrismaService) {}
+
+  // ==================== DATE HELPERS ====================
+
+  /**
+   * Converts a Frequency to its equivalent number of months.
+   */
+  private static frequencyToMonths(frequency: Frequency): number {
+    switch (frequency) {
+      case Frequency.MONTHLY:    return 1;
+      case Frequency.QUARTERLY:  return 3;
+      case Frequency.SEMIANNUAL: return 6;
+      case Frequency.ANNUAL:     return 12;
+    }
+  }
+
+  /**
+   * Builds a UTC Date for year/month (0-based)/dayOfMonth,
+   * clamping dayOfMonth to the last real day of the month.
+   * All arithmetic in UTC to avoid DST issues (BUG-05).
+   */
+  private static buildUtcDate(year: number, month: number, dayOfMonth: number): Date {
+    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+    const clampedDay = Math.min(dayOfMonth, daysInMonth);
+    return new Date(Date.UTC(year, month, clampedDay));
+  }
+
+  /**
+   * Computes the next UTC date on which a recurring invoice should run.
+   *
+   * Algorithm:
+   *   1. Build candidate = baseDate year/month at dayOfMonth (clamped to month end).
+   *   2. If candidate is strictly after baseDate, use it.
+   *   3. Otherwise advance by one frequency period and return.
+   *
+   * All arithmetic is done in UTC to avoid timezone/DST discrepancies.
+   */
+  static computeNextRunDate(baseDate: Date, frequency: Frequency, dayOfMonth: number): Date {
+    const months = RecurringInvoiceService.frequencyToMonths(frequency);
+    let year = baseDate.getUTCFullYear();
+    let month = baseDate.getUTCMonth(); // 0-based
+
+    const candidate = RecurringInvoiceService.buildUtcDate(year, month, dayOfMonth);
+
+    if (candidate > baseDate) {
+      return candidate;
+    }
+
+    // Advance by one period
+    month += months;
+    year += Math.floor(month / 12);
+    month = month % 12;
+
+    return RecurringInvoiceService.buildUtcDate(year, month, dayOfMonth);
+  }
 
   // ==================== PRIVATE HELPERS ====================
 
@@ -45,31 +98,17 @@ export class RecurringInvoiceService {
     const y = parts[0] ?? 2000;
     const m = parts[1] ?? 1;
     const d = parts[2] ?? 1;
-    const startMs = Date.UTC(y, m - 1, d);
+    const startDate_ = new Date(Date.UTC(y, m - 1, d));
 
     const todayUTC = new Date();
-    const todayMs = Date.UTC(
-      todayUTC.getUTCFullYear(),
-      todayUTC.getUTCMonth(),
-      todayUTC.getUTCDate()
+    const today = new Date(
+      Date.UTC(todayUTC.getUTCFullYear(), todayUTC.getUTCMonth(), todayUTC.getUTCDate())
     );
 
-    // Use the later of startDate and today as the base reference
-    const baseMs = Math.max(startMs, todayMs);
-    const base = new Date(baseMs);
-    const baseYear = base.getUTCFullYear();
-    const baseMonth = base.getUTCMonth(); // 0-indexed
+    // Use the later of startDate and today as base reference
+    const base = startDate_ > today ? startDate_ : today;
 
-    // Try to schedule on dayOfMonth within the base month
-    const lastDayBase = new Date(Date.UTC(baseYear, baseMonth + 1, 0)).getUTCDate();
-    const candidateMs = Date.UTC(baseYear, baseMonth, Math.min(dayOfMonth, lastDayBase));
-
-    // If that day has already passed today, advance by one frequency period
-    if (candidateMs < todayMs) {
-      return getNextRunDate(new Date(todayMs), frequency, dayOfMonth);
-    }
-
-    return new Date(candidateMs);
+    return RecurringInvoiceService.computeNextRunDate(base, frequency, dayOfMonth);
   }
 
   private buildLinesCreateData(
@@ -212,11 +251,7 @@ export class RecurringInvoiceService {
       (dto.frequency !== undefined && dto.frequency !== existing.frequency) ||
       (dto.dayOfMonth !== undefined && dto.dayOfMonth !== existing.dayOfMonth);
     const recalculatedNextRunDate = schedulingParamsChanged
-      ? this.calculateInitialNextRunDate(
-          new Date().toISOString().split('T')[0]!,
-          newDayOfMonth,
-          newFrequency
-        )
+      ? RecurringInvoiceService.computeNextRunDate(new Date(), newFrequency, newDayOfMonth)
       : undefined;
 
     return this.prisma.$transaction(async (tx) => {
@@ -280,11 +315,11 @@ export class RecurringInvoiceService {
     }
     // BUG-02: Recalculate nextRunDate from today when resuming to avoid scheduling
     // past dates (e.g. if the recurring invoice was paused for several periods).
-    const today = new Date().toISOString().split('T')[0]!;
-    const nextRunDate = this.calculateInitialNextRunDate(
+    const today = new Date();
+    const nextRunDate = RecurringInvoiceService.computeNextRunDate(
       today,
-      recurring.dayOfMonth,
-      recurring.frequency as Frequency
+      recurring.frequency as Frequency,
+      recurring.dayOfMonth
     );
     return this.prisma.recurringInvoice.update({
       where: { id },
@@ -330,7 +365,11 @@ export class RecurringInvoiceService {
     endDate: Date | null
   ) {
     const current = await this.prisma.recurringInvoice.findUniqueOrThrow({ where: { id } });
-    const nextDate = getNextRunDate(current.nextRunDate, frequency, dayOfMonth);
+    const nextDate = RecurringInvoiceService.computeNextRunDate(
+      current.nextRunDate,
+      frequency,
+      dayOfMonth
+    );
 
     const isCompleted = endDate !== null && nextDate > endDate;
 
