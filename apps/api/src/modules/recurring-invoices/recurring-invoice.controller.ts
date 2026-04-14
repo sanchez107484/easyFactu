@@ -38,6 +38,12 @@ export class RecurringInvoiceController {
     return this.recurringInvoiceService.findAll(tenantId, query);
   }
 
+  @Get(':id/generated-invoices')
+  @ApiOperation({ summary: 'List invoices generated from a recurring invoice' })
+  getGeneratedInvoices(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    return this.recurringInvoiceService.findGeneratedInvoices(tenantId, id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a single recurring invoice' })
   findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
@@ -70,6 +76,13 @@ export class RecurringInvoiceController {
   @ApiOperation({ summary: 'Resume a paused recurring invoice' })
   resume(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.recurringInvoiceService.resume(tenantId, id);
+  }
+
+  @Post(':id/generate')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Manually generate the next invoice for a recurring invoice' })
+  generateNow(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    return this.schedulerService.generateNow(tenantId, id);
   }
 
   @Delete(':id')

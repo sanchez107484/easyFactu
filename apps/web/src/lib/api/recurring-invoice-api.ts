@@ -6,6 +6,8 @@ import {
   CreateRecurringInvoiceInput,
   UpdateRecurringInvoiceInput,
   QueryRecurringInvoicesInput,
+  RecurringGeneratedInvoice,
+  RecurringGenerateResult,
 } from '@easyfactura/shared-types';
 
 function buildQueryString(params: Record<string, unknown>): string {
@@ -53,4 +55,14 @@ export const recurringInvoiceApi = {
 
   remove: (id: string): Promise<void> =>
     apiClient.delete(`/recurring-invoices/${id}`).then(() => undefined),
+
+  getGeneratedInvoices: (id: string): Promise<RecurringGeneratedInvoice[]> =>
+    apiClient
+      .get<ApiResponse<RecurringGeneratedInvoice[]>>(`/recurring-invoices/${id}/generated-invoices`)
+      .then(unwrapApiResponse),
+
+  generateNow: (id: string): Promise<RecurringGenerateResult> =>
+    apiClient
+      .post<ApiResponse<RecurringGenerateResult>>(`/recurring-invoices/${id}/generate`)
+      .then(unwrapApiResponse),
 };

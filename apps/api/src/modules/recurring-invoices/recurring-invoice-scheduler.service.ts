@@ -1,9 +1,36 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Injectable, Logger, ConflictException } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { Frequency } from '@easyfactura/shared-types';
 import { RecurringInvoiceService } from './recurring-invoice.service';
 import { InvoiceService } from '../invoices/invoice.service';
 import { CreateInvoiceDto } from '../invoices/dto/create-invoice.dto';
+import { RecurringGenerateResult } from '@easyfactura/shared-types';
+
+/** Minimal shape of a recurring invoice needed to generate an invoice from it. */
+type RecurringWithLines = {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  seriesId: string | null;
+  frequency: string;
+  dayOfMonth: number;
+  endDate: Date | null;
+  autoConfirm: boolean;
+  discountPercent: unknown;
+  irpfPercent: unknown;
+  paymentMethod: string | null;
+  paymentDetails: unknown;
+  notes: string | null;
+  lines: Array<{
+    description: string;
+    quantity: unknown;
+    unitPrice: unknown;
+    taxRate: unknown;
+    irpfRate: unknown;
+    hideQty: boolean;
+    productId: string | null;
+  }>;
+};
 
 @Injectable()
 export class RecurringInvoiceSchedulerService {
@@ -69,77 +96,72 @@ export class RecurringInvoiceSchedulerService {
     }
   }
 
-  private async processOneRecurringInvoice(recurring: {
-    id: string;
-    tenantId: string;
-    customerId: string;
-    seriesId: string | null;
-    frequency: string;
-    dayOfMonth: number;
-    endDate: Date | null;
-    autoConfirm: boolean;
-    discountPercent: unknown;
-    irpfPercent: unknown;
-    paymentMethod: string | null;
-    paymentDetails: unknown;
-    notes: string | null;
-    lines: Array<{
-      description: string;
-      quantity: unknown;
-      unitPrice: unknown;
-      taxRate: unknown;
-      irpfRate: unknown;
-      hideQty: boolean;
-      productId: string | null;
-    }>;
-  }): Promise<boolean> {
-    try {
-      const today = new Date();
-      const issueDateStr = today.toISOString().split('T')[0]!;
+  // ==================== GENERATION CORE ====================
 
-      const dto: CreateInvoiceDto = {
-        customerId: recurring.customerId,
-        seriesId: recurring.seriesId ?? undefined,
-        issueDate: issueDateStr,
-        invoiceType: 'standard',
-        discountPercent:
-          recurring.discountPercent != null ? Number(recurring.discountPercent) : undefined,
-        irpfPercent: recurring.irpfPercent != null ? Number(recurring.irpfPercent) : undefined,
-        paymentMethod: recurring.paymentMethod as CreateInvoiceDto['paymentMethod'],
-        paymentDetails: recurring.paymentDetails as Record<string, unknown> | undefined,
-        notes: recurring.notes ?? undefined,
-        lines: recurring.lines.map((line) => ({
-          productId: line.productId ?? undefined,
-          description: line.description,
-          quantity: Number(line.quantity),
-          unitPrice: Number(line.unitPrice),
-          taxRate: Number(line.taxRate),
-          hideQty: line.hideQty,
-        })),
-      };
+  /**
+   * Core generation logic shared by the scheduler and the manual trigger.
+   * Throws on any error so the caller can decide whether to catch or propagate.
+   */
+  private async executeInvoiceGeneration(
+    recurring: RecurringWithLines
+  ): Promise<RecurringGenerateResult> {
+    const today = new Date();
+    const issueDateStr = today.toISOString().split('T')[0]!;
 
-      const invoice = await this.invoiceService.create(recurring.tenantId, dto);
+    const dto: CreateInvoiceDto = {
+      customerId: recurring.customerId,
+      seriesId: recurring.seriesId ?? undefined,
+      issueDate: issueDateStr,
+      invoiceType: 'standard',
+      discountPercent:
+        recurring.discountPercent != null ? Number(recurring.discountPercent) : undefined,
+      irpfPercent: recurring.irpfPercent != null ? Number(recurring.irpfPercent) : undefined,
+      paymentMethod: recurring.paymentMethod as CreateInvoiceDto['paymentMethod'],
+      paymentDetails: recurring.paymentDetails as Record<string, unknown> | undefined,
+      notes: recurring.notes ?? undefined,
+      lines: recurring.lines.map((line) => ({
+        productId: line.productId ?? undefined,
+        description: line.description,
+        quantity: Number(line.quantity),
+        unitPrice: Number(line.unitPrice),
+        taxRate: Number(line.taxRate),
+        hideQty: line.hideQty,
+      })),
+    };
 
-      // Link generated invoice to its recurring template
-      await this.invoiceService.linkToRecurringInvoice(invoice.id, recurring.id);
+    const invoice = await this.invoiceService.create(recurring.tenantId, dto);
 
-      if (recurring.autoConfirm) {
-        await this.invoiceService.confirm(recurring.tenantId, invoice.id);
-        this.logger.log(
-          `Auto-confirmed invoice ${invoice.id} for recurring ${recurring.id} (tenant ${recurring.tenantId})`
-        );
-      } else {
-        this.logger.log(
-          `Created draft invoice ${invoice.id} for recurring ${recurring.id} (tenant ${recurring.tenantId})`
-        );
-      }
+    // Link generated invoice to its recurring template
+    await this.invoiceService.linkToRecurringInvoice(invoice.id, recurring.id);
 
-      await this.recurringInvoiceService.advanceNextRunDate(
-        recurring.id,
-        recurring.frequency as Frequency,
-        recurring.dayOfMonth,
-        recurring.endDate
+    if (recurring.autoConfirm) {
+      await this.invoiceService.confirm(recurring.tenantId, invoice.id);
+      this.logger.log(
+        `Auto-confirmed invoice ${invoice.id} for recurring ${recurring.id} (tenant ${recurring.tenantId})`
       );
+    } else {
+      this.logger.log(
+        `Created draft invoice ${invoice.id} for recurring ${recurring.id} (tenant ${recurring.tenantId})`
+      );
+    }
+
+    await this.recurringInvoiceService.advanceNextRunDate(
+      recurring.id,
+      recurring.frequency as Frequency,
+      recurring.dayOfMonth,
+      recurring.endDate
+    );
+
+    return { invoiceId: invoice.id, invoiceNumber: invoice.number ?? null };
+  }
+
+  /**
+   * Scheduler path: wraps executeInvoiceGeneration and returns false on error
+   * so a single failure never blocks other recurring invoices in the same run.
+   */
+  private async processOneRecurringInvoice(recurring: RecurringWithLines): Promise<boolean> {
+    try {
+      await this.executeInvoiceGeneration(recurring);
       return true;
     } catch (error) {
       // Log but do not rethrow — one failure must not block other recurring invoices
@@ -148,5 +170,22 @@ export class RecurringInvoiceSchedulerService {
       );
       return false;
     }
+  }
+
+  // ==================== MANUAL TRIGGER ====================
+
+  /**
+   * Manual trigger: generates the next invoice for a specific recurring invoice
+   * immediately, regardless of its nextRunDate.
+   * Throws if the recurring invoice is completed.
+   */
+  async generateNow(tenantId: string, id: string): Promise<RecurringGenerateResult> {
+    const recurring = await this.recurringInvoiceService.findOne(tenantId, id);
+
+    if (recurring.status === 'COMPLETED') {
+      throw new ConflictException('No se puede generar una factura de una plantilla ya completada');
+    }
+
+    return this.executeInvoiceGeneration(recurring);
   }
 }

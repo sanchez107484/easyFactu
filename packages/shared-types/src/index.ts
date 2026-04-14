@@ -755,6 +755,8 @@ export interface RecurringInvoice {
   customer?: Customer;
   series?: InvoiceSeries;
   lines?: RecurringInvoiceLine[];
+  /** Computed by the list endpoint — total per generation including tax minus IRPF. */
+  estimatedTotal?: number;
 }
 
 export interface CreateRecurringInvoiceLineInput {
@@ -806,6 +808,19 @@ export interface QueryRecurringInvoicesInput {
   search?: string;
 }
 
+export interface RecurringGeneratedInvoice {
+  id: string;
+  number: string | null;
+  issueDate: string;
+  status: InvoiceStatus;
+  total: number;
+}
+
+export interface RecurringGenerateResult {
+  invoiceId: string;
+  invoiceNumber: string | null;
+}
+
 export interface UpdateInvoiceTemplateInput {
   name?: string;
   isDefault?: boolean;
@@ -846,107 +861,4 @@ export interface QuarterlyReport {
   totalTax: number;
   totalIrpf: number;
   invoicesCount: number;
-}
-
-// ==================== RECURRING INVOICES ====================
-
-export enum RecurringFrequency {
-  WEEKLY = 'WEEKLY',
-  BIWEEKLY = 'BIWEEKLY',
-  MONTHLY = 'MONTHLY',
-  QUARTERLY = 'QUARTERLY',
-  YEARLY = 'YEARLY',
-}
-
-export enum RecurringInvoiceStatus {
-  ACTIVE = 'ACTIVE',
-  PAUSED = 'PAUSED',
-  COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
-}
-
-export interface RecurringInvoiceTemplateData {
-  lines: CreateInvoiceLineInput[];
-  discountPercent?: number;
-  irpfPercent?: number;
-  paymentMethod?: PaymentMethod;
-  paymentDetails?: Record<string, unknown>;
-  notes?: string;
-  dueDays?: number;
-}
-
-export interface RecurringInvoice {
-  id: string;
-  tenantId: string;
-  customerId: string;
-  seriesId: string | null;
-  frequency: RecurringFrequency;
-  dayOfMonth: number;
-  startDate: string;
-  endDate: string | null;
-  nextRunDate: string;
-  lastRunDate: string | null;
-  status: RecurringInvoiceStatus;
-  generatedCount: number;
-  maxOccurrences: number | null;
-  description: string | null;
-  templateData: RecurringInvoiceTemplateData;
-  createdAt: string;
-  updatedAt: string;
-  customer?: Customer;
-  series?: InvoiceSeries | null;
-  generatedInvoices?: RecurringInvoiceLog[];
-}
-
-export interface RecurringInvoiceLog {
-  id: string;
-  tenantId: string;
-  recurringInvoiceId: string;
-  invoiceId: string;
-  generatedAt: string;
-  invoice?: Invoice;
-}
-
-export interface CreateRecurringInvoiceInput {
-  customerId: string;
-  seriesId?: string;
-  frequency: RecurringFrequency;
-  dayOfMonth: number;
-  startDate: string;
-  endDate?: string;
-  maxOccurrences?: number;
-  description?: string;
-  lines: CreateInvoiceLineInput[];
-  discountPercent?: number;
-  irpfPercent?: number;
-  paymentMethod?: PaymentMethod;
-  paymentDetails?: Record<string, unknown>;
-  notes?: string;
-  dueDays?: number;
-}
-
-export interface UpdateRecurringInvoiceInput {
-  customerId?: string;
-  seriesId?: string;
-  frequency?: RecurringFrequency;
-  dayOfMonth?: number;
-  endDate?: string;
-  maxOccurrences?: number;
-  description?: string;
-  lines?: CreateInvoiceLineInput[];
-  discountPercent?: number;
-  irpfPercent?: number;
-  paymentMethod?: PaymentMethod;
-  paymentDetails?: Record<string, unknown>;
-  notes?: string;
-  dueDays?: number;
-  nextRunDate?: string;
-}
-
-export interface QueryRecurringInvoicesInput {
-  page?: number;
-  limit?: number;
-  search?: string;
-  status?: RecurringInvoiceStatus;
-  customerId?: string;
 }

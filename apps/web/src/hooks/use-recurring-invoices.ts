@@ -9,6 +9,8 @@ import {
   CreateRecurringInvoiceInput,
   UpdateRecurringInvoiceInput,
   QueryRecurringInvoicesInput,
+  RecurringGeneratedInvoice,
+  RecurringGenerateResult,
 } from '@easyfactura/shared-types';
 import { AxiosError } from 'axios';
 
@@ -40,6 +42,7 @@ export function useRecurringInvoices(filters: QueryRecurringInvoicesInput = {}) 
   return useQuery({
     queryKey: recurringInvoiceKeys.list(filters),
     queryFn: () => recurringInvoiceApi.getAll(filters),
+    staleTime: 30_000,
   });
 }
 
@@ -48,6 +51,16 @@ export function useRecurringInvoice(id: string) {
     queryKey: recurringInvoiceKeys.detail(id),
     queryFn: () => recurringInvoiceApi.getById(id),
     enabled: !!id,
+    staleTime: 30_000,
+  });
+}
+
+export function useRecurringInvoiceGeneratedInvoices(id: string) {
+  return useQuery<RecurringGeneratedInvoice[]>({
+    queryKey: [...recurringInvoiceKeys.detail(id), 'generated-invoices'],
+    queryFn: () => recurringInvoiceApi.getGeneratedInvoices(id),
+    enabled: !!id,
+    staleTime: 30_000,
   });
 }
 
@@ -121,6 +134,31 @@ export function useDeleteRecurringInvoice() {
       queryClient.invalidateQueries({ queryKey: recurringInvoiceKeys.lists() });
       queryClient.removeQueries({ queryKey: recurringInvoiceKeys.detail(id) });
       toast.success('Factura recurrente eliminada');
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useGenerateRecurringInvoice() {
+  const queryClient = useQueryClient();
+  return useMutation<RecurringGenerateResult, unknown, string>({
+    mutationFn: (id: string) => recurringInvoiceApi.generateNow(id),
+    onSuccess: (result, id) => {
+      queryClient.invalidateQueries({ queryKey: recurringInvoiceKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: recurringInvoiceKeys.detail(id) });
+      queryClient.invalidateQueries({
+        queryKey: [...recurringInvoiceKeys.detail(id), 'generated-invoices'],
+      });
+      toast.success('Factura generada correctamente', {
+        action: {
+          label: 'Ver factura',
+          onClick: () => {
+            window.location.href = `/dashboard/facturas/${result.invoiceId}`;
+          },
+        },
+      });
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error));

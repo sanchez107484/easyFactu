@@ -1,4 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 /**
@@ -19,16 +25,17 @@ export class SchedulerSecretGuard implements CanActivate {
   constructor(private readonly configService: ConfigService) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest<Request>();
-    const provided = (request.headers as Record<string, string>)['x-scheduler-secret'];
+    const request = context
+      .switchToHttp()
+      .getRequest<{ headers: Record<string, string | string[] | undefined> }>();
+    const raw = request.headers['x-scheduler-secret'];
+    const provided = Array.isArray(raw) ? raw[0] : raw;
     const expected = this.configService.get<string>('SCHEDULER_SECRET');
 
     if (!expected) {
-      this.logger.warn(
-        'SCHEDULER_SECRET is not configured. Set it in your environment variables.',
-      );
+      this.logger.warn('SCHEDULER_SECRET is not configured. Set it in your environment variables.');
       throw new UnauthorizedException(
-        'SCHEDULER_SECRET debe configurarse antes de usar este endpoint',
+        'SCHEDULER_SECRET debe configurarse antes de usar este endpoint'
       );
     }
 

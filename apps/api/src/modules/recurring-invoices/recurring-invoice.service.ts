@@ -22,10 +22,14 @@ export class RecurringInvoiceService {
    */
   private static frequencyToMonths(frequency: Frequency): number {
     switch (frequency) {
-      case Frequency.MONTHLY:    return 1;
-      case Frequency.QUARTERLY:  return 3;
-      case Frequency.SEMIANNUAL: return 6;
-      case Frequency.ANNUAL:     return 12;
+      case Frequency.MONTHLY:
+        return 1;
+      case Frequency.QUARTERLY:
+        return 3;
+      case Frequency.SEMIANNUAL:
+        return 6;
+      case Frequency.ANNUAL:
+        return 12;
     }
   }
 
@@ -147,14 +151,14 @@ export class RecurringInvoiceService {
         : {}),
     };
 
-    const [data, total] = await Promise.all([
+    const [rawData, total] = await Promise.all([
       this.prisma.recurringInvoice.findMany({
         where,
         include: {
           customer: { select: { id: true, name: true, nif: true } },
           series: { select: { id: true, code: true, prefix: true } },
-          lines: { orderBy: { sortOrder: 'asc' } },
           _count: { select: { generatedInvoices: true } },
+          lines: { select: { quantity: true, unitPrice: true, taxRate: true } },
         },
         orderBy: [{ status: 'asc' }, { nextRunDate: 'asc' }],
         skip,
@@ -162,6 +166,21 @@ export class RecurringInvoiceService {
       }),
       this.prisma.recurringInvoice.count({ where }),
     ]);
+
+    // Compute estimated total server-side so the list endpoint does not ship full line objects.
+    const data = rawData.map(({ lines, discountPercent, irpfPercent, ...item }) => {
+      const gross = lines.reduce((sum, l) => sum + Number(l.quantity) * Number(l.unitPrice), 0);
+      const discountFactor = discountPercent ? 1 - Number(discountPercent) / 100 : 1;
+      const netBase = gross * discountFactor;
+      const totalTax = lines.reduce((sum, l) => {
+        const lineNet = Number(l.quantity) * Number(l.unitPrice) * discountFactor;
+        return sum + lineNet * (Number(l.taxRate) / 100);
+      }, 0);
+      const totalIrpf = irpfPercent ? netBase * (Number(irpfPercent) / 100) : 0;
+      const estimatedTotal = Math.round((netBase + totalTax - totalIrpf) * 100) / 100;
+
+      return { ...item, discountPercent, irpfPercent, estimatedTotal };
+    });
 
     return {
       data,
@@ -330,6 +349,25 @@ export class RecurringInvoiceService {
   async remove(tenantId: string, id: string) {
     await this.findOneOrFail(tenantId, id);
     await this.prisma.recurringInvoice.delete({ where: { id } });
+  }
+
+  // ==================== GENERATED INVOICES ====================
+
+  async findGeneratedInvoices(tenantId: string, recurringInvoiceId: string) {
+    const exists = await this.prisma.recurringInvoice.findFirst({
+      where: { id: recurringInvoiceId, tenantId },
+      select: { id: true },
+    });
+    if (!exists) {
+      throw new NotFoundException('Factura recurrente no encontrada');
+    }
+
+    return this.prisma.invoice.findMany({
+      where: { tenantId, recurringInvoiceId },
+      select: { id: true, number: true, issueDate: true, status: true, total: true },
+      orderBy: { issueDate: 'desc' },
+      take: 50,
+    });
   }
 
   // ==================== SCHEDULER SUPPORT ====================

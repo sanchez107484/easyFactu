@@ -17,6 +17,7 @@ import {
   Hash,
   Banknote,
   TicketCheck,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -43,8 +44,12 @@ import {
   usePauseRecurringInvoice,
   useResumeRecurringInvoice,
   useDeleteRecurringInvoice,
+  useRecurringInvoiceGeneratedInvoices,
+  useGenerateRecurringInvoice,
 } from '@/hooks/use-recurring-invoices';
+import { GenerateNowDialog } from '@/components/recurrentes/generate-now-dialog';
 import { useDefaultTemplate } from '@/hooks/use-invoice-templates';
+import { InvoiceStatusBadge } from '@/components/common/invoice-status-badge';
 import { useAuthStore } from '@/store/auth-store';
 import { useTenant } from '@/hooks/use-tenant';
 import { InvoiceSplitLayout } from '@/components/common/InvoiceSplitLayout';
@@ -245,15 +250,19 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
 
   const currentTenant = useAuthStore((s) => s.currentTenant);
   const { data: tenantData } = useTenant();
   const { data: defaultTemplate } = useDefaultTemplate();
 
   const { data: recurring, isLoading, error } = useRecurringInvoice(id);
+  const { data: generatedInvoices, isLoading: loadingGenerated } =
+    useRecurringInvoiceGeneratedInvoices(id);
   const pauseMutation = usePauseRecurringInvoice();
   const resumeMutation = useResumeRecurringInvoice();
   const deleteMutation = useDeleteRecurringInvoice();
+  const generateMutation = useGenerateRecurringInvoice();
 
   const handleDelete = () => {
     deleteMutation.mutate(id, {
@@ -288,6 +297,9 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
   const isActive = recurring.status === RecurringStatus.ACTIVE;
   const isPaused = recurring.status === RecurringStatus.PAUSED;
   const isCompleted = recurring.status === RecurringStatus.COMPLETED;
+  const todayUtc = new Date();
+  todayUtc.setUTCHours(0, 0, 0, 0);
+  const isOverdue = isActive && new Date(recurring.nextRunDate) < todayUtc;
   const statusCfg =
     RECURRING_STATUS_CONFIG[recurring.status as RecurringStatus] ??
     RECURRING_STATUS_CONFIG[RecurringStatus.ACTIVE];
@@ -324,6 +336,17 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
               >
                 <Pencil className="mr-1.5 h-3.5 w-3.5" />
                 Editar
+              </Button>
+            )}
+            {!isCompleted && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowGenerateDialog(true)}
+                disabled={generateMutation.isPending}
+              >
+                <Zap className="mr-1.5 h-3.5 w-3.5" />
+                {generateMutation.isPending ? 'Generando...' : 'Generar ahora'}
               </Button>
             )}
             {isActive && (
@@ -401,6 +424,12 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
                     <p className="text-3xl font-bold tracking-tight tabular-nums">
                       {formatDate(recurring.nextRunDate)}
                     </p>
+                    {isOverdue && (
+                      <div className="flex items-center gap-1.5 mt-2 text-amber-600 dark:text-amber-400 text-xs font-medium">
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                        Atrasada — pendiente en el siguiente ciclo del planificador
+                      </div>
+                    )}
                   </>
                 ) : (
                   <p className="text-3xl font-bold tracking-tight">Finalizada</p>
@@ -576,8 +605,58 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
               </p>
             </div>
           )}
+
+          {/* ZONA G — Facturas generadas */}
+          <div className="rounded-xl border bg-card p-5">
+            <SectionLabel icon={TicketCheck}>Facturas generadas</SectionLabel>
+            {loadingGenerated ? (
+              <div className="space-y-2">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} className="h-10 w-full rounded-md" />
+                ))}
+              </div>
+            ) : !generatedInvoices?.length ? (
+              <p className="text-sm text-muted-foreground">
+                Todavía no se ha generado ninguna factura.
+              </p>
+            ) : (
+              <div className="space-y-0.5 max-h-80 overflow-y-auto">
+                {generatedInvoices.map((inv) => (
+                  <Link
+                    key={inv.id}
+                    href={`/dashboard/facturas/${inv.id}`}
+                    className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-mono">{inv.number ?? 'Borrador'}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(inv.issueDate)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <InvoiceStatusBadge status={inv.status} />
+                      <span className="text-sm font-medium tabular-nums">
+                        {formatCurrency(Number(inv.total))}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </InvoiceSplitLayout>
+
+      {/* Generate now confirmation dialog */}
+      <GenerateNowDialog
+        open={showGenerateDialog}
+        isPending={generateMutation.isPending}
+        onOpenChange={setShowGenerateDialog}
+        onConfirm={() => {
+          setShowGenerateDialog(false);
+          generateMutation.mutate(id);
+        }}
+      />
 
       {/* Delete dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

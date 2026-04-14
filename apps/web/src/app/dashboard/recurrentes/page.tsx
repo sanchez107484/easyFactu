@@ -2,8 +2,20 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { Plus, RefreshCw, Pause, Play, Trash2, MoreVertical, Pencil, Search } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
+import {
+  Plus,
+  RefreshCw,
+  Pause,
+  Play,
+  Trash2,
+  MoreVertical,
+  Pencil,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -35,19 +47,15 @@ import {
   RecurringFrequencyBadge,
   RecurringStatusBadge,
 } from '@/components/recurrentes/recurring-badges';
+import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/common/empty-state';
 import { RecurringInvoice, RecurringStatus } from '@easyfactura/shared-types';
 import { formatDate } from '@/lib/utils';
 
 // ==================== HELPERS ====================
 
-function calculateMonthlyAmount(lines: RecurringInvoice['lines']): number {
-  if (!lines) return 0;
-  return lines.reduce((sum, line) => {
-    const subtotal = Number(line.quantity) * Number(line.unitPrice);
-    const tax = subtotal * (Number(line.taxRate) / 100);
-    return sum + subtotal + tax;
-  }, 0);
+function calculateMonthlyAmount(recurring: RecurringInvoice): number {
+  return recurring.estimatedTotal ?? 0;
 }
 
 function formatCurrency(amount: number) {
@@ -78,11 +86,19 @@ function RecurringTableSkeleton() {
 export default function RecurrentesPage() {
   const router = useRouter();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
+
+  // Reset to page 1 whenever the search filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   const { data, isLoading, error } = useRecurringInvoices({
-    limit: 50,
-    search: search || undefined,
+    page,
+    limit: 20,
+    search: debouncedSearch || undefined,
   });
   const pauseMutation = usePauseRecurringInvoice();
   const resumeMutation = useResumeRecurringInvoice();
@@ -144,17 +160,24 @@ export default function RecurrentesPage() {
           }
         />
       ) : (
-        <Card>
-          <CardContent className="p-0">
-            <RecurringTable
-              items={items}
-              onPause={(id) => pauseMutation.mutate(id)}
-              onResume={(id) => resumeMutation.mutate(id)}
-              onDelete={(id) => setDeleteId(id)}
-              onEdit={(id) => router.push(`/dashboard/recurrentes/nueva?edit=${id}`)}
-            />
-          </CardContent>
-        </Card>
+        <>
+          <Card>
+            <CardContent className="p-0">
+              <RecurringTable
+                items={items}
+                onPause={(id) => pauseMutation.mutate(id)}
+                onResume={(id) => resumeMutation.mutate(id)}
+                onDelete={(id) => setDeleteId(id)}
+                onEdit={(id) => router.push(`/dashboard/recurrentes/nueva?edit=${id}`)}
+              />
+            </CardContent>
+          </Card>
+          <PaginationControls
+            page={page}
+            totalPages={data?.meta.totalPages ?? 1}
+            onPageChange={setPage}
+          />
+        </>
       )}
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
@@ -271,9 +294,13 @@ interface RecurringRowProps {
 }
 
 function RecurringRow({ item, onPause, onResume, onDelete, onEdit }: RecurringRowProps) {
-  const amount = calculateMonthlyAmount(item.lines);
+  const amount = calculateMonthlyAmount(item);
   const isActive = item.status === RecurringStatus.ACTIVE;
   const isPaused = item.status === RecurringStatus.PAUSED;
+  const isCompleted = item.status === RecurringStatus.COMPLETED;
+  const todayUtc = new Date();
+  todayUtc.setUTCHours(0, 0, 0, 0);
+  const isOverdue = isActive && new Date(item.nextRunDate) < todayUtc;
 
   return (
     <tr className="border-b last:border-0 hover:bg-muted/30 transition-colors">
@@ -293,10 +320,15 @@ function RecurringRow({ item, onPause, onResume, onDelete, onEdit }: RecurringRo
         <RecurringFrequencyBadge frequency={item.frequency} />
       </td>
       <td className="px-4 py-3 text-muted-foreground">
-        {item.status === RecurringStatus.COMPLETED ? '—' : formatDate(item.nextRunDate)}
-        {item.autoConfirm && (
-          <span className="ml-2 text-xs text-muted-foreground">(auto-confirmada)</span>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {isCompleted ? '—' : formatDate(item.nextRunDate)}
+          {isOverdue && (
+            <Badge className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 border-transparent">
+              Atrasada
+            </Badge>
+          )}
+          {item.autoConfirm && <span className="text-xs text-muted-foreground">(auto)</span>}
+        </div>
       </td>
       <td className="px-4 py-3">
         <RecurringStatusBadge status={item.status} />
@@ -344,5 +376,44 @@ function RecurringRow({ item, onPause, onResume, onDelete, onEdit }: RecurringRo
         </DropdownMenu>
       </td>
     </tr>
+  );
+}
+
+// ==================== PAGINATION ====================
+
+function PaginationControls({
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  onPageChange: (p: number) => void;
+}) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-center gap-3 py-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onPageChange(page - 1)}
+        disabled={page <= 1}
+      >
+        <ChevronLeft className="h-4 w-4 mr-1" />
+        Anterior
+      </Button>
+      <span className="text-sm text-muted-foreground">
+        Página {page} de {totalPages}
+      </span>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onPageChange(page + 1)}
+        disabled={page >= totalPages}
+      >
+        Siguiente
+        <ChevronRight className="h-4 w-4 ml-1" />
+      </Button>
+    </div>
   );
 }

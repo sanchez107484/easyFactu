@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -105,23 +106,25 @@ function frequencyLabel(freq: Frequency): string {
 }
 
 function computeFirstRunDate(startDate: string, dayOfMonth: number): Date {
-  const start = new Date(startDate + 'T00:00:00');
+  const start = new Date(startDate + 'T00:00:00Z');
   const now = new Date();
-  now.setHours(0, 0, 0, 0);
+  const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
-  const base = start >= now ? start : now;
-  const lastDayBase = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+  const base = start >= todayUtc ? start : todayUtc;
+  const lastDayBase = new Date(
+    Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + 1, 0),
+  ).getUTCDate();
   const candidate = new Date(
-    base.getFullYear(),
-    base.getMonth(),
-    Math.min(dayOfMonth, lastDayBase),
+    Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), Math.min(dayOfMonth, lastDayBase)),
   );
 
-  if (candidate < now) {
-    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    const lastDayNext = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
-    next.setDate(Math.min(dayOfMonth, lastDayNext));
-    return next;
+  if (candidate < todayUtc) {
+    const nextMonth = new Date(Date.UTC(todayUtc.getUTCFullYear(), todayUtc.getUTCMonth() + 1, 1));
+    const lastDayNext = new Date(
+      Date.UTC(nextMonth.getUTCFullYear(), nextMonth.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+    nextMonth.setUTCDate(Math.min(dayOfMonth, lastDayNext));
+    return nextMonth;
   }
 
   return candidate;
@@ -221,6 +224,7 @@ function RecurringInvoiceForm({
   const [pendingCustomerId, setPendingCustomerId] = useState<string | null>(null);
   const [lastAddedIndex, setLastAddedIndex] = useState<number | null>(null);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [simplifyTable, setSimplifyTable] = useState(false);
 
   const createMutation = useCreateRecurringInvoice();
   const updateMutation = useUpdateRecurringInvoice();
@@ -236,18 +240,38 @@ function RecurringInvoiceForm({
     [seriesData],
   );
 
+  // Serie por defecto: la marcada como default o la primera disponible
+  const defaultSeriesId = useMemo(
+    () => (availableSeries.find((s) => s.isDefault) ?? availableSeries[0])?.id ?? '',
+    [availableSeries],
+  );
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues,
   });
 
-  const { fields, append, remove, move } = useFieldArray({
+  const { fields, append, remove, swap } = useFieldArray({
     control: form.control,
     name: 'lines',
   });
 
   const watchedValues = form.watch();
   const errors = form.formState.errors;
+
+  // El seriesId efectivo: lo que haya seleccionado el usuario, o el por defecto
+  const effectiveSeriesId = watchedValues.seriesId || defaultSeriesId;
+
+  // ── Simplify-table toggle ────────────────────────────────────────────────
+  const linesData = watchedValues.lines ?? [];
+  const allLinesSameTax =
+    linesData.length > 0 && linesData.every((l) => l.taxRate === linesData[0].taxRate);
+  const showSimplifyToggle = linesData.length === 1 || (linesData.length > 1 && allLinesSameTax);
+
+  useEffect(() => {
+    if (!showSimplifyToggle) setSimplifyTable(false);
+  }, [showSimplifyToggle]);
+
   const hasEndDate = watchedValues.hasEndDate;
   const activePaymentMethod = watchedValues.paymentMethod as PaymentMethod | undefined;
 
@@ -279,14 +303,44 @@ function RecurringInvoiceForm({
     ? ({ ...source, logoUrl: resolveUrl(source.logoUrl) ?? null } as Tenant)
     : null;
 
+  const previewTemplate = defaultTemplate
+    ? {
+        ...defaultTemplate,
+        layout: {
+          ...defaultTemplate.layout,
+          itemsTable: {
+            ...defaultTemplate.layout.itemsTable,
+            showUnitPrice: simplifyTable
+              ? false
+              : (defaultTemplate.layout.itemsTable.showUnitPrice ?? true),
+            showTaxColumn: simplifyTable
+              ? false
+              : (defaultTemplate.layout.itemsTable.showTaxColumn ?? true),
+            showLineTotal: simplifyTable
+              ? false
+              : (defaultTemplate.layout.itemsTable.showLineTotal ?? true),
+          },
+        },
+      }
+    : null;
+
   const handleSectionClick = useCallback((fieldId: string) => {
     setActiveSection(fieldId);
     const el = document.getElementById(`field-${fieldId}`);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
 
-  const onInvalid = useCallback(() => {
-    toast.error('Revisa los campos obligatorios marcados en rojo');
+  const onInvalid = useCallback((formErrors: Record<string, unknown>) => {
+    const missingFields: string[] = [];
+    if (formErrors.customerId) missingFields.push('Cliente');
+    if (formErrors.frequency) missingFields.push('Frecuencia');
+    if (formErrors.startDate) missingFields.push('Fecha de inicio');
+    if (formErrors.lines) missingFields.push('Líneas de factura');
+    toast.error(
+      missingFields.length > 0
+        ? `Faltan campos: ${missingFields.join(', ')}`
+        : 'Revisa los campos obligatorios marcados en rojo',
+    );
   }, []);
 
   const onSubmit = form.handleSubmit(async (data: FormData) => {
@@ -323,7 +377,7 @@ function RecurringInvoiceForm({
     } else {
       await createMutation.mutateAsync({
         customerId: data.customerId,
-        seriesId: data.seriesId || undefined,
+        seriesId: data.seriesId || defaultSeriesId || undefined,
         frequency: data.frequency,
         dayOfMonth: data.dayOfMonth,
         startDate: data.startDate,
@@ -390,7 +444,7 @@ function RecurringInvoiceForm({
           </>
         }
         invoice={previewInvoice}
-        template={defaultTemplate ?? null}
+        template={previewTemplate}
         tenant={previewTenant}
         activeFieldSection={activeSection}
         onSectionClick={handleSectionClick}
@@ -417,6 +471,152 @@ function RecurringInvoiceForm({
             </div>
           )}
 
+          {/* ── Programación de repetición ── */}
+          <Card className="border-primary/25 bg-primary/5 dark:bg-primary/[0.08]">
+            <CardContent className="pt-4 pb-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <RefreshCw className="h-3.5 w-3.5 text-primary" />
+                <span className="text-sm font-semibold text-primary">
+                  Programación de repetición
+                </span>
+              </div>
+              {/* Fila 1: fechas */}
+              <div className="flex flex-wrap items-end gap-3">
+                {/* Frecuencia */}
+                <div className="space-y-1.5 flex-1 min-w-[140px]">
+                  <Label htmlFor="frequency" className="text-xs">
+                    Frecuencia <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={watchedValues.frequency}
+                    onValueChange={(v) => form.setValue('frequency', v as Frequency)}
+                  >
+                    <SelectTrigger id="frequency" className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FREQUENCY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Día del mes */}
+                <div className="space-y-1.5 w-[88px] shrink-0">
+                  <Label
+                    htmlFor="dayOfMonth"
+                    className="text-xs"
+                    title="Máximo 28 para compatibilidad con todos los meses"
+                  >
+                    Día del mes
+                  </Label>
+                  <Input
+                    id="dayOfMonth"
+                    type="number"
+                    min={1}
+                    max={28}
+                    className={cn('h-9 text-center', errors.dayOfMonth ? 'border-destructive' : '')}
+                    {...form.register('dayOfMonth')}
+                  />
+                </div>
+                {/* Inicio */}
+                {isEdit ? (
+                  <div className="space-y-1.5 shrink-0">
+                    <Label className="text-xs flex items-center gap-1">
+                      Inicio <Lock className="h-3 w-3 text-muted-foreground/40" />
+                    </Label>
+                    <div className="flex items-center h-9 px-3 rounded-md border bg-muted/50 text-sm text-muted-foreground whitespace-nowrap select-none">
+                      {readonlyStartDate
+                        ? new Date(readonlyStartDate + 'T00:00:00').toLocaleDateString('es-ES', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : '—'}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 shrink-0">
+                    <Label htmlFor="startDate" className="text-xs">
+                      Inicio <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      className={cn('h-9 w-[160px]', errors.startDate ? 'border-destructive' : '')}
+                      {...form.register('startDate')}
+                    />
+                  </div>
+                )}
+                {/* Hasta */}
+                <div className="space-y-1.5 shrink-0">
+                  <Label className="text-xs">Hasta</Label>
+                  <div className="flex items-center gap-2 h-9">
+                    <Switch
+                      id="hasEndDate"
+                      checked={hasEndDate}
+                      onCheckedChange={(v) => form.setValue('hasEndDate', v)}
+                    />
+                    {hasEndDate ? (
+                      <Input
+                        type="date"
+                        className={cn('h-9 w-[160px]', errors.endDate ? 'border-destructive' : '')}
+                        {...form.register('endDate')}
+                      />
+                    ) : (
+                      <Label
+                        htmlFor="hasEndDate"
+                        className="text-sm text-muted-foreground cursor-pointer font-normal whitespace-nowrap"
+                      >
+                        Sin fecha fin
+                      </Label>
+                    )}
+                  </div>
+                </div>
+                {/* Auto-confirmar — fila 2 */}
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="autoConfirm"
+                  checked={watchedValues.autoConfirm}
+                  onCheckedChange={(v) => form.setValue('autoConfirm', v)}
+                />
+                <div>
+                  <Label htmlFor="autoConfirm" className="text-sm cursor-pointer">
+                    Auto-confirmar
+                  </Label>
+                  <p className="text-xs text-muted-foreground leading-tight">
+                    {watchedValues.autoConfirm
+                      ? 'Cada factura generada quedará confirmada y lista para enviar al cliente sin que tengas que hacer nada.'
+                      : 'Cada factura generada se guardará como borrador para que puedas revisarla y confirmarla manualmente antes de enviarla.'}
+                  </p>
+                </div>
+              </div>
+              {(errors.dayOfMonth || errors.startDate || errors.endDate) && (
+                <div className="flex flex-wrap gap-x-4 gap-y-0.5">
+                  {errors.dayOfMonth && (
+                    <p className="text-xs text-destructive">{errors.dayOfMonth.message}</p>
+                  )}
+                  {errors.startDate && (
+                    <p className="text-xs text-destructive">{errors.startDate.message}</p>
+                  )}
+                  {errors.endDate && (
+                    <p className="text-xs text-destructive">{errors.endDate.message}</p>
+                  )}
+                </div>
+              )}
+              <NextRunSummary
+                frequency={watchedValues.frequency}
+                dayOfMonth={watchedValues.dayOfMonth}
+                startDate={isEdit ? (readonlyStartDate ?? today) : watchedValues.startDate}
+                hasEndDate={hasEndDate}
+                endDate={hasEndDate ? watchedValues.endDate : undefined}
+              />
+            </CardContent>
+          </Card>
+
           {/* ── Datos generales ── */}
           <Card>
             <CardHeader className="pb-3">
@@ -424,12 +624,12 @@ function RecurringInvoiceForm({
               {!invoiceDefaults && !isEdit && (
                 <p className="text-xs text-muted-foreground">
                   ¿Siempre usas los mismos datos?{' '}
-                  <a
+                  <Link
                     href="/dashboard/ajustes/facturacion"
                     className="text-primary underline underline-offset-2"
                   >
                     Configura tus preferencias
-                  </a>{' '}
+                  </Link>{' '}
                   para ahorrar tiempo.
                 </p>
               )}
@@ -494,26 +694,31 @@ function RecurringInvoiceForm({
               </section>
 
               {/* Serie */}
-              <section id="field-seriesId" className="space-y-2">
+              <section
+                id="field-seriesId"
+                className="space-y-2"
+                onFocus={() => setActiveSection('seriesId')}
+              >
                 {isEdit ? (
                   <ReadonlyField
                     label="Serie de facturación"
-                    value={readonlySeriesName ?? 'Serie por defecto'}
+                    value={
+                      readonlySeriesName ??
+                      (availableSeries.find((s) => s.isDefault) ?? availableSeries[0])?.name ??
+                      '—'
+                    }
                   />
                 ) : (
                   <>
                     <Label>Serie de facturación</Label>
                     <Select
-                      value={watchedValues.seriesId || 'none'}
-                      onValueChange={(v) =>
-                        form.setValue('seriesId', v === 'none' ? '' : v, { shouldValidate: true })
-                      }
+                      value={effectiveSeriesId}
+                      onValueChange={(v) => form.setValue('seriesId', v, { shouldDirty: true })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Serie por defecto" />
+                        <SelectValue placeholder="Selecciona una serie" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">Serie por defecto</SelectItem>
                         {availableSeries.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
                             {s.name}
@@ -526,6 +731,12 @@ function RecurringInvoiceForm({
                             )}
                           </SelectItem>
                         ))}
+                        {availableSeries.length === 0 && (
+                          <div className="p-3 text-sm text-muted-foreground flex gap-2 items-start">
+                            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                            No hay series activas.
+                          </div>
+                        )}
                       </SelectContent>
                     </Select>
                   </>
@@ -618,8 +829,8 @@ function RecurringInvoiceForm({
                       append({ ...form.getValues(`lines.${index}`) });
                       setLastAddedIndex(fields.length);
                     }}
-                    onMoveUp={() => move(index, index - 1)}
-                    onMoveDown={() => move(index, index + 1)}
+                    onMoveUp={() => swap(index, index - 1)}
+                    onMoveDown={() => swap(index, index + 1)}
                     onFocus={() => setActiveSection('lines-section')}
                     autoFocusDescription={index === lastAddedIndex}
                   />
@@ -636,6 +847,26 @@ function RecurringInvoiceForm({
                 <Plus className="h-4 w-4" />
                 Añadir línea
               </button>
+
+              {/* ── Simplify toggle ── */}
+              {showSimplifyToggle && (
+                <div className="flex items-center justify-between rounded-lg border border-dashed bg-muted/30 px-3 py-2.5">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-medium leading-tight">
+                      Simplificar tabla en la factura
+                    </p>
+                    <p className="text-[11px] text-muted-foreground leading-tight">
+                      Oculta precio unitario, % IVA y total por línea (el desglose de totales
+                      siempre aparece)
+                    </p>
+                  </div>
+                  <Switch
+                    checked={simplifyTable}
+                    onCheckedChange={setSimplifyTable}
+                    aria-label="Simplificar tabla de líneas"
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -679,146 +910,6 @@ function RecurringInvoiceForm({
                   />
                 </div>
               </section>
-            </CardContent>
-          </Card>
-
-          {/* ── Programación de repetición ── */}
-          <Card className="border-primary/20">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <RefreshCw className="h-4 w-4 text-primary" />
-                Programación de repetición
-              </CardTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Define cuándo y con qué frecuencia se generarán las facturas automáticamente.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <section className="space-y-2">
-                  <Label htmlFor="frequency">
-                    Frecuencia <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={watchedValues.frequency}
-                    onValueChange={(v) => form.setValue('frequency', v as Frequency)}
-                  >
-                    <SelectTrigger id="frequency">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FREQUENCY_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </section>
-
-                <section className="space-y-2">
-                  <Label htmlFor="dayOfMonth">Día de emisión</Label>
-                  <Input
-                    id="dayOfMonth"
-                    type="number"
-                    min={1}
-                    max={28}
-                    {...form.register('dayOfMonth')}
-                    className={errors.dayOfMonth ? 'border-destructive' : ''}
-                  />
-                  {errors.dayOfMonth ? (
-                    <p className="text-xs text-destructive">{errors.dayOfMonth.message}</p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Máx. 28 para compatibilidad con febrero
-                    </p>
-                  )}
-                </section>
-              </div>
-
-              {isEdit ? (
-                <ReadonlyField
-                  label="Fecha de inicio"
-                  value={
-                    readonlyStartDate
-                      ? new Date(readonlyStartDate + 'T00:00:00').toLocaleDateString('es-ES', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        })
-                      : '—'
-                  }
-                  icon={Calendar}
-                />
-              ) : (
-                <section className="space-y-2">
-                  <Label htmlFor="startDate">
-                    Fecha de inicio <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    {...form.register('startDate')}
-                    className={cn('max-w-[200px]', errors.startDate ? 'border-destructive' : '')}
-                  />
-                  {errors.startDate && (
-                    <p className="text-sm text-destructive">{errors.startDate.message}</p>
-                  )}
-                </section>
-              )}
-
-              <div className="flex items-center gap-3">
-                <Switch
-                  id="hasEndDate"
-                  checked={hasEndDate}
-                  onCheckedChange={(v) => form.setValue('hasEndDate', v)}
-                />
-                <Label htmlFor="hasEndDate" className="cursor-pointer font-normal">
-                  Establecer fecha de fin
-                </Label>
-              </div>
-
-              {hasEndDate && (
-                <section className="space-y-2">
-                  <Label htmlFor="endDate">Fecha de fin</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    {...form.register('endDate')}
-                    className={cn('max-w-[200px]', errors.endDate ? 'border-destructive' : '')}
-                  />
-                  {errors.endDate && (
-                    <p className="text-sm text-destructive">{errors.endDate.message}</p>
-                  )}
-                </section>
-              )}
-
-              <div className="rounded-lg border bg-muted/40 p-4">
-                <div className="flex items-center gap-3">
-                  <Switch
-                    id="autoConfirm"
-                    checked={watchedValues.autoConfirm}
-                    onCheckedChange={(v) => form.setValue('autoConfirm', v)}
-                  />
-                  <div>
-                    <Label htmlFor="autoConfirm" className="cursor-pointer">
-                      Confirmar automáticamente
-                    </Label>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Si está activado, cada factura generada se confirma directamente. Si no, se
-                      crea como borrador para que puedas revisarla antes de enviar.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <NextRunSummary
-                frequency={watchedValues.frequency}
-                dayOfMonth={watchedValues.dayOfMonth}
-                startDate={isEdit ? (readonlyStartDate ?? today) : watchedValues.startDate}
-                hasEndDate={hasEndDate}
-                endDate={hasEndDate ? watchedValues.endDate : undefined}
-              />
             </CardContent>
           </Card>
 
