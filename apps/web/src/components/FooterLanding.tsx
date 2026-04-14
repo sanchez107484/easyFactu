@@ -44,10 +44,10 @@ export default function FooterLanding(): JSX.Element {
 
           <div className="flex flex-col items-center justify-between gap-4 border-t pt-8 sm:flex-row">
             <nav className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
-              <Link href="/privacidad" className="hover:text-foreground">
-                Política de privacidad
+              <Link href="/politica-privacidad" className="hover:text-foreground">
+                Privacidad
               </Link>
-              <Link href="/terminos" className="hover:text-foreground">
+              <Link href="/terminos-uso" className="hover:text-foreground">
                 Términos de uso
               </Link>
               <Link href="/aviso-legal" className="hover:text-foreground">
@@ -55,6 +55,9 @@ export default function FooterLanding(): JSX.Element {
               </Link>
               <Link href="/cookies" className="hover:text-foreground">
                 Cookies
+              </Link>
+              <Link href="/tratamiento-datos" className="hover:text-foreground">
+                Tratamiento de datos
               </Link>
             </nav>
 

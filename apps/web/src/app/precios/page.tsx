@@ -25,17 +25,13 @@ import {
   X,
   TrendingUp,
   AlertTriangle,
-  Calendar,
-  Repeat,
 } from 'lucide-react';
 import { brandConfig, PRICING, PLAZAS_CONFIG } from '@easyfactura/brand-config';
 import SiteHeader from '@/components/site-header';
 
 // ─── Aliases locales desde config centralizada ────────────────────────────────
-const PRICE_MONTHLY = PRICING.monthly;
-const PRICE_ANNUAL_MONTHLY = PRICING.annualMonthly;
-const PRICE_ANNUAL_TOTAL = PRICING.annualTotal;
-const PRICE_ANNUAL_SAVING = PRICING.annualSaving;
+const STARTER = PRICING.starter;
+const PRO = PRICING.pro;
 
 // ─── SEO JSON-LD ─────────────────────────────────────────────────────────────
 const schemaData = {
@@ -43,13 +39,13 @@ const schemaData = {
   '@graph': [
     {
       '@type': 'Product',
-      name: `${brandConfig.app.name} — Plan Individual`,
-      description: `Software de facturación VeriFactu para autónomos y pymes. ${PRICING.freePeriodMonths} meses gratis, luego ${PRICING.monthly}€/mes o ${PRICING.annualMonthly}€/mes con pago anual. Sin tarjeta al registrarte. Cumplimiento automático con la Ley Antifraude 11/2021.`,
+      name: `${brandConfig.app.name} — Plan Starter`,
+      description: `Software de facturación para autónomos y pymes. ${PRICING.freePeriodMonths} meses gratis, luego ${PRICING.starter.monthly}€/mes o ${PRICING.starter.annualMonthly}€/mes con pago anual. Sin tarjeta al registrarte. Compatible con VeriFactu cuando sea obligatorio.`,
       brand: { '@type': 'Brand', name: brandConfig.app.name },
       offers: [
         {
           '@type': 'Offer',
-          name: `Plan Individual — Gratuito ${PRICING.freePeriodMonths} meses`,
+          name: `Plan Starter — Gratuito ${PRICING.freePeriodMonths} meses`,
           price: '0',
           priceCurrency: 'EUR',
           priceValidUntil: '2027-07-01',
@@ -59,18 +55,53 @@ const schemaData = {
         },
         {
           '@type': 'Offer',
-          name: 'Plan Individual — Mensual',
-          price: String(PRICING.monthly),
+          name: 'Plan Starter — Mensual',
+          price: String(PRICING.starter.monthly),
           priceCurrency: 'EUR',
           availability: 'https://schema.org/InStock',
           url: `${brandConfig.app.url}/precios`,
         },
         {
           '@type': 'Offer',
-          name: 'Plan Individual — Anual',
-          price: String(PRICING.annualTotal),
+          name: 'Plan Starter — Anual',
+          price: String(PRICING.starter.annualTotal),
           priceCurrency: 'EUR',
-          description: `Facturado anualmente. Equivale a ${PRICING.annualMonthly}€/mes. Ahorra ${PRICING.annualSaving}€ al año.`,
+          description: `Facturado anualmente. Equivale a ${PRICING.starter.annualMonthly}€/mes. Ahorra ${PRICING.starter.annualSaving}€ al año.`,
+          availability: 'https://schema.org/InStock',
+          url: `${brandConfig.app.url}/precios`,
+        },
+      ],
+    },
+    {
+      '@type': 'Product',
+      name: `${brandConfig.app.name} — Plan PRO`,
+      description: `Software de facturación VeriFactu para autónomos y pymes. ${PRICING.freePeriodMonths} meses gratis, luego ${PRICING.pro.monthly}€/mes o ${PRICING.pro.annualMonthly}€/mes con pago anual. VeriFactu automático, envío AEAT y cumplimiento Ley Antifraude 11/2021.`,
+      brand: { '@type': 'Brand', name: brandConfig.app.name },
+      offers: [
+        {
+          '@type': 'Offer',
+          name: `Plan PRO — Gratuito ${PRICING.freePeriodMonths} meses`,
+          price: '0',
+          priceCurrency: 'EUR',
+          priceValidUntil: '2027-07-01',
+          description: `${PRICING.freePeriodMonths} meses completamente gratis para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscripciones.`,
+          availability: 'https://schema.org/LimitedAvailability',
+          url: `${brandConfig.app.url}/precios`,
+        },
+        {
+          '@type': 'Offer',
+          name: 'Plan PRO — Mensual',
+          price: String(PRICING.pro.monthly),
+          priceCurrency: 'EUR',
+          availability: 'https://schema.org/InStock',
+          url: `${brandConfig.app.url}/precios`,
+        },
+        {
+          '@type': 'Offer',
+          name: 'Plan PRO — Anual',
+          price: String(PRICING.pro.annualTotal),
+          priceCurrency: 'EUR',
+          description: `Facturado anualmente. Equivale a ${PRICING.pro.annualMonthly}€/mes. Ahorra ${PRICING.pro.annualSaving}€ al año.`,
           availability: 'https://schema.org/InStock',
           url: `${brandConfig.app.url}/precios`,
         },
@@ -90,7 +121,7 @@ const schemaData = {
           name: `¿Cuánto cuesta ${brandConfig.app.name}?`,
           acceptedAnswer: {
             '@type': 'Answer',
-            text: `Los primeros ${PRICING.freePeriodMonths} meses son completamente gratuitos para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscripciones. A partir del séptimo mes, el precio es de ${PRICING.monthly}€/mes (mensual) o ${PRICING.annualMonthly}€/mes facturado anualmente (${PRICING.annualTotal}€/año). Sin permanencia.`,
+            text: `Los primeros ${PRICING.freePeriodMonths} meses son completamente gratuitos. A partir del séptimo mes, puedes elegir Plan Starter (${PRICING.starter.monthly}€/mes o ${PRICING.starter.annualMonthly}€/mes anual) o Plan PRO con VeriFactu (${PRICING.pro.monthly}€/mes o ${PRICING.pro.annualMonthly}€/mes anual). Sin permanencia.`,
           },
         },
         {
@@ -103,18 +134,18 @@ const schemaData = {
         },
         {
           '@type': 'Question',
-          name: '¿Cuánto ahorro con el plan anual frente al mensual?',
+          name: '¿Cuánto ahorro con el plan anual?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: `Con el plan anual pagas ${PRICING.annualMonthly}€/mes (${PRICING.annualTotal}€ al año) frente a los ${PRICING.monthly}€/mes del plan mensual. Ahorras ${PRICING.annualSaving}€ al año, lo que equivale a más de 2 meses gratis.`,
+            text: `Con el Plan Starter anual pagas ${PRICING.starter.annualTotal}€/año (${PRICING.starter.annualMonthly}€/mes) en lugar de ${PRICING.starter.monthly}€/mes — ahorras ${PRICING.starter.annualSaving}€. Con el Plan PRO anual pagas ${PRICING.pro.annualTotal}€/año (${PRICING.pro.annualMonthly}€/mes) en lugar de ${PRICING.pro.monthly}€/mes — ahorras ${PRICING.pro.annualSaving}€.`,
           },
         },
         {
           '@type': 'Question',
-          name: `¿Qué incluye el plan de ${brandConfig.app.name}?`,
+          name: `¿Qué diferencia hay entre Plan Starter y Plan PRO?`,
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'El plan incluye facturas ilimitadas, VeriFactu automático (hash encadenado, código QR, envío AEAT), clientes ilimitados, PDF profesional, importación de datos, acceso web y móvil, y soporte en español.',
+            text: 'El Plan Starter incluye facturas ilimitadas, clientes, PDF, presupuestos y recurrentes. El Plan PRO añade VeriFactu 100% automático, hash encadenado, código QR y envío directo a la AEAT — cumplimiento total con la Ley Antifraude 11/2021.',
           },
         },
         {
@@ -130,70 +161,76 @@ const schemaData = {
   ],
 };
 
-// ─── Feature list ─────────────────────────────────────────────────────────────
-const planFeatures = [
+// ─── Feature list — Starter ───────────────────────────────────────────────────
+const starterFeatures = [
+  { text: 'Facturas ilimitadas', detail: 'Sin límite mensual.', included: true },
+  { text: 'Clientes ilimitados', detail: 'Sin restricciones.', included: true },
   {
-    icon: FileText,
-    text: 'Facturas ilimitadas',
-    detail: 'Emite todas las que necesites, sin límite mensual.',
-  },
-  {
-    icon: Shield,
-    text: 'VeriFactu 100% automático',
-    detail: 'Hash encadenado, código QR y envío directo a la AEAT en cada factura.',
-  },
-  {
-    icon: Users,
-    text: 'Clientes ilimitados',
-    detail: 'Gestiona todos tus clientes sin restricciones.',
-  },
-  {
-    icon: FileText,
     text: 'PDF profesional personalizable',
-    detail: 'Facturas con tu logo, colores y datos fiscales.',
+    detail: 'Tu logo, colores y datos fiscales.',
+    included: true,
   },
   {
-    icon: Download,
-    text: 'Importación desde Excel / CSV',
-    detail: 'Migra desde cualquier software anterior en minutos.',
+    text: 'Presupuestos y proformas',
+    detail: 'Conviértelos en factura en un clic.',
+    included: true,
+  },
+  { text: 'Facturas recurrentes automáticas', detail: 'Programa y olvídate.', included: true },
+  { text: 'Importación desde Excel / CSV', detail: 'Migra en minutos.', included: true },
+  { text: 'App web + móvil', detail: 'Desde cualquier dispositivo.', included: true },
+  { text: 'Seguridad y cifrado RGPD', detail: 'SSL 256 bits. Servidores UE.', included: true },
+  { text: 'VeriFactu automático', detail: 'Disponible en Plan PRO.', included: false },
+  { text: 'Envío directo a la AEAT', detail: 'Disponible en Plan PRO.', included: false },
+];
+
+// ─── Feature list — PRO ───────────────────────────────────────────────────────
+const proFeatures = [
+  {
+    text: 'Todo lo del Plan Starter',
+    detail: 'Facturas, clientes, PDF, recurrentes, presupuestos…',
+    icon: CheckCircle2,
   },
   {
-    icon: Smartphone,
-    text: 'App web + móvil',
-    detail: 'Accede desde tu ordenador, móvil o tablet sin instalar nada.',
+    text: 'VeriFactu 100% automático',
+    detail: 'Hash encadenado en cada factura, sin configuración.',
+    icon: Shield,
   },
   {
-    icon: Send,
+    text: 'Código QR en cada factura',
+    detail: 'Verificación instantánea por tus clientes y la AEAT.',
+    icon: BadgeCheck,
+  },
+  {
     text: 'Envío automático a la AEAT',
     detail: 'Cumplimiento garantizado con la Ley Antifraude 11/2021.',
+    icon: Send,
   },
   {
-    icon: Lock,
-    text: 'Seguridad certificada (RGPD)',
-    detail: 'Cifrado SSL 256 bits. Servidores en la Unión Europea.',
-  },
-  {
-    icon: Headphones,
-    text: 'Soporte en español',
-    detail: 'Equipo real, en español. Respuesta en menos de 2 horas.',
-  },
-  {
-    icon: BadgeCheck,
     text: 'Homologado por la AEAT',
     detail: 'Conexión API directa con la Agencia Tributaria.',
+    icon: BadgeCheck,
+  },
+  {
+    text: 'Soporte prioritario en español',
+    detail: 'Respuesta en menos de 2 horas.',
+    icon: Headphones,
   },
 ];
 
 // ─── Comparison ───────────────────────────────────────────────────────────────
 const comparisonRows = [
-  { label: 'VeriFactu automático', nova: true, excel: false, otros: false },
-  { label: 'Hash encadenado + QR', nova: true, excel: false, otros: '€€ extra' },
-  { label: 'Envío AEAT integrado', nova: true, excel: false, otros: '€€ extra' },
-  { label: '6 meses gratuitos', nova: true, excel: false, otros: false },
-  { label: 'Sin tarjeta al registrarte', nova: true, excel: true, otros: false },
-  { label: 'Soporte en español', nova: true, excel: false, otros: '€€ extra' },
-  { label: 'Migración incluida', nova: true, excel: false, otros: false },
-  { label: 'Sin permanencia', nova: true, excel: true, otros: false },
+  { label: 'Facturas ilimitadas', starter: true, pro: true, excel: true, otros: true },
+  { label: 'Clientes ilimitados', starter: true, pro: true, excel: true, otros: true },
+  { label: 'PDF profesional', starter: true, pro: true, excel: false, otros: true },
+  { label: 'Presupuestos / proformas', starter: true, pro: true, excel: false, otros: '€€ extra' },
+  { label: 'Facturas recurrentes', starter: true, pro: true, excel: false, otros: '€€ extra' },
+  { label: 'VeriFactu automático', starter: false, pro: true, excel: false, otros: false },
+  { label: 'Hash encadenado + QR', starter: false, pro: true, excel: false, otros: '€€ extra' },
+  { label: 'Envío AEAT integrado', starter: false, pro: true, excel: false, otros: '€€ extra' },
+  { label: '6 meses gratuitos', starter: true, pro: true, excel: false, otros: false },
+  { label: 'Sin tarjeta al registrarte', starter: true, pro: true, excel: true, otros: false },
+  { label: 'Soporte en español', starter: true, pro: true, excel: false, otros: '€€ extra' },
+  { label: 'Sin permanencia', starter: true, pro: true, excel: true, otros: false },
 ];
 
 // ─── Testimonials ─────────────────────────────────────────────────────────────
@@ -202,7 +239,7 @@ const testimonials = [
     name: 'Laura García',
     role: 'Diseñadora freelance',
     location: 'Madrid',
-    text: 'Conseguí una de las plazas gratuitas y llevo 4 meses sin preocuparme por Hacienda. Cuando acaben los 6 meses pagaré los 7,90€ del plan anual encantada, porque el ahorro en tiempo y nervios es brutal.',
+    text: 'Conseguí una de las plazas gratuitas y llevo 4 meses sin preocuparme por Hacienda. Cuando acaben los 6 meses pagaré los 24,90€ del plan anual encantada, porque el ahorro en tiempo y nervios es brutal.',
     stars: 5,
     initials: 'LG',
     saving: 'Ahorra ~3h/semana',
@@ -214,13 +251,13 @@ const testimonials = [
     text: 'Probé otros programas a 30€/mes y este hace lo mismo o mejor. Con el período gratuito tuve tiempo de ver que realmente merece la pena. Me quedé con el plan anual.',
     stars: 5,
     initials: 'CM',
-    saving: 'Ahorra +24€/año',
+    saving: 'Ahorra +60€/año',
   },
   {
     name: 'Patricia Gurrea',
     role: 'Consultora de negocio',
     location: 'Pamplona',
-    text: 'El precio de 7,90€ al mes (anual) me parece muy justo para todo lo que incluye. Y que los primeros 6 meses sean gratis me convenció para probarlo sin ningún riesgo.',
+    text: 'El precio de 24,90€ al mes (anual) me parece muy justo para todo lo que incluye. Y que los primeros 6 meses sean gratis me convenció para probarlo sin ningún riesgo.',
     stars: 5,
     initials: 'PG',
     saving: 'ROI positivo en 1 mes',
@@ -231,23 +268,27 @@ const testimonials = [
 const faqs = [
   {
     q: `¿Cuánto cuesta ${brandConfig.app.name} después de los ${PRICING.freePeriodMonths} meses gratuitos?`,
-    a: `Puedes elegir entre dos opciones: pago mensual a ${PRICING.monthly}€/mes, o pago anual a ${PRICING.annualMonthly}€/mes (${PRICING.annualTotal}€ al año). Con el plan anual ahorras ${PRICING.annualSaving}€, lo que equivale a más de 2 meses gratis. Sin permanencia en ninguno de los dos casos.`,
+    a: `Tienes dos planes: Plan Starter a ${PRICING.starter.monthly}€/mes (${PRICING.starter.annualMonthly}€/mes anual) para facturar sin VeriFactu, y Plan PRO a ${PRICING.pro.monthly}€/mes (${PRICING.pro.annualMonthly}€/mes anual) con VeriFactu automático y envío AEAT incluido. Sin permanencia en ningún caso.`,
+  },
+  {
+    q: '¿Cuál es la diferencia entre Plan Starter y Plan PRO?',
+    a: `El Plan Starter incluye todo lo necesario para facturar: facturas ilimitadas, clientes, PDF profesional, presupuestos y facturas recurrentes. El Plan PRO añade VeriFactu 100% automático — hash encadenado, código QR y envío directo a la AEAT en cada factura — para cumplir con la Ley Antifraude 11/2021 cuando sea obligatorio.`,
   },
   {
     q: `¿Qué incluyen exactamente los ${PRICING.freePeriodMonths} meses gratuitos?`,
-    a: 'Acceso completo a todas las funcionalidades: facturas ilimitadas, VeriFactu automático, clientes ilimitados, soporte en español y todo lo demás. Sin restricciones ni versión reducida.',
+    a: `Acceso completo al plan que elijas — incluyendo todas las funcionalidades del Plan PRO si decides empezar con él. Sin restricciones ni versión reducida durante los ${PRICING.freePeriodMonths} meses.`,
+  },
+  {
+    q: '¿Puedo cambiar de Starter a PRO más adelante?',
+    a: 'Sí. Puedes hacer upgrade en cualquier momento desde el panel de ajustes con un clic. Si cuando VeriFactu sea obligatorio para tu actividad quieres activarlo automáticamente, también puedes configurarlo para que se haga de forma automática.',
   },
   {
     q: '¿Necesito tarjeta de crédito para registrarme?',
     a: `No. Solo necesitas tu dirección de email. No pedimos ningún dato de pago durante los ${PRICING.freePeriodMonths} meses gratuitos. Añades tu método de pago cuando decidas continuar.`,
   },
   {
-    q: `¿Qué pasa cuando terminan los ${PRICING.freePeriodMonths} meses?`,
-    a: `Te avisaremos con 30 días de antelación. Si quieres continuar, introduces tu método de pago y eliges entre el plan mensual (${PRICING.monthly}€) o el anual (${PRICING.annualMonthly}€/mes). Si no, puedes exportar todos tus datos y cancelar sin ningún coste.`,
-  },
-  {
     q: '¿Cuánto ahorro eligiendo el plan anual?',
-    a: `Con el plan anual pagas ${PRICING.annualTotal}€ al año (${PRICING.annualMonthly}€/mes), frente a ${(PRICING.monthly * 12).toFixed(2)}€ si pagas mes a mes. Ahorras ${PRICING.annualSaving}€ al año — más de 2 meses gratis.`,
+    a: `Con Plan Starter anual pagas ${PRICING.starter.annualTotal}€/año (${PRICING.starter.annualMonthly}€/mes) — ahorras ${PRICING.starter.annualSaving}€. Con Plan PRO anual pagas ${PRICING.pro.annualTotal}€/año (${PRICING.pro.annualMonthly}€/mes) — ahorras ${PRICING.pro.annualSaving}€. En ambos casos, más de 2 meses gratis respecto al mensual.`,
   },
   {
     q: '¿Puedo cancelar en cualquier momento?',
@@ -354,7 +395,7 @@ function BillingToggle({ annual, onChange }: { annual: boolean; onChange: (v: bo
       >
         Anual
         <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700">
-          Ahorra 24€
+          Hasta -17%
         </span>
       </button>
     </div>
@@ -371,9 +412,6 @@ export default function Precios() {
   const hours = useCounter(156, 1800, statsVisible);
   const users = useCounter(PLAZAS_CONFIG.ocupadas, 1800, statsVisible);
   const months = useCounter(6, 1200, statsVisible);
-
-  const displayPrice = annual ? PRICE_ANNUAL_MONTHLY : PRICE_MONTHLY;
-  const displayPriceStr = displayPrice.toFixed(2).replace('.', ',');
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -453,7 +491,7 @@ export default function Precios() {
                     />
                   </svg>
                 </span>{' '}
-                <span className="text-slate-900">Luego, desde 7,90€/mes.</span>
+                <span className="text-slate-900">Luego, desde 9,90€/mes.</span>
               </h1>
 
               <p className="mx-auto mb-8 max-w-2xl text-lg text-slate-500 sm:text-xl leading-relaxed">
@@ -496,193 +534,231 @@ export default function Precios() {
               </div>
             </div>
 
-            {/* ─── BIG PRICE CARD ────────────────────────────────────────── */}
-            <div className="mx-auto max-w-2xl px-4 pb-0">
-              <div className="relative overflow-hidden rounded-t-3xl border-2 border-blue-100 bg-gradient-to-br from-white to-blue-50 shadow-2xl shadow-blue-100">
-                {/* Top accent */}
-                <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-600" />
+            {/* ─── BILLING TOGGLE + DUAL PLAN CARDS ────────────────────── */}
+            <div className="mx-auto max-w-5xl px-4 pb-0">
+              {/* Billing toggle — controls both cards */}
+              <div className="mb-8">
+                <BillingToggle annual={annual} onChange={setAnnual} />
+              </div>
 
-                <div className="p-8 md:p-10">
-                  {/* Badge */}
-                  <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-1.5 text-sm font-bold text-white shadow-sm">
-                      <Star className="h-3.5 w-3.5 fill-current" />
-                      Plan Individual — Único disponible
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      Todo incluido
-                    </span>
-                  </div>
-
-                  {/* ── BILLING TOGGLE ── */}
-                  <div className="mb-7">
-                    <BillingToggle annual={annual} onChange={setAnnual} />
-                  </div>
-
-                  {/* Pricing display */}
-                  <div className="mb-6 flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-8">
-                    {/* Promo block */}
-                    <div>
-                      <p className="mb-1 text-sm font-semibold uppercase tracking-widest text-blue-600">
-                        Ahora mismo
-                      </p>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-7xl font-black text-blue-600 tabular-nums leading-none">
-                          0€
-                        </span>
-                        <span className="text-lg text-slate-500 font-medium">/ 6 meses</span>
-                      </div>
-                      <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700">
-                        <Users className="h-3 w-3" />
-                        Plazas limitadas
+              <div className="grid gap-6 lg:grid-cols-2 items-start">
+                {/* ── STARTER CARD ── */}
+                <div className="relative overflow-hidden rounded-3xl border-2 border-slate-200 bg-white shadow-sm">
+                  <div className="p-8">
+                    {/* Header */}
+                    <div className="mb-6">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                        Para empezar
+                      </span>
+                      <h3 className="mt-3 text-2xl font-extrabold text-slate-900">Plan Starter</h3>
+                      <p className="mt-1 text-sm text-slate-500 leading-snug">
+                        Factura sin complicaciones. Sin VeriFactu — te avisamos cuando sea
+                        obligatorio para ti.
                       </p>
                     </div>
 
-                    {/* Divider */}
-                    <div className="hidden sm:block w-px h-20 bg-slate-200 self-center" />
-                    <div className="sm:hidden h-px w-full bg-slate-200" />
-
-                    {/* After block — changes with toggle */}
-                    <div className="flex-1">
-                      <p className="mb-1 text-sm font-semibold uppercase tracking-widest text-slate-400">
-                        A partir del mes 7
-                      </p>
+                    {/* Price */}
+                    <div className="mb-6">
                       <div className="flex items-baseline gap-1.5">
-                        <span className="text-5xl font-black text-slate-800 tabular-nums leading-none transition-all duration-300">
-                          {displayPriceStr}€
+                        <span className="text-5xl font-black text-slate-800 tabular-nums leading-none">
+                          {annual
+                            ? `${STARTER.annualMonthly.toFixed(2).replace('.', ',')}€`
+                            : `${STARTER.monthly.toFixed(2).replace('.', ',')}€`}
                         </span>
                         <span className="text-base text-slate-400 font-medium">/ mes</span>
                       </div>
-
                       {annual ? (
                         <div className="mt-2 space-y-1">
                           <p className="text-xs text-slate-500">
                             Facturado anualmente ·{' '}
                             <strong className="text-slate-700">
-                              {PRICE_ANNUAL_TOTAL.toFixed(2).replace('.', ',')}€/año
+                              {STARTER.annualTotal.toFixed(2).replace('.', ',')}€/año
                             </strong>
                           </p>
                           <p className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700">
                             <CheckCircle2 className="h-3 w-3" />
-                            Ahorras {PRICE_ANNUAL_SAVING.toFixed(0)}€ al año vs. mensual
+                            Ahorras {STARTER.annualSaving}€ al año
                           </p>
                         </div>
                       ) : (
-                        <div className="mt-2 space-y-1">
-                          <p className="text-xs text-slate-400">
-                            Menos de <strong className="text-slate-600">0,33€/día</strong> · Sin
-                            permanencia
-                          </p>
+                        <div className="mt-2">
                           <button
                             onClick={() => setAnnual(true)}
                             className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700 hover:bg-green-200 transition-colors"
                           >
                             <TrendingUp className="h-3 w-3" />
-                            Cambia a anual y ahorra 24€
+                            Paga anual y ahorra {STARTER.annualSaving}€
                           </button>
                         </div>
                       )}
                     </div>
+
+                    {/* CTA */}
+                    <Link
+                      href="/registro?plan=starter"
+                      className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-slate-800 bg-white text-sm font-bold text-slate-800 transition-all hover:bg-slate-900 hover:text-white hover:border-slate-900 mb-3"
+                    >
+                      Empezar con Starter
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                    <p className="mb-6 text-center text-xs text-slate-400">
+                      {PRICING.freePeriodMonths} meses gratis · Sin tarjeta al registrarte
+                    </p>
+
+                    {/* Features */}
+                    <div className="border-t border-slate-100 pt-5 space-y-3">
+                      {starterFeatures.map((f) => (
+                        <div key={f.text} className="flex items-start gap-2.5">
+                          {f.included ? (
+                            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+                          ) : (
+                            <X className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" />
+                          )}
+                          <div>
+                            <p
+                              className={`text-sm font-medium leading-snug ${f.included ? 'text-slate-700' : 'text-slate-400'}`}
+                            >
+                              {f.text}
+                            </p>
+                            {f.detail && (
+                              <p className="text-xs text-slate-400 leading-tight">{f.detail}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* VeriFactu note */}
+                    <div className="mt-5 flex gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                      <p className="text-xs text-amber-700 leading-relaxed">
+                        <strong>VeriFactu no incluido.</strong> Te avisaremos cuando sea obligatorio
+                        para ti — con opción de activarlo de forma automática o manual.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── PRO CARD ── */}
+                <div className="relative overflow-hidden rounded-3xl border-2 border-blue-300 bg-gradient-to-br from-white to-blue-50 shadow-2xl shadow-blue-100">
+                  {/* Top accent */}
+                  <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-600" />
+
+                  {/* Recommended badge */}
+                  <div className="absolute top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-1.5 text-xs font-bold text-white shadow-md">
+                    ⭐ Recomendado — Más popular
                   </div>
 
-                  {/* Annual summary pill */}
-                  {annual && (
-                    <div className="mb-6 flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
-                      <Calendar className="h-5 w-5 shrink-0 text-green-600" />
-                      <div className="flex-1 text-sm">
-                        <span className="font-semibold text-green-800">
-                          Plan anual seleccionado:
-                        </span>{' '}
-                        <span className="text-green-700">
-                          {PRICE_ANNUAL_TOTAL.toFixed(2).replace('.', ',')}€ al año · 7,90€/mes ·
-                          Sin renovación automática inesperada
+                  <div className="p-8 pt-12">
+                    {/* Header */}
+                    <div className="mb-6">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
+                        <Shield className="h-3.5 w-3.5" />
+                        Con VeriFactu · Todo incluido
+                      </span>
+                      <h3 className="mt-3 text-2xl font-extrabold text-slate-900">Plan PRO</h3>
+                      <p className="mt-1 text-sm text-slate-500 leading-snug">
+                        VeriFactu automático, envío AEAT y tranquilidad fiscal total desde el primer
+                        día.
+                      </p>
+                    </div>
+
+                    {/* Price */}
+                    <div className="mb-6">
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-5xl font-black text-blue-600 tabular-nums leading-none">
+                          {annual
+                            ? `${PRO.annualMonthly.toFixed(2).replace('.', ',')}€`
+                            : `${PRO.monthly.toFixed(2).replace('.', ',')}€`}
+                        </span>
+                        <span className="text-base text-slate-400 font-medium">/ mes</span>
+                      </div>
+                      {annual ? (
+                        <div className="mt-2 space-y-1">
+                          <p className="text-xs text-slate-500">
+                            Facturado anualmente ·{' '}
+                            <strong className="text-slate-700">
+                              {PRO.annualTotal.toFixed(2).replace('.', ',')}€/año
+                            </strong>
+                          </p>
+                          <p className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Ahorras {PRO.annualSaving}€ al año
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="mt-2">
+                          <button
+                            onClick={() => setAnnual(true)}
+                            className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700 hover:bg-green-200 transition-colors"
+                          >
+                            <TrendingUp className="h-3 w-3" />
+                            Paga anual y ahorra {PRO.annualSaving}€
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Progress bar (urgency) */}
+                    <div className="mb-6 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4">
+                      <div className="mb-2 flex items-center justify-between text-sm font-medium">
+                        <span className="flex items-center gap-1.5 text-amber-800">
+                          <Clock className="h-4 w-4" />
+                          Plazas gratuitas ocupadas
+                        </span>
+                        <span className="font-bold text-amber-700">
+                          {PLAZAS_CONFIG.porcentaje}%
                         </span>
                       </div>
-                      <button
-                        onClick={() => setAnnual(false)}
-                        className="shrink-0 text-xs text-green-600 underline underline-offset-2 hover:no-underline"
-                      >
-                        Ver mensual
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Monthly comparison note */}
-                  {!annual && (
-                    <div className="mb-6 flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
-                      <Repeat className="h-5 w-5 shrink-0 text-blue-500" />
-                      <div className="flex-1 text-sm text-blue-800">
-                        <span className="font-semibold">Elige el plan anual</span> y paga solo{' '}
-                        <strong>7,90€/mes</strong> en lugar de 9,90€.{' '}
-                        <span className="text-blue-600">Ahorras 24€ al año.</span>
+                      <div className="h-2.5 overflow-hidden rounded-full bg-amber-200">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-700"
+                          style={{ width: `${PLAZAS_CONFIG.porcentaje}%` }}
+                        />
                       </div>
-                      <button
-                        onClick={() => setAnnual(true)}
-                        className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 transition-colors"
-                      >
-                        Activar
-                      </button>
+                      <div className="mt-1.5 flex justify-between text-xs text-amber-700">
+                        <span>{PLAZAS_CONFIG.ocupadas.toLocaleString('es-ES')} inscritos</span>
+                        <span className="font-bold">
+                          {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas restantes
+                        </span>
+                      </div>
                     </div>
-                  )}
 
-                  {/* Progress bar */}
-                  <div className="mb-7 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4">
-                    <div className="mb-2 flex items-center justify-between text-sm font-medium">
-                      <span className="flex items-center gap-1.5 text-amber-800">
-                        <Clock className="h-4 w-4" />
-                        Plazas gratuitas ocupadas
-                      </span>
-                      <span className="font-bold text-amber-700">{PLAZAS_CONFIG.porcentaje}%</span>
-                    </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-amber-200">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-700"
-                        style={{ width: `${PLAZAS_CONFIG.porcentaje}%` }}
-                      />
-                    </div>
-                    <div className="mt-2 flex justify-between text-xs">
-                      <span className="text-amber-700">
-                        {PLAZAS_CONFIG.ocupadas.toLocaleString('es-ES')} inscritos
-                      </span>
-                      <span className="font-bold text-amber-700">
-                        {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas restantes
-                      </span>
-                    </div>
-                  </div>
+                    {/* CTA */}
+                    <Link
+                      href="/registro?plan=pro"
+                      className="group flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 text-sm font-bold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 mb-3"
+                    >
+                      <Sparkles className="h-4 w-4 transition-transform group-hover:rotate-12" />
+                      Empezar con PRO — Gratis
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                    <p className="mb-6 text-center text-xs text-slate-400">
+                      {PRICING.freePeriodMonths} meses gratis · Sin tarjeta al registrarte
+                    </p>
 
-                  {/* Feature grid */}
-                  <div className="mb-7 grid gap-2.5 sm:grid-cols-2">
-                    {planFeatures.map((f) => (
-                      <div
-                        key={f.text}
-                        className="group flex items-start gap-2.5 rounded-xl border border-transparent p-2 transition-colors hover:border-blue-100 hover:bg-blue-50/50"
-                      >
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
-                        <div>
-                          <p className="text-sm font-semibold text-slate-800">{f.text}</p>
-                          <p className="text-xs text-slate-400 leading-snug">{f.detail}</p>
+                    {/* Features */}
+                    <div className="border-t border-blue-100 pt-5 space-y-3">
+                      {proFeatures.map((f) => (
+                        <div key={f.text} className="flex items-start gap-2.5">
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
+                          <div>
+                            <p className="text-sm font-medium text-slate-800 leading-snug">
+                              {f.text}
+                            </p>
+                            <p className="text-xs text-slate-400 leading-tight">{f.detail}</p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-
-                  {/* CTA */}
-                  <Link
-                    href="/registro"
-                    className="group flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-blue-600 text-base font-bold text-white shadow-lg shadow-blue-200 transition-all duration-200 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5"
-                  >
-                    <Sparkles className="h-5 w-5 transition-transform group-hover:rotate-12" />
-                    Reservar mi plaza gratuita
-                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                  </Link>
-
-                  <p className="mt-3 text-center text-xs text-slate-400">
-                    Solo necesitas tu email · Sin tarjeta al registrarte · Añádela cuando quieras
-                    continuar
-                  </p>
                 </div>
               </div>
+
+              <p className="mt-6 text-center text-xs text-slate-400">
+                Ambos planes incluyen los {PRICING.freePeriodMonths} meses gratuitos iniciales. ·
+                Sin tarjeta al registrarte.
+              </p>
             </div>
           </section>
 
@@ -716,122 +792,112 @@ export default function Precios() {
           </section>
 
           {/* ══════════════════════════════════════════════════════════════
-              PLAN COMPARISON — MONTHLY vs ANNUAL DETAIL
+              PLAN COMPARISON — STARTER vs PRO
               ══════════════════════════════════════════════════════════════ */}
           <section className="py-16 md:py-24">
             <div className="mx-auto max-w-3xl px-4">
               <div className="mb-3 text-center">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  Elige tu modalidad de pago
+                  Starter vs PRO
                 </span>
               </div>
               <h2 className="mb-4 text-center text-3xl font-extrabold text-slate-900 sm:text-4xl">
-                Mensual o anual: tú decides
+                ¿Cuál plan es para ti?
               </h2>
               <p className="mx-auto mb-10 max-w-xl text-center text-slate-500">
-                Ambas opciones incluyen exactamente las mismas funcionalidades. La diferencia es
-                solo el precio.
+                Ambos incluyen facturación ilimitada. La diferencia clave es VeriFactu — obligatorio
+                en el futuro, opcional hoy.
               </p>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                {/* Monthly card */}
-                <div
-                  className={`relative cursor-pointer rounded-2xl border-2 p-6 transition-all duration-200 ${
-                    !annual
-                      ? 'border-blue-300 bg-blue-50 shadow-lg shadow-blue-100'
-                      : 'border-slate-200 bg-white hover:border-slate-300'
-                  }`}
-                  onClick={() => setAnnual(false)}
-                >
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Repeat className="h-5 w-5 text-slate-500" />
-                      <span className="font-bold text-slate-800">Mensual</span>
-                    </div>
-                    {!annual && (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600">
-                        <CheckCircle2 className="h-4 w-4 text-white" />
-                      </span>
-                    )}
-                  </div>
+                {/* Starter summary */}
+                <div className="rounded-2xl border-2 border-slate-200 bg-white p-6">
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                    Starter
+                  </p>
                   <div className="mb-1 flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-slate-800">9,90€</span>
-                    <span className="text-sm text-slate-400">/mes</span>
+                    <span className="text-3xl font-black text-slate-800">
+                      {annual
+                        ? `${STARTER.annualMonthly.toFixed(2).replace('.', ',')}€`
+                        : `${STARTER.monthly.toFixed(2).replace('.', ',')}€`}
+                    </span>
+                    <span className="text-xs text-slate-400">/mes</span>
                   </div>
-                  <p className="mb-4 text-xs text-slate-400">
-                    Sin compromiso · Cancela cuando quieras
+                  <p className="mb-4 text-xs text-slate-500">
+                    {annual
+                      ? `Facturado anualmente · ${STARTER.annualTotal.toFixed(2).replace('.', ',')}€/año`
+                      : 'Sin permanencia'}
                   </p>
                   <ul className="space-y-2 text-sm text-slate-600">
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-400" /> Todas las
-                      funcionalidades
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-slate-400" />
+                      Facturas + clientes ilimitados
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-400" /> Sin permanencia
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-slate-400" />
+                      PDF profesional + presupuestos
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-400" /> Cancela cualquier
-                      mes
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-slate-400" />
+                      Recurrentes + importación CSV
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <X className="h-4 w-4 shrink-0 text-slate-300" />
+                      <span className="text-slate-400">Sin VeriFactu (disponible en PRO)</span>
                     </li>
                   </ul>
+                  <p className="mt-4 rounded-lg bg-slate-50 p-2.5 text-xs text-slate-500 text-center">
+                    Ideal si aún no necesitas VeriFactu
+                  </p>
                 </div>
 
-                {/* Annual card */}
-                <div
-                  className={`relative cursor-pointer rounded-2xl border-2 p-6 transition-all duration-200 ${
-                    annual
-                      ? 'border-blue-300 bg-blue-50 shadow-lg shadow-blue-100'
-                      : 'border-slate-200 bg-white hover:border-slate-300'
-                  }`}
-                  onClick={() => setAnnual(true)}
-                >
-                  {/* Popular badge */}
+                {/* PRO summary */}
+                <div className="relative rounded-2xl border-2 border-blue-300 bg-blue-50 p-6">
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-1 text-xs font-bold text-white shadow-sm">
-                    ⭐ Más popular · Ahorra 24€
+                    ⭐ Recomendado
                   </div>
-
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-5 w-5 text-slate-500" />
-                      <span className="font-bold text-slate-800">Anual</span>
-                    </div>
-                    {annual && (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600">
-                        <CheckCircle2 className="h-4 w-4 text-white" />
-                      </span>
-                    )}
-                  </div>
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-blue-500">
+                    PRO
+                  </p>
                   <div className="mb-1 flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-slate-800">7,90€</span>
-                    <span className="text-sm text-slate-400">/mes</span>
+                    <span className="text-3xl font-black text-blue-700">
+                      {annual
+                        ? `${PRO.annualMonthly.toFixed(2).replace('.', ',')}€`
+                        : `${PRO.monthly.toFixed(2).replace('.', ',')}€`}
+                    </span>
+                    <span className="text-xs text-slate-400">/mes</span>
                   </div>
-                  <p className="mb-1 text-xs text-slate-500">
-                    <strong className="text-slate-700">94,80€/año</strong> · Facturado anualmente
+                  <p className="mb-4 text-xs text-slate-500">
+                    {annual
+                      ? `Facturado anualmente · ${PRO.annualTotal.toFixed(2).replace('.', ',')}€/año`
+                      : 'Sin permanencia'}
                   </p>
-                  <p className="mb-4 text-xs font-semibold text-green-700">
-                    = 2 meses gratis respecto al mensual
-                  </p>
-                  <ul className="space-y-2 text-sm text-slate-600">
+                  <ul className="space-y-2 text-sm text-slate-700">
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-400" /> Todas las
-                      funcionalidades
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-500" />
+                      Todo lo del plan Starter
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-400" /> Sin permanencia
-                      adicional
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-500" />
+                      VeriFactu 100% automático
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />
-                      <strong>Ahorras 24€ vs. mensual</strong>
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-500" />
+                      Hash encadenado + código QR
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-500" />
+                      <strong>Envío automático a la AEAT</strong>
                     </li>
                   </ul>
+                  <p className="mt-4 rounded-lg bg-blue-100 p-2.5 text-xs text-blue-700 text-center font-semibold">
+                    Cumplimiento total · Tranquilidad garantizada
+                  </p>
                 </div>
               </div>
 
               <p className="mt-6 text-center text-xs text-slate-400">
-                Ambos planes incluyen los mismos 6 meses gratuitos iniciales. · Sin tarjeta al
-                registrarte.
+                Puedes cambiar de Starter a PRO en cualquier momento, con un clic desde Ajustes.
               </p>
             </div>
           </section>
@@ -848,7 +914,7 @@ export default function Precios() {
                 </span>
               </div>
               <h2 className="mb-4 text-center text-3xl font-extrabold text-slate-900 sm:text-4xl">
-                9,90€/mes es lo que cuesta{' '}
+                Desde 24,90€/mes es lo que cuesta{' '}
                 <span className="text-blue-600">no tener problemas con Hacienda</span>
               </h2>
               <p className="mx-auto mb-12 max-w-2xl text-center text-slate-500">
@@ -877,8 +943,10 @@ export default function Precios() {
                     icon: Zap,
                     color: 'blue',
                     label: 'NovaFactura al mes',
-                    value: '9,90€',
-                    sub: '0,33€/día · Sin permanencia · Todo incluido',
+                    value: annual
+                      ? `desde ${STARTER.annualMonthly.toFixed(2).replace('.', ',')}€`
+                      : `desde ${STARTER.monthly.toFixed(2).replace('.', ',')}€`,
+                    sub: 'Plan Starter · Todo incluido · Sin permanencia',
                     negative: false,
                   },
                 ].map((item) => (
@@ -972,17 +1040,20 @@ export default function Precios() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b-2 border-slate-100 bg-slate-50">
-                      <th className="px-5 py-4 text-left font-semibold text-slate-600">
+                      <th className="px-4 py-4 text-left font-semibold text-slate-600">
                         Característica
                       </th>
-                      <th className="px-4 py-4 text-center font-semibold text-slate-400">
+                      <th className="px-3 py-4 text-center font-semibold text-slate-500">
+                        Starter
+                      </th>
+                      <th className="bg-blue-50 px-3 py-4 text-center font-bold text-blue-700">
+                        PRO
+                      </th>
+                      <th className="px-3 py-4 text-center font-semibold text-slate-400">
                         Excel / Word
                       </th>
-                      <th className="px-4 py-4 text-center font-semibold text-slate-400">
+                      <th className="px-3 py-4 text-center font-semibold text-slate-400">
                         Otros software
-                      </th>
-                      <th className="bg-blue-50 px-4 py-4 text-center font-bold text-blue-700">
-                        NovaFactura
                       </th>
                     </tr>
                   </thead>
@@ -994,27 +1065,40 @@ export default function Precios() {
                           i % 2 === 0 ? '' : 'bg-slate-50/50'
                         }`}
                       >
-                        <td className="px-5 py-3.5 font-medium text-slate-800">{row.label}</td>
-                        <td className="px-4 py-3.5 text-center">
-                          {row.excel === false ? (
-                            <X className="mx-auto h-5 w-5 text-slate-300" />
+                        <td className="px-4 py-3 font-medium text-slate-800 text-sm">
+                          {row.label}
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          {row.starter ? (
+                            <CheckCircle2 className="mx-auto h-4 w-4 text-slate-500" />
                           ) : (
-                            <CheckCircle2 className="mx-auto h-5 w-5 text-green-500" />
+                            <X className="mx-auto h-4 w-4 text-slate-300" />
                           )}
                         </td>
-                        <td className="px-4 py-3.5 text-center">
+                        <td className="bg-blue-50/50 px-3 py-3 text-center">
+                          {row.pro ? (
+                            <CheckCircle2 className="mx-auto h-4 w-4 text-blue-600" />
+                          ) : (
+                            <X className="mx-auto h-4 w-4 text-slate-300" />
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          {row.excel === false ? (
+                            <X className="mx-auto h-4 w-4 text-slate-300" />
+                          ) : (
+                            <CheckCircle2 className="mx-auto h-4 w-4 text-green-500" />
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-center">
                           {typeof row.otros === 'string' ? (
                             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
                               {row.otros}
                             </span>
                           ) : row.otros ? (
-                            <CheckCircle2 className="mx-auto h-5 w-5 text-green-500" />
+                            <CheckCircle2 className="mx-auto h-4 w-4 text-green-500" />
                           ) : (
-                            <X className="mx-auto h-5 w-5 text-slate-300" />
+                            <X className="mx-auto h-4 w-4 text-slate-300" />
                           )}
-                        </td>
-                        <td className="bg-blue-50/50 px-4 py-3.5 text-center">
-                          <CheckCircle2 className="mx-auto h-5 w-5 text-blue-600" />
                         </td>
                       </tr>
                     ))}
@@ -1143,10 +1227,23 @@ export default function Precios() {
                 <span className="text-blue-600">Decide si quieres seguir en 6 meses.</span>
               </h2>
               <p className="mx-auto mb-8 max-w-xl text-lg text-slate-500">
-                0€ durante los primeros 6 meses. Luego, solo{' '}
-                <strong className="text-slate-800">7,90€/mes</strong> con el plan anual o{' '}
-                <strong className="text-slate-800">9,90€/mes</strong> mensual. Sin compromisos, sin
-                riesgos.
+                0€ durante los primeros 6 meses. Luego, plan{' '}
+                <strong className="text-slate-800">
+                  Starter desde{' '}
+                  {annual
+                    ? `${STARTER.annualMonthly.toFixed(2).replace('.', ',')}€`
+                    : `${STARTER.monthly.toFixed(2).replace('.', ',')}€`}
+                  /mes
+                </strong>{' '}
+                o plan{' '}
+                <strong className="text-slate-800">
+                  PRO desde{' '}
+                  {annual
+                    ? `${PRO.annualMonthly.toFixed(2).replace('.', ',')}€`
+                    : `${PRO.monthly.toFixed(2).replace('.', ',')}€`}
+                  /mes
+                </strong>
+                . Sin compromisos, sin riesgos.
               </p>
 
               <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -1192,52 +1289,58 @@ export default function Precios() {
                 <div className="flex items-center justify-between">
                   <div className="text-left">
                     <p className="text-xs text-slate-400 font-medium">
-                      Plan Individual · Meses 1–6
+                      Meses 1–6 · Todos los planes
                     </p>
                   </div>
                   <span className="text-2xl font-black text-blue-600">0€</span>
                 </div>
                 <div className="my-3 border-t border-slate-100" />
                 <div className="space-y-2">
-                  <div
-                    className={`flex items-center justify-between rounded-xl px-3 py-2 transition-colors ${annual ? 'bg-blue-50' : ''}`}
-                  >
+                  {/* Starter */}
+                  <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
                     <div className="text-left">
-                      <p className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                        Plan anual
-                        {annual && (
-                          <span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] text-white">
-                            Seleccionado
-                          </span>
-                        )}
+                      <p className="text-xs font-semibold text-slate-700">Starter</p>
+                      <p className="text-xs text-slate-400">
+                        {annual
+                          ? `${STARTER.annualTotal}€/año · Sin VeriFactu`
+                          : 'Sin VeriFactu · Sin permanencia'}
                       </p>
-                      <p className="text-xs text-slate-400">94,80€/año · Sin permanencia</p>
                     </div>
                     <div className="text-right">
-                      <span className="text-xl font-black text-slate-800">7,90€</span>
+                      <span className="text-lg font-black text-slate-700">
+                        {annual
+                          ? `${STARTER.annualMonthly.toFixed(2).replace('.', ',')}€`
+                          : `${STARTER.monthly.toFixed(2).replace('.', ',')}€`}
+                      </span>
                       <span className="text-xs text-slate-400">/mes</span>
                     </div>
                   </div>
-                  <div
-                    className={`flex items-center justify-between rounded-xl px-3 py-2 transition-colors ${!annual ? 'bg-blue-50' : ''}`}
-                  >
+                  {/* PRO */}
+                  <div className="flex items-center justify-between rounded-xl bg-blue-50 px-3 py-2">
                     <div className="text-left">
                       <p className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                        Plan mensual
-                        {!annual && (
-                          <span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] text-white">
-                            Seleccionado
-                          </span>
-                        )}
+                        PRO
+                        <span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] text-white">
+                          Con VeriFactu
+                        </span>
                       </p>
-                      <p className="text-xs text-slate-400">Sin permanencia</p>
+                      <p className="text-xs text-slate-400">
+                        {annual ? `${PRO.annualTotal}€/año · Sin permanencia` : 'Sin permanencia'}
+                      </p>
                     </div>
                     <div className="text-right">
-                      <span className="text-xl font-black text-slate-800">9,90€</span>
+                      <span className="text-xl font-black text-slate-800">
+                        {annual
+                          ? `${PRO.annualMonthly.toFixed(2).replace('.', ',')}€`
+                          : `${PRO.monthly.toFixed(2).replace('.', ',')}€`}
+                      </span>
                       <span className="text-xs text-slate-400">/mes</span>
                     </div>
                   </div>
                 </div>
+                <p className="mt-3 text-center text-[10px] text-slate-400">
+                  {annual ? 'Precios con facturación anual' : 'Precios con facturación mensual'}
+                </p>
               </div>
             </div>
           </section>

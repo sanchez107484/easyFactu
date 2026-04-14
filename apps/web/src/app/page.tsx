@@ -22,7 +22,7 @@ import {
   TrendingUp,
   Headphones,
 } from 'lucide-react';
-import { brandConfig, PLAZAS_CONFIG } from '@easyfactura/brand-config';
+import { brandConfig, PLAZAS_CONFIG, PRICING } from '@easyfactura/brand-config';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
 import { useEffect, useState, useRef } from 'react';
@@ -140,7 +140,7 @@ const faqs = [
   },
   {
     q: '¿Cuánto cuesta después de los 6 meses gratuitos?',
-    a: 'El plan profesional tiene un coste de 9,90€/mes o 7,90€/mes si eliges el pago anual. Sin permanencia ni compromisos.',
+    a: `Plan Starter (sin VeriFactu): ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.starter.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Plan PRO con VeriFactu automático: ${PRICING.pro.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.pro.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Sin permanencia.`,
   },
   {
     q: '¿Qué sanciones existen por no usar software certificado?',
@@ -666,7 +666,7 @@ export default function App() {
                   {[
                     { icon: Clock, value: '6 meses', label: 'Acceso completo' },
                     { icon: CreditCard, value: '0€', label: 'Sin tarjeta al registrarte' },
-                    { icon: TrendingUp, value: '9,90€/mes', label: 'Después, opcional' },
+                    { icon: TrendingUp, value: 'desde 9,90€', label: 'Starter o PRO · por mes' },
                   ].map(({ icon: Icon, value, label }) => (
                     <div
                       key={label}
@@ -679,24 +679,70 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* Checklist */}
-                <ul className="mb-8 space-y-2 text-left sm:text-center">
-                  {[
-                    'Todas las funcionalidades incluidas',
-                    'VeriFactu automático',
-                    'Facturas ilimitadas',
-                    'Soporte técnico incluido',
-                    'Sin permanencia',
-                  ].map((item) => (
-                    <li
-                      key={item}
-                      className="flex items-center justify-start gap-2 sm:justify-center"
-                    >
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-600" />
-                      <span className="text-sm text-slate-700">{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                {/* Plan comparison — Starter vs PRO */}
+                <div className="mb-4 grid gap-3 text-left sm:grid-cols-2">
+                  {/* Starter */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <p className="text-sm font-bold text-slate-800">Plan Starter</p>
+                      <span className="text-base font-extrabold text-slate-700">
+                        {PRICING.starter.monthly.toFixed(2).replace('.', ',')}€
+                        <span className="text-xs font-normal text-slate-400">/mes</span>
+                      </span>
+                    </div>
+                    <ul className="space-y-1.5">
+                      {[
+                        { text: 'Facturas y presupuestos ilimitados', ok: true },
+                        { text: 'PDF, envío por email y app móvil', ok: true },
+                        { text: 'Importación desde Excel / CSV', ok: true },
+                        { text: 'VeriFactu / Envío AEAT', ok: false },
+                      ].map(({ text, ok }) => (
+                        <li key={text} className="flex items-center gap-2 text-xs">
+                          {ok ? (
+                            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
+                          ) : (
+                            <X className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+                          )}
+                          <span className={ok ? 'text-slate-600' : 'text-slate-400'}>{text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  {/* PRO */}
+                  <div className="rounded-xl border-2 border-blue-200 bg-blue-50/50 p-4">
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">Plan PRO</p>
+                        <span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                          Con VeriFactu
+                        </span>
+                      </div>
+                      <span className="text-base font-extrabold text-slate-700">
+                        {PRICING.pro.monthly.toFixed(2).replace('.', ',')}€
+                        <span className="text-xs font-normal text-slate-400">/mes</span>
+                      </span>
+                    </div>
+                    <ul className="space-y-1.5">
+                      {[
+                        'Todo lo del plan Starter',
+                        'VeriFactu automático',
+                        'Envío a AEAT incluido',
+                        'Software homologado AEAT',
+                      ].map((text) => (
+                        <li key={text} className="flex items-center gap-2 text-xs">
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-blue-600" />
+                          <span className="text-slate-600">{text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+                <p className="mb-8 text-center text-xs text-slate-400">
+                  Puedes elegir o cambiar de plan en cualquier momento.{' '}
+                  <Link href="/precios" className="font-semibold text-blue-600 hover:underline">
+                    Ver precios completos →
+                  </Link>
+                </p>
 
                 <Link
                   href="/registro"
