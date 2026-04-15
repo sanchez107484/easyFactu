@@ -148,7 +148,7 @@ export class InvoiceService {
           issueDate: new Date(dto.issueDate),
           dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
           status: invoiceStatus,
-          invoiceType: dto.invoiceType ?? 'standard',
+          invoiceType: (dto.invoiceType ?? 'standard') as PrismaInvoiceType,
           templateId: dto.templateId ?? null,
           layoutOverride: dto.layoutOverride ? { ...dto.layoutOverride } : undefined,
           validUntil: isQuote && dto.validUntil ? new Date(dto.validUntil) : null,
