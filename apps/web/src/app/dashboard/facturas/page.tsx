@@ -625,11 +625,11 @@ export default function FacturasPage() {
                                   </DropdownMenuItem>
                                 )}
                                 {invoice.status === InvoiceStatus.DRAFT && isProforma && (
-                                    <DropdownMenuItem onClick={() => setConvertId(invoice.id)}>
-                                      <ArrowRightLeft className="mr-2 h-4 w-4" />
-                                      Convertir a factura oficial
-                                    </DropdownMenuItem>
-                                  )}
+                                  <DropdownMenuItem onClick={() => setConvertId(invoice.id)}>
+                                    <ArrowRightLeft className="mr-2 h-4 w-4" />
+                                    Convertir a factura oficial
+                                  </DropdownMenuItem>
+                                )}
                                 {invoice.status === InvoiceStatus.CONFIRMED && (
                                   <DropdownMenuItem
                                     onClick={() => markSentMutation.mutate(invoice.id)}
@@ -673,14 +673,10 @@ export default function FacturasPage() {
                                     Deshacer pago
                                   </DropdownMenuItem>
                                 )}
-                                {invoice.number && (
-                                  <DownloadDropdownItem invoiceId={invoice.id} />
-                                )}
+                                {invoice.number && <DownloadDropdownItem invoiceId={invoice.id} />}
                                 <DropdownMenuItem
                                   onClick={() =>
-                                    router.push(
-                                      `/dashboard/facturas/nueva?duplicate=${invoice.id}`,
-                                    )
+                                    router.push(`/dashboard/facturas/nueva?duplicate=${invoice.id}`)
                                   }
                                 >
                                   <Copy className="mr-2 h-4 w-4" />
@@ -751,8 +747,7 @@ export default function FacturasPage() {
             <AlertDialogDescription asChild>
               <div className="space-y-2">
                 <p>
-                  Vas a confirmar la factura de{' '}
-                  <strong>{confirmTarget?.customerName}</strong> por{' '}
+                  Vas a confirmar la factura de <strong>{confirmTarget?.customerName}</strong> por{' '}
                   <strong>{formatCurrency(confirmTarget?.total ?? 0)}</strong>.
                 </p>
                 <p className="text-sm">
@@ -764,10 +759,7 @@ export default function FacturasPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmInvoice}
-              disabled={confirmMutation.isPending}
-            >
+            <AlertDialogAction onClick={handleConfirmInvoice} disabled={confirmMutation.isPending}>
               {confirmMutation.isPending ? 'Confirmando...' : 'Sí, confirmar factura'}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -775,31 +767,23 @@ export default function FacturasPage() {
       </AlertDialog>
 
       {/* ── Mark as Paid Dialog ── */}
-      <AlertDialog
-        open={Boolean(paidTarget)}
-        onOpenChange={(open) => !open && setPaidTarget(null)}
-      >
+      <AlertDialog open={Boolean(paidTarget)} onOpenChange={(open) => !open && setPaidTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Marcar como cobrada?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-1">
                 <p>
-                  La factura{' '}
-                  <strong>{paidTarget?.number ?? 'seleccionada'}</strong> de{' '}
+                  La factura <strong>{paidTarget?.number ?? 'seleccionada'}</strong> de{' '}
                   <strong>{paidTarget?.customerName}</strong> por{' '}
-                  <strong>{formatCurrency(paidTarget?.total ?? 0)}</strong> se marcará como
-                  cobrada.
+                  <strong>{formatCurrency(paidTarget?.total ?? 0)}</strong> se marcará como cobrada.
                 </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleMarkAsPaid}
-              disabled={paidMutation.isPending}
-            >
+            <AlertDialogAction onClick={handleMarkAsPaid} disabled={paidMutation.isPending}>
               {paidMutation.isPending ? 'Guardando...' : 'Sí, cobrada'}
             </AlertDialogAction>
           </AlertDialogFooter>

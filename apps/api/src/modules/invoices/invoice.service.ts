@@ -10,6 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import {
   Prisma,
   InvoiceStatus as PrismaInvoiceStatus,
+  InvoiceType as PrismaInvoiceType,
   QuoteAcceptanceStatus as PrismaQuoteAcceptanceStatus,
 } from '@prisma/client';
 import { CreateInvoiceDto, CreateInvoiceLineDto } from './dto/create-invoice.dto';
@@ -333,7 +334,6 @@ export class InvoiceService {
             province: true,
             country: true,
             type: true,
-            iban: true,
             notes: true,
           },
         },
@@ -414,7 +414,7 @@ export class InvoiceService {
         issueDate: dto.issueDate ? new Date(dto.issueDate) : undefined,
         dueDate:
           dto.dueDate !== undefined ? (dto.dueDate ? new Date(dto.dueDate) : null) : undefined,
-        invoiceType: dto.invoiceType !== undefined ? dto.invoiceType : undefined,
+        invoiceType: dto.invoiceType !== undefined ? (dto.invoiceType as PrismaInvoiceType) : undefined,
         templateId: dto.templateId !== undefined ? dto.templateId : undefined,
         layoutOverride:
           dto.layoutOverride !== undefined
@@ -575,9 +575,7 @@ export class InvoiceService {
     const invoice = await this.findForMutation(tenantId, id);
 
     if (invoice.status !== InvoiceStatus.CONFIRMED) {
-      throw new ConflictException(
-        'Solo se pueden marcar como enviadas las facturas confirmadas'
-      );
+      throw new ConflictException('Solo se pueden marcar como enviadas las facturas confirmadas');
     }
 
     return this.prisma.invoice.update({
