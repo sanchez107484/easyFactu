@@ -33,9 +33,9 @@ export function useCustomers(
 ) {
   return useQuery({
     queryKey: ['customers', 'list', filters],
-    queryFn: () => customerApi.getAll({ ...filters, limit: 100 }),
+    queryFn: () => customerApi.getAll(filters),
     enabled: options?.enabled ?? true,
-    staleTime: options?.staleTime,
+    staleTime: options?.staleTime ?? 30_000,
   });
 }
 

@@ -20,7 +20,8 @@ function getApiErrorMessage(error: unknown): string {
 export function useProducts(filters: QueryProductsInput = {}) {
   return useQuery({
     queryKey: ['products', 'list', filters],
-    queryFn: () => productApi.getAll({ ...filters, limit: 100 }),
+    queryFn: () => productApi.getAll(filters),
+    staleTime: 30_000,
   });
 }
 

@@ -1,17 +1,16 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
+import { validateNif } from '@easyfactura/shared-validators';
 
 @Injectable()
 export class CustomerService {
   constructor(private prisma: PrismaService) {}
 
   async create(tenantId: string, dto: CreateCustomerDto) {
-    // Validar NIF usando el validador compartido
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { validateNif } = require('@easyfactura/shared-validators');
     const nif = dto.nif?.toUpperCase().trim();
     if (!validateNif(nif)) {
       throw new ConflictException('El NIF/DNI/NIE no es válido');
@@ -39,10 +38,10 @@ export class CustomerService {
   }
 
   async findAll(tenantId: string, query: QueryCustomerDto) {
-    const { page = 1, limit = 20, search, type, active } = query;
+    const { page = 1, limit = 20, search, type, active, sortBy, sortOrder = 'asc' } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId };
+    const where: Prisma.CustomerWhereInput = { tenantId };
 
     if (search) {
       where.OR = [
@@ -66,12 +65,21 @@ export class CustomerService {
       where.nif = { equals: query.nif.toUpperCase().trim(), mode: 'insensitive' };
     }
 
+    const CUSTOMER_SORT_FIELDS: Record<string, true> = {
+      name: true,
+      nif: true,
+      city: true,
+      type: true,
+      createdAt: true,
+    };
+    const orderBy = { [CUSTOMER_SORT_FIELDS[sortBy ?? ''] ? sortBy! : 'name']: sortOrder };
+
     const [data, total] = await Promise.all([
       this.prisma.customer.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { name: 'asc' },
+        orderBy,
       }),
       this.prisma.customer.count({ where }),
     ]);

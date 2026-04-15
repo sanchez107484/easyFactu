@@ -9,6 +9,7 @@ import { CreateInvoiceSeriesDto } from './dto/create-invoice-series.dto';
 import { UpdateInvoiceSeriesDto } from './dto/update-invoice-series.dto';
 import { QueryInvoiceSeriesDto } from './dto/query-invoice-series.dto';
 import { SeriesType } from '@easyfactura/shared-types';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class InvoiceSeriesService {
@@ -59,7 +60,7 @@ export class InvoiceSeriesService {
     const { page = 1, limit = 20, type, year, isDefault } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId };
+    const where: Prisma.InvoiceSeriesWhereInput = { tenantId };
 
     if (type !== undefined) {
       where.type = type;

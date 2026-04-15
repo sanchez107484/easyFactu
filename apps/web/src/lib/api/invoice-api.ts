@@ -6,6 +6,8 @@ import {
   CreateInvoiceInput,
   UpdateInvoiceInput,
   QueryInvoicesInput,
+  InvoiceStats,
+  InvoiceReportData,
 } from '@easyfactura/shared-types';
 
 export interface RectifyInvoiceInput {
@@ -44,6 +46,15 @@ export const invoiceApi = {
   markAsPaid: (id: string): Promise<Invoice> =>
     apiClient.post<ApiResponse<Invoice>>(`/invoices/${id}/paid`).then(unwrapApiResponse),
 
+  unmarkAsPaid: (id: string): Promise<Invoice> =>
+    apiClient.delete<ApiResponse<Invoice>>(`/invoices/${id}/paid`).then(unwrapApiResponse),
+
+  markAsSent: (id: string): Promise<Invoice> =>
+    apiClient.post<ApiResponse<Invoice>>(`/invoices/${id}/sent`).then(unwrapApiResponse),
+
+  unmarkAsSent: (id: string): Promise<Invoice> =>
+    apiClient.delete<ApiResponse<Invoice>>(`/invoices/${id}/sent`).then(unwrapApiResponse),
+
   duplicate: (id: string): Promise<Invoice> =>
     apiClient.post<ApiResponse<Invoice>>(`/invoices/${id}/duplicate`).then(unwrapApiResponse),
 
@@ -81,4 +92,16 @@ export const invoiceApi = {
       .then(unwrapApiResponse),
 
   remove: (id: string): Promise<void> => apiClient.delete(`/invoices/${id}`).then(() => undefined),
+
+  getStats: (year?: number): Promise<InvoiceStats> => {
+    const qs = year !== undefined ? `?year=${year}` : '';
+    return apiClient.get<ApiResponse<InvoiceStats>>(`/invoices/stats${qs}`).then(unwrapApiResponse);
+  },
+
+  getReports: (fromDate: string, toDate: string): Promise<InvoiceReportData> =>
+    apiClient
+      .get<
+        ApiResponse<InvoiceReportData>
+      >(`/invoices/reports?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`)
+      .then(unwrapApiResponse),
 };

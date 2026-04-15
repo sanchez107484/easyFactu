@@ -240,6 +240,13 @@ enum SeriesType {
   QUOTE
 }
 
+// invoiceType: valores en minúsculas para mantener la misma API contract que el string original
+enum InvoiceType {
+  standard
+  proforma
+  quote
+}
+
 // ==================== INVOICES ====================
 
 model Invoice {
@@ -262,7 +269,7 @@ model Invoice {
   notes               String?        @db.Text
   paymentDetails      Json?          @map("payment_details")
 
-  invoiceType         String?        @default("standard") @map("invoice_type")
+  invoiceType         InvoiceType    @default(standard) @map("invoice_type")
 
   // Quote-specific fields
   validUntil          DateTime?      @map("valid_until") @db.Date
@@ -306,6 +313,9 @@ model Invoice {
   @@index([tenantId, status])
   @@index([tenantId, customerId])
   @@index([tenantId, seriesId])
+  @@index([tenantId, dueDate])
+  @@index([tenantId, total])
+  @@index([tenantId, createdAt])
   @@index([recurringInvoiceId])
   @@map("invoices")
 }

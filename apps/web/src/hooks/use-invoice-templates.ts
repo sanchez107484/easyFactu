@@ -33,6 +33,7 @@ export function useInvoiceTemplates() {
   return useQuery({
     queryKey: templateKeys.lists(),
     queryFn: () => invoiceTemplateApi.getAll(),
+    staleTime: 5 * 60_000,
   });
 }
 

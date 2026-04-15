@@ -25,6 +25,7 @@ export function useInvoiceSeries(year?: number) {
   return useQuery({
     queryKey: seriesKeys.list(year),
     queryFn: () => seriesApi.getAll(year),
+    staleTime: 5 * 60_000,
   });
 }
 

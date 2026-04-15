@@ -1,10 +1,12 @@
-﻿'use client';
+'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -16,14 +18,16 @@ import {
   CheckCircle2,
   Coins,
   AlertCircle,
-  CreditCard,
-  Landmark,
-  Wallet,
   ArrowRightLeft,
   CalendarClock,
   X,
   Pencil,
   RefreshCw,
+  SlidersHorizontal,
+  AlertTriangle,
+  Send,
+  Undo2,
+  Download,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -46,34 +50,34 @@ import {
   useInvoices,
   useConfirmInvoice,
   useMarkInvoiceAsPaid,
+  useUnmarkInvoiceAsPaid,
+  useMarkInvoiceAsSent,
+  useUnmarkInvoiceAsSent,
   useDeleteInvoice,
   useConvertProformaToOfficial,
 } from '@/hooks/use-invoices';
-import { useSortTable, sortData } from '@/hooks/use-sort-table';
-import { InvoiceStatus, PaymentMethod, Invoice } from '@easyfactura/shared-types';
-import { cn } from '@/lib/utils';
+import { useSortTable } from '@/hooks/use-sort-table';
+import { useDownloadInvoicePdf } from '@/hooks/use-download-invoice-pdf';
+import { InvoiceStatus, Invoice } from '@easyfactura/shared-types';
+import { cn, formatCurrency } from '@/lib/utils';
 import { SortableHeader } from '@/components/common/sortable-header';
 import { InvoiceStatusBadge } from '@/components/common/invoice-status-badge';
 import { InvoiceStatusFilterPills } from '@/components/common/invoice-status-filter-pills';
 import { EmptyState } from '@/components/common/empty-state';
 import { ConvertProformaModal } from '@/components/facturas/ConvertProformaModal';
+import { DownloadInvoiceButton } from '@/components/ui/download-invoice-button';
 
-// ==================== CONSTANTS ====================
+// ==================== TYPES ====================
 
-const PAYMENT_METHOD_CONFIG: Record<string, { label: string; icon: React.ElementType }> = {
-  [PaymentMethod.BANK_TRANSFER]: { label: 'Transferencia', icon: Landmark },
-  [PaymentMethod.DIRECT_DEBIT]: { label: 'Domiciliacion', icon: ArrowRightLeft },
-  [PaymentMethod.CARD]: { label: 'Tarjeta', icon: CreditCard },
-  [PaymentMethod.CASH]: { label: 'Efectivo', icon: Wallet },
-  [PaymentMethod.PAYPAL]: { label: 'PayPal', icon: CreditCard },
-  BIZUM: { label: 'Bizum', icon: Wallet },
-};
+interface ActionTarget {
+  id: string;
+  number: string | null;
+  customerName: string;
+  total: number;
+  isProforma?: boolean;
+}
 
 // ==================== HELPERS ====================
-
-function formatCurrency(amount: number) {
-  return amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
-}
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('es-ES', {
@@ -92,37 +96,7 @@ function isOverdue(invoice: Invoice): boolean {
   return new Date(invoice.dueDate) < new Date();
 }
 
-function getInvoiceSortValue(invoice: Invoice, key: string): string | number {
-  switch (key) {
-    case 'number':
-      return invoice.number ?? '';
-    case 'customer':
-      return invoice.customer?.name ?? '';
-    case 'issueDate':
-      return invoice.issueDate ?? '';
-    case 'dueDate':
-      return invoice.dueDate ?? '';
-    case 'total':
-      return Number(invoice.total);
-    default:
-      return '';
-  }
-}
-
 // ==================== SUB-COMPONENTS ====================
-
-function PaymentMethodCell({ method }: { method: string | null }) {
-  if (!method) return <span className="text-muted-foreground">-</span>;
-  const cfg = PAYMENT_METHOD_CONFIG[method];
-  if (!cfg) return <span className="text-sm text-muted-foreground">{method}</span>;
-  const Icon = cfg.icon;
-  return (
-    <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-      <Icon className="h-3.5 w-3.5 shrink-0" />
-      {cfg.label}
-    </span>
-  );
-}
 
 function TableSkeleton() {
   return (
@@ -131,10 +105,11 @@ function TableSkeleton() {
         <div key={i} className="flex items-center gap-4 px-6 py-4">
           <Skeleton className="h-4 w-28" />
           <Skeleton className="h-4 w-36" />
-          <Skeleton className="h-4 w-20 hidden md:block" />
+          <Skeleton className="h-4 w-20 hidden sm:block" />
           <Skeleton className="h-4 w-20 hidden lg:block" />
           <Skeleton className="h-4 w-24 ml-auto" />
           <Skeleton className="h-5 w-20 rounded-full" />
+          <Skeleton className="h-7 w-24 rounded hidden md:block" />
           <Skeleton className="h-7 w-7 rounded" />
         </div>
       ))}
@@ -142,29 +117,127 @@ function TableSkeleton() {
   );
 }
 
+interface QuickActionButtonProps {
+  invoice: Invoice;
+  onRequestConfirm: () => void;
+  onRequestPaid: () => void;
+  onRequestConvert: () => void;
+}
+
+function QuickActionButton({
+  invoice,
+  onRequestConfirm,
+  onRequestPaid,
+  onRequestConvert,
+}: QuickActionButtonProps) {
+  const isProforma = (invoice as any).invoiceType === 'proforma';
+
+  if (invoice.status === InvoiceStatus.DRAFT && !isProforma) {
+    return (
+      <Button size="sm" className="h-7 text-xs px-3 whitespace-nowrap" onClick={onRequestConfirm}>
+        <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+        Confirmar
+      </Button>
+    );
+  }
+
+  if (invoice.status === InvoiceStatus.DRAFT && isProforma) {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 text-xs px-3 whitespace-nowrap"
+        onClick={onRequestConvert}
+      >
+        <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5" />
+        Convertir
+      </Button>
+    );
+  }
+
+  if (invoice.status === InvoiceStatus.CONFIRMED || invoice.status === InvoiceStatus.SENT) {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 text-xs px-3 whitespace-nowrap border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+        onClick={onRequestPaid}
+      >
+        <Coins className="h-3.5 w-3.5 mr-1.5" />
+        Cobrada
+      </Button>
+    );
+  }
+
+  // spacer to keep column alignment
+  return <div className="h-7 w-[88px]" />;
+}
+
+function DownloadDropdownItem({ invoiceId }: { invoiceId: string }) {
+  const { download, isLoading } = useDownloadInvoicePdf({ invoiceId });
+  return (
+    <DropdownMenuItem onClick={download} disabled={isLoading}>
+      <Download className="mr-2 h-4 w-4" />
+      {isLoading ? 'Generando PDF...' : 'Descargar PDF'}
+    </DropdownMenuItem>
+  );
+}
+
 // ==================== PAGE ====================
 
 export default function FacturasPage() {
   const router = useRouter();
-  const [search, setSearch] = useState('');
+
+  const [searchInput, setSearchInput] = useState('');
+  const search = useDebounce(searchInput, 300);
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [page, setPage] = useState(1);
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+
+  // Dialog targets
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [convertId, setConvertId] = useState<string | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<ActionTarget | null>(null);
+  const [paidTarget, setPaidTarget] = useState<ActionTarget | null>(null);
 
   const { sortKey, sortDir, handleSort } = useSortTable('issueDate', 'desc');
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, sortKey, sortDir, fromDate, toDate]);
 
   const { data, isLoading, error, refetch } = useInvoices({
     search: search || undefined,
     status: statusFilter !== 'ALL' ? (statusFilter as InvoiceStatus) : undefined,
-    limit: 100,
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
+    fromDate: fromDate || undefined,
+    toDate: toDate || undefined,
+    page,
+    limit: 20,
+    sortBy: sortKey,
+    sortOrder: sortDir,
   });
 
   const confirmMutation = useConfirmInvoice();
   const paidMutation = useMarkInvoiceAsPaid();
+  const unmarkPaidMutation = useUnmarkInvoiceAsPaid();
+  const markSentMutation = useMarkInvoiceAsSent();
+  const unmarkSentMutation = useUnmarkInvoiceAsSent();
   const deleteMutation = useDeleteInvoice();
   const convertMutation = useConvertProformaToOfficial();
+
+  const handleConfirmInvoice = async () => {
+    if (!confirmTarget) return;
+    await confirmMutation.mutateAsync(confirmTarget.id);
+    setConfirmTarget(null);
+  };
+
+  const handleMarkAsPaid = async () => {
+    if (!paidTarget) return;
+    await paidMutation.mutateAsync(paidTarget.id);
+    setPaidTarget(null);
+  };
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -178,15 +251,12 @@ export default function FacturasPage() {
     setConvertId(null);
   };
 
-  const handleDuplicate = (invoice: Invoice) => {
-    router.push(`/dashboard/facturas/nueva?duplicate=${invoice.id}`);
-  };
-
-  const rawInvoices = data?.data ?? [];
-  const invoices = sortData(rawInvoices, sortKey, sortDir, getInvoiceSortValue);
+  const invoices = data?.data ?? [];
   const total = data?.meta.total ?? 0;
+  const totalPages = data?.meta.totalPages ?? 1;
+  const hasActiveFilters = !!searchInput || statusFilter !== 'ALL' || !!fromDate || !!toDate;
 
-  if (!isLoading && !error && rawInvoices.length === 0 && !search && statusFilter === 'ALL') {
+  if (!isLoading && !error && total === 0 && !hasActiveFilters) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -198,7 +268,7 @@ export default function FacturasPage() {
         <EmptyState
           icon={FileText}
           title="Crea tu primera factura"
-          description="Genera facturas profesionales en segundos. Cumple con VeriFactu automaticamente."
+          description="Genera facturas profesionales en segundos. Cumple con VeriFactu automáticamente."
           action={
             <Link href="/dashboard/facturas/nueva">
               <Button>
@@ -214,6 +284,7 @@ export default function FacturasPage() {
 
   return (
     <div className="space-y-5">
+      {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Facturas</h1>
@@ -229,27 +300,84 @@ export default function FacturasPage() {
         </Link>
       </div>
 
+      {/* ── Filters ── */}
       <div className="space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por numero de factura o nombre de cliente..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 pr-10"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nº factura, cliente o NIF..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pl-9 pr-9"
+            />
+            {searchInput && (
+              <button
+                onClick={() => setSearchInput('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <Button
+            variant={showDateFilter || fromDate || toDate ? 'secondary' : 'outline'}
+            size="icon"
+            onClick={() => setShowDateFilter((v) => !v)}
+            title="Filtrar por fechas"
+            className={cn('shrink-0', (fromDate || toDate) && 'ring-2 ring-primary ring-offset-1')}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </Button>
         </div>
+
+        {showDateFilter && (
+          <div className="flex items-end gap-3 rounded-lg border bg-muted/30 p-3">
+            <div className="flex-1">
+              <Label htmlFor="from-date" className="text-xs text-muted-foreground mb-1.5 block">
+                Desde
+              </Label>
+              <Input
+                id="from-date"
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="flex-1">
+              <Label htmlFor="to-date" className="text-xs text-muted-foreground mb-1.5 block">
+                Hasta
+              </Label>
+              <Input
+                id="to-date"
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="h-8 text-sm"
+              />
+            </div>
+            {(fromDate || toDate) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs shrink-0"
+                onClick={() => {
+                  setFromDate('');
+                  setToDate('');
+                }}
+              >
+                <X className="h-3.5 w-3.5 mr-1" />
+                Limpiar
+              </Button>
+            )}
+          </div>
+        )}
+
         <InvoiceStatusFilterPills value={statusFilter} onChange={setStatusFilter} />
       </div>
 
+      {/* ── Error state ── */}
       {error && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
@@ -281,8 +409,10 @@ export default function FacturasPage() {
                   size="sm"
                   className="mt-4"
                   onClick={() => {
-                    setSearch('');
+                    setSearchInput('');
                     setStatusFilter('ALL');
+                    setFromDate('');
+                    setToDate('');
                   }}
                 >
                   Limpiar filtros
@@ -294,7 +424,7 @@ export default function FacturasPage() {
                   <thead className="border-b bg-muted/40">
                     <tr>
                       <SortableHeader
-                        label="Numero"
+                        label="Número"
                         sortKey="number"
                         currentKey={sortKey}
                         direction={sortDir}
@@ -309,12 +439,12 @@ export default function FacturasPage() {
                         onSort={handleSort}
                       />
                       <SortableHeader
-                        label="Emision"
+                        label="Emisión"
                         sortKey="issueDate"
                         currentKey={sortKey}
                         direction={sortDir}
                         onSort={handleSort}
-                        className="hidden md:table-cell"
+                        className="hidden sm:table-cell"
                       />
                       <SortableHeader
                         label="Vencimiento"
@@ -324,9 +454,6 @@ export default function FacturasPage() {
                         onSort={handleSort}
                         className="hidden lg:table-cell"
                       />
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground hidden lg:table-cell">
-                        Pago
-                      </th>
                       <SortableHeader
                         label="Total"
                         sortKey="total"
@@ -338,12 +465,16 @@ export default function FacturasPage() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
                         Estado
                       </th>
-                      <th className="px-4 py-3" />
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground hidden md:table-cell">
+                        Acción rápida
+                      </th>
+                      <th className="px-4 py-3 w-9" />
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {invoices.map((invoice) => {
                       const overdue = isOverdue(invoice);
+                      const isProforma = (invoice as any).invoiceType === 'proforma';
                       return (
                         <tr
                           key={invoice.id}
@@ -353,39 +484,32 @@ export default function FacturasPage() {
                               'bg-red-50/50 hover:bg-red-50 dark:bg-red-950/10 dark:hover:bg-red-950/20',
                           )}
                         >
+                          {/* Número */}
                           <td className="px-6 py-3">
                             <Link
                               href={`/dashboard/facturas/${invoice.id}`}
                               className="font-mono text-sm font-medium hover:text-primary transition-colors"
                             >
-                              {(invoice as any).invoiceType === 'proforma' ? (
-                                <span className="text-muted-foreground font-normal">
-                                  {invoice.customer?.name ?? '—'} &mdash; PROFORMA
-                                </span>
-                              ) : invoice.status === InvoiceStatus.DRAFT ? (
-                                <span className="text-muted-foreground font-normal">
-                                  {invoice.customer?.name ?? '—'} &mdash; BORRADOR
-                                </span>
-                              ) : (
-                                invoice.number
-                              )}
+                              {invoice.number ?? (isProforma ? 'PROFORMA' : 'BORRADOR')}
                             </Link>
-                            {invoice.isRectificative && (
-                              <span className="ml-2 text-[10px] text-muted-foreground bg-muted rounded px-1 py-0.5">
-                                rectif.
-                              </span>
-                            )}
-                            {invoice.recurringInvoiceId && (
-                              <span className="ml-2 text-[10px] font-medium text-primary bg-primary/10 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5">
-                                <RefreshCw className="h-2.5 w-2.5" />
-                                recurrente
-                              </span>
-                            )}
-                            {(invoice as any).invoiceType === 'proforma' && (
-                              <span className="ml-2 text-[10px] font-medium text-proforma-700 bg-proforma-100 dark:text-proforma-300 dark:bg-proforma-900/40 rounded px-1.5 py-0.5">
-                                proforma
-                              </span>
-                            )}
+                            <div className="flex flex-wrap gap-1 mt-0.5">
+                              {invoice.isRectificative && (
+                                <span className="text-[10px] text-muted-foreground bg-muted rounded px-1 py-0.5">
+                                  rectif.
+                                </span>
+                              )}
+                              {invoice.recurringInvoiceId && (
+                                <span className="text-[10px] font-medium text-primary bg-primary/10 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5">
+                                  <RefreshCw className="h-2.5 w-2.5" />
+                                  recurrente
+                                </span>
+                              )}
+                              {isProforma && (
+                                <span className="text-[10px] font-medium text-proforma-700 bg-proforma-100 dark:text-proforma-300 dark:bg-proforma-900/40 rounded px-1.5 py-0.5">
+                                  proforma
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-3">
                             <div className="min-w-0">
@@ -399,7 +523,7 @@ export default function FacturasPage() {
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground hidden md:table-cell whitespace-nowrap">
+                          <td className="px-4 py-3 text-sm text-muted-foreground hidden sm:table-cell whitespace-nowrap">
                             {formatDate(invoice.issueDate)}
                           </td>
                           <td className="px-4 py-3 hidden lg:table-cell whitespace-nowrap">
@@ -424,21 +548,41 @@ export default function FacturasPage() {
                               <span className="text-muted-foreground text-sm">-</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 hidden lg:table-cell">
-                            <PaymentMethodCell method={invoice.paymentMethod} />
-                          </td>
+                          {/* Total */}
                           <td className="px-4 py-3 text-right text-sm font-semibold tabular-nums whitespace-nowrap">
                             {formatCurrency(Number(invoice.total))}
                           </td>
+                          {/* Estado */}
                           <td className="px-4 py-3">
                             <InvoiceStatusBadge
-                              status={
-                                (invoice as any).invoiceType === 'proforma'
-                                  ? InvoiceStatus.PROFORMA
-                                  : invoice.status
-                              }
+                              status={isProforma ? InvoiceStatus.PROFORMA : invoice.status}
                             />
                           </td>
+                          {/* Acción rápida */}
+                          <td className="px-4 py-3 hidden md:table-cell">
+                            <QuickActionButton
+                              invoice={invoice}
+                              onRequestConfirm={() =>
+                                setConfirmTarget({
+                                  id: invoice.id,
+                                  number: invoice.number,
+                                  customerName: invoice.customer?.name ?? '—',
+                                  total: Number(invoice.total),
+                                  isProforma,
+                                })
+                              }
+                              onRequestPaid={() =>
+                                setPaidTarget({
+                                  id: invoice.id,
+                                  number: invoice.number,
+                                  customerName: invoice.customer?.name ?? '—',
+                                  total: Number(invoice.total),
+                                })
+                              }
+                              onRequestConvert={() => setConvertId(invoice.id)}
+                            />
+                          </td>
+                          {/* Menú ⋮ */}
                           <td className="px-4 py-3 text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -461,38 +605,84 @@ export default function FacturasPage() {
                                   <DropdownMenuItem asChild>
                                     <Link href={`/dashboard/facturas/nueva?edit=${invoice.id}`}>
                                       <Pencil className="mr-2 h-4 w-4" />
-                                      Editar borrador
+                                      {isProforma ? 'Editar proforma' : 'Editar borrador'}
                                     </Link>
                                   </DropdownMenuItem>
                                 )}
-                                {invoice.status === InvoiceStatus.DRAFT &&
-                                  (invoice as any).invoiceType !== 'proforma' && (
-                                    <DropdownMenuItem
-                                      onClick={() => confirmMutation.mutate(invoice.id)}
-                                      disabled={confirmMutation.isPending}
-                                    >
-                                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                                      Confirmar
-                                    </DropdownMenuItem>
-                                  )}
-                                {invoice.status === InvoiceStatus.DRAFT &&
-                                  (invoice as any).invoiceType === 'proforma' && (
+                                {invoice.status === InvoiceStatus.DRAFT && !isProforma && (
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      setConfirmTarget({
+                                        id: invoice.id,
+                                        number: invoice.number,
+                                        customerName: invoice.customer?.name ?? '—',
+                                        total: Number(invoice.total),
+                                      })
+                                    }
+                                  >
+                                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                                    Confirmar factura
+                                  </DropdownMenuItem>
+                                )}
+                                {invoice.status === InvoiceStatus.DRAFT && isProforma && (
                                     <DropdownMenuItem onClick={() => setConvertId(invoice.id)}>
                                       <ArrowRightLeft className="mr-2 h-4 w-4" />
                                       Convertir a factura oficial
                                     </DropdownMenuItem>
                                   )}
+                                {invoice.status === InvoiceStatus.CONFIRMED && (
+                                  <DropdownMenuItem
+                                    onClick={() => markSentMutation.mutate(invoice.id)}
+                                    disabled={markSentMutation.isPending}
+                                  >
+                                    <Send className="mr-2 h-4 w-4" />
+                                    Marcar como enviada
+                                  </DropdownMenuItem>
+                                )}
+                                {invoice.status === InvoiceStatus.SENT && (
+                                  <DropdownMenuItem
+                                    onClick={() => unmarkSentMutation.mutate(invoice.id)}
+                                    disabled={unmarkSentMutation.isPending}
+                                  >
+                                    <Undo2 className="mr-2 h-4 w-4" />
+                                    Deshacer envío
+                                  </DropdownMenuItem>
+                                )}
                                 {(invoice.status === InvoiceStatus.CONFIRMED ||
                                   invoice.status === InvoiceStatus.SENT) && (
                                   <DropdownMenuItem
-                                    onClick={() => paidMutation.mutate(invoice.id)}
-                                    disabled={paidMutation.isPending}
+                                    onClick={() =>
+                                      setPaidTarget({
+                                        id: invoice.id,
+                                        number: invoice.number,
+                                        customerName: invoice.customer?.name ?? '—',
+                                        total: Number(invoice.total),
+                                      })
+                                    }
                                   >
                                     <Coins className="mr-2 h-4 w-4" />
-                                    Marcar como pagada
+                                    Marcar como cobrada
                                   </DropdownMenuItem>
                                 )}
-                                <DropdownMenuItem onClick={() => handleDuplicate(invoice)}>
+                                {invoice.status === InvoiceStatus.PAID && (
+                                  <DropdownMenuItem
+                                    onClick={() => unmarkPaidMutation.mutate(invoice.id)}
+                                    disabled={unmarkPaidMutation.isPending}
+                                  >
+                                    <Undo2 className="mr-2 h-4 w-4" />
+                                    Deshacer pago
+                                  </DropdownMenuItem>
+                                )}
+                                {invoice.number && (
+                                  <DownloadDropdownItem invoiceId={invoice.id} />
+                                )}
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    router.push(
+                                      `/dashboard/facturas/nueva?duplicate=${invoice.id}`,
+                                    )
+                                  }
+                                >
                                   <Copy className="mr-2 h-4 w-4" />
                                   Duplicar
                                 </DropdownMenuItem>
@@ -503,7 +693,7 @@ export default function FacturasPage() {
                                       className="text-destructive focus:text-destructive"
                                       onClick={() => setDeleteId(invoice.id)}
                                     >
-                                      Eliminar borrador
+                                      {isProforma ? 'Eliminar proforma' : 'Eliminar borrador'}
                                     </DropdownMenuItem>
                                   </>
                                 )}
@@ -517,16 +707,112 @@ export default function FacturasPage() {
                 </table>
               </div>
             )}
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-6 py-3 border-t">
+                <span className="text-sm text-muted-foreground">
+                  Página {page} de {totalPages} · {total} facturas
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => p - 1)}
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    Siguiente
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
+      {/* ── Confirm Invoice Dialog ── */}
+      <AlertDialog
+        open={Boolean(confirmTarget)}
+        onOpenChange={(open) => !open && setConfirmTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              ¿Confirmar factura?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Vas a confirmar la factura de{' '}
+                  <strong>{confirmTarget?.customerName}</strong> por{' '}
+                  <strong>{formatCurrency(confirmTarget?.total ?? 0)}</strong>.
+                </p>
+                <p className="text-sm">
+                  Esta acción es <strong>irreversible</strong>. La factura quedará sellada y se
+                  registrará en VeriFactu ante la AEAT.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmInvoice}
+              disabled={confirmMutation.isPending}
+            >
+              {confirmMutation.isPending ? 'Confirmando...' : 'Sí, confirmar factura'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Mark as Paid Dialog ── */}
+      <AlertDialog
+        open={Boolean(paidTarget)}
+        onOpenChange={(open) => !open && setPaidTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Marcar como cobrada?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-1">
+                <p>
+                  La factura{' '}
+                  <strong>{paidTarget?.number ?? 'seleccionada'}</strong> de{' '}
+                  <strong>{paidTarget?.customerName}</strong> por{' '}
+                  <strong>{formatCurrency(paidTarget?.total ?? 0)}</strong> se marcará como
+                  cobrada.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleMarkAsPaid}
+              disabled={paidMutation.isPending}
+            >
+              {paidMutation.isPending ? 'Guardando...' : 'Sí, cobrada'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── Delete Dialog ── */}
       <AlertDialog open={Boolean(deleteId)} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar borrador?</AlertDialogTitle>
+            <AlertDialogTitle>¿Eliminar borrador?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta accion no se puede deshacer. El borrador se eliminara permanentemente.
+              Esta acción no se puede deshacer. El borrador se eliminará permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -536,7 +822,7 @@ export default function FacturasPage() {
               disabled={deleteMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending ? 'Eliminando...' : 'Si, eliminar'}
+              {deleteMutation.isPending ? 'Eliminando...' : 'Sí, eliminar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -544,7 +830,7 @@ export default function FacturasPage() {
 
       <ConvertProformaModal
         open={Boolean(convertId)}
-        invoiceCustomerName={rawInvoices.find((inv) => inv.id === convertId)?.customer?.name ?? '—'}
+        invoiceCustomerName={invoices.find((inv) => inv.id === convertId)?.customer?.name ?? '—'}
         isPending={convertMutation.isPending}
         onCancel={() => setConvertId(null)}
         onConfirm={handleConvertToOfficial}

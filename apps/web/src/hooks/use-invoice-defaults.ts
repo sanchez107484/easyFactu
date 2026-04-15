@@ -24,6 +24,7 @@ export function useInvoiceDefaults() {
   return useQuery({
     queryKey: invoiceDefaultsKeys.detail(),
     queryFn: () => invoiceDefaultsApi.get(),
+    staleTime: 5 * 60_000,
   });
 }
 

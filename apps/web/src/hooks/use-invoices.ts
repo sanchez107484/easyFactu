@@ -8,6 +8,8 @@ import {
   QueryInvoicesInput,
   CreateInvoiceInput,
   UpdateInvoiceInput,
+  InvoiceStats,
+  InvoiceReportData,
 } from '@easyfactura/shared-types';
 import { AxiosError } from 'axios';
 
@@ -38,50 +40,33 @@ export function useInvoices(filters: QueryInvoicesInput = {}) {
   return useQuery({
     queryKey: invoiceKeys.list(filters),
     queryFn: () => invoiceApi.getAll(filters),
+    staleTime: 30_000, // 30s — evita re-fetches en navegación rápida
   });
 }
 
-/**
- * Obtiene TODAS las facturas del tenant paginando automáticamente (máx 100 por página).
- * Útil para calcular KPIs en el dashboard donde se necesitan todos los registros.
- */
-async function fetchAllInvoices(
-  filters: Omit<QueryInvoicesInput, 'page' | 'limit'>,
-): Promise<Invoice[]> {
-  const PAGE_SIZE = 100;
-  const first = await invoiceApi.getAll({ ...filters, page: 1, limit: PAGE_SIZE });
-  const allInvoices: Invoice[] = [...first.data];
-  const totalPages = first.meta.totalPages;
-
-  if (totalPages > 1) {
-    const remaining = await Promise.all(
-      Array.from({ length: totalPages - 1 }, (_, i) =>
-        invoiceApi.getAll({ ...filters, page: i + 2, limit: PAGE_SIZE }),
-      ),
-    );
-    for (const page of remaining) {
-      allInvoices.push(...page.data);
-    }
-  }
-
-  return allInvoices;
-}
-
-export function useAllInvoices(filters: Omit<QueryInvoicesInput, 'page' | 'limit'> = {}) {
-  return useQuery({
-    queryKey: ['invoices', 'all', filters],
-    queryFn: () => fetchAllInvoices(filters),
-    staleTime: 30_000, // 30s — datos del dashboard no necesitan refresh inmediato
+export function useInvoiceStats(year?: number) {
+  return useQuery<InvoiceStats>({
+    queryKey: ['invoices', 'stats', year ?? 'current'],
+    queryFn: () => invoiceApi.getStats(year),
+    staleTime: 60_000, // 1 min — KPIs no cambian segundo a segundo
   });
 }
 
-// ESTA ES LA VERSIÓN CORREGIDA Y UNIFICADA
+export function useInvoiceReports(fromDate: string, toDate: string) {
+  return useQuery<InvoiceReportData>({
+    queryKey: ['invoices', 'reports', fromDate, toDate],
+    queryFn: () => invoiceApi.getReports(fromDate, toDate),
+    enabled: Boolean(fromDate) && Boolean(toDate),
+    staleTime: 60_000,
+  });
+}
+
 export function useInvoice(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: invoiceKeys.detail(id),
     queryFn: () => invoiceApi.getById(id),
-    // Si pasamos enabled en las opciones, lo usamos. Si no, verificamos que haya ID.
     enabled: options?.enabled ?? Boolean(id),
+    staleTime: 30_000, // 30s — el detalle no cambia si el usuario vuelve rápido
   });
 }
 
@@ -144,6 +129,54 @@ export function useMarkInvoiceAsPaid() {
       queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
       queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
       toast.success('Factura marcada como pagada');
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useUnmarkInvoiceAsPaid() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => invoiceApi.unmarkAsPaid(id),
+    onSuccess: (invoice) => {
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
+      queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      toast.success('Factura desmarcada como pagada');
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useMarkInvoiceAsSent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => invoiceApi.markAsSent(id),
+    onSuccess: (invoice) => {
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
+      queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      toast.success('Factura marcada como enviada');
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useUnmarkInvoiceAsSent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => invoiceApi.unmarkAsSent(id),
+    onSuccess: (invoice) => {
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
+      queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      toast.success('Factura desmarcada como enviada');
     },
     onError: (error: unknown) => {
       toast.error(getApiErrorMessage(error));

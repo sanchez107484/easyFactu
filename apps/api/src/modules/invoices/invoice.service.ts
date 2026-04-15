@@ -184,6 +184,7 @@ export class InvoiceService {
       customerId,
       fromDate,
       toDate,
+      quoteAcceptanceStatus,
       sortBy = 'issueDate',
       sortOrder = 'desc',
     } = query;
@@ -213,20 +214,29 @@ export class InvoiceService {
       };
     }
 
-    const validSortFields: Record<string, string> = {
-      number: 'number',
-      issueDate: 'issueDate',
-      total: 'total',
-      createdAt: 'createdAt',
+    if (quoteAcceptanceStatus) {
+      where.quoteAcceptanceStatus = quoteAcceptanceStatus as PrismaQuoteAcceptanceStatus;
+    }
+
+    const validSortFields: Record<string, true> = {
+      number: true,
+      issueDate: true,
+      dueDate: true,
+      validUntil: true,
+      total: true,
+      createdAt: true,
     };
-    const orderByField = validSortFields[sortBy] ?? 'issueDate';
+    const orderBy: Prisma.InvoiceOrderByWithRelationInput =
+      sortBy === 'customer'
+        ? { customer: { name: sortOrder } }
+        : { [validSortFields[sortBy] ? sortBy : 'issueDate']: sortOrder };
 
     const [data, total] = await Promise.all([
       this.prisma.invoice.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { [orderByField]: sortOrder },
+        orderBy,
         include: {
           customer: { select: { id: true, name: true, nif: true } },
           series: { select: { id: true, name: true, prefix: true } },
@@ -241,8 +251,65 @@ export class InvoiceService {
     };
   }
 
+  // findForMutation: versión ligera de findOne para operaciones internas (update, confirm,
+  // duplicate, etc.). No carga customer, series ni verifactuLogs — esas relaciones solo
+  // son necesarias para devolver la respuesta al controlador, no para la lógica de mutación.
+  private async findForMutation(tenantId: string, id: string) {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { id, tenantId },
+      select: {
+        id: true,
+        tenantId: true,
+        status: true,
+        invoiceType: true,
+        seriesId: true,
+        customerId: true,
+        number: true,
+        issueDate: true,
+        dueDate: true,
+        subtotal: true,
+        discountPercent: true,
+        discountAmount: true,
+        taxTotal: true,
+        irpfPercent: true,
+        irpfTotal: true,
+        total: true,
+        paymentMethod: true,
+        paymentDetails: true,
+        notes: true,
+        templateId: true,
+        layoutOverride: true,
+        isRectificative: true,
+        rectifiedInvoiceId: true,
+        validUntil: true,
+        quoteAcceptanceStatus: true,
+        lines: {
+          orderBy: { sortOrder: 'asc' },
+          select: {
+            id: true,
+            description: true,
+            quantity: true,
+            unitPrice: true,
+            taxRate: true,
+            taxAmount: true,
+            subtotal: true,
+            lineTotal: true,
+            irpfRate: true,
+            irpfAmount: true,
+            hideQty: true,
+            sortOrder: true,
+            productId: true,
+          },
+        },
+      },
+    });
+    if (!invoice) {
+      throw new NotFoundException('Factura no encontrada');
+    }
+    return invoice;
+  }
+
   async findOne(tenantId: string, id: string) {
-    console.log(`[InvoiceService] findOne called with tenantId=${tenantId}, id=${id}`);
     const invoice = await this.prisma.invoice.findFirst({
       where: { id, tenantId },
       include: {
@@ -252,8 +319,35 @@ export class InvoiceService {
             product: { select: { id: true, name: true, reference: true } },
           },
         },
-        customer: true,
-        series: true,
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            legalName: true,
+            nif: true,
+            email: true,
+            phone: true,
+            address: true,
+            postalCode: true,
+            city: true,
+            province: true,
+            country: true,
+            type: true,
+            iban: true,
+            notes: true,
+          },
+        },
+        series: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            prefix: true,
+            type: true,
+            nextNumber: true,
+            digits: true,
+          },
+        },
         verifactuLogs: {
           orderBy: { createdAt: 'desc' },
           take: 5,
@@ -261,19 +355,13 @@ export class InvoiceService {
       },
     });
     if (!invoice) {
-      console.warn(`[InvoiceService] Factura NO encontrada para id=${id}, tenantId=${tenantId}`);
       throw new NotFoundException('Factura no encontrada');
     }
-    console.log(
-      `[InvoiceService] Factura encontrada: id=${invoice.id}, tenantId=${invoice.tenantId}`
-    );
-    // Cast a any para que los métodos que usan el resultado accedan a todos los campos
-    // sin conflictos de tipos entre versiones de Prisma
-    return invoice as any;
+    return invoice;
   }
 
   async update(tenantId: string, id: string, dto: UpdateInvoiceDto) {
-    const invoice = await this.findOne(tenantId, id);
+    const invoice = await this.findForMutation(tenantId, id);
 
     if (!EDITABLE_STATUSES.includes(invoice.status as InvoiceStatus)) {
       throw new ConflictException(
@@ -372,7 +460,7 @@ export class InvoiceService {
   // ==================== STATUS TRANSITIONS ====================
 
   async confirm(tenantId: string, id: string) {
-    const invoice = await this.findOne(tenantId, id);
+    const invoice = await this.findForMutation(tenantId, id);
 
     if (invoice.invoiceType === 'proforma') {
       throw new ConflictException(
@@ -443,7 +531,7 @@ export class InvoiceService {
   }
 
   async markAsPaid(tenantId: string, id: string) {
-    const invoice = await this.findOne(tenantId, id);
+    const invoice = await this.findForMutation(tenantId, id);
 
     const payableStatuses = [InvoiceStatus.CONFIRMED, InvoiceStatus.SENT];
     if (!payableStatuses.includes(invoice.status as InvoiceStatus)) {
@@ -463,6 +551,66 @@ export class InvoiceService {
     });
   }
 
+  async unmarkAsPaid(tenantId: string, id: string) {
+    const invoice = await this.findForMutation(tenantId, id);
+
+    if (invoice.status !== InvoiceStatus.PAID) {
+      throw new ConflictException(
+        'Solo se pueden desmarcar como pagadas las facturas con estado "Pagada"'
+      );
+    }
+
+    return this.prisma.invoice.update({
+      where: { id },
+      data: { status: PrismaInvoiceStatus.CONFIRMED },
+      include: {
+        lines: { orderBy: { sortOrder: 'asc' } },
+        customer: true,
+        series: true,
+      },
+    });
+  }
+
+  async markAsSent(tenantId: string, id: string) {
+    const invoice = await this.findForMutation(tenantId, id);
+
+    if (invoice.status !== InvoiceStatus.CONFIRMED) {
+      throw new ConflictException(
+        'Solo se pueden marcar como enviadas las facturas confirmadas'
+      );
+    }
+
+    return this.prisma.invoice.update({
+      where: { id },
+      data: { status: PrismaInvoiceStatus.SENT },
+      include: {
+        lines: { orderBy: { sortOrder: 'asc' } },
+        customer: true,
+        series: true,
+      },
+    });
+  }
+
+  async unmarkAsSent(tenantId: string, id: string) {
+    const invoice = await this.findForMutation(tenantId, id);
+
+    if (invoice.status !== InvoiceStatus.SENT) {
+      throw new ConflictException(
+        'Solo se pueden desmarcar como enviadas las facturas con estado "Enviada"'
+      );
+    }
+
+    return this.prisma.invoice.update({
+      where: { id },
+      data: { status: PrismaInvoiceStatus.CONFIRMED },
+      include: {
+        lines: { orderBy: { sortOrder: 'asc' } },
+        customer: true,
+        series: true,
+      },
+    });
+  }
+
   async linkToRecurringInvoice(invoiceId: string, recurringInvoiceId: string) {
     await this.prisma.invoice.update({
       where: { id: invoiceId },
@@ -471,7 +619,7 @@ export class InvoiceService {
   }
 
   async duplicate(tenantId: string, id: string) {
-    const original = await this.findOne(tenantId, id);
+    const original = await this.findForMutation(tenantId, id);
 
     const defaultSeries = await this.invoiceNumberService.findDefaultSeries(
       tenantId,
@@ -521,7 +669,7 @@ export class InvoiceService {
   }
 
   async rectify(tenantId: string, id: string, dto: RectifyInvoiceDto) {
-    const original = await this.findOne(tenantId, id);
+    const original = await this.findForMutation(tenantId, id);
 
     if (!RECTIFIABLE_STATUSES.includes(original.status as InvoiceStatus)) {
       throw new ConflictException(
@@ -580,7 +728,7 @@ export class InvoiceService {
   }
 
   async remove(tenantId: string, id: string) {
-    const invoice = await this.findOne(tenantId, id);
+    const invoice = await this.findForMutation(tenantId, id);
 
     if (!EDITABLE_STATUSES.includes(invoice.status as InvoiceStatus)) {
       throw new ConflictException(
@@ -594,7 +742,7 @@ export class InvoiceService {
   // ==================== PROFORMA CONVERSION ====================
 
   async convertDraftToProforma(tenantId: string, id: string) {
-    const invoice = await this.findOne(tenantId, id);
+    const invoice = await this.findForMutation(tenantId, id);
 
     if (invoice.invoiceType === 'proforma') {
       throw new ConflictException('La factura ya es una proforma.');
@@ -621,7 +769,7 @@ export class InvoiceService {
   }
 
   async convertToOfficial(tenantId: string, id: string) {
-    const invoice = await this.findOne(tenantId, id);
+    const invoice = await this.findForMutation(tenantId, id);
 
     if (invoice.invoiceType !== 'proforma') {
       throw new ConflictException(
@@ -685,7 +833,7 @@ export class InvoiceService {
   // ==================== NOTE OPERATIONS ====================
 
   async updateNotes(tenantId: string, userId: string, id: string, dto: UpdateInvoiceNotesDto) {
-    const invoice = await this.findOne(tenantId, id);
+    const invoice = await this.findForMutation(tenantId, id);
 
     const previousNotes = invoice.notes ?? null;
     const newNotes = dto.notes !== undefined ? (dto.notes ?? null) : previousNotes;
@@ -721,7 +869,7 @@ export class InvoiceService {
     id: string,
     quoteAcceptanceStatus: PrismaQuoteAcceptanceStatus
   ) {
-    const invoice = await this.findOne(tenantId, id);
+    const invoice = await this.findForMutation(tenantId, id);
 
     if (invoice.invoiceType !== 'quote') {
       throw new BadRequestException('Solo los presupuestos tienen estado de aceptación');
@@ -743,7 +891,7 @@ export class InvoiceService {
   }
 
   async convertQuoteToProforma(tenantId: string, id: string) {
-    const invoice = await this.findOne(tenantId, id);
+    const invoice = await this.findForMutation(tenantId, id);
 
     if (invoice.invoiceType !== 'quote') {
       throw new BadRequestException('Solo se pueden convertir presupuestos');
@@ -821,7 +969,7 @@ export class InvoiceService {
   }
 
   async convertQuoteToOfficial(tenantId: string, id: string) {
-    const invoice = await this.findOne(tenantId, id);
+    const invoice = await this.findForMutation(tenantId, id);
 
     if (invoice.invoiceType !== 'quote') {
       throw new BadRequestException('Solo se pueden convertir presupuestos');
@@ -896,5 +1044,191 @@ export class InvoiceService {
 
       return draft;
     });
+  }
+
+  // ==================== STATS & REPORTS ====================
+
+  async getStats(tenantId: string, year?: number) {
+    const now = new Date();
+    const targetYear = year ?? now.getFullYear();
+
+    const ACTIVE_STATUSES = [
+      PrismaInvoiceStatus.CONFIRMED,
+      PrismaInvoiceStatus.SENT,
+      PrismaInvoiceStatus.PAID,
+    ];
+
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const yearStart = new Date(targetYear, 0, 1);
+    const yearEnd = new Date(targetYear + 1, 0, 1);
+
+    const [yearInvoices, pendingResult] = await Promise.all([
+      this.prisma.invoice.findMany({
+        where: {
+          tenantId,
+          status: { in: ACTIVE_STATUSES },
+          issueDate: { gte: yearStart, lt: yearEnd },
+        },
+        select: { total: true, issueDate: true },
+      }),
+      this.prisma.invoice.aggregate({
+        where: {
+          tenantId,
+          status: { in: [PrismaInvoiceStatus.CONFIRMED, PrismaInvoiceStatus.SENT] },
+        },
+        _sum: { total: true },
+      }),
+    ]);
+
+    // Build monthly chart from year invoices
+    const monthlyMap: Record<number, number> = {};
+    for (const inv of yearInvoices) {
+      const month = new Date(inv.issueDate).getMonth();
+      monthlyMap[month] = (monthlyMap[month] ?? 0) + Number(inv.total);
+    }
+
+    // For KPIs use year invoices if same year, else fetch just the two relevant months
+    const kpiInvoices =
+      targetYear === now.getFullYear()
+        ? yearInvoices
+        : await this.prisma.invoice.findMany({
+            where: {
+              tenantId,
+              status: { in: ACTIVE_STATUSES },
+              issueDate: { gte: lastMonthStart, lt: nextMonthStart },
+            },
+            select: { total: true, issueDate: true },
+          });
+
+    let billedThisMonth = 0;
+    let billedLastMonth = 0;
+    let invoicesThisMonth = 0;
+
+    for (const inv of kpiInvoices) {
+      const invDate = new Date(inv.issueDate);
+      const amount = Number(inv.total);
+      if (invDate >= thisMonthStart && invDate < nextMonthStart) {
+        billedThisMonth += amount;
+        invoicesThisMonth += 1;
+      } else if (invDate >= lastMonthStart && invDate < thisMonthStart) {
+        billedLastMonth += amount;
+      }
+    }
+
+    const MONTH_NAMES = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ] as const;
+    const monthlyChart = Array.from({ length: 12 }, (_, i) => ({
+      month: MONTH_NAMES[i]!,
+      importe: Math.round((monthlyMap[i] ?? 0) * 100) / 100,
+    }));
+
+    return {
+      billedThisMonth: Math.round(billedThisMonth * 100) / 100,
+      billedLastMonth: Math.round(billedLastMonth * 100) / 100,
+      pendingCollection: Math.round(Number(pendingResult._sum.total ?? 0) * 100) / 100,
+      invoicesThisMonth,
+      monthlyChart,
+    };
+  }
+
+  async getReports(tenantId: string, fromDate: string, toDate: string) {
+    const ACTIVE_STATUSES = [
+      PrismaInvoiceStatus.CONFIRMED,
+      PrismaInvoiceStatus.SENT,
+      PrismaInvoiceStatus.PAID,
+    ];
+
+    const invoices = await this.prisma.invoice.findMany({
+      where: {
+        tenantId,
+        status: { in: ACTIVE_STATUSES },
+        issueDate: { gte: new Date(fromDate), lte: new Date(toDate) },
+      },
+      select: {
+        issueDate: true,
+        subtotal: true,
+        taxTotal: true,
+        irpfTotal: true,
+        total: true,
+        customer: { select: { id: true, name: true } },
+      },
+    });
+
+    const monthlyMap = new Map<string, { revenue: number; invoices: number }>();
+    const customerMap = new Map<string, { name: string; invoices: number; total: number }>();
+    let totalSubtotal = 0;
+    let totalIva = 0;
+    let totalIrpf = 0;
+
+    for (const inv of invoices) {
+      const invDate = new Date(inv.issueDate);
+      const monthKey = `${invDate.getFullYear()}-${String(invDate.getMonth() + 1).padStart(2, '0')}`;
+      const amount = Number(inv.total);
+
+      const monthEntry = monthlyMap.get(monthKey) ?? { revenue: 0, invoices: 0 };
+      monthlyMap.set(monthKey, {
+        revenue: monthEntry.revenue + amount,
+        invoices: monthEntry.invoices + 1,
+      });
+
+      const customerId = inv.customer.id;
+      const customerEntry = customerMap.get(customerId) ?? {
+        name: inv.customer.name,
+        invoices: 0,
+        total: 0,
+      };
+      customerMap.set(customerId, {
+        name: inv.customer.name,
+        invoices: customerEntry.invoices + 1,
+        total: customerEntry.total + amount,
+      });
+
+      totalSubtotal += Number(inv.subtotal);
+      totalIva += Number(inv.taxTotal);
+      totalIrpf += Number(inv.irpfTotal ?? 0);
+    }
+
+    const monthlyRevenue = Array.from(monthlyMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, data]) => ({
+        month,
+        revenue: Math.round(data.revenue * 100) / 100,
+        invoices: data.invoices,
+      }));
+
+    const topCustomers = Array.from(customerMap.entries())
+      .map(([id, data]) => ({
+        id,
+        name: data.name,
+        invoices: data.invoices,
+        total: Math.round(data.total * 100) / 100,
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+
+    return {
+      monthlyRevenue,
+      topCustomers,
+      taxSummary: {
+        totalSubtotal: Math.round(totalSubtotal * 100) / 100,
+        totalIva: Math.round(totalIva * 100) / 100,
+        totalIrpf: Math.round(totalIrpf * 100) / 100,
+        invoicesCount: invoices.length,
+      },
+    };
   }
 }

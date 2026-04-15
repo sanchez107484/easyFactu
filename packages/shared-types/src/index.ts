@@ -305,6 +305,8 @@ export interface QueryCustomersInput {
   type?: CustomerType;
   active?: boolean;
   nif?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 // ==================== PRODUCT ====================
@@ -351,6 +353,8 @@ export interface QueryProductsInput {
   search?: string;
   type?: ProductType;
   isActive?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 // ==================== INVOICE SERIES ====================
@@ -542,7 +546,8 @@ export interface QueryInvoicesInput {
   customerId?: string;
   fromDate?: string;
   toDate?: string;
-  sortBy?: 'number' | 'issueDate' | 'total' | 'createdAt';
+  quoteAcceptanceStatus?: QuoteAcceptanceStatus;
+  sortBy?: 'number' | 'issueDate' | 'dueDate' | 'total' | 'createdAt' | 'customer' | 'validUntil';
   sortOrder?: 'asc' | 'desc';
 }
 
@@ -861,4 +866,43 @@ export interface QuarterlyReport {
   totalTax: number;
   totalIrpf: number;
   invoicesCount: number;
+}
+
+// ==================== INVOICE STATS & REPORTS (API endpoints) ====================
+
+export interface InvoiceStats {
+  billedThisMonth: number;
+  billedLastMonth: number;
+  pendingCollection: number;
+  invoicesThisMonth: number;
+  monthlyChart: Array<{ month: string; importe: number }>;
+}
+
+export interface InvoiceReportMonthly {
+  month: string;
+  revenue: number;
+  invoices: number;
+}
+
+export interface InvoiceReportCustomer {
+  id: string;
+  name: string;
+  invoices: number;
+  total: number;
+}
+
+export interface InvoiceReportData {
+  monthlyRevenue: InvoiceReportMonthly[];
+  topCustomers: InvoiceReportCustomer[];
+  taxSummary: {
+    totalSubtotal: number;
+    totalIva: number;
+    totalIrpf: number;
+    invoicesCount: number;
+  };
+}
+
+export interface QueryReportsInput {
+  fromDate: string;
+  toDate: string;
 }

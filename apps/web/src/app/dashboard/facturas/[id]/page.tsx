@@ -45,6 +45,8 @@ import {
   Save,
   X,
   RefreshCw,
+  Send,
+  Undo2,
 } from 'lucide-react';
 import { DownloadInvoiceButton } from '@/components/ui/download-invoice-button';
 import { Label } from '@/components/ui/label';
@@ -55,6 +57,9 @@ import {
   useInvoice,
   useConfirmInvoice,
   useMarkInvoiceAsPaid,
+  useUnmarkInvoiceAsPaid,
+  useMarkInvoiceAsSent,
+  useUnmarkInvoiceAsSent,
   useDeleteInvoice,
   useRectifyInvoice,
   useConvertProformaToOfficial,
@@ -174,6 +179,9 @@ export default function FacturaDetailPage() {
   const { data: invoice, isLoading, error } = useInvoice(id);
   const confirmMutation = useConfirmInvoice();
   const paidMutation = useMarkInvoiceAsPaid();
+  const unmarkPaidMutation = useUnmarkInvoiceAsPaid();
+  const markSentMutation = useMarkInvoiceAsSent();
+  const unmarkSentMutation = useUnmarkInvoiceAsSent();
   const deleteMutation = useDeleteInvoice();
   const rectifyMutation = useRectifyInvoice();
   const convertMutation = useConvertProformaToOfficial();
@@ -241,6 +249,15 @@ export default function FacturaDetailPage() {
   };
   const handlePaid = async () => {
     await paidMutation.mutateAsync(id);
+  };
+  const handleUnmarkPaid = async () => {
+    await unmarkPaidMutation.mutateAsync(id);
+  };
+  const handleMarkSent = async () => {
+    await markSentMutation.mutateAsync(id);
+  };
+  const handleUnmarkSent = async () => {
+    await unmarkSentMutation.mutateAsync(id);
   };
 
   // FIX: navegar directamente al formulario de nueva factura con el ID como param
@@ -330,8 +347,9 @@ export default function FacturaDetailPage() {
     invoice.status === InvoiceStatus.DRAFT || invoice.status === InvoiceStatus.PROFORMA;
   const isConfirmed = invoice.status === InvoiceStatus.CONFIRMED;
   const isSent = invoice.status === InvoiceStatus.SENT;
+  const isPaid = invoice.status === InvoiceStatus.PAID;
   const canPay = isConfirmed || isSent;
-  const canRectify = isConfirmed || isSent || invoice.status === InvoiceStatus.PAID;
+  const canRectify = isConfirmed || isSent || isPaid;
   const isProforma = (invoice as any).invoiceType === 'proforma';
 
   const pdfFileName = [invoice.number, (invoice as any).customer?.name].filter(Boolean).join(' - ');
@@ -559,6 +577,30 @@ export default function FacturaDetailPage() {
                       {confirmMutation.isPending ? 'Confirmando...' : 'Confirmar factura'}
                     </Button>
                   )}
+                  {isConfirmed && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleMarkSent}
+                      disabled={markSentMutation.isPending}
+                      className="min-w-[140px]"
+                    >
+                      <Send className="mr-1.5 h-3.5 w-3.5" />
+                      {markSentMutation.isPending ? 'Procesando...' : 'Marcar como enviada'}
+                    </Button>
+                  )}
+                  {isSent && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleUnmarkSent}
+                      disabled={unmarkSentMutation.isPending}
+                      className="min-w-[140px] text-muted-foreground"
+                    >
+                      <Undo2 className="mr-1.5 h-3.5 w-3.5" />
+                      {unmarkSentMutation.isPending ? 'Procesando...' : 'Deshacer envío'}
+                    </Button>
+                  )}
                   {canPay && (
                     <Button
                       size="sm"
@@ -568,6 +610,18 @@ export default function FacturaDetailPage() {
                     >
                       <CreditCard className="mr-1.5 h-3.5 w-3.5" />
                       {paidMutation.isPending ? 'Procesando...' : 'Marcar como pagada'}
+                    </Button>
+                  )}
+                  {isPaid && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleUnmarkPaid}
+                      disabled={unmarkPaidMutation.isPending}
+                      className="min-w-[140px] text-muted-foreground"
+                    >
+                      <Undo2 className="mr-1.5 h-3.5 w-3.5" />
+                      {unmarkPaidMutation.isPending ? 'Procesando...' : 'Deshacer pago'}
                     </Button>
                   )}
                   {!isDraft && (

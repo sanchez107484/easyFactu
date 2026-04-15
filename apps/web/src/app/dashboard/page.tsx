@@ -1,6 +1,5 @@
 ﻿'use client';
 
-import { useMemo } from 'react';
 import { useAuthStore } from '@/store/auth-store';
 import { useOnboardingStore } from '@/hooks/use-onboarding';
 import { useTenant } from '@/hooks/use-tenant';
@@ -26,10 +25,10 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useInvoices, useAllInvoices } from '@/hooks/use-invoices';
+import { useInvoices, useInvoiceStats } from '@/hooks/use-invoices';
 import { useCustomers } from '@/hooks/use-customers';
 import { useProducts } from '@/hooks/use-products';
-import { Invoice, InvoiceStatus } from '@easyfactura/shared-types';
+import { InvoiceStatus } from '@easyfactura/shared-types';
 import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge';
 import { cn, formatCurrency } from '@/lib/utils';
 
@@ -55,71 +54,6 @@ function getGreeting(): string {
   if (hour < 14) return 'Buenos dias';
   if (hour < 21) return 'Buenas tardes';
   return 'Buenas noches';
-}
-
-// ==================== STATS COMPUTATION ====================
-
-/**
- * Calcula todos los KPIs del dashboard a partir del conjunto completo de facturas.
- * - billedThisMonth: suma de facturas activas emitidas en el mes/año actual
- * - pendingCollection: suma de facturas CONFIRMED o SENT (sin filtro de fecha — pueden ser de cualquier año)
- * - invoicesThisMonth: número de facturas activas emitidas este mes
- * - chartData: facturación mensual del año en curso
- */
-function computeStats(invoices: Invoice[]) {
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth(); // 0-indexed
-
-  // Mes anterior (cruza año si es enero)
-  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastMonthYear = lastMonthDate.getFullYear();
-  const lastMonth = lastMonthDate.getMonth();
-
-  const activeStatuses = [InvoiceStatus.CONFIRMED, InvoiceStatus.SENT, InvoiceStatus.PAID];
-  const pendingStatuses = [InvoiceStatus.CONFIRMED, InvoiceStatus.SENT];
-
-  let billedThisMonth = 0;
-  let billedLastMonth = 0;
-  let pendingCollection = 0;
-  let invoicesThisMonth = 0;
-  const monthlyTotals = Array.from({ length: 12 }, () => 0);
-
-  for (const inv of invoices) {
-    const issueDate = new Date(inv.issueDate);
-    const invYear = issueDate.getFullYear();
-    const invMonth = issueDate.getMonth();
-    const total = Number(inv.total) || 0;
-
-    // Pendiente de cobro: cualquier año, solo CONFIRMED y SENT
-    if (pendingStatuses.includes(inv.status)) {
-      pendingCollection += total;
-    }
-
-    // Activas (confirmadas + enviadas + cobradas)
-    if (activeStatuses.includes(inv.status)) {
-      // Facturado este mes
-      if (invYear === currentYear && invMonth === currentMonth) {
-        billedThisMonth += total;
-        invoicesThisMonth++;
-      }
-      // Facturado el mes pasado
-      if (invYear === lastMonthYear && invMonth === lastMonth) {
-        billedLastMonth += total;
-      }
-      // Gráfica: solo año en curso
-      if (invYear === currentYear) {
-        monthlyTotals[invMonth] += total;
-      }
-    }
-  }
-
-  const chartData = MONTH_LABELS.map((month, i) => ({
-    month,
-    importe: Math.round(monthlyTotals[i] * 100) / 100,
-  }));
-
-  return { billedThisMonth, billedLastMonth, pendingCollection, invoicesThisMonth, chartData };
 }
 
 // ==================== STAT CARD ====================
@@ -251,8 +185,7 @@ export default function DashboardPage() {
 
   const now = new Date();
 
-  // Todas las facturas del tenant (paginando automáticamente) para KPIs precisos
-  const { data: allInvoices = [], isLoading: loadingInvoices } = useAllInvoices();
+  const { data: stats, isLoading: loadingInvoices } = useInvoiceStats();
 
   // Últimas 6 facturas para la lista reciente (query independiente, rápida)
   const { data: recentData, isLoading: loadingRecent } = useInvoices({
@@ -268,12 +201,15 @@ export default function DashboardPage() {
   const totalCustomers = customersData?.meta?.total ?? 0;
   const totalProducts = productsData?.meta?.total ?? 0;
 
-  const { billedThisMonth, billedLastMonth, pendingCollection, invoicesThisMonth, chartData } =
-    useMemo(() => computeStats(allInvoices), [allInvoices]);
+  const billedThisMonth = stats?.billedThisMonth ?? 0;
+  const billedLastMonth = stats?.billedLastMonth ?? 0;
+  const pendingCollection = stats?.pendingCollection ?? 0;
+  const invoicesThisMonth = stats?.invoicesThisMonth ?? 0;
+  const chartData = stats?.monthlyChart ?? [];
 
   const isLoadingStats = loadingInvoices;
   const isStillLoading = loadingInvoices || loadingCustomers || loadingProducts;
-  const hasAnyData = allInvoices.length > 0 || totalCustomers > 0 || totalProducts > 0;
+  const hasAnyData = (recentData?.meta?.total ?? 0) > 0 || totalCustomers > 0 || totalProducts > 0;
 
   return (
     <div className="space-y-6">

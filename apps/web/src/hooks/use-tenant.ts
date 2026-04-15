@@ -25,6 +25,7 @@ export function useTenant() {
   return useQuery({
     queryKey: tenantKeys.detail(),
     queryFn: () => tenantApi.get(),
+    staleTime: 5 * 60_000,
   });
 }
 
