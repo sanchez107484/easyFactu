@@ -11,7 +11,7 @@ import {
   InvoiceStats,
   InvoiceReportData,
 } from '@easyfactura/shared-types';
-import { AxiosError } from 'axios';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 // ==================== QUERY KEYS ====================
 
@@ -22,17 +22,6 @@ export const invoiceKeys = {
   details: () => [...invoiceKeys.all, 'detail'] as const,
   detail: (id: string) => [...invoiceKeys.details(), id] as const,
 };
-
-// ==================== HELPERS ====================
-
-function getApiErrorMessage(error: unknown): string {
-  if (error instanceof AxiosError) {
-    const message = error.response?.data?.message;
-    if (typeof message === 'string') return message;
-    if (Array.isArray(message)) return message[0];
-  }
-  return 'Ha ocurrido un error inesperado. Inténtalo de nuevo.';
-}
 
 // ==================== QUERIES ====================
 

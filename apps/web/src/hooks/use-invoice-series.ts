@@ -2,24 +2,15 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { AxiosError } from 'axios';
 import { seriesApi } from '@/lib/api/series-api';
 import { CreateInvoiceSeriesInput, UpdateInvoiceSeriesInput } from '@easyfactura/shared-types';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 export const seriesKeys = {
   all: ['invoice-series'] as const,
   lists: () => [...seriesKeys.all, 'list'] as const,
   list: (year?: number) => [...seriesKeys.lists(), { year }] as const,
 };
-
-function getApiErrorMessage(error: unknown): string {
-  if (error instanceof AxiosError) {
-    const message = error.response?.data?.message;
-    if (typeof message === 'string') return message;
-    if (Array.isArray(message)) return message[0];
-  }
-  return 'Ha ocurrido un error inesperado. Inténtalo de nuevo.';
-}
 
 export function useInvoiceSeries(year?: number) {
   return useQuery({

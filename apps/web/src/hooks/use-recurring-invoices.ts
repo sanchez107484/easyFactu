@@ -12,7 +12,7 @@ import {
   RecurringGeneratedInvoice,
   RecurringGenerateResult,
 } from '@easyfactura/shared-types';
-import { AxiosError } from 'axios';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 // ==================== QUERY KEYS ====================
 
@@ -24,17 +24,6 @@ export const recurringInvoiceKeys = {
   details: () => [...recurringInvoiceKeys.all, 'detail'] as const,
   detail: (id: string) => [...recurringInvoiceKeys.details(), id] as const,
 };
-
-// ==================== HELPERS ====================
-
-function getApiErrorMessage(error: unknown): string {
-  if (error instanceof AxiosError) {
-    const message = error.response?.data?.message;
-    if (typeof message === 'string') return message;
-    if (Array.isArray(message)) return message[0];
-  }
-  return 'Ha ocurrido un error inesperado. Inténtalo de nuevo.';
-}
 
 // ==================== QUERIES ====================
 

@@ -876,6 +876,8 @@ export interface InvoiceStats {
   pendingCollection: number;
   invoicesThisMonth: number;
   monthlyChart: Array<{ month: string; importe: number }>;
+  totalCustomers: number;
+  totalProducts: number;
 }
 
 export interface InvoiceReportMonthly {

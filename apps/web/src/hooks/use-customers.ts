@@ -3,8 +3,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { AxiosError } from 'axios';
 import { customerApi } from '@/lib/api/customer-api';
+import { getApiErrorMessage } from '@/lib/api-error';
 import { seriesApi } from '@/lib/api/series-api';
 import {
   Customer,
@@ -13,17 +13,6 @@ import {
   CreateCustomerInput,
   UpdateCustomerInput,
 } from '@easyfactura/shared-types';
-
-// ==================== HELPERS ====================
-
-function getApiErrorMessage(error: unknown): string {
-  if (error instanceof AxiosError) {
-    const message = error.response?.data?.message;
-    if (typeof message === 'string') return message;
-    if (Array.isArray(message)) return message[0];
-  }
-  return 'Ha ocurrido un error inesperado. Inténtalo de nuevo.';
-}
 
 // ==================== CUSTOMERS ====================
 

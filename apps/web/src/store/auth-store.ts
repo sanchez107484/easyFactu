@@ -56,16 +56,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const response = await apiClient.post('/auth/login', { email, password });
     const authData: any = unwrapApiResponse(response);
 
-    console.log('📦 Respuesta completa del login:', authData);
-    console.log(
-      '🔑 AccessToken recibido:',
-      authData.accessToken ? `${authData.accessToken.substring(0, 20)}...` : 'UNDEFINED',
-    );
-    console.log(
-      '🔄 RefreshToken recibido:',
-      authData.refreshToken ? `${authData.refreshToken.substring(0, 20)}...` : 'UNDEFINED',
-    );
-
     if (!authData.accessToken || !authData.refreshToken) {
       throw new Error('El servidor no devolvió los tokens necesarios');
     }
@@ -85,16 +75,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   register: async (registerData) => {
     const response = await apiClient.post('/auth/register', registerData);
     const authData: any = unwrapApiResponse(response);
-
-    console.log('📦 Respuesta completa del registro:', authData);
-    console.log(
-      '🔑 AccessToken recibido:',
-      authData.accessToken ? `${authData.accessToken.substring(0, 20)}...` : 'UNDEFINED',
-    );
-    console.log(
-      '🔄 RefreshToken recibido:',
-      authData.refreshToken ? `${authData.refreshToken.substring(0, 20)}...` : 'UNDEFINED',
-    );
 
     if (!authData.accessToken || !authData.refreshToken) {
       throw new Error('El servidor no devolvió los tokens necesarios');
@@ -181,8 +161,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   switchTenant: async (tenantId: string) => {
     const response = await apiClient.post('/auth/switch-tenant', { tenantId });
     const authData: any = unwrapApiResponse(response);
-
-    console.log('🔄 Cambiando de tenant:', authData);
 
     if (!authData.accessToken || !authData.refreshToken) {
       throw new Error('El servidor no devolvió los tokens necesarios');

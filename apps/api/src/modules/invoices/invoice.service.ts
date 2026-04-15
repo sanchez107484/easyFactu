@@ -414,7 +414,8 @@ export class InvoiceService {
         issueDate: dto.issueDate ? new Date(dto.issueDate) : undefined,
         dueDate:
           dto.dueDate !== undefined ? (dto.dueDate ? new Date(dto.dueDate) : null) : undefined,
-        invoiceType: dto.invoiceType !== undefined ? (dto.invoiceType as PrismaInvoiceType) : undefined,
+        invoiceType:
+          dto.invoiceType !== undefined ? (dto.invoiceType as PrismaInvoiceType) : undefined,
         templateId: dto.templateId !== undefined ? dto.templateId : undefined,
         layoutOverride:
           dto.layoutOverride !== undefined
@@ -1062,7 +1063,7 @@ export class InvoiceService {
     const yearStart = new Date(targetYear, 0, 1);
     const yearEnd = new Date(targetYear + 1, 0, 1);
 
-    const [yearInvoices, pendingResult] = await Promise.all([
+    const [yearInvoices, pendingResult, totalCustomers, totalProducts] = await Promise.all([
       this.prisma.invoice.findMany({
         where: {
           tenantId,
@@ -1078,6 +1079,8 @@ export class InvoiceService {
         },
         _sum: { total: true },
       }),
+      this.prisma.customer.count({ where: { tenantId } }),
+      this.prisma.product.count({ where: { tenantId } }),
     ]);
 
     // Build monthly chart from year invoices
@@ -1140,6 +1143,8 @@ export class InvoiceService {
       pendingCollection: Math.round(Number(pendingResult._sum.total ?? 0) * 100) / 100,
       invoicesThisMonth,
       monthlyChart,
+      totalCustomers,
+      totalProducts,
     };
   }
 

@@ -64,3 +64,4 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+.github/agents/performance-optimizer.agent.md

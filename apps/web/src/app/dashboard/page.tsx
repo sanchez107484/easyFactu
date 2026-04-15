@@ -26,8 +26,6 @@ import {
 import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useInvoices, useInvoiceStats } from '@/hooks/use-invoices';
-import { useCustomers } from '@/hooks/use-customers';
-import { useProducts } from '@/hooks/use-products';
 import { InvoiceStatus } from '@easyfactura/shared-types';
 import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge';
 import { cn, formatCurrency } from '@/lib/utils';
@@ -194,12 +192,9 @@ export default function DashboardPage() {
     sortOrder: 'desc',
   });
 
-  const { data: customersData, isLoading: loadingCustomers } = useCustomers({ limit: 1 });
-  const { data: productsData, isLoading: loadingProducts } = useProducts({ limit: 1 });
-
   const recentInvoices = recentData?.data ?? [];
-  const totalCustomers = customersData?.meta?.total ?? 0;
-  const totalProducts = productsData?.meta?.total ?? 0;
+  const totalCustomers = stats?.totalCustomers ?? 0;
+  const totalProducts = stats?.totalProducts ?? 0;
 
   const billedThisMonth = stats?.billedThisMonth ?? 0;
   const billedLastMonth = stats?.billedLastMonth ?? 0;
@@ -208,7 +203,7 @@ export default function DashboardPage() {
   const chartData = stats?.monthlyChart ?? [];
 
   const isLoadingStats = loadingInvoices;
-  const isStillLoading = loadingInvoices || loadingCustomers || loadingProducts;
+  const isStillLoading = loadingInvoices || loadingRecent;
   const hasAnyData = (recentData?.meta?.total ?? 0) > 0 || totalCustomers > 0 || totalProducts > 0;
 
   return (
@@ -336,18 +331,18 @@ export default function DashboardPage() {
           />
           <StatCard
             title="Clientes"
-            value={loadingCustomers ? '...' : String(totalCustomers)}
+            value={String(totalCustomers)}
             description="En tu cartera"
             icon={Users}
-            isLoading={loadingCustomers}
+            isLoading={isLoadingStats}
             href="/dashboard/clientes"
           />
           <StatCard
             title="Catalogo"
-            value={loadingProducts ? '...' : String(totalProducts)}
+            value={String(totalProducts)}
             description="Productos y servicios"
             icon={Package}
-            isLoading={loadingProducts}
+            isLoading={isLoadingStats}
             href="/dashboard/productos"
           />
         </div>
@@ -471,7 +466,8 @@ export default function DashboardPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-semibold font-mono">
-                                {invoice.number}
+                                {invoice.number ??
+                                  (invoice.invoiceType === 'proforma' ? 'Proforma' : 'Borrador')}
                               </span>
                               <Badge
                                 variant="outline"
@@ -513,7 +509,7 @@ export default function DashboardPage() {
       )}
 
       {/* Empty state primer uso */}
-      {!isLoadingStats && !loadingCustomers && !loadingProducts && !hasAnyData && (
+      {!isStillLoading && !hasAnyData && (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-14 text-center">
             <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
