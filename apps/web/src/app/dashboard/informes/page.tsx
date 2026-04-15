@@ -52,7 +52,7 @@ export default function InformesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Informes</h1>
-        <p className="mt-2 text-muted-foreground">An├ílisis de facturaci├│n y reportes fiscales</p>
+        <p className="mt-2 text-muted-foreground">Análisis de facturación y reportes fiscales</p>
       </div>
 
       {/* Filtros de fecha */}
@@ -60,7 +60,7 @@ export default function InformesPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Periodo de an├ílisis
+            Periodo de análisis
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -100,7 +100,7 @@ export default function InformesPage() {
           <CardContent className="flex items-center gap-3 py-4">
             <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
             <p className="text-sm text-destructive">
-              Error al cargar los datos. Int├®ntalo de nuevo.
+              Error al cargar los datos. Inténtalo de nuevo.
             </p>
           </CardContent>
         </Card>
@@ -110,7 +110,7 @@ export default function InformesPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Facturaci├│n Total</CardTitle>
+            <CardTitle className="text-sm font-medium">Facturación Total</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -175,10 +175,10 @@ export default function InformesPage() {
         </Card>
       </div>
 
-      {/* Evoluci├│n mensual */}
+      {/* Evolución mensual */}
       <Card>
         <CardHeader>
-          <CardTitle>Evoluci├│n de Facturaci├│n</CardTitle>
+          <CardTitle>Evolución de Facturación</CardTitle>
           <CardDescription>Ingresos mensuales del periodo seleccionado</CardDescription>
         </CardHeader>
         <CardContent>
@@ -341,7 +341,7 @@ export default function InformesPage() {
             <div className="mt-4 flex justify-end">
               <Button variant="outline" size="sm" className="gap-2" disabled>
                 <Download className="h-4 w-4" />
-                Exportar resumen (pr├│ximamente)
+                Exportar resumen (próximamente)
               </Button>
             </div>
           )}
