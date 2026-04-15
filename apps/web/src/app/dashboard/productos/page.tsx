@@ -77,8 +77,6 @@ function formatCurrency(amount: number) {
   return amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
 }
 
-}
-
 // ==================== SUB-COMPONENTS ====================
 
 function ProductTypeBadge({ type }: { type: ProductType }) {
