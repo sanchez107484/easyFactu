@@ -58,7 +58,7 @@ import {
 } from '@/hooks/use-invoices';
 import { useSortTable } from '@/hooks/use-sort-table';
 import { useDownloadInvoicePdf } from '@/hooks/use-download-invoice-pdf';
-import { InvoiceStatus, Invoice } from '@easyfactura/shared-types';
+import { InvoiceStatus, Invoice, QueryInvoicesInput } from '@easyfactura/shared-types';
 import { cn, formatCurrency } from '@/lib/utils';
 import { SortableHeader } from '@/components/common/sortable-header';
 import { InvoiceStatusBadge } from '@/components/common/invoice-status-badge';
@@ -215,7 +215,7 @@ export default function FacturasPage() {
     toDate: toDate || undefined,
     page,
     limit: 20,
-    sortBy: sortKey,
+    sortBy: sortKey as QueryInvoicesInput['sortBy'],
     sortOrder: sortDir,
   });
 
