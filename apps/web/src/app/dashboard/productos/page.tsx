@@ -280,7 +280,7 @@ export default function ProductosPage() {
                   size="sm"
                   className="mt-4"
                   onClick={() => {
-                    setSearch('');
+                    setSearchInput('');
                     setTypeFilter('ALL');
                   }}
                 >
