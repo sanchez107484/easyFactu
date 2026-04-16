@@ -14,6 +14,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Prevent trailing-slash 308 redirects reported by Search Console
+  trailingSlash: false,
   transpilePackages: [
     '@easyfactura/shared-types',
     '@easyfactura/shared-validators',

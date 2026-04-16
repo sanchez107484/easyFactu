@@ -7,8 +7,16 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        // Bloquear rutas privadas (dashboard y rutas de impresión)
-        disallow: ['/dashboard/', '/invoice-print/'],
+        disallow: [
+          '/dashboard/',
+          '/invoice-print/',
+          '/setup/',
+          '/login',
+          '/recuperar-password',
+          '/nueva-password',
+          '/verificar-email',
+          '/studio/',
+        ],
       },
     ],
     sitemap: `${brandConfig.app.url}/sitemap.xml`,
