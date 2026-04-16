@@ -34,11 +34,9 @@ const STARTER = PRICING.starter;
 const PRO = PRICING.pro;
 
 // ─── SEO JSON-LD ─────────────────────────────────────────────────────────────
-const priceValidUntil = new Date(
-  new Date().getFullYear() + 1,
-  new Date().getMonth(),
-  1,
-).toISOString().split('T')[0];
+const priceValidUntil = new Date(new Date().getFullYear() + 1, new Date().getMonth(), 1)
+  .toISOString()
+  .split('T')[0];
 
 const schemaData = {
   '@context': 'https://schema.org',
