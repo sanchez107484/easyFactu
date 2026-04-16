@@ -34,6 +34,12 @@ const STARTER = PRICING.starter;
 const PRO = PRICING.pro;
 
 // ─── SEO JSON-LD ─────────────────────────────────────────────────────────────
+const priceValidUntil = new Date(
+  new Date().getFullYear() + 1,
+  new Date().getMonth(),
+  1,
+).toISOString().split('T')[0];
+
 const schemaData = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -48,7 +54,7 @@ const schemaData = {
           name: `Plan Starter — Gratuito ${PRICING.freePeriodMonths} meses`,
           price: '0',
           priceCurrency: 'EUR',
-          priceValidUntil: '2027-07-01',
+          priceValidUntil,
           description: `${PRICING.freePeriodMonths} meses completamente gratis para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscripciones.`,
           availability: 'https://schema.org/LimitedAvailability',
           url: `${brandConfig.app.url}/precios`,
@@ -83,7 +89,7 @@ const schemaData = {
           name: `Plan PRO — Gratuito ${PRICING.freePeriodMonths} meses`,
           price: '0',
           priceCurrency: 'EUR',
-          priceValidUntil: '2027-07-01',
+          priceValidUntil,
           description: `${PRICING.freePeriodMonths} meses completamente gratis para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscripciones.`,
           availability: 'https://schema.org/LimitedAvailability',
           url: `${brandConfig.app.url}/precios`,

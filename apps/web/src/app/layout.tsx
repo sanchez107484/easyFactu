@@ -10,7 +10,7 @@ import Analytics from '@/components/analytics/Analytics';
 import CookieBanner from '@/components/analytics/CookieBanner';
 import './globals.css';
 
-const GTM_ID = 'GTM-T8W799T4';
+const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID ?? 'GTM-T8W799T4';
 
 const organizationJsonLd = {
   '@context': 'https://schema.org',
@@ -19,6 +19,12 @@ const organizationJsonLd = {
   url: brandConfig.app.url,
   logo: `${brandConfig.app.url}${brandConfig.logos.main}`,
   description: brandConfig.app.description,
+  foundingDate: '2025',
+  areaServed: {
+    '@type': 'Country',
+    name: 'España',
+  },
+  knowsLanguage: 'es',
   contactPoint: {
     '@type': 'ContactPoint',
     email: brandConfig.app.supportEmail,
