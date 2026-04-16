@@ -1,11 +1,10 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { invoiceApi, RectifyInvoiceInput } from '@/lib/api/invoice-api';
 import {
-  Invoice,
   QueryInvoicesInput,
   CreateInvoiceInput,
   UpdateInvoiceInput,

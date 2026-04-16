@@ -45,7 +45,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     // Hard reload con tokens válidos: validar sesión con el servidor.
     checkAuth().finally(() => setIsChecking(false));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps — solo en mount
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- solo en mount
 
   useEffect(() => {
     if (!isChecking && !isAuthenticated) {
