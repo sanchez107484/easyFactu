@@ -12,6 +12,22 @@ import './globals.css';
 
 const GTM_ID = 'GTM-T8W799T4';
 
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: brandConfig.app.name,
+  url: brandConfig.app.url,
+  logo: `${brandConfig.app.url}${brandConfig.logos.main}`,
+  description: brandConfig.app.description,
+  contactPoint: {
+    '@type': 'ContactPoint',
+    email: brandConfig.app.supportEmail,
+    contactType: 'customer support',
+    availableLanguage: 'Spanish',
+  },
+  sameAs: [],
+};
+
 // Consent Mode v2: set defaults synchronously before GTM loads.
 // For returning visitors, read localStorage so GA4 fires immediately.
 const CONSENT_INIT_SCRIPT = `
@@ -139,6 +155,14 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        {/* Preconnect to external origins for faster resource loading */}
+        <link rel="preconnect" href="https://cdn.sanity.io" />
+        <link rel="dns-prefetch" href="https://cdn.sanity.io" />
+        {/* Organization structured data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
         {/* Consent Mode v2 defaults — must run before GTM */}
         <script dangerouslySetInnerHTML={{ __html: CONSENT_INIT_SCRIPT }} />
         {/* Theme CSS variables — generated from theme.config.ts at build time */}
