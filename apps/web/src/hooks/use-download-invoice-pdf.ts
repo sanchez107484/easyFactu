@@ -8,6 +8,11 @@ interface UseDownloadInvoicePdfOptions {
   fileName?: string;
 }
 
+interface UseDownloadInvoicePdfResult {
+  download: () => void;
+  isLoading: boolean;
+}
+
 /**
  * Parses the filename from a Content-Disposition header value.
  * Prefers RFC 5987 (filename*=UTF-8'') over the legacy filename= parameter.
@@ -20,7 +25,10 @@ function extractFilename(contentDisposition: string | null): string | null {
   return legacy ? legacy[1] : null;
 }
 
-export function useDownloadInvoicePdf({ invoiceId, fileName }: UseDownloadInvoicePdfOptions) {
+export function useDownloadInvoicePdf({
+  invoiceId,
+  fileName,
+}: UseDownloadInvoicePdfOptions): UseDownloadInvoicePdfResult {
   const [isLoading, setIsLoading] = useState(false);
   // Ref-based guard prevents double-execution without adding isLoading to useCallback deps.
   const inProgressRef = useRef(false);
@@ -29,6 +37,7 @@ export function useDownloadInvoicePdf({ invoiceId, fileName }: UseDownloadInvoic
     if (inProgressRef.current) return;
 
     const token = getAccessToken();
+    const startTime = Date.now();
 
     const fetchPdf = async (): Promise<void> => {
       inProgressRef.current = true;
@@ -75,9 +84,14 @@ export function useDownloadInvoicePdf({ invoiceId, fileName }: UseDownloadInvoic
       }
     };
 
-    toast.promise(fetchPdf(), {
+    // Skip success toast if the response was fast (PDF was cached server-side)
+    const pdfPromise = fetchPdf();
+    toast.promise(pdfPromise, {
       loading: 'Generando PDF...',
-      success: 'PDF descargado correctamente',
+      success: () => {
+        const elapsed = Date.now() - startTime;
+        return elapsed < 800 ? 'PDF descargado' : 'PDF generado y descargado correctamente';
+      },
       error: (err: unknown) => (err instanceof Error ? err.message : 'Error al descargar el PDF'),
     });
   }, [invoiceId, fileName]);

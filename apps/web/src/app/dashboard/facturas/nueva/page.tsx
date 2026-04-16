@@ -1100,7 +1100,7 @@ export default function NuevaFacturaPage() {
           unitPrice: Number(l.unitPrice) || 0,
           taxRate: Number(l.taxRate) || 0,
           productId: l.productId ?? undefined,
-          _mode: (l.hideQty && !l.productId ? 'service' : 'custom') as 'service' | 'custom',
+          _mode: l.productId ? 'product' : l.hideQty ? 'service' : 'custom',
           _hideQty: l.hideQty ?? false,
         })),
       }

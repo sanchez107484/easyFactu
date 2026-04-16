@@ -55,6 +55,7 @@ import {
   useUnmarkInvoiceAsSent,
   useDeleteInvoice,
   useConvertProformaToOfficial,
+  usePrefetchInvoice,
 } from '@/hooks/use-invoices';
 import { useSortTable } from '@/hooks/use-sort-table';
 import { useDownloadInvoicePdf } from '@/hooks/use-download-invoice-pdf';
@@ -226,6 +227,7 @@ export default function FacturasPage() {
   const unmarkSentMutation = useUnmarkInvoiceAsSent();
   const deleteMutation = useDeleteInvoice();
   const convertMutation = useConvertProformaToOfficial();
+  const prefetchInvoice = usePrefetchInvoice();
 
   const handleConfirmInvoice = async () => {
     if (!confirmTarget) return;
@@ -478,6 +480,7 @@ export default function FacturasPage() {
                       return (
                         <tr
                           key={invoice.id}
+                          onMouseEnter={() => prefetchInvoice(invoice.id)}
                           className={cn(
                             'group transition-colors hover:bg-muted/30',
                             overdue &&

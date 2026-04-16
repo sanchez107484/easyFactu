@@ -25,10 +25,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { isAuthenticated, checkAuth } = useAuthStore();
   const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
 
-  // Si ya hay sesión activa en Zustand (client-side nav) → no bloquear con spinner.
-  // Si hay tokens pero aún no hydratamos Zustand (hard reload) → spinner breve mientras /auth/me resuelve.
-  // Si no hay tokens → false inicial, el efecto redirige sin llamada de red.
-  const [isChecking, setIsChecking] = useState(() => !isAuthenticated && hasStoredTokens());
+  // Start with true on both server and client to avoid:
+  // 1) Hydration mismatch (same value on both sides)
+  // 2) Race condition where redirect fires before auth check starts
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     // Sesión ya activa en Zustand: navegación client-side, sin necesidad de red.

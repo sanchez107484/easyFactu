@@ -381,10 +381,10 @@ export function InvoiceLineItem({
                 data-invoice-qty={index}
                 value={
                   mode === 'product'
-                    ? (line.quantity ?? 1)
+                    ? String(line.quantity ?? 1)
                     : line._hideQty
                       ? ''
-                      : (line.quantity ?? '')
+                      : String(line.quantity ?? '')
                 }
                 onChange={(e) => {
                   const val = e.target.value;
@@ -397,9 +397,10 @@ export function InvoiceLineItem({
                     // Modo producto: no permitir vacío
                   } else {
                     const num = parseFloat(val);
+                    const safeNum = isNaN(num) ? 1 : num;
                     form.setValue(
                       `lines.${index}.quantity`,
-                      mode === 'product' ? Math.max(1, num || 1) : num || 1,
+                      mode === 'product' ? Math.max(1, safeNum) : safeNum,
                     );
                     form.setValue(`lines.${index}._hideQty`, false);
                   }

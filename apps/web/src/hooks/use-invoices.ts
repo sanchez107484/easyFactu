@@ -1,6 +1,7 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { invoiceApi, RectifyInvoiceInput } from '@/lib/api/invoice-api';
 import {
@@ -57,6 +58,25 @@ export function useInvoice(id: string, options?: { enabled?: boolean }) {
     enabled: options?.enabled ?? Boolean(id),
     staleTime: 30_000, // 30s — el detalle no cambia si el usuario vuelve rápido
   });
+}
+
+/**
+ * Returns a callback to prefetch an invoice detail on hover.
+ * Data is prefetched into TanStack Query cache so navigation to the detail page is instant.
+ */
+export function usePrefetchInvoice() {
+  const queryClient = useQueryClient();
+
+  return useCallback(
+    (id: string) => {
+      queryClient.prefetchQuery({
+        queryKey: invoiceKeys.detail(id),
+        queryFn: () => invoiceApi.getById(id),
+        staleTime: 30_000,
+      });
+    },
+    [queryClient],
+  );
 }
 
 // ==================== MUTATIONS ====================
