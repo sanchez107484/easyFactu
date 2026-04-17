@@ -48,6 +48,17 @@ export enum InvoiceStatus {
   RECTIFIED = 'RECTIFIED',
 }
 
+export enum PaymentStatus {
+  UNPAID = 'UNPAID',
+  PARTIALLY_PAID = 'PARTIALLY_PAID',
+  PAID = 'PAID',
+}
+
+export enum PaymentType {
+  FULL = 'FULL',
+  PARTIAL = 'PARTIAL',
+}
+
 export enum QuoteAcceptanceStatus {
   PENDING = 'PENDING',
   SENT = 'SENT',
@@ -454,7 +465,9 @@ export interface Invoice {
   irpfTotal: number | null;
   total: number;
   paymentMethod: PaymentMethod | null;
-  paymentDetails: Record<string, any> | null;
+  paymentDetails: Record<string, unknown> | null;
+  amountPaid: number;
+  paymentStatus: PaymentStatus;
   notes: string | null;
   pdfUrl: string | null;
   verifactuHash: string | null;
@@ -473,6 +486,29 @@ export interface Invoice {
   series?: InvoiceSeries;
   customer?: Customer;
   lines?: InvoiceLine[];
+  payments?: Payment[];
+}
+
+// ==================== PAYMENT ====================
+
+export interface Payment {
+  id: string;
+  tenantId: string;
+  invoiceId: string;
+  amount: number;
+  paymentDate: string;
+  paymentMethod: PaymentMethod | null;
+  reference: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface CreatePaymentInput {
+  amount: number;
+  paymentDate: string;
+  paymentMethod?: PaymentMethod;
+  reference?: string;
+  notes?: string;
 }
 
 export interface CreateInvoiceLineInput {
@@ -543,6 +579,7 @@ export interface QueryInvoicesInput {
   limit?: number;
   search?: string;
   status?: InvoiceStatus;
+  paymentStatus?: PaymentStatus;
   customerId?: string;
   fromDate?: string;
   toDate?: string;

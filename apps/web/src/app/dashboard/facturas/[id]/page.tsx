@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
@@ -30,7 +29,6 @@ import {
   MoreVertical,
   Trash2,
   CheckCircle2,
-  CreditCard,
   Copy,
   RotateCcw,
   AlertCircle,
@@ -49,14 +47,12 @@ import {
   Undo2,
 } from 'lucide-react';
 import { DownloadInvoiceButton } from '@/components/ui/download-invoice-button';
-import { Label } from '@/components/ui/label';
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
 import type { PaymentDetails } from '@/components/facturas/LiveInvoicePreview';
 import { getPaymentDetailFields } from '@/lib/payment-method-details';
 import {
   useInvoice,
   useConfirmInvoice,
-  useMarkInvoiceAsPaid,
   useUnmarkInvoiceAsPaid,
   useMarkInvoiceAsSent,
   useUnmarkInvoiceAsSent,
@@ -68,6 +64,11 @@ import {
 } from '@/hooks/use-invoices';
 import { ConvertProformaModal } from '@/components/facturas/ConvertProformaModal';
 import { ConvertDraftToProformaModal } from '@/components/facturas/ConvertDraftToProformaModal';
+import { InvoicePaymentSection } from '@/components/facturas/InvoicePaymentSection';
+import { RegisterPaymentDialog } from '@/components/facturas/RegisterPaymentDialog';
+import { InvoiceDetailSkeleton } from '@/components/facturas/InvoiceDetailSkeleton';
+import { SectionLabel } from '@/components/common/section-label';
+import { DataRow } from '@/components/common/data-row';
 import {
   ConvertToRecurringModal,
   type RecurringSettings,
@@ -79,86 +80,11 @@ import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge'
 import { useInvoiceTemplate, useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useAuthStore } from '@/store/auth-store';
 import { useTenant } from '@/hooks/use-tenant';
-import { cn, resolveUrl, formatCurrency } from '@/lib/utils';
+import { cn, resolveUrl, formatCurrency, formatDateShort, parseNum } from '@/lib/utils';
 
 // ==================== CONSTANTS ====================
 
-// ==================== HELPERS ====================
-
-function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-function parseNum(v: string | number | null | undefined): number {
-  if (v == null) return 0;
-  return typeof v === 'string' ? parseFloat(v) : v;
-}
-
-// ==================== SUBCOMPONENTS ====================
-
-function SectionLabel({ icon: Icon, children }: { icon?: any; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-1.5 mb-3">
-      {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" />}
-      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-        {children}
-      </p>
-    </div>
-  );
-}
-
-function DataRow({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string;
-  value: React.ReactNode;
-  mono?: boolean;
-}) {
-  return (
-    <div className="flex justify-between items-baseline gap-4 py-1">
-      <span className="text-sm text-muted-foreground shrink-0">{label}</span>
-      <span className={cn('text-sm text-right', mono && 'font-mono')}>{value}</span>
-    </div>
-  );
-}
-
-// ==================== LOADING SKELETON ====================
-
-function InvoiceDetailSkeleton() {
-  return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
-      <div className="flex items-center justify-between px-6 py-3 border-b shrink-0">
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-8 w-8 rounded-md" />
-          <Skeleton className="h-5 w-32" />
-        </div>
-        <Skeleton className="h-8 w-8 rounded-md" />
-      </div>
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-[60%] p-6 space-y-4 border-r">
-          <Skeleton className="h-32 w-full rounded-xl" />
-          <div className="grid grid-cols-2 gap-4">
-            <Skeleton className="h-28 rounded-xl" />
-            <Skeleton className="h-28 rounded-xl" />
-          </div>
-          <Skeleton className="h-48 w-full rounded-xl" />
-        </div>
-        <div className="w-[40%] p-4">
-          <Skeleton className="h-full w-full rounded-xl" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ==================== PAGE ====================
+// ==================== PAGE ======================================
 
 export default function FacturaDetailPage() {
   const params = useParams();
@@ -172,13 +98,13 @@ export default function FacturaDetailPage() {
   const [showConvertToRecurringModal, setShowConvertToRecurringModal] = useState(false);
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [editingNotesValue, setEditingNotesValue] = useState('');
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   const currentTenant = useAuthStore((s) => s.currentTenant);
   const { data: tenantData } = useTenant();
 
   const { data: invoice, isLoading, error } = useInvoice(id);
   const confirmMutation = useConfirmInvoice();
-  const paidMutation = useMarkInvoiceAsPaid();
   const unmarkPaidMutation = useUnmarkInvoiceAsPaid();
   const markSentMutation = useMarkInvoiceAsSent();
   const unmarkSentMutation = useUnmarkInvoiceAsSent();
@@ -246,9 +172,6 @@ export default function FacturaDetailPage() {
 
   const handleConfirm = async () => {
     await confirmMutation.mutateAsync(id);
-  };
-  const handlePaid = async () => {
-    await paidMutation.mutateAsync(id);
   };
   const handleUnmarkPaid = async () => {
     await unmarkPaidMutation.mutateAsync(id);
@@ -348,7 +271,6 @@ export default function FacturaDetailPage() {
   const isConfirmed = invoice.status === InvoiceStatus.CONFIRMED;
   const isSent = invoice.status === InvoiceStatus.SENT;
   const isPaid = invoice.status === InvoiceStatus.PAID;
-  const canPay = isConfirmed || isSent;
   const canRectify = isConfirmed || isSent || isPaid;
   const isProforma = (invoice as any).invoiceType === 'proforma';
 
@@ -601,17 +523,6 @@ export default function FacturaDetailPage() {
                       {unmarkSentMutation.isPending ? 'Procesando...' : 'Deshacer envío'}
                     </Button>
                   )}
-                  {canPay && (
-                    <Button
-                      size="sm"
-                      onClick={handlePaid}
-                      disabled={paidMutation.isPending}
-                      className="min-w-[140px]"
-                    >
-                      <CreditCard className="mr-1.5 h-3.5 w-3.5" />
-                      {paidMutation.isPending ? 'Procesando...' : 'Marcar como pagada'}
-                    </Button>
-                  )}
                   {isPaid && (
                     <Button
                       size="sm"
@@ -622,6 +533,16 @@ export default function FacturaDetailPage() {
                     >
                       <Undo2 className="mr-1.5 h-3.5 w-3.5" />
                       {unmarkPaidMutation.isPending ? 'Procesando...' : 'Deshacer pago'}
+                    </Button>
+                  )}
+                  {!isDraft && parseNum(invoice.amountPaid) < parseNum(invoice.total) && (
+                    <Button
+                      size="sm"
+                      onClick={() => setShowPaymentDialog(true)}
+                      className="min-w-[140px]"
+                    >
+                      <Banknote className="mr-1.5 h-3.5 w-3.5" />
+                      Registrar cobro
                     </Button>
                   )}
                   {!isDraft && (
@@ -641,12 +562,12 @@ export default function FacturaDetailPage() {
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Calendar className="h-3 w-3" />
-                  <span>Emitida {formatDate(invoice.issueDate)}</span>
+                  <span>Emitida {formatDateShort(invoice.issueDate)}</span>
                 </div>
                 {invoice.dueDate && (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Calendar className="h-3 w-3" />
-                    <span>Vence {formatDate(invoice.dueDate)}</span>
+                    <span>Vence {formatDateShort(invoice.dueDate)}</span>
                   </div>
                 )}
                 {series && (
@@ -654,6 +575,12 @@ export default function FacturaDetailPage() {
                     <Layers className="h-3 w-3" />
                     <span>{series.name}</span>
                   </div>
+                )}
+                {!isDraft && (
+                  <InvoicePaymentSection
+                    invoice={invoice}
+                    onRegisterPayment={() => setShowPaymentDialog(true)}
+                  />
                 )}
               </div>
             </div>
@@ -984,6 +911,17 @@ export default function FacturaDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <RegisterPaymentDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        invoiceId={invoice.id}
+        invoiceTotal={parseNum(invoice.total)}
+        amountPaid={parseNum(invoice.amountPaid)}
+        defaultPaymentMethod={invoice.paymentMethod as PaymentMethod | null}
+        invoiceNumber={invoice.number}
+        customerName={invoice.customer?.name}
+      />
     </div>
   );
 }

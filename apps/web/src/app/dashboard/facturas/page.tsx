@@ -49,7 +49,6 @@ import {
 import {
   useInvoices,
   useConfirmInvoice,
-  useMarkInvoiceAsPaid,
   useUnmarkInvoiceAsPaid,
   useMarkInvoiceAsSent,
   useUnmarkInvoiceAsSent,
@@ -59,13 +58,24 @@ import {
 } from '@/hooks/use-invoices';
 import { useSortTable } from '@/hooks/use-sort-table';
 import { useDownloadInvoicePdf } from '@/hooks/use-download-invoice-pdf';
-import { InvoiceStatus, Invoice, QueryInvoicesInput } from '@easyfactura/shared-types';
-import { cn, formatCurrency } from '@/lib/utils';
+import {
+  InvoiceStatus,
+  PaymentStatus,
+  PaymentMethod,
+  Invoice,
+  QueryInvoicesInput,
+} from '@easyfactura/shared-types';
+import { cn, formatCurrency, formatDateShort } from '@/lib/utils';
 import { SortableHeader } from '@/components/common/sortable-header';
 import { InvoiceStatusBadge } from '@/components/common/invoice-status-badge';
-import { InvoiceStatusFilterPills } from '@/components/common/invoice-status-filter-pills';
+import {
+  InvoiceStatusFilterPills,
+  PaymentStatusFilterPills,
+} from '@/components/common/invoice-status-filter-pills';
 import { EmptyState } from '@/components/common/empty-state';
 import { ConvertProformaModal } from '@/components/facturas/ConvertProformaModal';
+import { InvoicePaymentSection } from '@/components/facturas/InvoicePaymentSection';
+import { RegisterPaymentDialog } from '@/components/facturas/RegisterPaymentDialog';
 import { DownloadInvoiceButton } from '@/components/ui/download-invoice-button';
 
 // ==================== TYPES ====================
@@ -78,15 +88,16 @@ interface ActionTarget {
   isProforma?: boolean;
 }
 
-// ==================== HELPERS ====================
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+interface PaymentTarget {
+  id: string;
+  number: string | null;
+  customerName: string;
+  total: number;
+  amountPaid: number;
+  paymentMethod?: string | null;
 }
+
+// ==================== HELPERS ====================
 
 function isOverdue(invoice: Invoice): boolean {
   if (!invoice.dueDate) return false;
@@ -110,6 +121,7 @@ function TableSkeleton() {
           <Skeleton className="h-4 w-20 hidden lg:block" />
           <Skeleton className="h-4 w-24 ml-auto" />
           <Skeleton className="h-5 w-20 rounded-full" />
+          <Skeleton className="h-5 w-24 rounded-full hidden sm:block" />
           <Skeleton className="h-7 w-24 rounded hidden md:block" />
           <Skeleton className="h-7 w-7 rounded" />
         </div>
@@ -165,7 +177,7 @@ function QuickActionButton({
         onClick={onRequestPaid}
       >
         <Coins className="h-3.5 w-3.5 mr-1.5" />
-        Cobrada
+        Registrar cobro
       </Button>
     );
   }
@@ -192,6 +204,7 @@ export default function FacturasPage() {
   const [searchInput, setSearchInput] = useState('');
   const search = useDebounce(searchInput, 300);
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('ALL');
   const [page, setPage] = useState(1);
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [fromDate, setFromDate] = useState('');
@@ -201,17 +214,19 @@ export default function FacturasPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [convertId, setConvertId] = useState<string | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<ActionTarget | null>(null);
-  const [paidTarget, setPaidTarget] = useState<ActionTarget | null>(null);
+  const [paidTarget, setPaidTarget] = useState<PaymentTarget | null>(null);
 
   const { sortKey, sortDir, handleSort } = useSortTable('issueDate', 'desc');
 
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter, sortKey, sortDir, fromDate, toDate]);
+  }, [search, statusFilter, paymentStatusFilter, sortKey, sortDir, fromDate, toDate]);
 
   const { data, isLoading, error, refetch } = useInvoices({
     search: search || undefined,
     status: statusFilter !== 'ALL' ? (statusFilter as InvoiceStatus) : undefined,
+    paymentStatus:
+      paymentStatusFilter !== 'ALL' ? (paymentStatusFilter as PaymentStatus) : undefined,
     fromDate: fromDate || undefined,
     toDate: toDate || undefined,
     page,
@@ -221,7 +236,6 @@ export default function FacturasPage() {
   });
 
   const confirmMutation = useConfirmInvoice();
-  const paidMutation = useMarkInvoiceAsPaid();
   const unmarkPaidMutation = useUnmarkInvoiceAsPaid();
   const markSentMutation = useMarkInvoiceAsSent();
   const unmarkSentMutation = useUnmarkInvoiceAsSent();
@@ -233,12 +247,6 @@ export default function FacturasPage() {
     if (!confirmTarget) return;
     await confirmMutation.mutateAsync(confirmTarget.id);
     setConfirmTarget(null);
-  };
-
-  const handleMarkAsPaid = async () => {
-    if (!paidTarget) return;
-    await paidMutation.mutateAsync(paidTarget.id);
-    setPaidTarget(null);
   };
 
   const handleDelete = async () => {
@@ -256,7 +264,12 @@ export default function FacturasPage() {
   const invoices = data?.data ?? [];
   const total = data?.meta.total ?? 0;
   const totalPages = data?.meta.totalPages ?? 1;
-  const hasActiveFilters = !!searchInput || statusFilter !== 'ALL' || !!fromDate || !!toDate;
+  const hasActiveFilters =
+    !!searchInput ||
+    statusFilter !== 'ALL' ||
+    paymentStatusFilter !== 'ALL' ||
+    !!fromDate ||
+    !!toDate;
 
   if (!isLoading && !error && total === 0 && !hasActiveFilters) {
     return (
@@ -377,6 +390,7 @@ export default function FacturasPage() {
         )}
 
         <InvoiceStatusFilterPills value={statusFilter} onChange={setStatusFilter} />
+        <PaymentStatusFilterPills value={paymentStatusFilter} onChange={setPaymentStatusFilter} />
       </div>
 
       {/* ── Error state ── */}
@@ -467,6 +481,9 @@ export default function FacturasPage() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
                         Estado
                       </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground hidden sm:table-cell">
+                        Cobro
+                      </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground hidden md:table-cell">
                         Acción rápida
                       </th>
@@ -527,7 +544,7 @@ export default function FacturasPage() {
                             </div>
                           </td>
                           <td className="px-4 py-3 text-sm text-muted-foreground hidden sm:table-cell whitespace-nowrap">
-                            {formatDate(invoice.issueDate)}
+                            {formatDateShort(invoice.issueDate)}
                           </td>
                           <td className="px-4 py-3 hidden lg:table-cell whitespace-nowrap">
                             {invoice.dueDate ? (
@@ -540,7 +557,7 @@ export default function FacturasPage() {
                                 )}
                               >
                                 {overdue && <CalendarClock className="h-3.5 w-3.5 shrink-0" />}
-                                {formatDate(invoice.dueDate)}
+                                {formatDateShort(invoice.dueDate)}
                                 {overdue && (
                                   <span className="ml-1 rounded-full bg-red-100 dark:bg-red-900/50 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-[10px] font-semibold px-1.5 py-0.5">
                                     Vencida
@@ -561,6 +578,28 @@ export default function FacturasPage() {
                               status={isProforma ? InvoiceStatus.PROFORMA : invoice.status}
                             />
                           </td>
+                          {/* Cobro */}
+                          <td className="px-4 py-3 hidden sm:table-cell">
+                            {invoice.status !== InvoiceStatus.DRAFT &&
+                            invoice.status !== InvoiceStatus.PROFORMA ? (
+                              <InvoicePaymentSection
+                                invoice={invoice}
+                                showIcon={false}
+                                onRegisterPayment={() =>
+                                  setPaidTarget({
+                                    id: invoice.id,
+                                    number: invoice.number,
+                                    customerName: invoice.customer?.name ?? '—',
+                                    total: Number(invoice.total),
+                                    amountPaid: Number(invoice.amountPaid ?? 0),
+                                    paymentMethod: invoice.paymentMethod,
+                                  })
+                                }
+                              />
+                            ) : (
+                              <span className="text-sm text-muted-foreground">—</span>
+                            )}
+                          </td>
                           {/* Acción rápida */}
                           <td className="px-4 py-3 hidden md:table-cell">
                             <QuickActionButton
@@ -580,6 +619,8 @@ export default function FacturasPage() {
                                   number: invoice.number,
                                   customerName: invoice.customer?.name ?? '—',
                                   total: Number(invoice.total),
+                                  amountPaid: Number(invoice.amountPaid ?? 0),
+                                  paymentMethod: invoice.paymentMethod,
                                 })
                               }
                               onRequestConvert={() => setConvertId(invoice.id)}
@@ -589,11 +630,7 @@ export default function FacturasPage() {
                           <td className="px-4 py-3 text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
+                                <Button variant="ghost" size="icon" className="h-7 w-7">
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -649,22 +686,6 @@ export default function FacturasPage() {
                                   >
                                     <Undo2 className="mr-2 h-4 w-4" />
                                     Deshacer envío
-                                  </DropdownMenuItem>
-                                )}
-                                {(invoice.status === InvoiceStatus.CONFIRMED ||
-                                  invoice.status === InvoiceStatus.SENT) && (
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      setPaidTarget({
-                                        id: invoice.id,
-                                        number: invoice.number,
-                                        customerName: invoice.customer?.name ?? '—',
-                                        total: Number(invoice.total),
-                                      })
-                                    }
-                                  >
-                                    <Coins className="mr-2 h-4 w-4" />
-                                    Marcar como cobrada
                                   </DropdownMenuItem>
                                 )}
                                 {invoice.status === InvoiceStatus.PAID && (
@@ -769,29 +790,19 @@ export default function FacturasPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── Mark as Paid Dialog ── */}
-      <AlertDialog open={Boolean(paidTarget)} onOpenChange={(open) => !open && setPaidTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Marcar como cobrada?</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-1">
-                <p>
-                  La factura <strong>{paidTarget?.number ?? 'seleccionada'}</strong> de{' '}
-                  <strong>{paidTarget?.customerName}</strong> por{' '}
-                  <strong>{formatCurrency(paidTarget?.total ?? 0)}</strong> se marcará como cobrada.
-                </p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleMarkAsPaid} disabled={paidMutation.isPending}>
-              {paidMutation.isPending ? 'Guardando...' : 'Sí, cobrada'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* ── Register Payment Dialog ── */}
+      {paidTarget && (
+        <RegisterPaymentDialog
+          open={Boolean(paidTarget)}
+          onOpenChange={(open) => !open && setPaidTarget(null)}
+          invoiceId={paidTarget.id}
+          invoiceTotal={paidTarget.total}
+          amountPaid={paidTarget.amountPaid}
+          defaultPaymentMethod={paidTarget.paymentMethod as PaymentMethod | null}
+          invoiceNumber={paidTarget.number}
+          customerName={paidTarget.customerName}
+        />
+      )}
 
       {/* ── Delete Dialog ── */}
       <AlertDialog open={Boolean(deleteId)} onOpenChange={(open) => !open && setDeleteId(null)}>

@@ -27,6 +27,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SectionLabel } from '@/components/common/section-label';
 
 // ==================== TYPES & CONSTANTS ====================
 
@@ -95,17 +96,6 @@ export const TYPE_OPTIONS: TypeOption[] = [
 ];
 
 // ==================== INTERNAL SUB-COMPONENTS ====================
-
-function SectionLabel({ icon: Icon, children }: { icon?: any; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-1.5 mb-4">
-      {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" />}
-      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-        {children}
-      </p>
-    </div>
-  );
-}
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;

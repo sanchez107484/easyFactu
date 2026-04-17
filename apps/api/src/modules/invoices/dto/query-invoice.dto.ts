@@ -1,7 +1,7 @@
 import { IsOptional, IsString, IsEnum, IsDateString, IsUUID, IsIn } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
-import { InvoiceStatus, QuoteAcceptanceStatus } from '@easyfactura/shared-types';
+import { InvoiceStatus, PaymentStatus, QuoteAcceptanceStatus } from '@easyfactura/shared-types';
 
 const INVOICE_SORT_FIELDS = [
   'number',
@@ -23,6 +23,11 @@ export class QueryInvoiceDto extends PaginationDto {
   @IsOptional()
   @IsEnum(InvoiceStatus)
   status?: InvoiceStatus;
+
+  @ApiPropertyOptional({ enum: PaymentStatus })
+  @IsOptional()
+  @IsEnum(PaymentStatus)
+  paymentStatus?: PaymentStatus;
 
   @ApiPropertyOptional()
   @IsOptional()

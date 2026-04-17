@@ -13,6 +13,7 @@
     "test": "turbo test"
   },
   "dependencies": {
+    "pg": "^8.20.0",
     "typescript": "^5.7.2"
   },
   "devDependencies": {

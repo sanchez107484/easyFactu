@@ -63,6 +63,8 @@ import {
 } from '@easyfactura/shared-types';
 import { FREQUENCY_LABELS, PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import { cn, formatCurrency, formatDate, resolveUrl } from '@/lib/utils';
+import { SectionLabel } from '@/components/common/section-label';
+import { DataRow } from '@/components/common/data-row';
 import { round2 } from '@/lib/math';
 
 interface PageProps {
@@ -96,40 +98,6 @@ const RECURRING_STATUS_CONFIG = {
 };
 
 // ==================== HELPERS ====================
-
-function SectionLabel({
-  icon: Icon,
-  children,
-}: {
-  icon?: React.ElementType;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center gap-1.5 mb-3">
-      {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" />}
-      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-        {children}
-      </p>
-    </div>
-  );
-}
-
-function DataRow({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string;
-  value: React.ReactNode;
-  mono?: boolean;
-}) {
-  return (
-    <div className="flex justify-between items-baseline gap-4 py-1">
-      <span className="text-sm text-muted-foreground shrink-0">{label}</span>
-      <span className={cn('text-sm text-right', mono && 'font-mono')}>{value}</span>
-    </div>
-  );
-}
 
 function buildRecurringPreviewInvoice(recurring: RecurringInvoice): Invoice {
   const today = new Date().toISOString();

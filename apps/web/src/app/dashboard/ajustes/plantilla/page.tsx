@@ -28,6 +28,7 @@ import {
   InvoiceLayout,
   Invoice,
   InvoiceStatus,
+  PaymentStatus,
   PaymentMethod,
   Tenant,
 } from '@easyfactura/shared-types';
@@ -53,6 +54,8 @@ function buildExampleInvoice(tenantId: string): Invoice {
     discountAmount: null,
     taxTotal: 210,
     total: 1060,
+    amountPaid: 0,
+    paymentStatus: PaymentStatus.UNPAID,
     paymentMethod: PaymentMethod.BANK_TRANSFER,
     paymentDetails: null,
     notes: 'Gracias por su confianza.',

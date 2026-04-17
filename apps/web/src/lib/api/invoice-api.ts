@@ -2,9 +2,11 @@ import { apiClient } from '../api-client';
 import { unwrapApiResponse, ApiResponse } from '../api-response';
 import {
   Invoice,
+  Payment,
   PaginatedResponse,
   CreateInvoiceInput,
   UpdateInvoiceInput,
+  CreatePaymentInput,
   QueryInvoicesInput,
   InvoiceStats,
   InvoiceReportData,
@@ -103,5 +105,29 @@ export const invoiceApi = {
       .get<
         ApiResponse<InvoiceReportData>
       >(`/invoices/reports?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`)
+      .then(unwrapApiResponse),
+};
+
+// ==================== PAYMENT API ====================
+
+export const paymentApi = {
+  getAll: (invoiceId: string): Promise<Payment[]> =>
+    apiClient
+      .get<ApiResponse<Payment[]>>(`/invoices/${invoiceId}/payments`)
+      .then(unwrapApiResponse),
+
+  create: (
+    invoiceId: string,
+    data: CreatePaymentInput,
+  ): Promise<{ invoice: Invoice; payment: Payment }> =>
+    apiClient
+      .post<
+        ApiResponse<{ invoice: Invoice; payment: Payment }>
+      >(`/invoices/${invoiceId}/payments`, data)
+      .then(unwrapApiResponse),
+
+  remove: (invoiceId: string, paymentId: string): Promise<Invoice> =>
+    apiClient
+      .delete<ApiResponse<Invoice>>(`/invoices/${invoiceId}/payments/${paymentId}`)
       .then(unwrapApiResponse),
 };

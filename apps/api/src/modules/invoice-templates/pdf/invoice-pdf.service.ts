@@ -341,6 +341,8 @@ export class InvoicePdfService {
       isRectificative: false,
       rectifiedInvoiceId: null,
       rectificationReason: null,
+      amountPaid: 0,
+      paymentStatus: 'UNPAID' as never,
       createdAt: now,
       updatedAt: now,
       customer: {

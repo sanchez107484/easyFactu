@@ -14,6 +14,7 @@ import { VerifactuModule } from './modules/verifactu/verifactu.module';
 import { InvoiceTemplateModule } from './modules/invoice-templates/invoice-template.module';
 import { InvoiceDefaultsModule } from './modules/invoice-defaults/invoice-defaults.module';
 import { RecurringInvoiceModule } from './modules/recurring-invoices/recurring-invoice.module';
+import { PaymentModule } from './modules/payments/payment.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { RecurringInvoiceModule } from './modules/recurring-invoices/recurring-i
     InvoiceTemplateModule,
     InvoiceDefaultsModule,
     RecurringInvoiceModule,
+    PaymentModule,
   ],
   controllers: [],
   providers: [

@@ -11,13 +11,14 @@ import {
   Prisma,
   InvoiceStatus as PrismaInvoiceStatus,
   InvoiceType as PrismaInvoiceType,
+  PaymentStatus as PrismaPaymentStatus,
   QuoteAcceptanceStatus as PrismaQuoteAcceptanceStatus,
 } from '@prisma/client';
 import { CreateInvoiceDto, CreateInvoiceLineDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { RectifyInvoiceDto } from './dto/rectify-invoice.dto';
 import { QueryInvoiceDto } from './dto/query-invoice.dto';
-import { InvoiceStatus, SeriesType } from '@easyfactura/shared-types';
+import { InvoiceStatus, PaymentStatus, SeriesType } from '@easyfactura/shared-types';
 import { UpdateInvoiceNotesDto } from './dto/update-invoice-notes.dto';
 import { VerifactuService } from '../verifactu/services/verifactu.service';
 import { InvoiceNumberService } from './invoice-number.service';
@@ -182,6 +183,7 @@ export class InvoiceService {
       limit = 20,
       search,
       status,
+      paymentStatus,
       customerId,
       fromDate,
       toDate,
@@ -215,6 +217,10 @@ export class InvoiceService {
       };
     }
 
+    if (paymentStatus) {
+      where.paymentStatus = paymentStatus as PrismaPaymentStatus;
+    }
+
     if (quoteAcceptanceStatus) {
       where.quoteAcceptanceStatus = quoteAcceptanceStatus as PrismaQuoteAcceptanceStatus;
     }
@@ -241,6 +247,10 @@ export class InvoiceService {
         include: {
           customer: { select: { id: true, name: true, nif: true } },
           series: { select: { id: true, name: true, prefix: true } },
+          payments: {
+            select: { id: true, amount: true, paymentDate: true, paymentMethod: true, notes: true },
+            orderBy: { paymentDate: 'desc' },
+          },
         },
       }),
       this.prisma.invoice.count({ where }),
@@ -277,6 +287,8 @@ export class InvoiceService {
         total: true,
         paymentMethod: true,
         paymentDetails: true,
+        amountPaid: true,
+        paymentStatus: true,
         notes: true,
         templateId: true,
         layoutOverride: true,
@@ -351,6 +363,9 @@ export class InvoiceService {
         verifactuLogs: {
           orderBy: { createdAt: 'desc' },
           take: 5,
+        },
+        payments: {
+          orderBy: { paymentDate: 'desc' },
         },
       },
     });
@@ -541,14 +556,37 @@ export class InvoiceService {
       );
     }
 
-    return this.prisma.invoice.update({
-      where: { id },
-      data: { status: PrismaInvoiceStatus.PAID },
-      include: {
-        lines: { orderBy: { sortOrder: 'asc' } },
-        customer: true,
-        series: true,
-      },
+    const invoiceTotal = Number(invoice.total);
+    const currentPaid = Number(invoice.amountPaid);
+    const remaining = Math.round((invoiceTotal - currentPaid) * 100) / 100;
+
+    return this.prisma.$transaction(async (tx) => {
+      if (remaining > 0) {
+        await tx.payment.create({
+          data: {
+            tenantId,
+            invoiceId: id,
+            amount: remaining,
+            paymentDate: new Date(),
+            paymentMethod: invoice.paymentMethod ?? undefined,
+          },
+        });
+      }
+
+      return tx.invoice.update({
+        where: { id },
+        data: {
+          status: PrismaInvoiceStatus.PAID,
+          amountPaid: invoiceTotal,
+          paymentStatus: PrismaPaymentStatus.PAID,
+        },
+        include: {
+          lines: { orderBy: { sortOrder: 'asc' } },
+          customer: true,
+          series: true,
+          payments: { orderBy: { paymentDate: 'desc' } },
+        },
+      });
     });
   }
 
@@ -561,14 +599,23 @@ export class InvoiceService {
       );
     }
 
-    return this.prisma.invoice.update({
-      where: { id },
-      data: { status: PrismaInvoiceStatus.CONFIRMED },
-      include: {
-        lines: { orderBy: { sortOrder: 'asc' } },
-        customer: true,
-        series: true,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      await tx.payment.deleteMany({ where: { invoiceId: id, tenantId } });
+
+      return tx.invoice.update({
+        where: { id },
+        data: {
+          status: PrismaInvoiceStatus.CONFIRMED,
+          amountPaid: 0,
+          paymentStatus: PrismaPaymentStatus.UNPAID,
+        },
+        include: {
+          lines: { orderBy: { sortOrder: 'asc' } },
+          customer: true,
+          series: true,
+          payments: { orderBy: { paymentDate: 'desc' } },
+        },
+      });
     });
   }
 
@@ -1072,16 +1119,24 @@ export class InvoiceService {
         },
         select: { total: true, issueDate: true },
       }),
-      this.prisma.invoice.aggregate({
+      // Pending collection: total minus amount already paid for non-fully-paid invoices
+      this.prisma.invoice.findMany({
         where: {
           tenantId,
           status: { in: [PrismaInvoiceStatus.CONFIRMED, PrismaInvoiceStatus.SENT] },
+          paymentStatus: { in: [PrismaPaymentStatus.UNPAID, PrismaPaymentStatus.PARTIALLY_PAID] },
         },
-        _sum: { total: true },
+        select: { total: true, amountPaid: true },
       }),
       this.prisma.customer.count({ where: { tenantId } }),
       this.prisma.product.count({ where: { tenantId } }),
     ]);
+
+    // Calculate pending collection as sum of (total - amountPaid) for unpaid/partially paid invoices
+    const pendingCollection = pendingResult.reduce(
+      (sum, inv) => sum + (Number(inv.total) - Number(inv.amountPaid)),
+      0
+    );
 
     // Build monthly chart from year invoices
     const monthlyMap: Record<number, number> = {};
@@ -1140,7 +1195,7 @@ export class InvoiceService {
     return {
       billedThisMonth: Math.round(billedThisMonth * 100) / 100,
       billedLastMonth: Math.round(billedLastMonth * 100) / 100,
-      pendingCollection: Math.round(Number(pendingResult._sum.total ?? 0) * 100) / 100,
+      pendingCollection: Math.round(pendingCollection * 100) / 100,
       invoicesThisMonth,
       monthlyChart,
       totalCustomers,

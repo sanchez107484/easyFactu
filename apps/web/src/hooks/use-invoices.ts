@@ -3,11 +3,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
-import { invoiceApi, RectifyInvoiceInput } from '@/lib/api/invoice-api';
+import { invoiceApi, paymentApi, RectifyInvoiceInput } from '@/lib/api/invoice-api';
 import {
   QueryInvoicesInput,
   CreateInvoiceInput,
   UpdateInvoiceInput,
+  CreatePaymentInput,
   InvoiceStats,
   InvoiceReportData,
 } from '@easyfactura/shared-types';
@@ -339,6 +340,57 @@ export function useUpdateInvoiceNotes() {
     onSuccess: (invoice) => {
       queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
       toast.success('Nota actualizada correctamente');
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+// ==================== PAYMENT HOOKS ====================
+
+export const paymentKeys = {
+  all: (invoiceId: string) => ['invoices', invoiceId, 'payments'] as const,
+};
+
+export function useInvoicePayments(invoiceId: string) {
+  return useQuery({
+    queryKey: paymentKeys.all(invoiceId),
+    queryFn: () => paymentApi.getAll(invoiceId),
+    enabled: Boolean(invoiceId),
+    staleTime: 30_000,
+  });
+}
+
+export function useCreatePayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ invoiceId, data }: { invoiceId: string; data: CreatePaymentInput }) =>
+      paymentApi.create(invoiceId, data),
+    onSuccess: ({ invoice }) => {
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
+      queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      queryClient.invalidateQueries({ queryKey: paymentKeys.all(invoice.id) });
+      toast.success('Cobro registrado correctamente');
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useDeletePayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ invoiceId, paymentId }: { invoiceId: string; paymentId: string }) =>
+      paymentApi.remove(invoiceId, paymentId),
+    onSuccess: (invoice) => {
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
+      queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      queryClient.invalidateQueries({ queryKey: paymentKeys.all(invoice.id) });
+      toast.success('Cobro eliminado correctamente');
     },
     onError: (error: unknown) => {
       toast.error(getApiErrorMessage(error));
