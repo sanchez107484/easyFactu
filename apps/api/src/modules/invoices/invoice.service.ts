@@ -10,6 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import {
   Prisma,
   InvoiceStatus as PrismaInvoiceStatus,
+  InvoiceType as PrismaInvoiceType,
   QuoteAcceptanceStatus as PrismaQuoteAcceptanceStatus,
 } from '@prisma/client';
 import { CreateInvoiceDto, CreateInvoiceLineDto } from './dto/create-invoice.dto';
@@ -145,7 +146,7 @@ export class InvoiceService {
           issueDate: new Date(dto.issueDate),
           dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
           status: invoiceStatus,
-          invoiceType: dto.invoiceType ?? 'standard',
+          invoiceType: (dto.invoiceType ?? 'standard') as PrismaInvoiceType,
           templateId: dto.templateId ?? null,
           layoutOverride: dto.layoutOverride ? { ...dto.layoutOverride } : undefined,
           validUntil: isQuote && dto.validUntil ? new Date(dto.validUntil) : null,
@@ -324,7 +325,7 @@ export class InvoiceService {
         issueDate: dto.issueDate ? new Date(dto.issueDate) : undefined,
         dueDate:
           dto.dueDate !== undefined ? (dto.dueDate ? new Date(dto.dueDate) : null) : undefined,
-        invoiceType: dto.invoiceType !== undefined ? dto.invoiceType : undefined,
+        invoiceType: dto.invoiceType !== undefined ? dto.invoiceType as PrismaInvoiceType : undefined,
         templateId: dto.templateId !== undefined ? dto.templateId : undefined,
         layoutOverride:
           dto.layoutOverride !== undefined

@@ -99,6 +99,32 @@ export class EmailService {
     });
   }
 
+  async sendClientAcceptedInvitationNotification(opts: {
+    to: string;
+    agencyName: string;
+    clientName: string;
+    clientNif: string;
+  }): Promise<void> {
+    const html = this.buildBaseLayout(`
+      <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;">
+        ¡${opts.clientName} ha aceptado tu invitación!
+      </h1>
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
+        El cliente <strong>${opts.clientName}</strong> (NIF: ${opts.clientNif}) ha aceptado vincularse
+        a <strong>${opts.agencyName}</strong> y ahora forma parte de tu cartera en NovaFactura.
+      </p>
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0;">
+        Ya puedes acceder a su cuenta desde el panel de asesoría y gestionar su facturación.
+      </p>
+    `);
+
+    await this.send({
+      to: opts.to,
+      subject: `${opts.clientName} ha aceptado tu invitación en NovaFactura`,
+      html,
+    });
+  }
+
   // ─── Private send ──────────────────────────────────────────────────────────
 
   private async send(opts: SendEmailOptions): Promise<void> {

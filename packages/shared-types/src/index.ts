@@ -65,6 +65,12 @@ export enum VerifactuStatus {
   ERROR = 'ERROR',
 }
 
+export enum PaymentStatus {
+  UNPAID = 'UNPAID',
+  PARTIAL = 'PARTIAL',
+  PAID = 'PAID',
+}
+
 export enum PaymentMethod {
   BANK_TRANSFER = 'BANK_TRANSFER',
   DIRECT_DEBIT = 'DIRECT_DEBIT',
@@ -475,6 +481,8 @@ export interface Invoice {
   isRectificative: boolean;
   rectifiedInvoiceId: string | null;
   rectificationReason: string | null;
+  amountPaid: number;
+  paymentStatus: PaymentStatus;
   createdAt: string;
   updatedAt: string;
   series?: InvoiceSeries;
@@ -848,4 +856,58 @@ export interface AgencyClientDetail extends Omit<
     monthlyRevenue: number;
   };
   recentInvoices: AgencyClientRecentInvoice[];
+}
+
+// ==================== AGENCY STATS ====================
+
+export interface AgencyDashboardAlert {
+  type: 'error' | 'warning' | 'info';
+  message: string;
+  count: number;
+}
+
+export interface AgencyStats {
+  totalClients: number;
+  activeClients: number;
+  pendingInvitations: number;
+  clientsNeedingAttention: number;
+  monthlyRevenue: number;
+  alerts: AgencyDashboardAlert[];
+}
+
+// ==================== AGENCY EXPORT ====================
+
+export enum ExportFormat {
+  CONTAPLUS = 'CONTAPLUS',
+  A3CON = 'A3CON',
+  EXCEL = 'EXCEL',
+}
+
+export interface AgencyExportLog {
+  id: string;
+  agencyTenantId: string;
+  clientTenantId: string;
+  requestedByUserId: string;
+  format: ExportFormat;
+  year: number;
+  quarter: number | null;
+  invoicesCount: number;
+  totalRevenue: number;
+  createdAt: string;
+}
+
+export interface ExportContaPlusInput {
+  year: number;
+  quarter?: number;
+}
+
+// ==================== FISCAL VALIDATION ====================
+
+export interface FiscalAlert {
+  type: 'error' | 'warning' | 'info';
+  code: string;
+  title: string;
+  description: string;
+  invoiceId?: string;
+  invoiceNumber?: string;
 }

@@ -371,6 +371,18 @@ export class AgencyService {
       throw new BadRequestException('La invitación ha expirado');
     }
 
+    // Prevent an AGENCY tenant from becoming a client of another AGENCY (circular relations)
+    const clientTenant = await this.prisma.tenant.findUnique({
+      where: { id: clientTenantId },
+      select: { accountType: true, businessName: true },
+    });
+
+    if (clientTenant?.accountType === 'AGENCY') {
+      throw new BadRequestException(
+        'Una asesoría no puede ser cliente de otra asesoría. Usa el sistema de colaboración para vincular gestorías.'
+      );
+    }
+
     // Check the relation doesn't already exist
     const existingRelation = await this.prisma.agencyClientRelation.findUnique({
       where: {
@@ -385,8 +397,8 @@ export class AgencyService {
       throw new ConflictException('Ya estás vinculado a esta asesoría');
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const relation = await tx.agencyClientRelation.create({
+    const relation = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.agencyClientRelation.create({
         data: {
           agencyTenantId: invitation.agencyTenantId,
           clientTenantId,
@@ -420,8 +432,25 @@ export class AgencyService {
         skipDuplicates: true,
       });
 
-      return relation;
+      return created;
     });
+
+    // Notify the agency that their client accepted the invitation (fire-and-forget)
+    const agencyTenantDetails = await this.prisma.tenant.findUnique({
+      where: { id: invitation.agencyTenantId },
+      select: { email: true, businessName: true },
+    });
+
+    if (agencyTenantDetails) {
+      this.emailService.sendClientAcceptedInvitationNotification({
+        to: agencyTenantDetails.email,
+        agencyName: agencyTenantDetails.businessName,
+        clientName: relation.clientTenant.businessName,
+        clientNif: relation.clientTenant.nif,
+      });
+    }
+
+    return relation;
   }
 
   // ─── Revoke access ────────────────────────────────────────────────────────
@@ -602,25 +631,38 @@ export class AgencyService {
   // The agency's own Customer records (tenantId = agencyTenantId) act as the
   // shared pool. This endpoint returns them so the frontend can suggest imports.
 
-  async findSharedCustomers(agencyTenantId: string, search?: string) {
+  async findSharedCustomers(agencyTenantId: string, search?: string, page = 1, limit = 20) {
     await this.assertAgencyTenant(agencyTenantId);
 
-    return this.prisma.customer.findMany({
-      where: {
-        tenantId: agencyTenantId,
-        isActive: true,
-        ...(search
-          ? {
-              OR: [
-                { name: { contains: search, mode: 'insensitive' } },
-                { nif: { contains: search, mode: 'insensitive' } },
-              ],
-            }
-          : {}),
-      },
-      orderBy: { name: 'asc' },
-      take: 20,
-    });
+    const skip = (page - 1) * limit;
+
+    const where = {
+      tenantId: agencyTenantId,
+      isActive: true,
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as const } },
+              { nif: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.customer.findMany({
+        where,
+        orderBy: { name: 'asc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.customer.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   // ─── Dashboard stats for agency hub ──────────────────────────────────────
@@ -628,7 +670,19 @@ export class AgencyService {
   async getAgencyStats(agencyTenantId: string) {
     await this.assertAgencyTenant(agencyTenantId);
 
-    const [totalClients, activeClients, pendingInvitations] = await Promise.all([
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+
+    const [
+      totalClients,
+      activeClients,
+      pendingInvitations,
+      clientsNeedingAttention,
+      monthlyRevenueResult,
+      clientsWithoutRecentInvoice,
+      pendingVerifactuResult,
+    ] = await Promise.all([
       this.prisma.agencyClientRelation.count({ where: { agencyTenantId } }),
       this.prisma.agencyClientRelation.count({
         where: { agencyTenantId, status: 'ACTIVE' },
@@ -637,22 +691,66 @@ export class AgencyService {
         where: {
           agencyTenantId,
           status: 'PENDING',
-          expiresAt: { gt: new Date() },
+          expiresAt: { gt: now },
+        },
+      }),
+      // Clients with pending/sent invoices (need attention — awaiting payment)
+      this.prisma.agencyClientRelation.count({
+        where: {
+          agencyTenantId,
+          status: 'ACTIVE',
+          clientTenant: {
+            invoices: { some: { status: { in: ['CONFIRMED', 'SENT'] } } },
+          },
+        },
+      }),
+      // Total revenue across all active clients this month
+      this.prisma.invoice.aggregate({
+        where: {
+          tenant: {
+            clientRelations: { some: { agencyTenantId, status: 'ACTIVE' } },
+          },
+          status: { in: ['CONFIRMED', 'SENT', 'PAID'] },
+          issueDate: { gte: startOfMonth },
+        },
+        _sum: { total: true },
+      }),
+      // Active clients with NO confirmed invoice in the last 3 months
+      this.prisma.agencyClientRelation.count({
+        where: {
+          agencyTenantId,
+          status: 'ACTIVE',
+          clientTenant: {
+            invoices: {
+              none: {
+                status: { in: ['CONFIRMED', 'SENT', 'PAID'] },
+                issueDate: { gte: threeMonthsAgo },
+              },
+            },
+          },
+        },
+      }),
+      // Active clients with VeriFactu errors/pending
+      this.prisma.agencyClientRelation.count({
+        where: {
+          agencyTenantId,
+          status: 'ACTIVE',
+          clientTenant: {
+            invoices: {
+              some: {
+                status: { in: ['CONFIRMED', 'SENT', 'PAID'] },
+                verifactuStatus: { in: ['PENDING', 'ERROR', 'REJECTED'] },
+              },
+            },
+          },
         },
       }),
     ]);
 
-    // Clients with pending invoices (need attention)
-    const clientsNeedingAttention = await this.prisma.agencyClientRelation.count({
-      where: {
-        agencyTenantId,
-        status: 'ACTIVE',
-        clientTenant: {
-          invoices: {
-            some: { status: { in: ['CONFIRMED', 'SENT'] } },
-          },
-        },
-      },
+    const alerts = this.buildDashboardAlerts({
+      clientsWithoutRecentInvoice,
+      pendingVerifactu: pendingVerifactuResult,
+      clientsNeedingAttention,
     });
 
     return {
@@ -660,6 +758,43 @@ export class AgencyService {
       activeClients,
       pendingInvitations,
       clientsNeedingAttention,
+      monthlyRevenue: Number(monthlyRevenueResult._sum.total ?? 0),
+      alerts,
     };
+  }
+
+  private buildDashboardAlerts(params: {
+    clientsWithoutRecentInvoice: number;
+    pendingVerifactu: number;
+    clientsNeedingAttention: number;
+  }): Array<{ type: 'error' | 'warning' | 'info'; message: string; count: number }> {
+    const alerts: Array<{ type: 'error' | 'warning' | 'info'; message: string; count: number }> =
+      [];
+
+    if (params.pendingVerifactu > 0) {
+      alerts.push({
+        type: 'error',
+        message: `${params.pendingVerifactu} cliente${params.pendingVerifactu > 1 ? 's' : ''} con facturas pendientes de enviar a la AEAT`,
+        count: params.pendingVerifactu,
+      });
+    }
+
+    if (params.clientsWithoutRecentInvoice > 0) {
+      alerts.push({
+        type: 'warning',
+        message: `${params.clientsWithoutRecentInvoice} cliente${params.clientsWithoutRecentInvoice > 1 ? 's' : ''} sin facturar en los últimos 3 meses`,
+        count: params.clientsWithoutRecentInvoice,
+      });
+    }
+
+    if (params.clientsNeedingAttention > 0) {
+      alerts.push({
+        type: 'info',
+        message: `${params.clientsNeedingAttention} cliente${params.clientsNeedingAttention > 1 ? 's tienen' : ' tiene'} facturas pendientes de cobro`,
+        count: params.clientsNeedingAttention,
+      });
+    }
+
+    return alerts;
   }
 }

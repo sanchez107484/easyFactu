@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/api-client';
 import { unwrapApiResponse } from '@/lib/api-response';
 import type {
+  AgencyStats,
   AgencyClientWithDetails,
   AgencyClientDetail,
   AgencyInvitation,
@@ -9,14 +10,9 @@ import type {
   InviteClientInput,
   QueryAgencyClientsInput,
   Customer,
+  FiscalAlert,
+  ExportContaPlusInput,
 } from '@easyfactura/shared-types';
-
-interface AgencyStats {
-  totalClients: number;
-  activeClients: number;
-  pendingInvitations: number;
-  clientsNeedingAttention: number;
-}
 
 export interface InvitationPublicInfo {
   inviteeName: string | null;
@@ -82,10 +78,43 @@ export const agencyApi = {
     await apiClient.patch(`/agency/clients/${clientTenantId}/notes`, { notes });
   },
 
-  getSharedCustomers: async (search?: string): Promise<Customer[]> => {
+  getSharedCustomers: async (
+    search?: string,
+    page = 1,
+    limit = 20,
+  ): Promise<PaginatedResponse<Customer>> => {
     const response = await apiClient.get('/agency/shared-customers', {
-      params: search ? { search } : undefined,
+      params: { search: search || undefined, page, limit },
     });
+    return unwrapApiResponse(response);
+  },
+
+  /**
+   * Downloads a ContaPlus .txt export for a client.
+   * Returns a Blob so the caller can trigger a browser download.
+   */
+  exportContaPlus: async (
+    clientTenantId: string,
+    params: ExportContaPlusInput,
+  ): Promise<{ blob: Blob; filename: string }> => {
+    const response = await apiClient.get(
+      `/agency/clients/${clientTenantId}/export/contaplus`,
+      {
+        params: { year: params.year, quarter: params.quarter },
+        responseType: 'blob',
+      },
+    );
+
+    // Extract filename from Content-Disposition header if present
+    const disposition = response.headers['content-disposition'] as string | undefined;
+    const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
+    const filename = filenameMatch?.[1] ?? `ContaPlus_${params.year}.txt`;
+
+    return { blob: response.data as Blob, filename };
+  },
+
+  getFiscalAlerts: async (clientTenantId: string): Promise<FiscalAlert[]> => {
+    const response = await apiClient.get(`/agency/clients/${clientTenantId}/fiscal-alerts`);
     return unwrapApiResponse(response);
   },
 };

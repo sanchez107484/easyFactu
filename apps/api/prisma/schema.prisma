@@ -46,20 +46,23 @@ model Tenant {
   verifactuLogs    VerifactuLog[]
   invoiceDefaults  InvoiceDefaults?
   invoiceNoteLogs  InvoiceNoteLog[]
+  payments         Payment[]
 
   // Agency relations
-  agencyRelations  AgencyClientRelation[] @relation("AgencyRelations")
-  clientRelations  AgencyClientRelation[] @relation("ClientRelations")
+  agencyRelations   AgencyClientRelation[] @relation("AgencyRelations")
+  clientRelations   AgencyClientRelation[] @relation("ClientRelations")
   agencyInvitations AgencyInvitation[]
+  agencyExportLogs  AgencyExportLog[]      @relation("AgencyExportLogs")
+  clientExportLogs  AgencyExportLog[]      @relation("ClientExportLogs")
 
   @@map("tenants")
 }
 
 enum AccountType {
-  INDIVIDUAL      // Autónomo individual
+  INDIVIDUAL      // AutÃ³nomo individual
   BUSINESS        // Empresa con empleados
-  AGENCY          // Gestoría/asesoría que gestiona múltiples clientes
-  COLLABORATIVE   // Autónomos colaborando
+  AGENCY          // GestorÃ­a/asesorÃ­a que gestiona mÃºltiples clientes
+  COLLABORATIVE   // AutÃ³nomos colaborando
 }
 
 enum Plan {
@@ -92,7 +95,7 @@ model TenantUser {
 enum TenantUserRole {
   OWNER       // Propietario (puede eliminar tenant, gestionar usuarios)
   ADMIN       // Administrador (acceso total excepto eliminar tenant)
-  ACCOUNTANT  // Contable (solo facturación e informes)
+  ACCOUNTANT  // Contable (solo facturaciÃ³n e informes)
   VIEWER      // Solo lectura
 }
 
@@ -263,7 +266,7 @@ model Invoice {
   notes               String?        @db.Text
   paymentDetails      Json?          @map("payment_details")
 
-  invoiceType         String?        @default("standard") @map("invoice_type")
+  invoiceType         InvoiceType    @default(standard) @map("invoice_type")
 
   // Quote-specific fields
   validUntil          DateTime?      @map("valid_until") @db.Date
@@ -282,6 +285,8 @@ model Invoice {
   isRectificative     Boolean        @default(false) @map("is_rectificative")
   rectifiedInvoiceId  String?        @map("rectified_invoice_id")
   rectificationReason String?        @map("rectification_reason") @db.Text
+  amountPaid          Decimal        @default(0) @map("amount_paid") @db.Decimal(12, 2)
+  paymentStatus       PaymentStatus  @default(UNPAID) @map("payment_status")
   createdByUserId     String?        @map("created_by_user_id")
   createdAt           DateTime       @default(now()) @map("created_at")
   updatedAt           DateTime       @updatedAt @map("updated_at")
@@ -295,17 +300,19 @@ model Invoice {
   lines               InvoiceLine[]
   verifactuLogs       VerifactuLog[]
   noteLogs            InvoiceNoteLog[]
+  payments            Payment[]
 
   // Uniqueness on (tenantId, number) is enforced via a raw partial unique index
   // (WHERE number IS NOT NULL) defined in migration 20260304220000_fix_invoice_number_partial_unique.
   // This allows multiple DRAFT invoices (number = null) per tenant while preventing duplicate
-  // confirmed invoice numbers. Do NOT add @@unique here — Prisma would create a full unique index.
+  // confirmed invoice numbers. Do NOT add @@unique here â€” Prisma would create a full unique index.
   @@index([tenantId, number], map: "invoices_tenant_id_number_idx")
   @@index([tenantId])
   @@index([tenantId, issueDate])
   @@index([tenantId, status])
   @@index([tenantId, customerId])
   @@index([tenantId, seriesId])
+  @@index([tenantId, paymentStatus])
   @@index([createdByUserId])
   @@map("invoices")
 }
@@ -347,6 +354,18 @@ enum PaymentMethod {
   BIZUM
 }
 
+enum InvoiceType {
+  standard
+  proforma
+  quote
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+}
+
 // ==================== INVOICE LINES ====================
 
 model InvoiceLine {
@@ -374,6 +393,27 @@ model InvoiceLine {
   @@index([invoiceId])
   @@index([tenantId])
   @@map("invoice_lines")
+}
+
+// ==================== PAYMENTS ====================
+
+model Payment {
+  id            String         @id @default(uuid())
+  tenantId      String         @map("tenant_id")
+  invoiceId     String         @map("invoice_id")
+  amount        Decimal        @db.Decimal(12, 2)
+  paymentDate   DateTime       @map("payment_date") @db.Date
+  paymentMethod PaymentMethod? @map("payment_method")
+  reference     String?
+  notes         String?        @db.Text
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice       Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, invoiceId])
+  @@map("payments")
 }
 
 // ==================== VERIFACTU LOGS ====================
@@ -486,4 +526,33 @@ model AgencyInvitation {
   @@index([agencyTenantId])
   @@index([token])
   @@map("agency_invitations")
+}
+
+// ==================== AGENCY EXPORT LOGS ====================
+
+enum ExportFormat {
+  CONTAPLUS
+  A3CON
+  EXCEL
+}
+
+model AgencyExportLog {
+  id               String       @id @default(uuid())
+  agencyTenantId   String       @map("agency_tenant_id")
+  clientTenantId   String       @map("client_tenant_id")
+  requestedByUserId String      @map("requested_by_user_id")
+  format           ExportFormat
+  year             Int
+  quarter          Int?         // null = full year export
+  invoicesCount    Int          @map("invoices_count")
+  totalRevenue     Decimal      @map("total_revenue") @db.Decimal(12, 2)
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  agencyTenant     Tenant       @relation("AgencyExportLogs", fields: [agencyTenantId], references: [id], onDelete: Cascade)
+  clientTenant     Tenant       @relation("ClientExportLogs", fields: [clientTenantId], references: [id], onDelete: Cascade)
+
+  @@index([agencyTenantId])
+  @@index([clientTenantId])
+  @@index([agencyTenantId, createdAt])
+  @@map("agency_export_logs")
 }

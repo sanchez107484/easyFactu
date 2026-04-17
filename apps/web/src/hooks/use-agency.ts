@@ -2,10 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { agencyApi } from '@/lib/api/agency-api';
 import { getErrorMessage } from '@/lib/api-client';
+import { triggerBlobDownload } from '@/lib/blob-download';
 import type {
   QueryAgencyClientsInput,
   CreateDirectClientInput,
   InviteClientInput,
+  ExportContaPlusInput,
 } from '@easyfactura/shared-types';
 
 const AGENCY_KEYS = {
@@ -14,13 +16,16 @@ const AGENCY_KEYS = {
   clients: (query?: QueryAgencyClientsInput) => [...AGENCY_KEYS.all, 'clients', query] as const,
   client: (id: string) => [...AGENCY_KEYS.all, 'clients', id] as const,
   invitations: () => [...AGENCY_KEYS.all, 'invitations'] as const,
-  sharedCustomers: (search?: string) => [...AGENCY_KEYS.all, 'shared-customers', search] as const,
+  sharedCustomers: (search?: string, page?: number) =>
+    [...AGENCY_KEYS.all, 'shared-customers', search, page] as const,
+  fiscalAlerts: (id: string) => [...AGENCY_KEYS.all, 'fiscal-alerts', id] as const,
 };
 
 export function useAgencyStats() {
   return useQuery({
     queryKey: AGENCY_KEYS.stats(),
     queryFn: agencyApi.getStats,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }
 
@@ -28,6 +33,7 @@ export function useAgencyClients(query?: QueryAgencyClientsInput) {
   return useQuery({
     queryKey: AGENCY_KEYS.clients(query),
     queryFn: () => agencyApi.getClients(query),
+    staleTime: 30 * 1000, // 30 seconds
   });
 }
 
@@ -35,6 +41,7 @@ export function useAgencyClient(clientTenantId: string) {
   return useQuery({
     queryKey: AGENCY_KEYS.client(clientTenantId),
     queryFn: () => agencyApi.getClient(clientTenantId),
+    staleTime: 30 * 1000,
   });
 }
 
@@ -99,11 +106,12 @@ export function useRevokeClient() {
   });
 }
 
-export function useAgencySharedCustomers(search?: string, enabled = true) {
+export function useAgencySharedCustomers(search?: string, page = 1, enabled = true) {
   return useQuery({
-    queryKey: AGENCY_KEYS.sharedCustomers(search),
-    queryFn: () => agencyApi.getSharedCustomers(search),
+    queryKey: AGENCY_KEYS.sharedCustomers(search, page),
+    queryFn: () => agencyApi.getSharedCustomers(search, page),
     enabled,
+    staleTime: 60 * 1000,
   });
 }
 
@@ -111,6 +119,7 @@ export function useAgencyPendingInvitations() {
   return useQuery({
     queryKey: AGENCY_KEYS.invitations(),
     queryFn: agencyApi.getPendingInvitations,
+    staleTime: 30 * 1000,
   });
 }
 
@@ -126,5 +135,33 @@ export function useCancelInvitation() {
     onError: (error) => {
       toast.error(getErrorMessage(error));
     },
+  });
+}
+
+export function useExportContaPlus() {
+  return useMutation({
+    mutationFn: ({
+      clientTenantId,
+      params,
+    }: {
+      clientTenantId: string;
+      params: ExportContaPlusInput;
+    }) => agencyApi.exportContaPlus(clientTenantId, params),
+    onSuccess: ({ blob, filename }) => {
+      triggerBlobDownload(blob, filename);
+      toast.success('Exportación descargada correctamente');
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
+    },
+  });
+}
+
+export function useClientFiscalAlerts(clientTenantId: string, enabled = true) {
+  return useQuery({
+    queryKey: AGENCY_KEYS.fiscalAlerts(clientTenantId),
+    queryFn: () => agencyApi.getFiscalAlerts(clientTenantId),
+    enabled,
+    staleTime: 5 * 60 * 1000, // 5 minutes — fiscal checks are expensive
   });
 }
