@@ -54,6 +54,7 @@ const TYPE_LABELS: Record<CustomerType, string> = {
   [CustomerType.INDIVIDUAL]: 'Particular',
   [CustomerType.SELF_EMPLOYED]: 'Autonomo',
   [CustomerType.COMPANY]: 'Empresa',
+  [CustomerType.PUBLIC_ENTITY]: 'Entidad Pública',
   [CustomerType.INTRACOMMUNITY]: 'Intracomunitario',
 };
 
@@ -61,6 +62,7 @@ const TYPE_BADGE_VARIANT: Record<CustomerType, 'default' | 'secondary' | 'outlin
   [CustomerType.INDIVIDUAL]: 'outline',
   [CustomerType.SELF_EMPLOYED]: 'secondary',
   [CustomerType.COMPANY]: 'default',
+  [CustomerType.PUBLIC_ENTITY]: 'default',
   [CustomerType.INTRACOMMUNITY]: 'outline',
 };
 

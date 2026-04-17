@@ -14,6 +14,7 @@ export class QueryCustomerDto extends PaginationDto {
 
   @ApiPropertyOptional({ enum: CustomerType })
   @IsOptional()
+  @Transform(({ value }) => (value === 'undefined' || value === '' ? undefined : value))
   @IsEnum(CustomerType)
   type?: CustomerType;
 
