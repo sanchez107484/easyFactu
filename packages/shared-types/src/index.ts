@@ -77,12 +77,6 @@ export enum VerifactuStatus {
   ERROR = 'ERROR',
 }
 
-export enum PaymentStatus {
-  UNPAID = 'UNPAID',
-  PARTIAL = 'PARTIAL',
-  PAID = 'PAID',
-}
-
 export enum PaymentMethod {
   BANK_TRANSFER = 'BANK_TRANSFER',
   DIRECT_DEBIT = 'DIRECT_DEBIT',
@@ -499,8 +493,6 @@ export interface Invoice {
   isRectificative: boolean;
   rectifiedInvoiceId: string | null;
   rectificationReason: string | null;
-  amountPaid: number;
-  paymentStatus: PaymentStatus;
   /** ID of the recurring invoice that generated this invoice (or from which this was converted) */
   recurringInvoiceId?: string | null;
   createdAt: string;
