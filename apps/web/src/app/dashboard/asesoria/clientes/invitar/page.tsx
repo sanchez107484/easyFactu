@@ -33,11 +33,6 @@ export default function InvitarClienteAsesoriaPage() {
 
   const isAgency = currentTenant?.accountType === AccountType.AGENCY;
 
-  if (!isAgency) {
-    router.replace('/dashboard');
-    return null;
-  }
-
   const {
     register,
     handleSubmit,
@@ -45,6 +40,11 @@ export default function InvitarClienteAsesoriaPage() {
   } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
+
+  if (!isAgency) {
+    router.replace('/dashboard');
+    return null;
+  }
 
   const onSubmit = (data: FormData) => {
     inviteClient(

@@ -44,11 +44,6 @@ export default function NuevoClienteAsesoriaPage() {
 
   const isAgency = currentTenant?.accountType === AccountType.AGENCY;
 
-  if (!isAgency) {
-    router.replace('/dashboard');
-    return null;
-  }
-
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
   });
@@ -58,6 +53,11 @@ export default function NuevoClienteAsesoriaPage() {
     handleSubmit,
     formState: { errors },
   } = form;
+
+  if (!isAgency) {
+    router.replace('/dashboard');
+    return null;
+  }
 
   const onSubmit = (data: FormData) => {
     createClient(data, {
