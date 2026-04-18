@@ -201,7 +201,10 @@ export class FiscalValidatorService {
   // ─── NIF/CIF/NIE algorithm ──────────────────────────────────────────────────
 
   isValidNif(nif: string): boolean {
-    const normalized = nif.toUpperCase().trim().replace(/[^A-Z0-9]/g, '');
+    const normalized = nif
+      .toUpperCase()
+      .trim()
+      .replace(/[^A-Z0-9]/g, '');
 
     if (!normalized || normalized.length < 8 || normalized.length > 9) return false;
 
@@ -281,9 +284,7 @@ export class FiscalValidatorService {
 
   // ─── Numbering gap detector ─────────────────────────────────────────────────
 
-  private findNumberingGaps(
-    numbers: string[]
-  ): Array<{ from: string; to: string }> {
+  private findNumberingGaps(numbers: string[]): Array<{ from: string; to: string }> {
     if (numbers.length < 2) return [];
 
     // Group by series prefix (e.g., 'F2026-' or 'FAC-')
@@ -315,7 +316,10 @@ export class FiscalValidatorService {
           const padLength = String(current).length;
           gaps.push({
             from: `${prefix}${String(current + 1).padStart(padLength, '0')}`,
-            to: next - current === 2 ? `${prefix}${String(next - 1).padStart(padLength, '0')}` : `${prefix}${String(next - 1).padStart(padLength, '0')}`,
+            to:
+              next - current === 2
+                ? `${prefix}${String(next - 1).padStart(padLength, '0')}`
+                : `${prefix}${String(next - 1).padStart(padLength, '0')}`,
           });
         }
       }

@@ -900,12 +900,7 @@ export class AgencyService {
 
   // ─── Export logs ─────────────────────────────────────────────────────────
 
-  async getExportLogs(
-    agencyTenantId: string,
-    clientTenantId?: string,
-    page = 1,
-    limit = 20
-  ) {
+  async getExportLogs(agencyTenantId: string, clientTenantId?: string, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
 
     const where = {

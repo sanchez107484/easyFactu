@@ -139,8 +139,12 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
   const { mutate: revokeClient, isPending: isRevoking } = useRevokeClient();
   const { mutate: updateNotes, isPending: isSavingNotes } = useUpdateClientNotes();
   const { mutate: exportContaPlus, isPending: isExporting } = useExportContaPlus();
-  const { data: fiscalAlerts, isLoading: isLoadingAlerts, refetch: refetchAlerts, isFetching: isRefetchingAlerts } =
-    useClientFiscalAlerts(clientTenantId);
+  const {
+    data: fiscalAlerts,
+    isLoading: isLoadingAlerts,
+    refetch: refetchAlerts,
+    isFetching: isRefetchingAlerts,
+  } = useClientFiscalAlerts(clientTenantId);
   const { data: exportLogsData } = useExportLogs(clientTenantId);
 
   const isAgency = currentTenant?.accountType === AccountType.AGENCY;
@@ -553,12 +557,16 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
           <CardContent>
             <div className="divide-y">
               {exportLogsData.data.slice(0, 5).map((log: AgencyExportLogEntry) => (
-                <div key={log.id} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+                <div
+                  key={log.id}
+                  className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0"
+                >
                   <div>
                     <p className="text-sm font-medium">
                       {log.format}{' '}
                       <span className="font-normal text-muted-foreground">
-                        {log.year}{log.quarter ? ` · T${log.quarter}` : ''}
+                        {log.year}
+                        {log.quarter ? ` · T${log.quarter}` : ''}
                       </span>
                     </p>
                     <p className="text-xs text-muted-foreground">

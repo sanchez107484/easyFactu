@@ -99,13 +99,10 @@ export const agencyApi = {
     clientTenantId: string,
     params: ExportContaPlusInput,
   ): Promise<{ blob: Blob; filename: string; invoicesCount: number; totalRevenue: number }> => {
-    const response = await apiClient.get(
-      `/agency/clients/${clientTenantId}/export/contaplus`,
-      {
-        params: { year: params.year, quarter: params.quarter },
-        responseType: 'blob',
-      },
-    );
+    const response = await apiClient.get(`/agency/clients/${clientTenantId}/export/contaplus`, {
+      params: { year: params.year, quarter: params.quarter },
+      responseType: 'blob',
+    });
 
     const disposition = response.headers['content-disposition'] as string | undefined;
     const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
@@ -129,7 +126,7 @@ export const agencyApi = {
   getExportLogs: async (
     clientTenantId?: string,
     page = 1,
-    limit = 20
+    limit = 20,
   ): Promise<PaginatedResponse<AgencyExportLogEntry>> => {
     const response = await apiClient.get('/agency/export-logs', {
       params: { clientTenantId, page, limit },

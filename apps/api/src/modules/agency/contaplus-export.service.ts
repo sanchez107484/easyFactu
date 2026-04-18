@@ -3,17 +3,17 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Decimal } from '@prisma/client/runtime/library';
 
 interface ContaPlusLine {
-  fecha: string;      // DD/MM/AAAA
-  numero: string;     // Invoice number
-  cuenta: string;     // Client NIF → account code
-  concepto: string;   // Description
-  debe: string;       // Debit (invoice total)
-  haber: string;      // Credit (always empty for invoices)
-  nif: string;        // Client NIF
-  nombre: string;     // Client business name
+  fecha: string; // DD/MM/AAAA
+  numero: string; // Invoice number
+  cuenta: string; // Client NIF → account code
+  concepto: string; // Description
+  debe: string; // Debit (invoice total)
+  haber: string; // Credit (always empty for invoices)
+  nif: string; // Client NIF
+  nombre: string; // Client business name
   baseImponible: string;
   cuotaIva: string;
-  tipoIva: string;    // IVA %
+  tipoIva: string; // IVA %
   cuotaIrpf: string;
 }
 
@@ -112,8 +112,8 @@ export class ContaPlusExportService {
   private buildDateRange(year: number, quarter?: number): { fromDate: Date; toDate: Date } {
     if (!quarter) {
       return {
-        fromDate: new Date(year, 0, 1),    // Jan 1
-        toDate: new Date(year, 11, 31),    // Dec 31
+        fromDate: new Date(year, 0, 1), // Jan 1
+        toDate: new Date(year, 11, 31), // Dec 31
       };
     }
 
@@ -141,7 +141,10 @@ export class ContaPlusExportService {
     const customerNif = invoice.customer?.nif ?? '';
 
     // ContaPlus uses the NIF as the account code (vendor/client account)
-    const cuenta = customerNif.replace(/[^A-Z0-9]/gi, '').toUpperCase().substring(0, 10);
+    const cuenta = customerNif
+      .replace(/[^A-Z0-9]/gi, '')
+      .toUpperCase()
+      .substring(0, 10);
 
     // Aggregate tax rates: if multiple rates, use the dominant one for the export line
     const dominantTaxRate = this.getDominantTaxRate(invoice.lines);
@@ -165,9 +168,7 @@ export class ContaPlusExportService {
     };
   }
 
-  private getDominantTaxRate(
-    lines: { taxRate: Decimal; taxAmount: Decimal }[]
-  ): number {
+  private getDominantTaxRate(lines: { taxRate: Decimal; taxAmount: Decimal }[]): number {
     if (lines.length === 0) return 0;
 
     // Pick the tax rate with the highest total tax amount
