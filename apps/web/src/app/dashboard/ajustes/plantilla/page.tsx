@@ -29,6 +29,7 @@ import {
   Invoice,
   InvoiceStatus,
   PaymentMethod,
+  PaymentStatus,
   Tenant,
 } from '@easyfactura/shared-types';
 import { PaymentDetails } from '@/components/facturas/LiveInvoicePreview';
@@ -55,6 +56,8 @@ function buildExampleInvoice(tenantId: string): Invoice {
     total: 1060,
     paymentMethod: PaymentMethod.BANK_TRANSFER,
     paymentDetails: null,
+    amountPaid: 0,
+    paymentStatus: PaymentStatus.UNPAID,
     notes: 'Gracias por su confianza.',
     irpfPercent: 15,
     irpfTotal: 150,
