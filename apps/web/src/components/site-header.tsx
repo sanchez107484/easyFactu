@@ -12,6 +12,7 @@ import { Menu, X, Sparkles } from 'lucide-react';
 const navLinks = [
   { href: '/funcionalidades', label: 'Funcionalidades' },
   { href: '/precios', label: 'Precios' },
+  { href: '/asesoria', label: 'Asesorías', highlight: true },
   { href: '/blog', label: 'Blog' },
   { href: '/contacto', label: 'Contacto' },
 ];
@@ -44,9 +45,13 @@ export default function SiteHeader() {
               key={link.href}
               href={link.href}
               className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                pathname === link.href
-                  ? 'bg-blue-50 text-blue-600'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                link.highlight
+                  ? pathname === link.href
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : 'text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700'
+                  : pathname === link.href
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
               {link.label}
@@ -97,9 +102,13 @@ export default function SiteHeader() {
                 key={link.href}
                 href={link.href}
                 className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  pathname === link.href
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-slate-700 hover:bg-slate-50'
+                  link.highlight
+                    ? pathname === link.href
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'text-indigo-600 hover:bg-indigo-50'
+                    : pathname === link.href
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-slate-700 hover:bg-slate-50'
                 }`}
                 onClick={() => setMobileOpen(false)}
               >

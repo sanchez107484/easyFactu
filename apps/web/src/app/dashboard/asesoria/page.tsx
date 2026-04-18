@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth-store';
 import { useAgencyStats, useAgencyClients, useFiscalAlertsSummary } from '@/hooks/use-agency';
@@ -112,8 +113,13 @@ export default function AgencyHubPage() {
   const { data: alertsSummary, isLoading: alertsSummaryLoading } = useFiscalAlertsSummary();
   const isAgency = currentTenant?.accountType === AccountType.AGENCY;
 
+  useEffect(() => {
+    if (!isAgency) {
+      router.replace('/dashboard');
+    }
+  }, [isAgency, router]);
+
   if (!isAgency) {
-    router.replace('/dashboard');
     return null;
   }
 

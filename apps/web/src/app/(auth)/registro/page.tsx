@@ -35,6 +35,8 @@ import {
   Loader2,
   CheckCircle2,
   Sparkles,
+  Users,
+  ChevronRight,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -363,6 +365,27 @@ export default function RegisterPage() {
                     Cancela cuando quieras
                   </span>
                 </div>
+
+                {/* Agency CTA */}
+                <Link
+                  href="/registro/asesoria"
+                  className="flex items-center justify-between gap-3 rounded-xl border-2 border-indigo-200 bg-gradient-to-r from-indigo-50 to-indigo-100/50 p-4 transition-all hover:border-indigo-400 hover:shadow-md"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-600">
+                      <Users className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-bold text-indigo-900">
+                        ¿Eres asesoría o gestoría?
+                      </p>
+                      <p className="text-xs text-indigo-600">
+                        Panel para gestionar todos tus clientes · Gratis para siempre
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 flex-shrink-0 text-indigo-400" />
+                </Link>
               </form>
             </Form>
 

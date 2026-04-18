@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, CustomerType as PrismaCustomerType } from '@prisma/client';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
@@ -31,6 +31,7 @@ export class CustomerService {
     return this.prisma.customer.create({
       data: {
         ...dto,
+        type: dto.type as unknown as PrismaCustomerType,
         nif,
         tenantId,
       },
@@ -53,7 +54,7 @@ export class CustomerService {
     }
 
     if (type) {
-      where.type = type;
+      where.type = type as unknown as PrismaCustomerType;
     }
 
     if (active !== undefined) {
@@ -134,8 +135,9 @@ export class CustomerService {
       }
     }
 
-    const data = {
+    const data: Prisma.CustomerUpdateInput = {
       ...dto,
+      type: dto.type as unknown as PrismaCustomerType,
       legalName: dto.legalName !== undefined ? dto.legalName.trim() || null : undefined,
     };
 
