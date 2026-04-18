@@ -9,30 +9,52 @@ import { DashboardHeader } from '@/components/dashboard/header';
 import { ActingAsBanner } from '@/components/dashboard/acting-as-banner';
 import { cn } from '@/lib/utils';
 
+/**
+ * Determina si hay tokens en localStorage para decidir si mostrar el spinner
+ * o renderizar optimistamente mientras checkAuth() corre en background.
+ * - Sin tokens → redirigir inmediatamente (no spinner)
+ * - Con tokens + isAuthenticated en Zustand → render inmediato (navegación client-side)
+ * - Con tokens pero sin isAuthenticated → spinner mínimo mientras /auth/me resuelve (hard reload)
+ */
+function hasStoredTokens(): boolean {
+  if (typeof window === 'undefined') return false;
+  return Boolean(localStorage.getItem('refreshToken'));
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { isAuthenticated, checkAuth } = useAuthStore();
   const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
+
+  // Start with true on both server and client to avoid:
+  // 1) Hydration mismatch (same value on both sides)
+  // 2) Race condition where redirect fires before auth check starts
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    // Verificar autenticación al montar
-    const verify = async () => {
-      await checkAuth();
+    // Sesión ya activa en Zustand: navegación client-side, sin necesidad de red.
+    if (isAuthenticated) {
       setIsChecking(false);
-    };
-    verify();
-  }, [checkAuth]);
+      return;
+    }
+
+    // Sin tokens: no tiene sentido llamar a la API, redirigir directamente.
+    if (!hasStoredTokens()) {
+      setIsChecking(false);
+      return;
+    }
+
+    // Hard reload con tokens válidos: validar sesión con el servidor.
+    checkAuth().finally(() => setIsChecking(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- solo en mount
 
   useEffect(() => {
-    // Redirigir si no está autenticado después de verificar
     if (!isChecking && !isAuthenticated) {
       const currentPath = window.location.pathname;
       router.replace('/login?from=' + encodeURIComponent(currentPath));
     }
   }, [isChecking, isAuthenticated, router]);
 
-  // Mostrar loading mientras verifica
   if (isChecking) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -44,7 +66,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  // Si no está autenticado, no mostrar nada (se redirigirá)
   if (!isAuthenticated) {
     return null;
   }

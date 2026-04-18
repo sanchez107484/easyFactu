@@ -40,6 +40,7 @@ import {
   Briefcase,
   Building2,
   Globe,
+  Landmark,
   TrendingUp,
   Receipt,
   Clock,
@@ -72,6 +73,11 @@ const TYPE_CONFIG: Record<
   [CustomerType.COMPANY]: {
     label: 'Empresa',
     icon: <Building2 className="h-3.5 w-3.5" />,
+    variant: 'default',
+  },
+  [CustomerType.PUBLIC_ENTITY]: {
+    label: 'Entidad Pública',
+    icon: <Landmark className="h-3.5 w-3.5" />,
     variant: 'default',
   },
   [CustomerType.INTRACOMMUNITY]: {

@@ -30,6 +30,8 @@ import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { RectifyInvoiceDto } from './dto/rectify-invoice.dto';
 import { QueryInvoiceDto } from './dto/query-invoice.dto';
 import { UpdateInvoiceNotesDto } from './dto/update-invoice-notes.dto';
+import { QueryStatsDto } from './dto/query-stats.dto';
+import { QueryReportsDto } from './dto/query-reports.dto';
 import { IsIn, IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -66,6 +68,20 @@ export class InvoiceController {
   @ApiOkResponse({ description: 'Lista paginada de facturas' })
   findAll(@CurrentTenant() tenantId: string, @Query() query: QueryInvoiceDto) {
     return this.invoiceService.findAll(tenantId, query);
+  }
+
+  @Get('stats')
+  @ApiOperation({ summary: 'KPIs y gráfico mensual de facturación' })
+  @ApiOkResponse({ description: 'Estadísticas del año solicitado' })
+  getStats(@CurrentTenant() tenantId: string, @Query() query: QueryStatsDto) {
+    return this.invoiceService.getStats(tenantId, query.year);
+  }
+
+  @Get('reports')
+  @ApiOperation({ summary: 'Informe de ingresos, clientes top y resumen fiscal' })
+  @ApiOkResponse({ description: 'Datos del informe para el rango de fechas' })
+  getReports(@CurrentTenant() tenantId: string, @Query() query: QueryReportsDto) {
+    return this.invoiceService.getReports(tenantId, query.fromDate, query.toDate);
   }
 
   @Get(':id')
@@ -133,6 +149,30 @@ export class InvoiceController {
   @ApiOkResponse({ description: 'Factura marcada como pagada' })
   markAsPaid(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.invoiceService.markAsPaid(tenantId, id);
+  }
+
+  @Delete(':id/paid')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Desmarcar factura como pagada (vuelve a confirmada)' })
+  @ApiOkResponse({ description: 'Factura vuelve al estado confirmada' })
+  unmarkAsPaid(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    return this.invoiceService.unmarkAsPaid(tenantId, id);
+  }
+
+  @Post(':id/sent')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Marcar factura como enviada al cliente' })
+  @ApiOkResponse({ description: 'Factura marcada como enviada' })
+  markAsSent(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    return this.invoiceService.markAsSent(tenantId, id);
+  }
+
+  @Delete(':id/sent')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Desmarcar factura como enviada (vuelve a confirmada)' })
+  @ApiOkResponse({ description: 'Factura vuelve al estado confirmada' })
+  unmarkAsSent(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    return this.invoiceService.unmarkAsSent(tenantId, id);
   }
 
   @Post(':id/duplicate')

@@ -22,6 +22,9 @@ export interface BrandConfig {
     domain: string;
     supportEmail: string;
     legalEntity: string;
+    nif: string;
+    address: string;
+    city: string;
   };
   logos: {
     main: string;
@@ -48,6 +51,10 @@ export const brandConfig: BrandConfig = {
     domain: 'novafactura.es',
     supportEmail: 'info@novafactura.es',
     legalEntity: 'NovaFactura S.L.',
+    // TODO: Actualizar con datos reales antes de lanzar
+    nif: '[NIF/CIF]',
+    address: '[Dirección fiscal completa]',
+    city: '[Ciudad]',
   },
 
   // ==================== LOGOS ====================
@@ -82,15 +89,20 @@ export const PLAZAS_CONFIG = {
 
 // ============================================================
 // PRICING CONFIG — única fuente de precios
+// Dos planes: Starter (sin VeriFactu) y PRO (con VeriFactu)
 // ============================================================
 export const PRICING = {
-  monthly: 9.9,
-  annualMonthly: 7.9, // precio por mes en plan anual
-  get annualTotal() {
-    return parseFloat((this.annualMonthly * 12).toFixed(2)); // 94.80
+  starter: {
+    monthly: 9.9,
+    annualMonthly: 7.9,
+    annualTotal: 94.8, // 7.9 × 12
+    annualSaving: 24, // (9.9 - 7.9) × 12
   },
-  get annualSaving() {
-    return parseFloat(((this.monthly - this.annualMonthly) * 12).toFixed(2)); // 24.00
+  pro: {
+    monthly: 29.9,
+    annualMonthly: 24.9,
+    annualTotal: 298.8, // 24.9 × 12
+    annualSaving: 60, // (29.9 - 24.9) × 12
   },
   freePeriodMonths: 6,
   freePeriodSlots: 5000,

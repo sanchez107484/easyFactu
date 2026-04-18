@@ -9,6 +9,7 @@ import { ChevronRight } from 'lucide-react';
 import { useInvoice } from '@/hooks/use-invoices';
 import { useCustomer } from '@/hooks/use-customers';
 import { useProduct } from '@/hooks/use-products';
+import { useRecurringInvoice } from '@/hooks/use-recurring-invoices';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -30,6 +31,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   informes: 'Informes',
   onboarding: 'Primeros pasos',
   setup: 'Configuración',
+  recurrentes: 'Recurrentes',
   nueva: 'Nueva',
   nuevo: 'Nuevo',
   editar: 'Editar',
@@ -50,6 +52,11 @@ function ProductBreadcrumbLabel({ id }: { id: string }) {
   return <>{data?.name ?? '…'}</>;
 }
 
+function RecurringInvoiceBreadcrumbLabel({ id }: { id: string }) {
+  const { data } = useRecurringInvoice(id);
+  return <>{data?.customer?.name ?? '…'}</>;
+}
+
 function DynamicSegmentLabel({ id, parentSegment }: { id: string; parentSegment: string | null }) {
   if (parentSegment === 'facturas' || parentSegment === 'presupuestos') {
     return <InvoiceBreadcrumbLabel id={id} />;
@@ -59,6 +66,9 @@ function DynamicSegmentLabel({ id, parentSegment }: { id: string; parentSegment:
   }
   if (parentSegment === 'productos') {
     return <ProductBreadcrumbLabel id={id} />;
+  }
+  if (parentSegment === 'recurrentes') {
+    return <RecurringInvoiceBreadcrumbLabel id={id} />;
   }
   return <>{id}</>;
 }
@@ -75,6 +85,10 @@ function SegmentLabel({
   }
   const label = SEGMENT_LABELS[segment];
   return <>{label ?? segment.charAt(0).toUpperCase() + segment.slice(1)}</>;
+}
+
+function resolveSegmentLabel(segment: string): string {
+  return SEGMENT_LABELS[segment] ?? segment.charAt(0).toUpperCase() + segment.slice(1);
 }
 
 export function DashboardHeader() {

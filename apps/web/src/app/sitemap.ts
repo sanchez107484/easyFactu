@@ -14,17 +14,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: BASE_URL, lastModified, changeFrequency: 'weekly', priority: 1.0 },
     { url: `${BASE_URL}/registro`, lastModified, changeFrequency: 'monthly', priority: 0.9 },
-    { url: `${BASE_URL}/login`, lastModified, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE_URL}/blog`, lastModified, changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${BASE_URL}/funcionalidades`, lastModified, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE_URL}/precios`, lastModified, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE_URL}/contacto`, lastModified, changeFrequency: 'yearly', priority: 0.5 },
-    {
-      url: `${BASE_URL}/recuperar-password`,
-      lastModified,
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
+    { url: `${BASE_URL}/funcionalidades`, lastModified, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE_URL}/contacto`, lastModified, changeFrequency: 'monthly', priority: 0.6 },
+    // Legal pages — low priority but important for E-E-A-T trust signals
+    { url: `${BASE_URL}/aviso-legal`, lastModified, changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${BASE_URL}/politica-privacidad`, lastModified, changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${BASE_URL}/terminos-uso`, lastModified, changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${BASE_URL}/cookies`, lastModified, changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${BASE_URL}/tratamiento-datos`, lastModified, changeFrequency: 'yearly', priority: 0.3 },
   ];
 
   let blogRoutes: MetadataRoute.Sitemap = [];

@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  RefreshCw,
   Briefcase,
   UserCheck,
 } from 'lucide-react';
@@ -37,6 +38,7 @@ const defaultNavItems: NavItem[] = [
   { title: 'Clientes', href: '/dashboard/clientes', icon: Users },
   { title: 'Productos', href: '/dashboard/productos', icon: Package },
   { title: 'Presupuestos', href: '/dashboard/presupuestos', icon: ClipboardList },
+  { title: 'Recurrentes', href: '/dashboard/recurrentes', icon: RefreshCw },
   { title: 'Ajustes', href: '/dashboard/ajustes', icon: Settings },
 ];
 
@@ -47,6 +49,7 @@ const actingAsNavItems: NavItem[] = [
   { title: 'Clientes', href: '/dashboard/clientes', icon: Users },
   { title: 'Productos', href: '/dashboard/productos', icon: Package },
   { title: 'Presupuestos', href: '/dashboard/presupuestos', icon: ClipboardList },
+  { title: 'Recurrentes', href: '/dashboard/recurrentes', icon: RefreshCw },
   { title: 'Ajustes', href: '/dashboard/ajustes', icon: Settings },
 ];
 

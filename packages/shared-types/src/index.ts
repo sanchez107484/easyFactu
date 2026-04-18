@@ -24,6 +24,7 @@ export enum CustomerType {
   INDIVIDUAL = 'INDIVIDUAL',
   COMPANY = 'COMPANY',
   SELF_EMPLOYED = 'SELF_EMPLOYED',
+  PUBLIC_ENTITY = 'PUBLIC_ENTITY',
   INTRACOMMUNITY = 'INTRACOMMUNITY',
 }
 
@@ -46,6 +47,17 @@ export enum InvoiceStatus {
   SENT = 'SENT',
   PAID = 'PAID',
   RECTIFIED = 'RECTIFIED',
+}
+
+export enum PaymentStatus {
+  UNPAID = 'UNPAID',
+  PARTIALLY_PAID = 'PARTIALLY_PAID',
+  PAID = 'PAID',
+}
+
+export enum PaymentType {
+  FULL = 'FULL',
+  PARTIAL = 'PARTIAL',
 }
 
 export enum QuoteAcceptanceStatus {
@@ -324,6 +336,8 @@ export interface QueryCustomersInput {
   type?: CustomerType;
   active?: boolean;
   nif?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 // ==================== PRODUCT ====================
@@ -370,6 +384,8 @@ export interface QueryProductsInput {
   search?: string;
   type?: ProductType;
   isActive?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 // ==================== INVOICE SERIES ====================
@@ -469,7 +485,9 @@ export interface Invoice {
   irpfTotal: number | null;
   total: number;
   paymentMethod: PaymentMethod | null;
-  paymentDetails: Record<string, any> | null;
+  paymentDetails: Record<string, unknown> | null;
+  amountPaid: number;
+  paymentStatus: PaymentStatus;
   notes: string | null;
   pdfUrl: string | null;
   verifactuHash: string | null;
@@ -483,11 +501,36 @@ export interface Invoice {
   rectificationReason: string | null;
   amountPaid: number;
   paymentStatus: PaymentStatus;
+  /** ID of the recurring invoice that generated this invoice (or from which this was converted) */
+  recurringInvoiceId?: string | null;
   createdAt: string;
   updatedAt: string;
   series?: InvoiceSeries;
   customer?: Customer;
   lines?: InvoiceLine[];
+  payments?: Payment[];
+}
+
+// ==================== PAYMENT ====================
+
+export interface Payment {
+  id: string;
+  tenantId: string;
+  invoiceId: string;
+  amount: number;
+  paymentDate: string;
+  paymentMethod: PaymentMethod | null;
+  reference: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface CreatePaymentInput {
+  amount: number;
+  paymentDate: string;
+  paymentMethod?: PaymentMethod;
+  reference?: string;
+  notes?: string;
 }
 
 export interface CreateInvoiceLineInput {
@@ -498,6 +541,8 @@ export interface CreateInvoiceLineInput {
   taxRate: number;
   /** Whether to hide the quantity in the invoice preview/PDF */
   hideQty?: boolean;
+  /** Per-line IRPF withholding rate (%) */
+  irpfRate?: number;
 }
 
 export interface CreateInvoiceInput {
@@ -556,10 +601,12 @@ export interface QueryInvoicesInput {
   limit?: number;
   search?: string;
   status?: InvoiceStatus;
+  paymentStatus?: PaymentStatus;
   customerId?: string;
   fromDate?: string;
   toDate?: string;
-  sortBy?: 'number' | 'issueDate' | 'total' | 'createdAt';
+  quoteAcceptanceStatus?: QuoteAcceptanceStatus;
+  sortBy?: 'number' | 'issueDate' | 'dueDate' | 'total' | 'createdAt' | 'customer' | 'validUntil';
   sortOrder?: 'asc' | 'desc';
 }
 
@@ -719,6 +766,125 @@ export interface CreateInvoiceTemplateInput {
   isDefault?: boolean;
 }
 
+// ==================== RECURRING INVOICES ====================
+
+export enum Frequency {
+  MONTHLY = 'MONTHLY',
+  QUARTERLY = 'QUARTERLY',
+  SEMIANNUAL = 'SEMIANNUAL',
+  ANNUAL = 'ANNUAL',
+}
+
+export enum RecurringStatus {
+  ACTIVE = 'ACTIVE',
+  PAUSED = 'PAUSED',
+  COMPLETED = 'COMPLETED',
+}
+
+export interface RecurringInvoiceLine {
+  id: string;
+  tenantId: string;
+  recurringInvoiceId: string;
+  productId: string | null;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  taxRate: number;
+  irpfRate: number | null;
+  hideQty: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecurringInvoice {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  seriesId: string | null;
+  frequency: Frequency;
+  dayOfMonth: number;
+  startDate: string;
+  endDate: string | null;
+  nextRunDate: string;
+  autoConfirm: boolean;
+  status: RecurringStatus;
+  discountPercent: number | null;
+  irpfPercent: number | null;
+  paymentMethod: PaymentMethod | null;
+  paymentDetails: Record<string, unknown> | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  customer?: Customer;
+  series?: InvoiceSeries;
+  lines?: RecurringInvoiceLine[];
+  /** Computed by the list endpoint — total per generation including tax minus IRPF. */
+  estimatedTotal?: number;
+}
+
+export interface CreateRecurringInvoiceLineInput {
+  productId?: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  taxRate: number;
+  irpfRate?: number;
+  hideQty?: boolean;
+}
+
+export interface CreateRecurringInvoiceInput {
+  customerId: string;
+  seriesId?: string;
+  frequency: Frequency;
+  dayOfMonth?: number;
+  startDate: string;
+  endDate?: string;
+  autoConfirm?: boolean;
+  discountPercent?: number;
+  irpfPercent?: number;
+  paymentMethod?: PaymentMethod;
+  paymentDetails?: Record<string, unknown>;
+  notes?: string;
+  lines: CreateRecurringInvoiceLineInput[];
+  /** When provided, links this original invoice to the new recurring invoice */
+  sourceInvoiceId?: string;
+}
+
+export interface UpdateRecurringInvoiceInput {
+  frequency?: Frequency;
+  dayOfMonth?: number;
+  endDate?: string | null;
+  autoConfirm?: boolean;
+  discountPercent?: number | null;
+  irpfPercent?: number | null;
+  paymentMethod?: PaymentMethod | null;
+  paymentDetails?: Record<string, unknown> | null;
+  notes?: string | null;
+  lines?: CreateRecurringInvoiceLineInput[];
+}
+
+export interface QueryRecurringInvoicesInput {
+  page?: number;
+  limit?: number;
+  status?: RecurringStatus;
+  customerId?: string;
+  search?: string;
+}
+
+export interface RecurringGeneratedInvoice {
+  id: string;
+  number: string | null;
+  issueDate: string;
+  status: InvoiceStatus;
+  total: number;
+}
+
+export interface RecurringGenerateResult {
+  invoiceId: string;
+  invoiceNumber: string | null;
+}
+
 export interface UpdateInvoiceTemplateInput {
   name?: string;
   isDefault?: boolean;
@@ -759,6 +925,47 @@ export interface QuarterlyReport {
   totalTax: number;
   totalIrpf: number;
   invoicesCount: number;
+}
+
+// ==================== INVOICE STATS & REPORTS (API endpoints) ====================
+
+export interface InvoiceStats {
+  billedThisMonth: number;
+  billedLastMonth: number;
+  pendingCollection: number;
+  invoicesThisMonth: number;
+  monthlyChart: Array<{ month: string; importe: number }>;
+  totalCustomers: number;
+  totalProducts: number;
+}
+
+export interface InvoiceReportMonthly {
+  month: string;
+  revenue: number;
+  invoices: number;
+}
+
+export interface InvoiceReportCustomer {
+  id: string;
+  name: string;
+  invoices: number;
+  total: number;
+}
+
+export interface InvoiceReportData {
+  monthlyRevenue: InvoiceReportMonthly[];
+  topCustomers: InvoiceReportCustomer[];
+  taxSummary: {
+    totalSubtotal: number;
+    totalIva: number;
+    totalIrpf: number;
+    invoicesCount: number;
+  };
+}
+
+export interface QueryReportsInput {
+  fromDate: string;
+  toDate: string;
 }
 
 // ==================== AGENCY ====================

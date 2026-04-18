@@ -1,6 +1,7 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,7 +37,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useProducts, useDeleteProduct } from '@/hooks/use-products';
-import { useSortTable, sortData } from '@/hooks/use-sort-table';
+import { useSortTable } from '@/hooks/use-sort-table';
 import { SortableHeader } from '@/components/common/sortable-header';
 import { EmptyState } from '@/components/common/empty-state';
 import { Product, ProductType } from '@easyfactura/shared-types';
@@ -74,25 +75,6 @@ const TYPE_CONFIG: Record<
 
 function formatCurrency(amount: number) {
   return amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
-}
-
-function getProductSortValue(product: Product, key: string): string | number {
-  switch (key) {
-    case 'name':
-      return product.name;
-    case 'reference':
-      return product.reference ?? '';
-    case 'type':
-      return product.type;
-    case 'unitPrice':
-      return product.unitPrice;
-    case 'taxRate':
-      return product.taxRate;
-    case 'pvp':
-      return product.unitPrice * (1 + product.taxRate / 100);
-    default:
-      return '';
-  }
 }
 
 // ==================== SUB-COMPONENTS ====================
@@ -140,16 +122,24 @@ function TableSkeleton() {
 // ==================== PAGE ====================
 
 export default function ProductosPage() {
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const search = useDebounce(searchInput, 300);
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
+  const [page, setPage] = useState(1);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteName, setDeleteName] = useState<string>('');
 
   const { sortKey, sortDir, handleSort } = useSortTable('name', 'asc');
 
+  useEffect(() => { setPage(1); }, [search, typeFilter, sortKey, sortDir]);
+
   const { data, isLoading, error, refetch } = useProducts({
     search: search || undefined,
     type: typeFilter !== 'ALL' ? (typeFilter as ProductType) : undefined,
+    sortBy: sortKey,
+    sortOrder: sortDir,
+    page,
+    limit: 20,
   });
 
   const deleteMutation = useDeleteProduct();
@@ -166,11 +156,10 @@ export default function ProductosPage() {
     setDeleteName('');
   };
 
-  const rawProducts = data?.data ?? [];
-  const products = sortData(rawProducts, sortKey, sortDir, getProductSortValue);
-  const total = data?.meta?.total ?? rawProducts.length;
+  const products = data?.data ?? [];
+  const total = data?.meta?.total ?? 0;
 
-  if (!isLoading && !error && rawProducts.length === 0 && !search && typeFilter === 'ALL') {
+  if (!isLoading && !error && total === 0 && !search && typeFilter === 'ALL') {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -220,13 +209,13 @@ export default function ProductosPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Buscar por nombre o referencia..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="pl-10 pr-10"
           />
           {search && (
             <button
-              onClick={() => setSearch('')}
+              onClick={() => setSearchInput('')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="h-4 w-4" />
@@ -291,7 +280,7 @@ export default function ProductosPage() {
                   size="sm"
                   className="mt-4"
                   onClick={() => {
-                    setSearch('');
+                    setSearchInput('');
                     setTypeFilter('ALL');
                   }}
                 >
@@ -344,15 +333,9 @@ export default function ProductosPage() {
                         align="right"
                         className="hidden lg:table-cell"
                       />
-                      <SortableHeader
-                        label="PVP"
-                        sortKey="pvp"
-                        currentKey={sortKey}
-                        direction={sortDir}
-                        onSort={handleSort}
-                        align="right"
-                        className="hidden lg:table-cell"
-                      />
+                      <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground hidden lg:table-cell">
+                        PVP
+                      </th>
                       <th className="px-4 py-3" />
                     </tr>
                   </thead>
@@ -441,6 +424,23 @@ export default function ProductosPage() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Pagination */}
+      {!error && !isLoading && data && data.meta.totalPages > 1 && (
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>
+            Página {page} de {data.meta.totalPages} &middot; {total} elemento{total !== 1 ? 's' : ''} en total
+          </span>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => p - 1)} disabled={page === 1}>
+              Anterior
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page >= data.meta.totalPages}>
+              Siguiente
+            </Button>
+          </div>
+        </div>
       )}
 
       <AlertDialog open={Boolean(deleteId)} onOpenChange={(open) => !open && setDeleteId(null)}>

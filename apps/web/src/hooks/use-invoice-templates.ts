@@ -2,9 +2,9 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { AxiosError } from 'axios';
 import { invoiceTemplateApi } from '@/lib/api/invoice-template-api';
 import { CreateInvoiceTemplateInput, UpdateInvoiceTemplateInput } from '@easyfactura/shared-types';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 // ==================== QUERY KEYS ====================
 
@@ -16,23 +16,13 @@ export const templateKeys = {
   default: () => [...templateKeys.all, 'default'] as const,
 };
 
-// ==================== HELPERS ====================
-
-function getApiErrorMessage(error: unknown): string {
-  if (error instanceof AxiosError) {
-    const message = error.response?.data?.message;
-    if (typeof message === 'string') return message;
-    if (Array.isArray(message)) return message[0];
-  }
-  return 'Ha ocurrido un error inesperado. Inténtalo de nuevo.';
-}
-
 // ==================== QUERIES ====================
 
 export function useInvoiceTemplates() {
   return useQuery({
     queryKey: templateKeys.lists(),
     queryFn: () => invoiceTemplateApi.getAll(),
+    staleTime: 5 * 60_000,
   });
 }
 

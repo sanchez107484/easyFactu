@@ -1,15 +1,18 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { toast } from 'sonner';
-import { invoiceApi, RectifyInvoiceInput } from '@/lib/api/invoice-api';
+import { invoiceApi, paymentApi, RectifyInvoiceInput } from '@/lib/api/invoice-api';
 import {
-  Invoice,
   QueryInvoicesInput,
   CreateInvoiceInput,
   UpdateInvoiceInput,
+  CreatePaymentInput,
+  InvoiceStats,
+  InvoiceReportData,
 } from '@easyfactura/shared-types';
-import { AxiosError } from 'axios';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 // ==================== QUERY KEYS ====================
 
@@ -21,68 +24,59 @@ export const invoiceKeys = {
   detail: (id: string) => [...invoiceKeys.details(), id] as const,
 };
 
-// ==================== HELPERS ====================
-
-function getApiErrorMessage(error: unknown): string {
-  if (error instanceof AxiosError) {
-    const message = error.response?.data?.message;
-    if (typeof message === 'string') return message;
-    if (Array.isArray(message)) return message[0];
-  }
-  return 'Ha ocurrido un error inesperado. Inténtalo de nuevo.';
-}
-
 // ==================== QUERIES ====================
 
 export function useInvoices(filters: QueryInvoicesInput = {}) {
   return useQuery({
     queryKey: invoiceKeys.list(filters),
     queryFn: () => invoiceApi.getAll(filters),
+    staleTime: 30_000, // 30s — evita re-fetches en navegación rápida
   });
 }
 
-/**
- * Obtiene TODAS las facturas del tenant paginando automáticamente (máx 100 por página).
- * Útil para calcular KPIs en el dashboard donde se necesitan todos los registros.
- */
-async function fetchAllInvoices(
-  filters: Omit<QueryInvoicesInput, 'page' | 'limit'>,
-): Promise<Invoice[]> {
-  const PAGE_SIZE = 100;
-  const first = await invoiceApi.getAll({ ...filters, page: 1, limit: PAGE_SIZE });
-  const allInvoices: Invoice[] = [...first.data];
-  const totalPages = first.meta.totalPages;
-
-  if (totalPages > 1) {
-    const remaining = await Promise.all(
-      Array.from({ length: totalPages - 1 }, (_, i) =>
-        invoiceApi.getAll({ ...filters, page: i + 2, limit: PAGE_SIZE }),
-      ),
-    );
-    for (const page of remaining) {
-      allInvoices.push(...page.data);
-    }
-  }
-
-  return allInvoices;
-}
-
-export function useAllInvoices(filters: Omit<QueryInvoicesInput, 'page' | 'limit'> = {}) {
-  return useQuery({
-    queryKey: ['invoices', 'all', filters],
-    queryFn: () => fetchAllInvoices(filters),
-    staleTime: 30_000, // 30s — datos del dashboard no necesitan refresh inmediato
+export function useInvoiceStats(year?: number) {
+  return useQuery<InvoiceStats>({
+    queryKey: ['invoices', 'stats', year ?? 'current'],
+    queryFn: () => invoiceApi.getStats(year),
+    staleTime: 60_000, // 1 min — KPIs no cambian segundo a segundo
   });
 }
 
-// ESTA ES LA VERSIÓN CORREGIDA Y UNIFICADA
+export function useInvoiceReports(fromDate: string, toDate: string) {
+  return useQuery<InvoiceReportData>({
+    queryKey: ['invoices', 'reports', fromDate, toDate],
+    queryFn: () => invoiceApi.getReports(fromDate, toDate),
+    enabled: Boolean(fromDate) && Boolean(toDate),
+    staleTime: 60_000,
+  });
+}
+
 export function useInvoice(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: invoiceKeys.detail(id),
     queryFn: () => invoiceApi.getById(id),
-    // Si pasamos enabled en las opciones, lo usamos. Si no, verificamos que haya ID.
     enabled: options?.enabled ?? Boolean(id),
+    staleTime: 30_000, // 30s — el detalle no cambia si el usuario vuelve rápido
   });
+}
+
+/**
+ * Returns a callback to prefetch an invoice detail on hover.
+ * Data is prefetched into TanStack Query cache so navigation to the detail page is instant.
+ */
+export function usePrefetchInvoice() {
+  const queryClient = useQueryClient();
+
+  return useCallback(
+    (id: string) => {
+      queryClient.prefetchQuery({
+        queryKey: invoiceKeys.detail(id),
+        queryFn: () => invoiceApi.getById(id),
+        staleTime: 30_000,
+      });
+    },
+    [queryClient],
+  );
 }
 
 // ==================== MUTATIONS ====================
@@ -144,6 +138,54 @@ export function useMarkInvoiceAsPaid() {
       queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
       queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
       toast.success('Factura marcada como pagada');
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useUnmarkInvoiceAsPaid() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => invoiceApi.unmarkAsPaid(id),
+    onSuccess: (invoice) => {
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
+      queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      toast.success('Factura desmarcada como pagada');
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useMarkInvoiceAsSent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => invoiceApi.markAsSent(id),
+    onSuccess: (invoice) => {
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
+      queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      toast.success('Factura marcada como enviada');
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useUnmarkInvoiceAsSent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => invoiceApi.unmarkAsSent(id),
+    onSuccess: (invoice) => {
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
+      queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      toast.success('Factura desmarcada como enviada');
     },
     onError: (error: unknown) => {
       toast.error(getApiErrorMessage(error));
@@ -298,6 +340,57 @@ export function useUpdateInvoiceNotes() {
     onSuccess: (invoice) => {
       queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
       toast.success('Nota actualizada correctamente');
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+// ==================== PAYMENT HOOKS ====================
+
+export const paymentKeys = {
+  all: (invoiceId: string) => ['invoices', invoiceId, 'payments'] as const,
+};
+
+export function useInvoicePayments(invoiceId: string) {
+  return useQuery({
+    queryKey: paymentKeys.all(invoiceId),
+    queryFn: () => paymentApi.getAll(invoiceId),
+    enabled: Boolean(invoiceId),
+    staleTime: 30_000,
+  });
+}
+
+export function useCreatePayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ invoiceId, data }: { invoiceId: string; data: CreatePaymentInput }) =>
+      paymentApi.create(invoiceId, data),
+    onSuccess: ({ invoice }) => {
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
+      queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      queryClient.invalidateQueries({ queryKey: paymentKeys.all(invoice.id) });
+      toast.success('Cobro registrado correctamente');
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useDeletePayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ invoiceId, paymentId }: { invoiceId: string; paymentId: string }) =>
+      paymentApi.remove(invoiceId, paymentId),
+    onSuccess: (invoice) => {
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
+      queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      queryClient.invalidateQueries({ queryKey: paymentKeys.all(invoice.id) });
+      toast.success('Cobro eliminado correctamente');
     },
     onError: (error: unknown) => {
       toast.error(getApiErrorMessage(error));

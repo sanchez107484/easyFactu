@@ -29,13 +29,20 @@ export class PdfStorageService {
 
   /**
    * Uploads a PDF buffer to Supabase Storage and returns the stored path.
-   * Path format: {tenantId}/{invoiceId}.pdf
+   * Path format: {tenantId}/{invoiceId}-{hash}.pdf (or {tenantId}/{invoiceId}.pdf if no hash)
    * Returns null if storage is not configured.
    */
-  async upload(tenantId: string, invoiceId: string, buffer: Buffer): Promise<string> {
+  async upload(
+    tenantId: string,
+    invoiceId: string,
+    buffer: Buffer,
+    contentHash?: string
+  ): Promise<string> {
     if (!this.enabled || !this.supabase) throw new Error('PDF storage not configured');
 
-    const path = this.buildPath(tenantId, invoiceId);
+    const path = contentHash
+      ? this.buildHashedPath(tenantId, invoiceId, contentHash)
+      : this.buildPath(tenantId, invoiceId);
 
     const { error } = await this.supabase.storage.from(BUCKET).upload(path, buffer, {
       contentType: 'application/pdf',
@@ -90,5 +97,9 @@ export class PdfStorageService {
 
   buildPath(tenantId: string, invoiceId: string): string {
     return `${tenantId}/${invoiceId}.pdf`;
+  }
+
+  buildHashedPath(tenantId: string, invoiceId: string, contentHash: string): string {
+    return `${tenantId}/${invoiceId}-${contentHash}.pdf`;
   }
 }

@@ -60,7 +60,9 @@ import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import { useInvoiceTemplate, useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useAuthStore } from '@/store/auth-store';
 import { useTenant } from '@/hooks/use-tenant';
-import { cn, resolveUrl, formatCurrency } from '@/lib/utils';
+import { cn, resolveUrl, formatCurrency, parseNum, formatDateShort } from '@/lib/utils';
+import { SectionLabel } from '@/components/common/section-label';
+import { DataRow } from '@/components/common/data-row';
 
 // ==================== CONSTANTS ====================
 
@@ -107,20 +109,6 @@ const QUOTE_ACCEPTANCE_CONFIG: Record<
 
 // ==================== HELPERS ====================
 
-function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-function parseNum(v: string | number | null | undefined): number {
-  if (v == null) return 0;
-  return typeof v === 'string' ? parseFloat(v) : v;
-}
-
 function isQuoteExpired(
   validUntil: string | null | undefined,
   status: QuoteAcceptanceStatus | null | undefined,
@@ -133,42 +121,6 @@ function isQuoteExpired(
   )
     return false;
   return new Date(validUntil) < new Date(new Date().toDateString());
-}
-
-// ==================== SUBCOMPONENTS ====================
-
-function SectionLabel({
-  icon: Icon,
-  children,
-}: {
-  icon?: React.ElementType;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center gap-1.5 mb-3">
-      {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" />}
-      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-        {children}
-      </p>
-    </div>
-  );
-}
-
-function DataRow({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string;
-  value: React.ReactNode;
-  mono?: boolean;
-}) {
-  return (
-    <div className="flex justify-between items-baseline gap-4 py-1">
-      <span className="text-sm text-muted-foreground shrink-0">{label}</span>
-      <span className={cn('text-sm text-right', mono && 'font-mono')}>{value}</span>
-    </div>
-  );
 }
 
 // ==================== LOADING SKELETON ====================
@@ -506,7 +458,7 @@ export default function PresupuestoDetailPage() {
                 )}
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Calendar className="h-3 w-3" />
-                  <span>Emitido {formatDate(quote.issueDate)}</span>
+                  <span>Emitido {formatDateShort(quote.issueDate)}</span>
                 </div>
                 {quoteData.validUntil && (
                   <div
@@ -516,7 +468,7 @@ export default function PresupuestoDetailPage() {
                     )}
                   >
                     <CalendarClock className="h-3 w-3" />
-                    <span>Válido hasta {formatDate(quoteData.validUntil)}</span>
+                    <span>Válido hasta {formatDateShort(quoteData.validUntil)}</span>
                   </div>
                 )}
                 {series && (

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,23 +45,8 @@ import {
 } from 'lucide-react';
 import { CustomerType, Customer } from '@easyfactura/shared-types';
 import { useCustomers, useDeleteCustomer } from '@/hooks/use-customers';
-import { useSortTable, sortData } from '@/hooks/use-sort-table';
+import { useSortTable } from '@/hooks/use-sort-table';
 import { SortableHeader } from '@/components/common/sortable-header';
-
-function getCustomerSortValue(customer: Customer, key: string): string | number {
-  switch (key) {
-    case 'name':
-      return customer.name;
-    case 'nif':
-      return customer.nif;
-    case 'city':
-      return customer.city ?? '';
-    case 'type':
-      return customer.type;
-    default:
-      return '';
-  }
-}
 
 // ==================== CONSTANTS ====================
 
@@ -68,6 +54,7 @@ const TYPE_LABELS: Record<CustomerType, string> = {
   [CustomerType.INDIVIDUAL]: 'Particular',
   [CustomerType.SELF_EMPLOYED]: 'Autonomo',
   [CustomerType.COMPANY]: 'Empresa',
+  [CustomerType.PUBLIC_ENTITY]: 'Entidad Pública',
   [CustomerType.INTRACOMMUNITY]: 'Intracomunitario',
 };
 
@@ -75,6 +62,7 @@ const TYPE_BADGE_VARIANT: Record<CustomerType, 'default' | 'secondary' | 'outlin
   [CustomerType.INDIVIDUAL]: 'outline',
   [CustomerType.SELF_EMPLOYED]: 'secondary',
   [CustomerType.COMPANY]: 'default',
+  [CustomerType.PUBLIC_ENTITY]: 'default',
   [CustomerType.INTRACOMMUNITY]: 'outline',
 };
 
@@ -180,41 +168,34 @@ function DeleteDialog({ customer, onCancel, onConfirm, isPending }: DeleteDialog
 // ==================== PAGE ====================
 
 export default function ClientesPage() {
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const search = useDebounce(searchInput, 300);
   const [typeFilter, setTypeFilter] = useState<CustomerType | 'ALL'>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ACTIVE');
+  const [page, setPage] = useState(1);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const { sortKey, sortDir, handleSort } = useSortTable('name', 'asc');
 
-  // Query params para el hook
-  const queryParams: Record<string, any> = {};
-  if (statusFilter === 'ACTIVE') queryParams.active = true;
-  if (statusFilter === 'INACTIVE') queryParams.active = false;
+  useEffect(() => {
+    setPage(1);
+  }, [search, typeFilter, statusFilter, sortKey, sortDir]);
 
-  const { data, isLoading, error } = useCustomers(queryParams);
+  const { data, isLoading, error } = useCustomers({
+    search: search || undefined,
+    type: typeFilter !== 'ALL' ? typeFilter : undefined,
+    active: statusFilter === 'ACTIVE' ? true : statusFilter === 'INACTIVE' ? false : undefined,
+    sortBy: sortKey,
+    sortOrder: sortDir,
+    page,
+    limit: 20,
+  });
   const deleteMutation = useDeleteCustomer();
 
-  const allCustomers = data?.data ?? [];
+  const customers = data?.data ?? [];
+  const total = data?.meta?.total ?? 0;
 
-  const filteredCustomers = useMemo(() => {
-    let result = allCustomers;
-    if (typeFilter !== 'ALL') {
-      result = result.filter((c) => c.type === typeFilter);
-    }
-    if (search.trim()) {
-      const term = search.toLowerCase();
-      result = result.filter(
-        (c) =>
-          c.name.toLowerCase().includes(term) ||
-          c.nif.toLowerCase().includes(term) ||
-          c.email?.toLowerCase().includes(term) ||
-          c.city?.toLowerCase().includes(term),
-      );
-    }
-    return sortData(result, sortKey, sortDir, getCustomerSortValue);
-  }, [allCustomers, search, typeFilter, sortKey, sortDir]);
-
-  const isFiltered = search.trim().length > 0 || typeFilter !== 'ALL' || statusFilter !== 'ACTIVE';
+  const isFiltered =
+    searchInput.trim().length > 0 || typeFilter !== 'ALL' || statusFilter !== 'ACTIVE';
 
   const handleDeleteConfirm = async () => {
     if (!customerToDelete) return;
@@ -223,7 +204,7 @@ export default function ClientesPage() {
   };
 
   const clearFilters = () => {
-    setSearch('');
+    setSearchInput('');
     setTypeFilter('ALL');
   };
 
@@ -261,7 +242,7 @@ export default function ClientesPage() {
               {isLoading ? (
                 <Skeleton className="h-4 w-32" />
               ) : (
-                `${allCustomers.length} cliente${allCustomers.length !== 1 ? 's' : ''} en total`
+                `${total} cliente${total !== 1 ? 's' : ''} en total`
               )}
             </div>
           </div>
@@ -281,8 +262,8 @@ export default function ClientesPage() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 <Input
                   placeholder="Buscar por nombre, NIF, email o ciudad..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="pl-9"
                 />
               </div>
@@ -333,7 +314,7 @@ export default function ClientesPage() {
 
             {isFiltered && !isLoading && (
               <p className="text-xs text-muted-foreground mt-2">
-                Mostrando {filteredCustomers.length} de {allCustomers.length} clientes
+                {total} cliente{total !== 1 ? 's' : ''} encontrado{total !== 1 ? 's' : ''}
               </p>
             )}
           </CardContent>
@@ -342,7 +323,7 @@ export default function ClientesPage() {
         {/* Content */}
         {isLoading ? (
           <TableSkeleton />
-        ) : filteredCustomers.length === 0 ? (
+        ) : customers.length === 0 ? (
           <EmptyState filtered={isFiltered} />
         ) : (
           <Card>
@@ -388,7 +369,7 @@ export default function ClientesPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {filteredCustomers.map((customer) => (
+                    {customers.map((customer) => (
                       <tr key={customer.id} className="hover:bg-muted/30 transition-colors">
                         <td className="p-4">
                           <Link
@@ -465,6 +446,34 @@ export default function ClientesPage() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Pagination */}
+        {!error && !isLoading && data && data.meta.totalPages > 1 && (
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>
+              Página {page} de {data.meta.totalPages} &middot; {total} cliente
+              {total !== 1 ? 's' : ''} en total
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => p - 1)}
+                disabled={page === 1}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page >= data.meta.totalPages}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </>

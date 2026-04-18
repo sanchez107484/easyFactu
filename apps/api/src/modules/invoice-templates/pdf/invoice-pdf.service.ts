@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { createHash } from 'crypto';
 import {
   DEFAULT_INVOICE_LAYOUT,
   Invoice,
@@ -55,10 +56,14 @@ export class InvoicePdfService {
     // Cache hit: only confirmed invoices are cached (drafts change frequently)
     const isCacheable =
       invoice.status === 'CONFIRMED' || invoice.status === 'PAID' || invoice.status === 'SENT';
-    if (isCacheable && invoice.pdfUrl) {
+
+    const contentHash = this.computeContentHash(invoice, tenant);
+    const expectedPath = this.pdfStorage.buildHashedPath(tenantId, invoiceId, contentHash);
+
+    if (isCacheable && invoice.pdfUrl === expectedPath) {
       const cached = await this.pdfStorage.download(invoice.pdfUrl);
       if (cached) {
-        this.logger.debug(`PDF cache hit for invoice ${invoiceId}`);
+        this.logger.debug(`PDF cache hit for invoice ${invoiceId} (hash=${contentHash})`);
         return { buffer: cached, filename };
       }
     }
@@ -81,14 +86,20 @@ export class InvoicePdfService {
 
     // Store in cache for confirmed/paid/sent invoices (fire and forget)
     if (isCacheable && this.pdfStorage.isEnabled) {
+      // Delete stale cached version if path changed (e.g. tenant data updated)
+      const staleUrl = invoice.pdfUrl && invoice.pdfUrl !== expectedPath ? invoice.pdfUrl : null;
+
       this.pdfStorage
-        .upload(tenantId, invoiceId, buffer)
-        .then((storagePath) =>
-          this.prisma.invoice.update({
+        .upload(tenantId, invoiceId, buffer, contentHash)
+        .then(async (storagePath) => {
+          if (staleUrl) {
+            await this.pdfStorage.delete(staleUrl).catch(() => {});
+          }
+          await this.prisma.invoice.update({
             where: { id: invoiceId },
             data: { pdfUrl: storagePath },
-          })
-        )
+          });
+        })
         .catch((err: unknown) => {
           const msg = err instanceof Error ? err.message : String(err);
           this.logger.error(`Failed to cache PDF for invoice ${invoiceId}: ${msg}`);
@@ -96,6 +107,28 @@ export class InvoicePdfService {
     }
 
     return { buffer, filename };
+  }
+
+  /**
+   * Computes a short SHA-256 hash from the inputs that affect PDF content.
+   * When any of these change, the hash changes and the cache auto-invalidates.
+   */
+  private computeContentHash(
+    invoice: {
+      updatedAt: Date | string;
+      template?: { updatedAt: Date | string } | null;
+      layoutOverride?: unknown;
+    },
+    tenant: { updatedAt: Date | string; logoUrl?: string | null }
+  ): string {
+    const parts = [
+      String(invoice.updatedAt),
+      String(tenant.updatedAt),
+      tenant.logoUrl ?? '',
+      invoice.template ? String(invoice.template.updatedAt) : 'default',
+      invoice.layoutOverride ? JSON.stringify(invoice.layoutOverride) : '',
+    ];
+    return createHash('sha256').update(parts.join('|')).digest('hex').slice(0, 12);
   }
 
   private buildFilename(invoice: {

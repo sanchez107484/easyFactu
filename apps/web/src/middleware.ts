@@ -4,14 +4,22 @@ import type { NextRequest } from 'next/server';
 // Rutas públicas que no requieren autenticación
 const publicRoutes = [
   '/',
+  // Auth
   '/login',
   '/registro',
   '/verificar-email',
   '/recuperar-password',
   '/nueva-password',
-  '/privacidad',
-  '/terminos',
+  // Marketing
+  '/precios',
+  '/funcionalidades',
+  '/contacto',
+  // Legal
   '/aviso-legal',
+  '/politica-privacidad',
+  '/terminos-uso',
+  '/cookies',
+  '/tratamiento-datos',
 ];
 
 // Rutas protegidas que requieren autenticación

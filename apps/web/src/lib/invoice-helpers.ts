@@ -123,6 +123,8 @@ export function buildPreviewInvoice(
     irpfPercent: data.irpfPercent ?? null,
     irpfTotal,
     total,
+    amountPaid: 0,
+    paymentStatus: 'UNPAID',
     paymentMethod: data.paymentMethod ?? null,
     paymentDetails: data.paymentDetails ?? null,
     notes: data.notes ?? null,

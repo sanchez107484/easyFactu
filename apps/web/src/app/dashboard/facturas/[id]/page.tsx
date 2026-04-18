@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
@@ -30,7 +29,6 @@ import {
   MoreVertical,
   Trash2,
   CheckCircle2,
-  CreditCard,
   Copy,
   RotateCcw,
   AlertCircle,
@@ -44,16 +42,20 @@ import {
   ArrowRightLeft,
   Save,
   X,
+  RefreshCw,
+  Send,
+  Undo2,
 } from 'lucide-react';
 import { DownloadInvoiceButton } from '@/components/ui/download-invoice-button';
-import { Label } from '@/components/ui/label';
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
 import type { PaymentDetails } from '@/components/facturas/LiveInvoicePreview';
 import { getPaymentDetailFields } from '@/lib/payment-method-details';
 import {
   useInvoice,
   useConfirmInvoice,
-  useMarkInvoiceAsPaid,
+  useUnmarkInvoiceAsPaid,
+  useMarkInvoiceAsSent,
+  useUnmarkInvoiceAsSent,
   useDeleteInvoice,
   useRectifyInvoice,
   useConvertProformaToOfficial,
@@ -62,92 +64,27 @@ import {
 } from '@/hooks/use-invoices';
 import { ConvertProformaModal } from '@/components/facturas/ConvertProformaModal';
 import { ConvertDraftToProformaModal } from '@/components/facturas/ConvertDraftToProformaModal';
+import { InvoicePaymentSection } from '@/components/facturas/InvoicePaymentSection';
+import { RegisterPaymentDialog } from '@/components/facturas/RegisterPaymentDialog';
+import { InvoiceDetailSkeleton } from '@/components/facturas/InvoiceDetailSkeleton';
+import { SectionLabel } from '@/components/common/section-label';
+import { DataRow } from '@/components/common/data-row';
+import {
+  ConvertToRecurringModal,
+  type RecurringSettings,
+} from '@/components/facturas/ConvertToRecurringModal';
+import { useCreateRecurringInvoice } from '@/hooks/use-recurring-invoices';
 import { InvoiceStatus, PaymentMethod, Tenant } from '@easyfactura/shared-types';
 import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge';
 import { useInvoiceTemplate, useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useAuthStore } from '@/store/auth-store';
 import { useTenant } from '@/hooks/use-tenant';
-import { cn, resolveUrl, formatCurrency } from '@/lib/utils';
+import { cn, resolveUrl, formatCurrency, formatDateShort, parseNum } from '@/lib/utils';
 
 // ==================== CONSTANTS ====================
 
-// ==================== HELPERS ====================
-
-function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-function parseNum(v: string | number | null | undefined): number {
-  if (v == null) return 0;
-  return typeof v === 'string' ? parseFloat(v) : v;
-}
-
-// ==================== SUBCOMPONENTS ====================
-
-function SectionLabel({ icon: Icon, children }: { icon?: any; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-1.5 mb-3">
-      {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" />}
-      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-        {children}
-      </p>
-    </div>
-  );
-}
-
-function DataRow({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string;
-  value: React.ReactNode;
-  mono?: boolean;
-}) {
-  return (
-    <div className="flex justify-between items-baseline gap-4 py-1">
-      <span className="text-sm text-muted-foreground shrink-0">{label}</span>
-      <span className={cn('text-sm text-right', mono && 'font-mono')}>{value}</span>
-    </div>
-  );
-}
-
-// ==================== LOADING SKELETON ====================
-
-function InvoiceDetailSkeleton() {
-  return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
-      <div className="flex items-center justify-between px-6 py-3 border-b shrink-0">
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-8 w-8 rounded-md" />
-          <Skeleton className="h-5 w-32" />
-        </div>
-        <Skeleton className="h-8 w-8 rounded-md" />
-      </div>
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-[60%] p-6 space-y-4 border-r">
-          <Skeleton className="h-32 w-full rounded-xl" />
-          <div className="grid grid-cols-2 gap-4">
-            <Skeleton className="h-28 rounded-xl" />
-            <Skeleton className="h-28 rounded-xl" />
-          </div>
-          <Skeleton className="h-48 w-full rounded-xl" />
-        </div>
-        <div className="w-[40%] p-4">
-          <Skeleton className="h-full w-full rounded-xl" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ==================== PAGE ====================
+// ==================== PAGE ======================================
 
 export default function FacturaDetailPage() {
   const params = useParams();
@@ -158,20 +95,25 @@ export default function FacturaDetailPage() {
   const [rectifyReason, setRectifyReason] = useState('');
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [showConvertToProformaModal, setShowConvertToProformaModal] = useState(false);
+  const [showConvertToRecurringModal, setShowConvertToRecurringModal] = useState(false);
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [editingNotesValue, setEditingNotesValue] = useState('');
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   const currentTenant = useAuthStore((s) => s.currentTenant);
   const { data: tenantData } = useTenant();
 
   const { data: invoice, isLoading, error } = useInvoice(id);
   const confirmMutation = useConfirmInvoice();
-  const paidMutation = useMarkInvoiceAsPaid();
+  const unmarkPaidMutation = useUnmarkInvoiceAsPaid();
+  const markSentMutation = useMarkInvoiceAsSent();
+  const unmarkSentMutation = useUnmarkInvoiceAsSent();
   const deleteMutation = useDeleteInvoice();
   const rectifyMutation = useRectifyInvoice();
   const convertMutation = useConvertProformaToOfficial();
   const convertToProformaMutation = useConvertDraftToProforma();
   const updateNotesMutation = useUpdateInvoiceNotes();
+  const createRecurringMutation = useCreateRecurringInvoice();
   // FIX: useDuplicateInvoice eliminado — duplicar es solo navegar a /nueva?duplicate=ID
 
   const templateId = (invoice as any)?.templateId ?? (invoice as any)?.template?.id ?? '';
@@ -231,8 +173,14 @@ export default function FacturaDetailPage() {
   const handleConfirm = async () => {
     await confirmMutation.mutateAsync(id);
   };
-  const handlePaid = async () => {
-    await paidMutation.mutateAsync(id);
+  const handleUnmarkPaid = async () => {
+    await unmarkPaidMutation.mutateAsync(id);
+  };
+  const handleMarkSent = async () => {
+    await markSentMutation.mutateAsync(id);
+  };
+  const handleUnmarkSent = async () => {
+    await unmarkSentMutation.mutateAsync(id);
   };
 
   // FIX: navegar directamente al formulario de nueva factura con el ID como param
@@ -255,6 +203,30 @@ export default function FacturaDetailPage() {
   const handleConvertToProforma = async () => {
     await convertToProformaMutation.mutateAsync(id);
     setShowConvertToProformaModal(false);
+  };
+
+  const handleConvertToRecurring = async (settings: RecurringSettings) => {
+    await createRecurringMutation.mutateAsync({
+      customerId: invoice!.customerId!,
+      frequency: settings.frequency,
+      dayOfMonth: settings.dayOfMonth,
+      startDate: settings.startDate,
+      endDate: settings.hasEndDate && settings.endDate ? settings.endDate : undefined,
+      autoConfirm: settings.autoConfirm,
+      lines: (invoice!.lines ?? []).map((l) => ({
+        description: l.description,
+        quantity: l.quantity,
+        unitPrice: l.unitPrice,
+        taxRate: l.taxRate,
+        hideQty: (l as any).hideQty ?? false,
+      })),
+      paymentMethod: invoice!.paymentMethod ?? undefined,
+      discountPercent: invoice!.discountPercent ? Number(invoice!.discountPercent) : undefined,
+      irpfPercent: invoice!.irpfPercent ? Number(invoice!.irpfPercent) : undefined,
+      notes: invoice!.notes ?? undefined,
+      sourceInvoiceId: id,
+    });
+    setShowConvertToRecurringModal(false);
   };
 
   const handleRectify = async () => {
@@ -298,8 +270,8 @@ export default function FacturaDetailPage() {
     invoice.status === InvoiceStatus.DRAFT || invoice.status === InvoiceStatus.PROFORMA;
   const isConfirmed = invoice.status === InvoiceStatus.CONFIRMED;
   const isSent = invoice.status === InvoiceStatus.SENT;
-  const canPay = isConfirmed || isSent;
-  const canRectify = isConfirmed || isSent || invoice.status === InvoiceStatus.PAID;
+  const isPaid = invoice.status === InvoiceStatus.PAID;
+  const canRectify = isConfirmed || isSent || isPaid;
   const isProforma = (invoice as any).invoiceType === 'proforma';
 
   const pdfFileName = [invoice.number, (invoice as any).customer?.name].filter(Boolean).join(' - ');
@@ -339,91 +311,108 @@ export default function FacturaDetailPage() {
           )}
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="h-8 w-8">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleDuplicate}>
-              <Copy className="mr-2 h-4 w-4" />
-              Duplicar factura
-            </DropdownMenuItem>
-            {isDraft && (
-              <DropdownMenuItem onClick={() => router.push(`/dashboard/facturas/nueva?edit=${id}`)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                {isProforma ? 'Editar proforma' : 'Editar borrador'}
+        <div className="flex items-center gap-2">
+          {/* Hacer recurrente — visible para facturas confirmadas */}
+          {(isConfirmed || isSent || invoice.status === InvoiceStatus.PAID) && !isProforma && (
+            <button
+              type="button"
+              onClick={() => setShowConvertToRecurringModal(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-dashed border-muted-foreground/30 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-150 hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Hacer recurrente
+            </button>
+          )}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleDuplicate}>
+                <Copy className="mr-2 h-4 w-4" />
+                Duplicar factura
               </DropdownMenuItem>
-            )}
-            {isDraft && isProforma && (
-              <DropdownMenuItem onClick={() => setShowConvertModal(true)}>
-                <ArrowRightLeft className="mr-2 h-4 w-4" />
-                Convertir a factura oficial
-              </DropdownMenuItem>
-            )}
-            {isDraft && !isProforma && (
-              <DropdownMenuItem onClick={() => setShowConvertToProformaModal(true)}>
-                <FileText className="mr-2 h-4 w-4" />
-                Convertir a proforma
-              </DropdownMenuItem>
-            )}
-            {canRectify && (
-              <DropdownMenuItem onClick={() => setShowRectifyDialog(true)}>
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Emitir rectificativa
-              </DropdownMenuItem>
-            )}
-            {(!isDraft || isProforma) && (
-              <DropdownMenuItem asChild>
-                <DownloadInvoiceButton
-                  invoiceId={id}
-                  fileName={pdfFileName}
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start px-2 cursor-pointer font-normal"
-                />
-              </DropdownMenuItem>
-            )}
-            {isDraft && (
-              <>
-                <DropdownMenuSeparator />
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem
-                      onSelect={(e) => e.preventDefault()}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      {isProforma ? 'Eliminar proforma' : 'Eliminar borrador'}
-                    </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        {isProforma ? '¿Eliminar proforma?' : '¿Eliminar borrador?'}
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta acción no se puede deshacer.{' '}
-                        {isProforma ? 'La proforma' : 'El borrador'} será eliminado permanentemente.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDelete}
-                        disabled={deleteMutation.isPending}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              {isDraft && (
+                <DropdownMenuItem
+                  onClick={() => router.push(`/dashboard/facturas/nueva?edit=${id}`)}
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  {isProforma ? 'Editar proforma' : 'Editar borrador'}
+                </DropdownMenuItem>
+              )}
+              {isDraft && isProforma && (
+                <DropdownMenuItem onClick={() => setShowConvertModal(true)}>
+                  <ArrowRightLeft className="mr-2 h-4 w-4" />
+                  Convertir a factura oficial
+                </DropdownMenuItem>
+              )}
+              {isDraft && !isProforma && (
+                <DropdownMenuItem onClick={() => setShowConvertToProformaModal(true)}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Convertir a proforma
+                </DropdownMenuItem>
+              )}
+              {canRectify && (
+                <DropdownMenuItem onClick={() => setShowRectifyDialog(true)}>
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Emitir rectificativa
+                </DropdownMenuItem>
+              )}
+              {!isDraft && (
+                <DropdownMenuItem asChild>
+                  <DownloadInvoiceButton
+                    invoiceId={id}
+                    fileName={pdfFileName}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start px-2 cursor-pointer font-normal"
+                  />
+                </DropdownMenuItem>
+              )}
+              {isDraft && (
+                <>
+                  <DropdownMenuSeparator />
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem
+                        onSelect={(e) => e.preventDefault()}
+                        className="text-destructive focus:text-destructive"
                       >
-                        {deleteMutation.isPending ? 'Eliminando...' : 'Sí, eliminar'}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {isProforma ? 'Eliminar proforma' : 'Eliminar borrador'}
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          {isProforma ? '¿Eliminar proforma?' : '¿Eliminar borrador?'}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta acción no se puede deshacer.{' '}
+                          {isProforma ? 'La proforma' : 'El borrador'} será eliminado
+                          permanentemente.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDelete}
+                          disabled={deleteMutation.isPending}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {deleteMutation.isPending ? 'Eliminando...' : 'Sí, eliminar'}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* ── Split panel ── */}
@@ -510,18 +499,53 @@ export default function FacturaDetailPage() {
                       {confirmMutation.isPending ? 'Confirmando...' : 'Confirmar factura'}
                     </Button>
                   )}
-                  {canPay && (
+                  {isConfirmed && (
                     <Button
                       size="sm"
-                      onClick={handlePaid}
-                      disabled={paidMutation.isPending}
+                      variant="outline"
+                      onClick={handleMarkSent}
+                      disabled={markSentMutation.isPending}
                       className="min-w-[140px]"
                     >
-                      <CreditCard className="mr-1.5 h-3.5 w-3.5" />
-                      {paidMutation.isPending ? 'Procesando...' : 'Marcar como pagada'}
+                      <Send className="mr-1.5 h-3.5 w-3.5" />
+                      {markSentMutation.isPending ? 'Procesando...' : 'Marcar como enviada'}
                     </Button>
                   )}
-                  {(!isDraft || isProforma) && (
+                  {isSent && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleUnmarkSent}
+                      disabled={unmarkSentMutation.isPending}
+                      className="min-w-[140px] text-muted-foreground"
+                    >
+                      <Undo2 className="mr-1.5 h-3.5 w-3.5" />
+                      {unmarkSentMutation.isPending ? 'Procesando...' : 'Deshacer envío'}
+                    </Button>
+                  )}
+                  {isPaid && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleUnmarkPaid}
+                      disabled={unmarkPaidMutation.isPending}
+                      className="min-w-[140px] text-muted-foreground"
+                    >
+                      <Undo2 className="mr-1.5 h-3.5 w-3.5" />
+                      {unmarkPaidMutation.isPending ? 'Procesando...' : 'Deshacer pago'}
+                    </Button>
+                  )}
+                  {!isDraft && parseNum(invoice.amountPaid) < parseNum(invoice.total) && (
+                    <Button
+                      size="sm"
+                      onClick={() => setShowPaymentDialog(true)}
+                      className="min-w-[140px]"
+                    >
+                      <Banknote className="mr-1.5 h-3.5 w-3.5" />
+                      Registrar cobro
+                    </Button>
+                  )}
+                  {!isDraft && (
                     <DownloadInvoiceButton
                       invoiceId={id}
                       fileName={pdfFileName}
@@ -538,12 +562,12 @@ export default function FacturaDetailPage() {
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Calendar className="h-3 w-3" />
-                  <span>Emitida {formatDate(invoice.issueDate)}</span>
+                  <span>Emitida {formatDateShort(invoice.issueDate)}</span>
                 </div>
                 {invoice.dueDate && (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Calendar className="h-3 w-3" />
-                    <span>Vence {formatDate(invoice.dueDate)}</span>
+                    <span>Vence {formatDateShort(invoice.dueDate)}</span>
                   </div>
                 )}
                 {series && (
@@ -552,8 +576,38 @@ export default function FacturaDetailPage() {
                     <span>{series.name}</span>
                   </div>
                 )}
+                {!isDraft && (
+                  <InvoicePaymentSection
+                    invoice={invoice}
+                    onRegisterPayment={() => setShowPaymentDialog(true)}
+                  />
+                )}
               </div>
             </div>
+
+            {/* ZONA A.5 — Vinculada a recurrente */}
+            {invoice.recurringInvoiceId && (
+              <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                <RefreshCw className="h-4 w-4 text-primary shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-primary leading-tight">
+                    Vinculada a factura recurrente
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Esta factura está asociada a una regla de facturación automática
+                  </p>
+                </div>
+                <Link href={`/dashboard/recurrentes/${invoice.recurringInvoiceId}`}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 text-xs text-primary border-primary/30 hover:bg-primary/10"
+                  >
+                    Ver recurrente →
+                  </Button>
+                </Link>
+              </div>
+            )}
 
             {/* ZONA B — Cliente */}
             <div className="rounded-xl border bg-card p-5">
@@ -820,6 +874,14 @@ export default function FacturaDetailPage() {
         onConfirm={handleConvertToProforma}
       />
 
+      <ConvertToRecurringModal
+        open={showConvertToRecurringModal}
+        customerName={(invoice as any).customer?.name ?? '—'}
+        isPending={createRecurringMutation.isPending}
+        onCancel={() => setShowConvertToRecurringModal(false)}
+        onConfirm={handleConvertToRecurring}
+      />
+
       {/* Rectify dialog */}
       <AlertDialog open={showRectifyDialog} onOpenChange={setShowRectifyDialog}>
         <AlertDialogContent>
@@ -849,6 +911,17 @@ export default function FacturaDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <RegisterPaymentDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        invoiceId={invoice.id}
+        invoiceTotal={parseNum(invoice.total)}
+        amountPaid={parseNum(invoice.amountPaid)}
+        defaultPaymentMethod={invoice.paymentMethod as PaymentMethod | null}
+        invoiceNumber={invoice.number}
+        customerName={invoice.customer?.name}
+      />
     </div>
   );
 }

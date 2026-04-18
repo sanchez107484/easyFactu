@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
@@ -33,6 +35,7 @@ import {
   FileCheck,
   FileClock,
   LayoutTemplate,
+  RefreshCw,
 } from 'lucide-react';
 import { InvoiceLineItem } from '@/components/facturas/InvoiceLineItem';
 import { extendedLineSchema, EMPTY_LINE, ExtendedLineData } from '@/lib/invoice-line-types';
@@ -55,23 +58,28 @@ import {
   SeriesType,
   Tenant,
   InvoiceDefaults,
+  Frequency,
 } from '@easyfactura/shared-types';
-import { resolveUrl } from '@/lib/utils';
-import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
+import { cn, resolveUrl } from '@/lib/utils';
+import { PAYMENT_METHOD_LABELS, FREQUENCY_OPTIONS } from '@easyfactura/shared-constants';
 import { buildPreviewInvoice, buildCreateInput, calculateDueDate } from '@/lib/invoice-helpers';
 import { formatSeriesPreview } from '@easyfactura/shared-validators';
 import { InvoiceTypeModal, InvoiceTypeOption } from '@/components/facturas/InvoiceTypeModal';
-import { ConfirmInvoiceDialog } from '@/components/facturas/ConfirmInvoiceDialog';
+import {
+  ConfirmInvoiceDialog,
+  type RecurringConfig,
+} from '@/components/facturas/ConfirmInvoiceDialog';
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
 import type { PaymentDetails } from '@/components/facturas/LiveInvoicePreview';
 import { QuickCreateCustomerModal } from '@/components/clientes/QuickCreateCustomerModal';
+import { CustomerCombobox } from '@/components/clientes/CustomerCombobox';
 import { DueDatePicker } from '@/components/facturas/DueDatePicker';
+import { useCreateRecurringInvoice } from '@/hooks/use-recurring-invoices';
 import {
   PaymentDetailsFields,
   PaymentDetailsValues,
 } from '@/components/facturas/PaymentDetailsFields';
 import { SaveAsDefaultBanner } from '@/components/facturas/SaveAsDefaultBanner';
-import { Switch } from '@/components/ui/switch';
 import { useInvoiceFormKeyDown } from '@/hooks/use-invoice-form-key-down';
 
 // ==================== CONSTANTS ====================
@@ -232,6 +240,17 @@ function InvoiceForm({
   const [pendingCustomerId, setPendingCustomerId] = useState<string | null>(null);
   const [simplifyTable, setSimplifyTable] = useState(false);
 
+  // ── Recurring option (subtle toggle) ──
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState<Frequency>(Frequency.MONTHLY);
+  const [recurringDayOfMonth, setRecurringDayOfMonth] = useState<number>(1);
+  const [recurringStartDate, setRecurringStartDate] = useState<string>(
+    new Date().toISOString().split('T')[0]!,
+  );
+  const [recurringHasEndDate, setRecurringHasEndDate] = useState(false);
+  const [recurringEndDate, setRecurringEndDate] = useState<string>('');
+  const [recurringAutoConfirm, setRecurringAutoConfirm] = useState(false);
+
   const isProforma = invoiceType === 'proforma';
 
   const { data: customersData, isLoading: loadingCustomers } = useCustomers();
@@ -241,6 +260,7 @@ function InvoiceForm({
   const createMutation = useCreateInvoice();
   const updateMutation = useUpdateInvoice();
   const confirmMutation = useConfirmInvoice();
+  const createRecurringMutation = useCreateRecurringInvoice();
 
   const customers: Customer[] = customersData?.data ?? [];
   const effectiveTemplate: InvoiceTemplate | null = selectedTemplate ?? defaultTemplate ?? null;
@@ -392,9 +412,11 @@ function InvoiceForm({
       });
       if (editDraftId) {
         await updateMutation.mutateAsync({ id: editDraftId, data: input });
+        await createRecurringFromForm(data);
         router.push(`/dashboard/facturas/${editDraftId}`);
       } else {
         const invoice = await createMutation.mutateAsync(input);
+        await createRecurringFromForm(data);
         router.push(`/dashboard/facturas/${invoice.id}`);
       }
     } catch (error) {
@@ -459,6 +481,7 @@ function InvoiceForm({
       if (editDraftId) {
         await updateMutation.mutateAsync({ id: editDraftId, data: input });
         await confirmMutation.mutateAsync(editDraftId);
+        await createRecurringFromForm(resolvedData);
         setShowConfirmDialog(false);
         router.push(`/dashboard/facturas/${editDraftId}`);
       } else {
@@ -469,6 +492,7 @@ function InvoiceForm({
         }
         if (draftId) {
           await confirmMutation.mutateAsync(draftId);
+          await createRecurringFromForm(resolvedData);
           setShowConfirmDialog(false);
           router.push(`/dashboard/facturas/${draftId}`);
         }
@@ -480,6 +504,30 @@ function InvoiceForm({
 
   const isSubmitting =
     createMutation.isPending || updateMutation.isPending || confirmMutation.isPending;
+
+  // Creates the recurring template from the current form state (no-op if isRecurring is false)
+  const createRecurringFromForm = async (data: FormData) => {
+    if (!isRecurring) return;
+    await createRecurringMutation.mutateAsync({
+      customerId: data.customerId,
+      frequency: recurringFrequency,
+      dayOfMonth: recurringDayOfMonth,
+      startDate: recurringStartDate,
+      endDate: recurringHasEndDate && recurringEndDate ? recurringEndDate : undefined,
+      autoConfirm: recurringAutoConfirm,
+      lines: data.lines.map((l) => ({
+        description: l.description,
+        quantity: l._hideQty ? 1 : l.quantity,
+        unitPrice: l.unitPrice,
+        taxRate: l.taxRate,
+        hideQty: l._hideQty ?? false,
+      })),
+      paymentMethod: data.paymentMethod,
+      discountPercent: data.discountPercent,
+      irpfPercent: data.irpfPercent,
+      notes: data.notes,
+    });
+  };
 
   const source = tenantData ?? currentTenant;
   const previewTenant: Tenant | null = source
@@ -515,6 +563,26 @@ function InvoiceForm({
           customerName: selectedCustomer?.name ?? '---',
           total: previewInvoice.total,
         }}
+        recurringConfig={
+          !isProforma
+            ? ({
+                isRecurring,
+                onToggle: setIsRecurring,
+                frequency: recurringFrequency,
+                onFrequencyChange: setRecurringFrequency,
+                dayOfMonth: recurringDayOfMonth,
+                onDayOfMonthChange: setRecurringDayOfMonth,
+                startDate: recurringStartDate,
+                onStartDateChange: setRecurringStartDate,
+                hasEndDate: recurringHasEndDate,
+                onHasEndDateChange: setRecurringHasEndDate,
+                endDate: recurringEndDate,
+                onEndDateChange: setRecurringEndDate,
+                autoConfirm: recurringAutoConfirm,
+                onAutoConfirmChange: setRecurringAutoConfirm,
+              } satisfies RecurringConfig)
+            : undefined
+        }
       />
 
       <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
@@ -549,6 +617,26 @@ function InvoiceForm({
               selectedTemplate={selectedTemplate}
               onClick={() => setShowTypeModal(true)}
             />
+
+            {/* Repetir toggle — sólo en facturas no proforma */}
+            {!isProforma && (
+              <button
+                type="button"
+                onClick={() => setIsRecurring((v) => !v)}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all duration-150',
+                  isRecurring
+                    ? 'border-primary/40 bg-primary/5 text-primary hover:bg-primary/10'
+                    : 'border-dashed border-muted-foreground/30 text-muted-foreground hover:border-muted-foreground/60 hover:text-foreground',
+                )}
+              >
+                <RefreshCw className="h-3 w-3" />
+                {isRecurring
+                  ? (FREQUENCY_OPTIONS.find((o) => o.value === recurringFrequency)?.label ??
+                    'Recurrente')
+                  : 'Hacer recurrente'}
+              </button>
+            )}
 
             <div className="w-px h-6 bg-border mx-1 shrink-0" />
 
@@ -637,29 +725,12 @@ function InvoiceForm({
                     {loadingCustomers ? (
                       <Skeleton className="h-10 w-full" />
                     ) : (
-                      <Select
+                      <CustomerCombobox
+                        customers={customers}
                         value={watchedValues.customerId || ''}
-                        onValueChange={(v) =>
-                          form.setValue('customerId', v, { shouldValidate: true })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona un cliente" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {customers.length === 0 && (
-                            <div className="p-3 text-sm text-muted-foreground flex gap-2 items-start">
-                              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                              No tienes clientes activos. Crea uno primero.
-                            </div>
-                          )}
-                          {customers.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.name} — {c.nif}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        onChange={(v) => form.setValue('customerId', v, { shouldValidate: true })}
+                        hasError={!!form.formState.errors.customerId}
+                      />
                     )}
                     {form.formState.errors.customerId && (
                       <p className="text-sm text-destructive">
@@ -1029,7 +1100,7 @@ export default function NuevaFacturaPage() {
           unitPrice: Number(l.unitPrice) || 0,
           taxRate: Number(l.taxRate) || 0,
           productId: l.productId ?? undefined,
-          _mode: (l.hideQty && !l.productId ? 'service' : 'custom') as 'service' | 'custom',
+          _mode: l.productId ? 'product' : l.hideQty ? 'service' : 'custom',
           _hideQty: l.hideQty ?? false,
         })),
       }

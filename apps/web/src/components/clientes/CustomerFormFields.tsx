@@ -20,6 +20,7 @@ import {
   Briefcase,
   Building2,
   Globe,
+  Landmark,
   AlertCircle,
   CheckCircle2,
   UserCheck,
@@ -27,6 +28,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SectionLabel } from '@/components/common/section-label';
 
 // ==================== TYPES & CONSTANTS ====================
 
@@ -81,6 +83,18 @@ export const TYPE_OPTIONS: TypeOption[] = [
     isIntracommunity: false,
   },
   {
+    value: CustomerType.PUBLIC_ENTITY,
+    label: 'Entidad Pública',
+    description: 'Ayuntamiento, diputación u organismo público',
+    icon: <Landmark className="h-5 w-5" />,
+    nifLabel: 'CIF',
+    nifPlaceholder: 'P1234567D',
+    nifHint: 'CIF de la entidad pública (P/Q/S + 7 dígitos + letra de control)',
+    showLegalName: true,
+    legalNameLabel: 'Nombre oficial',
+    isIntracommunity: false,
+  },
+  {
     value: CustomerType.INTRACOMMUNITY,
     label: 'Intracomunitario',
     description: 'Empresa o particular de la UE',
@@ -95,17 +109,6 @@ export const TYPE_OPTIONS: TypeOption[] = [
 ];
 
 // ==================== INTERNAL SUB-COMPONENTS ====================
-
-function SectionLabel({ icon: Icon, children }: { icon?: any; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-1.5 mb-4">
-      {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" />}
-      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-        {children}
-      </p>
-    </div>
-  );
-}
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -154,7 +157,7 @@ export function CustomerFormFields({
       {/* ── FILA 1: Tipo de cliente ── */}
       <div className="rounded-xl border bg-card p-5">
         <SectionLabel icon={User}>Tipo de cliente</SectionLabel>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {TYPE_OPTIONS.map((option) => {
             const isSelected = selectedType === option.value;
             return (

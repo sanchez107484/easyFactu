@@ -1,8 +1,10 @@
-import { IsOptional, IsString, IsEnum, IsBoolean } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsBoolean, IsIn } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 import { CustomerType } from '@easyfactura/shared-types';
+
+const CUSTOMER_SORT_FIELDS = ['name', 'nif', 'city', 'type', 'createdAt'] as const;
 
 export class QueryCustomerDto extends PaginationDto {
   @ApiPropertyOptional()
@@ -12,6 +14,7 @@ export class QueryCustomerDto extends PaginationDto {
 
   @ApiPropertyOptional({ enum: CustomerType })
   @IsOptional()
+  @Transform(({ value }) => (value === 'undefined' || value === '' ? undefined : value))
   @IsEnum(CustomerType)
   type?: CustomerType;
 
@@ -25,4 +28,9 @@ export class QueryCustomerDto extends PaginationDto {
   @IsOptional()
   @IsString()
   nif?: string;
+
+  @ApiPropertyOptional({ enum: CUSTOMER_SORT_FIELDS })
+  @IsOptional()
+  @IsIn(CUSTOMER_SORT_FIELDS)
+  declare sortBy?: string;
 }

@@ -17,6 +17,11 @@ export function formatCurrency(amount: number | string | null | undefined): stri
   );
 }
 
+export function parseNum(v: string | number | null | undefined): number {
+  if (v == null) return 0;
+  return typeof v === 'string' ? parseFloat(v) : v;
+}
+
 export function formatDate(date: string | Date): string {
   return new Intl.DateTimeFormat('es-ES', {
     day: '2-digit',
@@ -33,6 +38,15 @@ export function formatDateTime(date: string | Date): string {
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(date));
+}
+
+export function formatDateShort(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 export function getErrorMessage(error: unknown): string {

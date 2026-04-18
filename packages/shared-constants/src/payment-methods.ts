@@ -1,6 +1,6 @@
-import { PaymentMethod } from '@easyfactura/shared-types';
+import { PaymentMethod, PaymentType } from '@easyfactura/shared-types';
 
-export { PaymentMethod };
+export { PaymentMethod, PaymentType };
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   [PaymentMethod.BANK_TRANSFER]: 'Transferencia bancaria',
@@ -25,3 +25,8 @@ export const PAYMENT_METHOD_SECTION_LABELS: Record<PaymentMethod, string> = {
 export const PAYMENT_METHOD_OPTIONS = Object.entries(PAYMENT_METHOD_LABELS).map(
   ([value, label]) => ({ value, label }),
 );
+
+export const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
+  [PaymentType.FULL]: 'Cobro completo',
+  [PaymentType.PARTIAL]: 'Cobro parcial',
+};

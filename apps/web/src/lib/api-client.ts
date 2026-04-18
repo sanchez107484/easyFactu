@@ -102,7 +102,6 @@ export function setAccessToken(token: string): void {
   if (typeof window !== 'undefined') {
     localStorage.setItem('accessToken', token);
   }
-  console.log('✅ AccessToken guardado');
 }
 
 export function getRefreshToken(): string | null {
@@ -123,7 +122,6 @@ export function setRefreshToken(token: string): void {
   }
   if (typeof window === 'undefined') return;
   localStorage.setItem('refreshToken', token);
-  console.log('✅ RefreshToken guardado');
 }
 
 export function clearTokens(): void {

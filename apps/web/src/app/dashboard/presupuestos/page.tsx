@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -47,7 +48,7 @@ import {
   useConvertQuoteToProforma,
   useConvertQuoteToOfficial,
 } from '@/hooks/use-invoices';
-import { useSortTable, sortData } from '@/hooks/use-sort-table';
+import { useSortTable } from '@/hooks/use-sort-table';
 import { InvoiceStatus, QuoteAcceptanceStatus, Invoice } from '@easyfactura/shared-types';
 import { cn } from '@/lib/utils';
 import { SortableHeader } from '@/components/common/sortable-header';
@@ -232,20 +233,29 @@ function StatusFilterPills({ value, onChange }: { value: string; onChange: (v: s
 
 export default function PresupuestosPage() {
   const router = useRouter();
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const search = useDebounce(searchInput, 300);
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [page, setPage] = useState(1);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [convertProformaId, setConvertProformaId] = useState<string | null>(null);
   const [convertOfficialId, setConvertOfficialId] = useState<string | null>(null);
 
   const { sortKey, sortDir, handleSort } = useSortTable('issueDate', 'desc');
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, sortKey, sortDir]);
+
   const { data, isLoading, error, refetch } = useInvoices({
     search: search || undefined,
     status: InvoiceStatus.QUOTE,
-    limit: 100,
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
+    quoteAcceptanceStatus:
+      statusFilter !== 'ALL' ? (statusFilter as QuoteAcceptanceStatus) : undefined,
+    page,
+    limit: 20,
+    sortBy: sortKey as 'number' | 'issueDate' | 'total' | 'createdAt' | 'customer' | 'validUntil',
+    sortOrder: sortDir,
   });
 
   const deleteMutation = useDeleteInvoice();
@@ -271,21 +281,10 @@ export default function PresupuestosPage() {
     setConvertOfficialId(null);
   };
 
-  const rawQuotes = data?.data ?? [];
+  const quotes = data?.data ?? [];
+  const total = data?.meta?.total ?? 0;
 
-  // Client-side filter by quoteAcceptanceStatus
-  const filteredQuotes =
-    statusFilter === 'ALL'
-      ? rawQuotes
-      : rawQuotes.filter((q) => {
-          const qs = q.quoteAcceptanceStatus ?? QuoteAcceptanceStatus.PENDING;
-          return qs === statusFilter;
-        });
-
-  const quotes = sortData(filteredQuotes, sortKey, sortDir, getQuoteSortValue);
-  const total = rawQuotes.length;
-
-  if (!isLoading && !error && rawQuotes.length === 0 && !search) {
+  if (!isLoading && !error && total === 0 && !search && statusFilter === 'ALL') {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -333,13 +332,13 @@ export default function PresupuestosPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Buscar por número o nombre de cliente..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="pl-10 pr-10"
           />
-          {search && (
+          {searchInput && (
             <button
-              onClick={() => setSearch('')}
+              onClick={() => setSearchInput('')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="h-4 w-4" />
@@ -380,7 +379,7 @@ export default function PresupuestosPage() {
                   size="sm"
                   className="mt-4"
                   onClick={() => {
-                    setSearch('');
+                    setSearchInput('');
                     setStatusFilter('ALL');
                   }}
                 >
@@ -604,6 +603,34 @@ export default function PresupuestosPage() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Pagination */}
+      {!error && !isLoading && data && data.meta.totalPages > 1 && (
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>
+            Página {page} de {data.meta.totalPages} &middot; {total} presupuesto
+            {total !== 1 ? 's' : ''} en total
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p - 1)}
+              disabled={page === 1}
+            >
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= data.meta.totalPages}
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Delete dialog */}
