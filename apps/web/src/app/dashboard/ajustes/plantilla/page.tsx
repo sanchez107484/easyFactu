@@ -30,7 +30,6 @@ import {
   InvoiceStatus,
   PaymentStatus,
   PaymentMethod,
-  PaymentStatus,
   Tenant,
 } from '@easyfactura/shared-types';
 import { PaymentDetails } from '@/components/facturas/LiveInvoicePreview';
