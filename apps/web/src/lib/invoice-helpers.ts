@@ -4,6 +4,7 @@ import {
   InvoiceStatus,
   Customer,
   PaymentMethod,
+  PaymentStatus,
   InvoiceSeries,
 } from '@easyfactura/shared-types';
 import { formatSeriesPreview } from '@easyfactura/shared-validators';
@@ -135,6 +136,8 @@ export function buildPreviewInvoice(
     isRectificative: false,
     rectifiedInvoiceId: null,
     rectificationReason: null,
+    amountPaid: 0,
+    paymentStatus: PaymentStatus.UNPAID,
     createdAt: today,
     updatedAt: today,
     customer: customer,
