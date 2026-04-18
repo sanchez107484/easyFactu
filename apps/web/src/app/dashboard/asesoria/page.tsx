@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useAuthStore } from '@/store/auth-store';
+import { useAgencyContext } from '@/hooks/use-agency-context';
+import { useSwitchTenant } from '@/hooks/use-switch-tenant';
 import {
   useAgencyStats,
   useAgencyClients,
@@ -23,15 +24,15 @@ import {
   MousePointerClick,
   SwitchCamera,
   ClipboardCheck,
+  Loader2,
 } from 'lucide-react';
-import { AccountType } from '@easyfactura/shared-types';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import type { AgencyDashboardAlert, FiscalAlertSummaryItem } from '@easyfactura/shared-types';
 import { AgencyKpiStrip } from './_components/agency-kpi-strip';
 import { ClientsNeedingAttention } from './_components/clients-needing-attention';
 import { PendingInvitationsWidget } from './_components/pending-invitations-widget';
-import { ClientCard } from './_components/client-card';
 
 function AlertBanner({ alert }: { alert: AgencyDashboardAlert }) {
   const config = {
@@ -64,17 +65,17 @@ function AlertBanner({ alert }: { alert: AgencyDashboardAlert }) {
 
 export default function AgencyHubPage() {
   const router = useRouter();
-  const currentTenant = useAuthStore((state) => state.currentTenant);
-  const switchTenant = useAuthStore((state) => state.switchTenant);
+  const { switchTenant, isPending: isSwitching } = useSwitchTenant();
+  const { isOnAgencyTenant } = useAgencyContext();
+  const [managingClientId, setManagingClientId] = useState<string | null>(null);
   const { data: stats, isLoading: statsLoading } = useAgencyStats();
   const { data: clientsData, isLoading: clientsLoading } = useAgencyClients({ limit: 50 });
   const { data: alertsSummary } = useFiscalAlertsSummary();
   const { data: invitations = [] } = useAgencyPendingInvitations();
-  const isAgency = currentTenant?.accountType === AccountType.AGENCY;
 
   useEffect(() => {
-    if (!isAgency) router.replace('/dashboard');
-  }, [isAgency, router]);
+    if (!isOnAgencyTenant) router.replace('/dashboard');
+  }, [isOnAgencyTenant, router]);
 
   const alertsMap = useMemo(() => {
     const map = new Map<string, FiscalAlertSummaryItem>();
@@ -82,11 +83,18 @@ export default function AgencyHubPage() {
     return map;
   }, [alertsSummary]);
 
-  if (!isAgency) return null;
+  if (!isOnAgencyTenant) return null;
 
   const handleSwitchToClient = async (clientTenantId: string) => {
-    await switchTenant(clientTenantId);
-    router.push('/dashboard');
+    if (managingClientId) return;
+    setManagingClientId(clientTenantId);
+    try {
+      await switchTenant(clientTenantId);
+      router.push('/dashboard');
+    } catch {
+      toast.error('No se pudo acceder al cliente. Inténtalo de nuevo.');
+      setManagingClientId(null);
+    }
   };
 
   return (
@@ -141,14 +149,30 @@ export default function AgencyHubPage() {
             </div>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="divide-y rounded-lg border">
             {clientsData.data.map((relation) => (
-              <ClientCard
+              <button
                 key={relation.id}
-                relation={relation}
-                fiscalAlert={alertsMap.get(relation.clientTenantId)}
-                onSwitchToClient={handleSwitchToClient}
-              />
+                type="button"
+                onClick={() => handleSwitchToClient(relation.clientTenantId)}
+                disabled={managingClientId === relation.clientTenantId || isSwitching}
+                className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+                  {relation.clientTenant?.businessName.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold leading-tight">
+                    {relation.clientTenant?.businessName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{relation.clientTenant?.nif}</p>
+                </div>
+                {managingClientId === relation.clientTenantId ? (
+                  <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-indigo-500" />
+                ) : (
+                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-indigo-500" />
+                )}
+              </button>
             ))}
           </div>
         )}

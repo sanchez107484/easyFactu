@@ -96,6 +96,13 @@ export class AgencyController {
     return this.agencyService.revokeClient(tenantId, clientTenantId);
   }
 
+  @Get('clients/check-nif')
+  @ApiOperation({ summary: 'Comprueba si un NIF ya tiene cuenta (detección en tiempo real)' })
+  @ApiResponse({ status: 200, description: 'Estado del NIF' })
+  checkNif(@CurrentTenant() tenantId: string, @Query('nif') nif: string) {
+    return this.agencyService.checkNif(tenantId, nif);
+  }
+
   @Get('clients/:clientTenantId')
   @ApiOperation({ summary: 'Detalle de un cliente de la cartera' })
   findOneClient(

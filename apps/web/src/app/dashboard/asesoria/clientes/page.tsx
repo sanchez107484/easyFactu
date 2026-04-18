@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/auth-store';
 import {
   useAgencyClients,
   useRevokeClient,
@@ -15,6 +14,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,15 +54,22 @@ import {
   ArrowRightLeft,
   FileText,
   Send,
+  MapPin,
+  Activity,
+  Loader2,
 } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
+import { toast } from 'sonner';
 import type { AgencyClientWithDetails, AgencyInvitation } from '@easyfactura/shared-types';
-import { AccountType } from '@easyfactura/shared-types';
+import { useAgencyContext } from '@/hooks/use-agency-context';
+import { useSwitchTenant } from '@/hooks/use-switch-tenant';
 
 export default function AgencyClientsPage() {
   const router = useRouter();
-  const currentTenant = useAuthStore((state) => state.currentTenant);
-  const switchTenant = useAuthStore((state) => state.switchTenant);
+  const { switchTenant, isPending: isSwitching } = useSwitchTenant();
+  const { isOnAgencyTenant } = useAgencyContext();
   const [search, setSearch] = useState('');
+  const [managingClientId, setManagingClientId] = useState<string | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<AgencyClientWithDetails | null>(null);
   const [cancelTarget, setCancelTarget] = useState<AgencyInvitation | null>(null);
 
@@ -64,16 +78,24 @@ export default function AgencyClientsPage() {
   const { mutate: revokeClient, isPending: isRevoking } = useRevokeClient();
   const { mutate: cancelInvitation, isPending: isCancelling } = useCancelInvitation();
 
-  const isAgency = currentTenant?.accountType === AccountType.AGENCY;
+  useEffect(() => {
+    if (!isOnAgencyTenant) {
+      router.replace('/dashboard');
+    }
+  }, [isOnAgencyTenant, router]);
 
-  if (!isAgency) {
-    router.replace('/dashboard');
-    return null;
-  }
+  if (!isOnAgencyTenant) return null;
 
   const handleManage = async (clientTenantId: string) => {
-    await switchTenant(clientTenantId);
-    router.push('/dashboard');
+    if (managingClientId) return;
+    setManagingClientId(clientTenantId);
+    try {
+      await switchTenant(clientTenantId);
+      router.push('/dashboard');
+    } catch {
+      toast.error('No se pudo acceder al cliente. Inténtalo de nuevo.');
+      setManagingClientId(null);
+    }
   };
 
   const handleRevoke = (clientTenantId: string) => {
@@ -203,82 +225,160 @@ export default function AgencyClientsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-3">
-          {data.data.map((relation) => (
-            <Card key={relation.id} className="transition-shadow hover:shadow-sm">
-              <CardContent className="flex items-center justify-between gap-4 py-4">
-                <Link
-                  href={`/dashboard/asesoria/clientes/${relation.clientTenantId}`}
-                  className="flex items-center gap-3 min-w-0 flex-1"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 text-sm font-bold dark:bg-indigo-950 dark:text-indigo-300">
-                    {relation.clientTenant?.businessName.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold hover:underline">
-                      {relation.clientTenant?.businessName}
-                    </p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{relation.clientTenant?.nif}</span>
-                      {relation.clientTenant?.city && (
-                        <>
-                          <span>·</span>
-                          <span>{relation.clientTenant.city}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </Link>
+        <div className="rounded-xl border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Cliente</TableHead>
+                <TableHead>NIF / CIF</TableHead>
+                <TableHead className="hidden md:table-cell">Localidad</TableHead>
+                <TableHead className="hidden lg:table-cell text-right">Facturas</TableHead>
+                <TableHead className="hidden lg:table-cell text-right">Pendientes</TableHead>
+                <TableHead className="hidden xl:table-cell text-right">Ingreso mensual</TableHead>
+                <TableHead className="hidden sm:table-cell">Última actividad</TableHead>
+                <TableHead className="w-[100px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.data.map((relation) => {
+                const client = relation.clientTenant;
+                const stats = relation.stats;
+                const lastActivity = stats?.lastActivity
+                  ? (() => {
+                      const diffDays = Math.floor(
+                        (Date.now() - new Date(stats.lastActivity!).getTime()) /
+                          (1000 * 60 * 60 * 24),
+                      );
+                      if (diffDays === 0) return 'Hoy';
+                      if (diffDays === 1) return 'Ayer';
+                      if (diffDays < 30) return `Hace ${diffDays} días`;
+                      const months = Math.floor(diffDays / 30);
+                      if (months < 12) return `Hace ${months} mes${months > 1 ? 'es' : ''}`;
+                      return new Date(stats.lastActivity!).toLocaleDateString('es-ES', {
+                        month: 'short',
+                        year: 'numeric',
+                      });
+                    })()
+                  : '—';
 
-                <div className="flex shrink-0 items-center gap-2">
-                  {relation.stats && (
-                    <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground">
-                      <span>{relation.stats.totalInvoices} facturas</span>
-                      {relation.stats.pendingInvoices > 0 && (
+                return (
+                  <TableRow key={relation.id} className="group">
+                    <TableCell>
+                      <Link
+                        href={`/dashboard/asesoria/clientes/${relation.clientTenantId}`}
+                        className="flex items-center gap-3 min-w-0"
+                      >
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                          {client.businessName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-sm leading-tight hover:underline">
+                            {client.businessName}
+                          </p>
+                          {client.legalName && (
+                            <p className="truncate text-xs text-muted-foreground">
+                              {client.legalName}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    </TableCell>
+
+                    <TableCell>
+                      <span className="font-mono text-sm">{client.nif}</span>
+                    </TableCell>
+
+                    <TableCell className="hidden md:table-cell">
+                      {client.city ? (
+                        <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          {client.city}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="hidden lg:table-cell text-right">
+                      <span className="text-sm">{stats?.totalInvoices ?? 0}</span>
+                    </TableCell>
+
+                    <TableCell className="hidden lg:table-cell text-right">
+                      {(stats?.pendingInvoices ?? 0) > 0 ? (
                         <Badge
                           variant="outline"
                           className="border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-400"
                         >
-                          {relation.stats.pendingInvoices} pendientes
+                          {stats!.pendingInvoices}
                         </Badge>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">0</span>
                       )}
-                    </div>
-                  )}
+                    </TableCell>
 
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleManage(relation.clientTenantId)}
-                  >
-                    <LayoutDashboard className="mr-1.5 h-3.5 w-3.5" />
-                    Gestionar
-                  </Button>
+                    <TableCell className="hidden xl:table-cell text-right">
+                      <span className="text-sm font-medium">
+                        {(stats?.monthlyRevenue ?? 0) > 0
+                          ? formatCurrency(stats!.monthlyRevenue)
+                          : '—'}
+                      </span>
+                    </TableCell>
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleManage(relation.clientTenantId)}>
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        Acceder al dashboard
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => setRevokeTarget(relation)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Revocar acceso
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                    <TableCell className="hidden sm:table-cell">
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Activity className="h-3 w-3 shrink-0" />
+                        {lastActivity}
+                      </span>
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => handleManage(relation.clientTenantId)}
+                          disabled={managingClientId === relation.clientTenantId || isSwitching}
+                        >
+                          {managingClientId === relation.clientTenantId ? (
+                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                          ) : (
+                            <LayoutDashboard className="mr-1 h-3 w-3" />
+                          )}
+                          Gestionar
+                        </Button>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                              <MoreVertical className="h-3.5 w-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleManage(relation.clientTenantId)}
+                              disabled={managingClientId !== null || isSwitching}
+                            >
+                              <LayoutDashboard className="mr-2 h-4 w-4" />
+                              Acceder al dashboard
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => setRevokeTarget(relation)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Dar de baja
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
       )}
 
@@ -365,11 +465,19 @@ export default function AgencyClientsPage() {
       <AlertDialog open={!!revokeTarget} onOpenChange={() => setRevokeTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Revocar acceso</AlertDialogTitle>
-            <AlertDialogDescription>
-              ¿Estás seguro de que quieres revocar el acceso a{' '}
-              <strong>{revokeTarget?.clientTenant?.businessName}</strong>? Dejarás de poder
-              gestionar su facturación. Los datos del cliente no se eliminarán.
+            <AlertDialogTitle>Dar de baja al cliente</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  Vas a dar de baja a{' '}
+                  <strong className="text-foreground">
+                    {revokeTarget?.clientTenant?.businessName}
+                  </strong>{' '}
+                  de tu cartera de clientes.
+                </p>
+                <p>Perderás el acceso a su dashboard y facturación. Sus datos no se eliminarán.</p>
+                <p className="font-medium text-destructive">Esta acción no se puede deshacer.</p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -379,7 +487,7 @@ export default function AgencyClientsPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isRevoking}
             >
-              Revocar acceso
+              {isRevoking ? 'Procesando...' : 'Confirmar baja'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

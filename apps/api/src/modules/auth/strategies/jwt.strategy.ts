@@ -40,16 +40,45 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('Usuario no autorizado');
     }
 
-    if (user.tenantUsers.length === 0) {
+    // Primary path: direct TenantUser membership
+    if (user.tenantUsers.length > 0) {
+      const tenantUser = user.tenantUsers[0]!;
+
+      if (!tenantUser.tenant.isActive) {
+        throw new UnauthorizedException('Empresa desactivada');
+      }
+
+      return {
+        id: user.id,
+        email: user.email,
+        tenantId: payload.tenantId,
+        role: tenantUser.role,
+        isOwner: tenantUser.isOwner,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      };
+    }
+
+    // Secondary path: agency user acting as a managed client tenant
+    // The JWT has tenantId = clientTenantId, but the user only has a TenantUser
+    // record on their own agency tenant. Access is granted via AgencyClientRelation.
+    const agencyRelation = await this.prisma.agencyClientRelation.findFirst({
+      where: {
+        clientTenantId: payload.tenantId,
+        status: 'ACTIVE',
+        agencyTenant: {
+          isActive: true,
+          tenantUsers: { some: { userId: payload.sub } },
+        },
+      },
+      include: { clientTenant: true },
+    });
+
+    if (!agencyRelation) {
       throw new UnauthorizedException('No tienes acceso a esta empresa');
     }
 
-    const tenantUser = user.tenantUsers[0];
-    if (!tenantUser) {
-      throw new UnauthorizedException('No tienes acceso a esta empresa');
-    }
-
-    if (!tenantUser.tenant.isActive) {
+    if (!agencyRelation.clientTenant.isActive) {
       throw new UnauthorizedException('Empresa desactivada');
     }
 
@@ -57,8 +86,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       id: user.id,
       email: user.email,
       tenantId: payload.tenantId,
-      role: tenantUser.role,
-      isOwner: tenantUser.isOwner,
+      role: 'ADMIN' as const,
+      isOwner: false,
       firstName: user.firstName,
       lastName: user.lastName,
     };

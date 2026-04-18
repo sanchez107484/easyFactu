@@ -284,39 +284,72 @@ export class AuthService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    if (user.tenantUsers.length === 0) {
+    // Primary path: user has a direct TenantUser record for the target tenant
+    if (user.tenantUsers.length > 0) {
+      const tenantUser = user.tenantUsers[0]!;
+
+      if (!tenantUser.tenant.isActive) {
+        throw new UnauthorizedException('Empresa desactivada');
+      }
+
+      const tokens = await this.generateTokens(user.id, user.email, dto.tenantId);
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { lastActiveTenantId: dto.tenantId, refreshToken: tokens.refreshToken },
+      });
+
+      return {
+        currentTenant: {
+          id: tenantUser.tenant.id,
+          businessName: tenantUser.tenant.businessName,
+          nif: tenantUser.tenant.nif,
+          setupCompleted: tenantUser.tenant.setupCompleted,
+          plan: tenantUser.tenant.plan,
+          accountType: tenantUser.tenant.accountType,
+        },
+        ...tokens,
+      };
+    }
+
+    // Secondary path: agency user acting as a managed client
+    // The user belongs to an agency tenant that has an active AgencyClientRelation
+    // with the target tenant, but has no direct TenantUser record there.
+    const agencyRelation = await this.prisma.agencyClientRelation.findFirst({
+      where: {
+        clientTenantId: dto.tenantId,
+        status: 'ACTIVE',
+        agencyTenant: {
+          isActive: true,
+          tenantUsers: { some: { userId } },
+        },
+      },
+      include: { clientTenant: true },
+    });
+
+    if (!agencyRelation) {
       throw new UnauthorizedException('No tienes acceso a esta empresa');
     }
 
-    const tenantUser = user.tenantUsers[0];
-    if (!tenantUser) {
-      throw new UnauthorizedException('No tienes acceso a esta empresa');
-    }
-
-    if (!tenantUser.tenant.isActive) {
+    if (!agencyRelation.clientTenant.isActive) {
       throw new UnauthorizedException('Empresa desactivada');
     }
 
-    // Generate new tokens with the new tenant
     const tokens = await this.generateTokens(user.id, user.email, dto.tenantId);
 
-    // Update last active tenant and refresh token
     await this.prisma.user.update({
       where: { id: user.id },
-      data: {
-        lastActiveTenantId: dto.tenantId,
-        refreshToken: tokens.refreshToken,
-      },
+      data: { lastActiveTenantId: dto.tenantId, refreshToken: tokens.refreshToken },
     });
 
     return {
       currentTenant: {
-        id: tenantUser.tenant.id,
-        businessName: tenantUser.tenant.businessName,
-        nif: tenantUser.tenant.nif,
-        setupCompleted: tenantUser.tenant.setupCompleted,
-        plan: tenantUser.tenant.plan,
-        accountType: tenantUser.tenant.accountType,
+        id: agencyRelation.clientTenant.id,
+        businessName: agencyRelation.clientTenant.businessName,
+        nif: agencyRelation.clientTenant.nif,
+        setupCompleted: agencyRelation.clientTenant.setupCompleted,
+        plan: agencyRelation.clientTenant.plan,
+        accountType: agencyRelation.clientTenant.accountType,
       },
       ...tokens,
     };

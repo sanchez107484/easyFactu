@@ -26,6 +26,14 @@ export interface InvitationPublicInfo {
   status: string;
 }
 
+export type NifCheckStatus = 'AVAILABLE' | 'ALREADY_IN_PORTFOLIO' | 'EXISTS_CAN_INVITE';
+
+export interface NifCheckResult {
+  status: NifCheckStatus;
+  email?: string;
+  businessName?: string;
+}
+
 export const agencyApi = {
   getStats: async (): Promise<AgencyStats> => {
     const response = await apiClient.get('/agency/stats');
@@ -51,6 +59,11 @@ export const agencyApi = {
 
   revokeClient: async (clientTenantId: string): Promise<void> => {
     await apiClient.delete(`/agency/clients/${clientTenantId}`);
+  },
+
+  checkNif: async (nif: string): Promise<NifCheckResult> => {
+    const response = await apiClient.get('/agency/clients/check-nif', { params: { nif } });
+    return unwrapApiResponse(response);
   },
 
   acceptInvitation: async (token: string): Promise<AgencyClientWithDetails> => {

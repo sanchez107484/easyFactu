@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
+import { useAgencyContext } from '@/hooks/use-agency-context';
 import { DashboardUserMenu } from './user-menu';
 import { ThemeToggle } from './theme-toggle';
 import { TenantSelector } from './tenant-selector';
@@ -94,6 +95,7 @@ function resolveSegmentLabel(segment: string): string {
 export function DashboardHeader() {
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
+  const { isActingAsClient } = useAgencyContext();
 
   const segments = pathname.split('/').filter(Boolean);
   const breadcrumbs = segments.map((segment, index) => ({
@@ -120,7 +122,7 @@ export function DashboardHeader() {
 
       {/* Right side */}
       <div className="ml-auto flex items-center gap-4">
-        <TenantSelector />
+        {!isActingAsClient && <TenantSelector />}
         <ThemeToggle />
         <DashboardUserMenu user={user} />
       </div>

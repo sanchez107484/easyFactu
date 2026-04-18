@@ -10,7 +10,7 @@ import { PROVINCES } from '@easyfactura/shared-constants';
 import { validateNif } from '@easyfactura/shared-validators';
 import { AccountType } from '@easyfactura/shared-types';
 import { useAuthStore } from '@/store/auth-store';
-import { useCreateDirectClient } from '@/hooks/use-agency';
+import { useCreateDirectClient, useInviteClient, useCheckNif } from '@/hooks/use-agency';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,8 +30,11 @@ import {
   Building2,
   Globe,
   Loader2,
+  Mail,
   Network,
   User,
+  UserCheck,
+  Users,
 } from 'lucide-react';
 import { SectionLabel } from '@/components/common/section-label';
 
@@ -102,12 +105,97 @@ function FieldError({ message }: { message?: string }) {
   );
 }
 
+function getApiErrorCode(error: unknown): string | null {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'response' in error &&
+    (error as { response?: { data?: { code?: string } } }).response?.data?.code
+  ) {
+    return (error as { response: { data: { code: string } } }).response.data.code;
+  }
+  return null;
+}
+
+// ==================== CONFLICT BANNERS ====================
+
+interface NifConflictInfo {
+  email: string;
+  businessName: string;
+}
+
+function AlreadyInPortfolioBanner({ info }: { info: NifConflictInfo }) {
+  return (
+    <div className="rounded-xl border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
+      <div className="flex items-start gap-3">
+        <Users className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+            Este cliente ya está en tu cartera
+          </p>
+          <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
+            <span className="font-medium">{info.businessName}</span> ({info.email}) ya figura como
+            cliente tuyo. No es necesario volver a añadirlo.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NifConflictBanner({
+  info,
+  isCheckingNif,
+  onInvite,
+  isInviting,
+}: {
+  info: NifConflictInfo;
+  isCheckingNif: boolean;
+  onInvite: () => void;
+  isInviting: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-4">
+      <div className="flex items-start gap-3">
+        <UserCheck className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+            Este NIF ya tiene una cuenta en la aplicación
+          </p>
+          <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+            <span className="font-medium">{info.businessName}</span> ya está registrado con el email{' '}
+            <span className="font-mono font-medium">{info.email}</span>. Para añadirlo a tu cartera,
+            envía una invitación y podrán vincular su cuenta.
+          </p>
+          <div className="mt-3">
+            <Button
+              size="sm"
+              variant="default"
+              onClick={onInvite}
+              disabled={isInviting || isCheckingNif}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {isInviting ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Mail className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Enviar invitación a {info.email}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ==================== PAGE ====================
 
 export default function NuevoClienteAsesoriaPage() {
   const router = useRouter();
   const currentTenant = useAuthStore((state) => state.currentTenant);
   const createMutation = useCreateDirectClient();
+  const inviteMutation = useInviteClient();
 
   const isAgency = currentTenant?.accountType === AccountType.AGENCY;
 
@@ -138,26 +226,51 @@ export default function NuevoClienteAsesoriaPage() {
   } = form;
 
   const selectedAccountType = watch('accountType');
+  const watchedNif = watch('nif') ?? '';
+
+  // Real-time NIF detection
+  const { nifCheck, isCheckingNif } = useCheckNif(watchedNif);
+  const hasNifConflict =
+    nifCheck?.status === 'EXISTS_CAN_INVITE' || nifCheck?.status === 'ALREADY_IN_PORTFOLIO';
 
   const onSubmit = useCallback(
     async (data: FormData) => {
-      await createMutation.mutateAsync({
-        accountType: data.accountType,
-        businessName: data.businessName.trim(),
-        legalName: data.legalName?.trim() || undefined,
-        nif: data.nif.trim().toUpperCase(),
-        email: data.email.trim(),
-        phone: data.phone?.trim() || undefined,
-        address: data.address?.trim() || undefined,
-        postalCode: data.postalCode?.trim() || undefined,
-        city: data.city?.trim() || undefined,
-        province: data.province?.trim() || undefined,
-        notes: data.notes?.trim() || undefined,
-      });
-      router.push('/dashboard/asesoria/clientes');
+      // Block submission when conflict detected in real-time
+      if (hasNifConflict) return;
+      try {
+        await createMutation.mutateAsync({
+          accountType: data.accountType,
+          businessName: data.businessName.trim(),
+          legalName: data.legalName?.trim() || undefined,
+          nif: data.nif.trim().toUpperCase(),
+          email: data.email.trim(),
+          phone: data.phone?.trim() || undefined,
+          address: data.address?.trim() || undefined,
+          postalCode: data.postalCode?.trim() || undefined,
+          city: data.city?.trim() || undefined,
+          province: data.province?.trim() || undefined,
+          notes: data.notes?.trim() || undefined,
+        });
+        router.push('/dashboard/asesoria/clientes');
+      } catch (err) {
+        // Fallback: surface EMAIL_EXISTS inline if real-time check missed it
+        const code = getApiErrorCode(err);
+        if (code === 'EMAIL_EXISTS') {
+          form.setError('email', {
+            message: 'Este email ya está registrado en otra cuenta. Usa un email diferente.',
+          });
+        }
+      }
     },
-    [createMutation, router],
+    [createMutation, form, hasNifConflict, router],
   );
+
+  const handleInvite = useCallback(async () => {
+    const email = nifCheck?.email;
+    if (!email) return;
+    await inviteMutation.mutateAsync({ inviteeEmail: email });
+    router.push('/dashboard/asesoria/clientes');
+  }, [inviteMutation, nifCheck, router]);
 
   if (!isAgency) {
     router.replace('/dashboard');
@@ -184,11 +297,20 @@ export default function NuevoClienteAsesoriaPage() {
               Cancelar
             </Button>
           </Link>
-          <Button size="sm" onClick={handleSubmit(onSubmit)} disabled={createMutation.isPending}>
+          <Button
+            size="sm"
+            onClick={handleSubmit(onSubmit)}
+            disabled={createMutation.isPending || hasNifConflict || isCheckingNif}
+          >
             {createMutation.isPending ? (
               <>
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 Añadiendo...
+              </>
+            ) : isCheckingNif ? (
+              <>
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                Comprobando NIF...
               </>
             ) : (
               'Añadir cliente'
@@ -199,6 +321,24 @@ export default function NuevoClienteAsesoriaPage() {
 
       {/* ── Contenido scrollable ── */}
       <div className="flex-1 overflow-y-auto px-6 py-6">
+        {/* NIF conflict banners — shown in real time as the user types */}
+        {nifCheck?.status === 'ALREADY_IN_PORTFOLIO' && nifCheck.email && (
+          <div className="mb-5">
+            <AlreadyInPortfolioBanner
+              info={{ email: nifCheck.email, businessName: nifCheck.businessName ?? '' }}
+            />
+          </div>
+        )}
+        {nifCheck?.status === 'EXISTS_CAN_INVITE' && nifCheck.email && (
+          <div className="mb-5">
+            <NifConflictBanner
+              info={{ email: nifCheck.email, businessName: nifCheck.businessName ?? '' }}
+              isCheckingNif={isCheckingNif}
+              onInvite={handleInvite}
+              isInviting={inviteMutation.isPending}
+            />
+          </div>
+        )}
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="space-y-5">
             {/* ── Tipo de cliente ── */}

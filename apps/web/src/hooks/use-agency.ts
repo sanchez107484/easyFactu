@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { agencyApi } from '@/lib/api/agency-api';
 import { getErrorMessage } from '@/lib/api-client';
 import { triggerBlobDownload } from '@/lib/blob-download';
+import { validateNif } from '@easyfactura/shared-validators';
 import type {
   QueryAgencyClientsInput,
   CreateDirectClientInput,
@@ -76,6 +77,9 @@ export function useCreateDirectClient() {
       toast.success('Cliente añadido correctamente');
     },
     onError: (error) => {
+      // NIF_EXISTS and EMAIL_EXISTS are handled inline by the page — skip toast
+      const code = (error as { response?: { data?: { code?: string } } }).response?.data?.code;
+      if (code === 'NIF_EXISTS' || code === 'EMAIL_EXISTS') return;
       toast.error(getErrorMessage(error));
     },
   });
@@ -97,6 +101,24 @@ export function useInviteClient() {
   });
 }
 
+export function useCheckNif(nif: string) {
+  const normalizedNif = nif.toUpperCase().trim();
+  const isValidNif = normalizedNif.length >= 9 && validateNif(normalizedNif).isValid;
+
+  const query = useQuery({
+    queryKey: [...AGENCY_KEYS.all, 'check-nif', normalizedNif] as const,
+    queryFn: () => agencyApi.checkNif(normalizedNif),
+    enabled: isValidNif,
+    staleTime: 30 * 1000,
+    retry: false,
+  });
+
+  return {
+    nifCheck: isValidNif ? query.data : undefined,
+    isCheckingNif: query.isFetching,
+  };
+}
+
 export function useRevokeClient() {
   const queryClient = useQueryClient();
 
@@ -105,7 +127,7 @@ export function useRevokeClient() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clients() });
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.stats() });
-      toast.success('Acceso revocado');
+      toast.success('Cliente dado de baja correctamente');
     },
     onError: (error) => {
       toast.error(getErrorMessage(error));

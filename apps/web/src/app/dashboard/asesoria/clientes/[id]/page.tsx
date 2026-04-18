@@ -12,6 +12,8 @@ import {
   useClientFiscalAlerts,
   useExportLogs,
 } from '@/hooks/use-agency';
+import { useSwitchTenant } from '@/hooks/use-switch-tenant';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -65,6 +67,7 @@ import {
   Info,
   RefreshCw,
   CheckCircle2,
+  Loader2,
 } from 'lucide-react';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
 import { AccountType } from '@easyfactura/shared-types';
@@ -126,7 +129,7 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
   const { id: clientTenantId } = use(params);
   const router = useRouter();
   const currentTenant = useAuthStore((state) => state.currentTenant);
-  const switchTenant = useAuthStore((state) => state.switchTenant);
+  const { switchTenant, isPending: isSwitchingTenant } = useSwitchTenant();
 
   const [revokeOpen, setRevokeOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -155,8 +158,12 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
   }
 
   const handleManage = async () => {
-    await switchTenant(clientTenantId);
-    router.push('/dashboard');
+    try {
+      await switchTenant(clientTenantId);
+      router.push('/dashboard');
+    } catch {
+      toast.error('No se pudo acceder al cliente. Inténtalo de nuevo.');
+    }
   };
 
   const handleRevoke = () => {
@@ -256,8 +263,12 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
             <Download className="mr-2 h-4 w-4" />
             Exportar ContaPlus
           </Button>
-          <Button onClick={handleManage}>
-            <LayoutDashboard className="mr-2 h-4 w-4" />
+          <Button onClick={handleManage} disabled={isSwitchingTenant}>
+            {isSwitchingTenant ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+            )}
             Gestionar
           </Button>
           <Button
@@ -266,7 +277,7 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
             onClick={() => setRevokeOpen(true)}
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Revocar acceso
+            Dar de baja
           </Button>
         </div>
       </div>
@@ -660,11 +671,17 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
       <AlertDialog open={revokeOpen} onOpenChange={setRevokeOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Revocar acceso</AlertDialogTitle>
-            <AlertDialogDescription>
-              ¿Estás seguro de que quieres revocar el acceso a{' '}
-              <strong>{client.businessName}</strong>? Dejarás de poder gestionar su facturación. Los
-              datos del cliente no se eliminarán.
+            <AlertDialogTitle>Dar de baja al cliente</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  Vas a dar de baja a{' '}
+                  <strong className="text-foreground">{client.businessName}</strong> de tu cartera
+                  de clientes.
+                </p>
+                <p>Perderás el acceso a su dashboard y facturación. Sus datos no se eliminarán.</p>
+                <p className="font-medium text-destructive">Esta acción no se puede deshacer.</p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -674,7 +691,7 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isRevoking}
             >
-              Revocar acceso
+              {isRevoking ? 'Procesando...' : 'Confirmar baja'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

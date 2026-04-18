@@ -42,7 +42,7 @@ export class AgencyService {
   // ─── Clients list ─────────────────────────────────────────────────────────
 
   async findAllClients(agencyTenantId: string, query: QueryAgencyClientsDto) {
-    const { page = 1, limit = 20, search, status } = query;
+    const { page = 1, limit = 20, search, status = AgencyClientStatus.ACTIVE } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.AgencyClientRelationWhereInput = {
@@ -103,7 +103,7 @@ export class AgencyService {
       clientIds.length > 0
         ? await this.prisma.$queryRaw<InvoiceStatRow[]>`
             SELECT
-              tenant_id,
+              tenant_id::text,
               COUNT(*) FILTER (WHERE status != 'DRAFT') AS total_invoices,
               COUNT(*) FILTER (WHERE status IN ('CONFIRMED', 'SENT')) AS pending_invoices,
               SUM(total) FILTER (
@@ -111,7 +111,7 @@ export class AgencyService {
               ) AS monthly_revenue,
               MAX(issue_date) FILTER (WHERE status != 'DRAFT') AS last_activity
             FROM invoices
-            WHERE tenant_id = ANY(${clientIds}::uuid[])
+            WHERE tenant_id::text = ANY(${clientIds})
             GROUP BY tenant_id
           `
         : [];
@@ -183,7 +183,7 @@ export class AgencyService {
         COUNT(*)        AS invoices_count,
         COUNT(DISTINCT tenant_id) AS clients_count
       FROM invoices
-      WHERE tenant_id = ANY(${clientIds}::uuid[])
+      WHERE tenant_id::text = ANY(${clientIds})
         AND status IN ('CONFIRMED', 'SENT', 'PAID')
         AND issue_date >= ${startDate}
         AND issue_date <= ${endDate}
@@ -202,6 +202,50 @@ export class AgencyService {
     };
   }
 
+  // ─── Check NIF (real-time pre-validation before form submit) ──────────────
+
+  async checkNif(
+    agencyTenantId: string,
+    nif: string
+  ): Promise<
+    | { status: 'AVAILABLE' }
+    | { status: 'ALREADY_IN_PORTFOLIO'; email: string; businessName: string }
+    | { status: 'EXISTS_CAN_INVITE'; email: string; businessName: string }
+  > {
+    const normalizedNif = nif.toUpperCase().trim();
+
+    const existing = await this.prisma.tenant.findFirst({
+      where: { nif: normalizedNif },
+      select: { id: true, email: true, businessName: true },
+    });
+
+    if (!existing) return { status: 'AVAILABLE' };
+
+    const relation = await this.prisma.agencyClientRelation.findUnique({
+      where: {
+        agencyTenantId_clientTenantId: {
+          agencyTenantId,
+          clientTenantId: existing.id,
+        },
+      },
+      select: { status: true },
+    });
+
+    if (relation?.status === 'ACTIVE') {
+      return {
+        status: 'ALREADY_IN_PORTFOLIO',
+        email: existing.email ?? '',
+        businessName: existing.businessName,
+      };
+    }
+
+    return {
+      status: 'EXISTS_CAN_INVITE',
+      email: existing.email ?? '',
+      businessName: existing.businessName,
+    };
+  }
+
   // ─── Create direct client (agency creates tenant on behalf of client) ─────
 
   async createDirectClient(
@@ -209,28 +253,53 @@ export class AgencyService {
     addedByUserId: string,
     dto: CreateDirectClientDto
   ) {
-    // Verify the NIF is not already registered
-    const existingTenant = await this.prisma.tenant.findFirst({
-      where: { nif: dto.nif.toUpperCase().trim() },
+    const normalizedNif = dto.nif.toUpperCase().trim();
+    const normalizedEmail = dto.email.toLowerCase().trim();
+
+    // Check NIF uniqueness
+    const existingByNif = await this.prisma.tenant.findFirst({
+      where: { nif: normalizedNif },
+      select: { id: true, email: true, businessName: true },
     });
 
-    if (existingTenant) {
-      // Check if it's already linked to this agency
+    if (existingByNif) {
       const existingRelation = await this.prisma.agencyClientRelation.findUnique({
         where: {
           agencyTenantId_clientTenantId: {
             agencyTenantId,
-            clientTenantId: existingTenant.id,
+            clientTenantId: existingByNif.id,
           },
         },
       });
 
       if (existingRelation) {
-        throw new ConflictException('Este cliente ya está en tu cartera');
+        throw new ConflictException({
+          code: 'ALREADY_IN_PORTFOLIO',
+          message: 'Este cliente ya está en tu cartera',
+        });
       }
 
-      // Link the existing tenant to this agency
-      return this.linkExistingTenant(agencyTenantId, existingTenant.id, addedByUserId, dto.notes);
+      // NIF exists but not yet linked — must use the invitation flow
+      throw new ConflictException({
+        code: 'NIF_EXISTS',
+        email: existingByNif.email,
+        businessName: existingByNif.businessName,
+        message: `Este NIF ya tiene una cuenta registrada. Envíale una invitación a ${existingByNif.email} para vincularle a tu asesoría.`,
+      });
+    }
+
+    // Check email uniqueness (different NIF could reuse an email, but we block it)
+    const existingByEmail = await this.prisma.tenant.findFirst({
+      where: { email: normalizedEmail },
+      select: { id: true, nif: true },
+    });
+
+    if (existingByEmail) {
+      throw new ConflictException({
+        code: 'EMAIL_EXISTS',
+        message:
+          'Este email ya está registrado en otra cuenta. Usa un email diferente o envía una invitación al NIF correspondiente.',
+      });
     }
 
     // Create new tenant + link to agency in a single transaction
@@ -239,8 +308,8 @@ export class AgencyService {
         data: {
           businessName: dto.businessName,
           legalName: dto.legalName ?? null,
-          nif: dto.nif.toUpperCase().trim(),
-          email: dto.email,
+          nif: normalizedNif,
+          email: normalizedEmail,
           accountType: dto.accountType ?? 'INDIVIDUAL',
           address: dto.address ?? '',
           postalCode: dto.postalCode ?? '',
@@ -909,10 +978,10 @@ export class AgencyService {
       }),
       // Info: customers with > 50 invoices in the last 12 months (potential duplicate NIF)
       this.prisma.$queryRaw<Array<{ tenant_id: string }>>`
-          SELECT DISTINCT i.tenant_id
+          SELECT DISTINCT i.tenant_id::text
           FROM invoices i
           JOIN customers c ON c.id = i.customer_id
-          WHERE i.tenant_id = ANY(${clientIds}::uuid[])
+          WHERE i.tenant_id::text = ANY(${clientIds})
             AND i.issue_date >= NOW() - INTERVAL '12 months'
           GROUP BY i.tenant_id, c.nif
           HAVING COUNT(i.id) > 50
