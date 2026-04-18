@@ -61,6 +61,7 @@ export function AgencySharedPoolImport({ form }: AgencySharedPoolImportProps) {
 
   const { data: customers, isLoading } = useAgencySharedCustomers(
     debouncedSearch || undefined,
+    1,
     isActingAsClient && open,
   );
 
