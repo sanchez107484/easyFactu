@@ -58,8 +58,6 @@ function buildExampleInvoice(tenantId: string): Invoice {
     paymentStatus: PaymentStatus.UNPAID,
     paymentMethod: PaymentMethod.BANK_TRANSFER,
     paymentDetails: null,
-    amountPaid: 0,
-    paymentStatus: PaymentStatus.UNPAID,
     notes: 'Gracias por su confianza.',
     irpfPercent: 15,
     irpfTotal: 150,
