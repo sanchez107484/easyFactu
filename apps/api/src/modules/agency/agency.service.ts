@@ -797,4 +797,152 @@ export class AgencyService {
 
     return alerts;
   }
+
+  // ─── Fiscal alerts summary ────────────────────────────────────────────────
+
+  async getFiscalAlertsSummary(agencyTenantId: string) {
+    const relations = await this.prisma.agencyClientRelation.findMany({
+      where: { agencyTenantId, status: 'ACTIVE' },
+      select: {
+        clientTenantId: true,
+        clientTenant: { select: { businessName: true, nif: true } },
+      },
+    });
+
+    if (relations.length === 0) return [];
+
+    // Run in batches of 10 to avoid overloading the DB
+    const BATCH_SIZE = 10;
+    const results: Array<{
+      clientTenantId: string;
+      clientName: string;
+      nif: string;
+      errorCount: number;
+      warningCount: number;
+      infoCount: number;
+    }> = [];
+
+    for (let i = 0; i < relations.length; i += BATCH_SIZE) {
+      const batch = relations.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.all(
+        batch.map(async (relation) => {
+          const alerts = await this.prisma.$queryRaw<Array<{ count: bigint; type: string }>>`
+            SELECT
+              COUNT(*) as count,
+              CASE
+                WHEN nif !~ '^[0-9]{8}[A-Z]$' AND nif !~ '^[ABCDEFGHJKLMNPQRSUVW][0-9]{7}[0-9A-J]$' AND nif !~ '^[XYZ][0-9]{7}[A-Z]$' THEN 'error'
+                ELSE 'info'
+              END as type
+            FROM tenant
+            WHERE id = ${relation.clientTenantId}
+            GROUP BY type
+          `.catch(() => []);
+
+          // Fast path: just count by alert type using raw counts from fiscal checks
+          const [pendingVerifactu, duplicateNifs, simplifiedOver400, numberingGaps] =
+            await Promise.all([
+              this.prisma.invoice.count({
+                where: {
+                  tenantId: relation.clientTenantId,
+                  verifactuStatus: { in: ['PENDING', 'ERROR'] },
+                  status: 'CONFIRMED',
+                },
+              }),
+              this.prisma.$queryRaw<Array<{ nif: string; cnt: bigint }>>`
+                SELECT c.nif, COUNT(i.id) as cnt
+                FROM invoice i
+                JOIN customer c ON c.id = i."customerId"
+                WHERE i."tenantId" = ${relation.clientTenantId}
+                  AND i."issueDate" >= NOW() - INTERVAL '12 months'
+                GROUP BY c.nif
+                HAVING COUNT(i.id) > 50
+              `.catch(() => []),
+              this.prisma.invoice.count({
+                where: {
+                  tenantId: relation.clientTenantId,
+                  invoiceType: 'simplified',
+                  total: { gt: 400 },
+                  issueDate: { gte: new Date(new Date().getFullYear(), 0, 1) },
+                },
+              }),
+              this.prisma.invoice.count({
+                where: {
+                  tenantId: relation.clientTenantId,
+                  status: { in: ['CONFIRMED', 'PAID'] },
+                  verifactuStatus: 'ERROR',
+                },
+              }),
+            ]);
+
+          const errorCount =
+            Number(pendingVerifactu > 0 ? 1 : 0) + Number(numberingGaps > 0 ? 1 : 0);
+          const warningCount = Number(simplifiedOver400 > 0 ? 1 : 0);
+          const infoCount = Number((duplicateNifs as unknown[]).length > 0 ? 1 : 0);
+
+          return {
+            clientTenantId: relation.clientTenantId,
+            clientName: relation.clientTenant?.businessName ?? '',
+            nif: relation.clientTenant?.nif ?? '',
+            errorCount,
+            warningCount,
+            infoCount,
+          };
+        })
+      );
+      results.push(...batchResults);
+    }
+
+    // Only return clients that have at least one alert
+    return results
+      .filter((r) => r.errorCount + r.warningCount + r.infoCount > 0)
+      .sort((a, b) => b.errorCount - a.errorCount || b.warningCount - a.warningCount);
+  }
+
+  // ─── Export logs ─────────────────────────────────────────────────────────
+
+  async getExportLogs(
+    agencyTenantId: string,
+    clientTenantId?: string,
+    page = 1,
+    limit = 20
+  ) {
+    const skip = (page - 1) * limit;
+
+    const where = {
+      agencyTenantId,
+      ...(clientTenantId ? { clientTenantId } : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.agencyExportLog.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          clientTenantId: true,
+          format: true,
+          year: true,
+          quarter: true,
+          invoicesCount: true,
+          totalRevenue: true,
+          createdAt: true,
+          requestedByUser: { select: { firstName: true, lastName: true, email: true } },
+          clientTenant: { select: { businessName: true } },
+        },
+      }),
+      this.prisma.agencyExportLog.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
 }

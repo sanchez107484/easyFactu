@@ -19,6 +19,9 @@ const AGENCY_KEYS = {
   sharedCustomers: (search?: string, page?: number) =>
     [...AGENCY_KEYS.all, 'shared-customers', search, page] as const,
   fiscalAlerts: (id: string) => [...AGENCY_KEYS.all, 'fiscal-alerts', id] as const,
+  fiscalAlertsSummary: () => [...AGENCY_KEYS.all, 'fiscal-alerts-summary'] as const,
+  exportLogs: (clientTenantId?: string, page?: number) =>
+    [...AGENCY_KEYS.all, 'export-logs', clientTenantId, page] as const,
 };
 
 export function useAgencyStats() {
@@ -147,9 +150,11 @@ export function useExportContaPlus() {
       clientTenantId: string;
       params: ExportContaPlusInput;
     }) => agencyApi.exportContaPlus(clientTenantId, params),
-    onSuccess: ({ blob, filename }) => {
+    onSuccess: ({ blob, filename, invoicesCount, totalRevenue }) => {
       triggerBlobDownload(blob, filename);
-      toast.success('Exportación descargada correctamente');
+      toast.success(
+        `${invoicesCount} factura${invoicesCount !== 1 ? 's' : ''} exportada${invoicesCount !== 1 ? 's' : ''} · ${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(totalRevenue)}`,
+      );
     },
     onError: (error) => {
       toast.error(getErrorMessage(error));
@@ -163,5 +168,23 @@ export function useClientFiscalAlerts(clientTenantId: string, enabled = true) {
     queryFn: () => agencyApi.getFiscalAlerts(clientTenantId),
     enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes — fiscal checks are expensive
+  });
+}
+
+export function useFiscalAlertsSummary(enabled = true) {
+  return useQuery({
+    queryKey: AGENCY_KEYS.fiscalAlertsSummary(),
+    queryFn: agencyApi.getFiscalAlertsSummary,
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useExportLogs(clientTenantId?: string, page = 1, enabled = true) {
+  return useQuery({
+    queryKey: AGENCY_KEYS.exportLogs(clientTenantId, page),
+    queryFn: () => agencyApi.getExportLogs(clientTenantId, page),
+    enabled,
+    staleTime: 2 * 60 * 1000,
   });
 }

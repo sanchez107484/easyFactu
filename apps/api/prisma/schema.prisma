@@ -119,6 +119,7 @@ model User {
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   tenantUsers      TenantUser[]
+  agencyExportLogs AgencyExportLog[] @relation("AgencyExportLogUser")
 
   @@map("users")
 }
@@ -358,6 +359,7 @@ enum InvoiceType {
   standard
   proforma
   quote
+  simplified
 }
 
 enum PaymentStatus {
@@ -550,6 +552,7 @@ model AgencyExportLog {
 
   agencyTenant     Tenant       @relation("AgencyExportLogs", fields: [agencyTenantId], references: [id], onDelete: Cascade)
   clientTenant     Tenant       @relation("ClientExportLogs", fields: [clientTenantId], references: [id], onDelete: Cascade)
+  requestedByUser  User         @relation("AgencyExportLogUser", fields: [requestedByUserId], references: [id])
 
   @@index([agencyTenantId])
   @@index([clientTenantId])

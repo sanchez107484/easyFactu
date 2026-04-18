@@ -911,3 +911,25 @@ export interface FiscalAlert {
   invoiceId?: string;
   invoiceNumber?: string;
 }
+
+export interface FiscalAlertSummaryItem {
+  clientTenantId: string;
+  clientName: string;
+  nif: string;
+  errorCount: number;
+  warningCount: number;
+  infoCount: number;
+}
+
+export interface AgencyExportLogEntry {
+  id: string;
+  clientTenantId: string;
+  format: ExportFormat;
+  year: number;
+  quarter: number | null;
+  invoicesCount: number;
+  totalRevenue: number;
+  createdAt: string;
+  requestedByUser: { name: string; email: string } | null;
+  clientTenant: { businessName: string } | null;
+}

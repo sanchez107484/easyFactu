@@ -11,6 +11,8 @@ import type {
   QueryAgencyClientsInput,
   Customer,
   FiscalAlert,
+  FiscalAlertSummaryItem,
+  AgencyExportLogEntry,
   ExportContaPlusInput,
 } from '@easyfactura/shared-types';
 
@@ -96,7 +98,7 @@ export const agencyApi = {
   exportContaPlus: async (
     clientTenantId: string,
     params: ExportContaPlusInput,
-  ): Promise<{ blob: Blob; filename: string }> => {
+  ): Promise<{ blob: Blob; filename: string; invoicesCount: number; totalRevenue: number }> => {
     const response = await apiClient.get(
       `/agency/clients/${clientTenantId}/export/contaplus`,
       {
@@ -105,16 +107,33 @@ export const agencyApi = {
       },
     );
 
-    // Extract filename from Content-Disposition header if present
     const disposition = response.headers['content-disposition'] as string | undefined;
     const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
     const filename = filenameMatch?.[1] ?? `ContaPlus_${params.year}.txt`;
+    const invoicesCount = parseInt(response.headers['x-invoices-count'] ?? '0', 10);
+    const totalRevenue = parseFloat(response.headers['x-total-revenue'] ?? '0');
 
-    return { blob: response.data as Blob, filename };
+    return { blob: response.data as Blob, filename, invoicesCount, totalRevenue };
   },
 
   getFiscalAlerts: async (clientTenantId: string): Promise<FiscalAlert[]> => {
     const response = await apiClient.get(`/agency/clients/${clientTenantId}/fiscal-alerts`);
+    return unwrapApiResponse(response);
+  },
+
+  getFiscalAlertsSummary: async (): Promise<FiscalAlertSummaryItem[]> => {
+    const response = await apiClient.get('/agency/fiscal-alerts/summary');
+    return unwrapApiResponse(response);
+  },
+
+  getExportLogs: async (
+    clientTenantId?: string,
+    page = 1,
+    limit = 20
+  ): Promise<PaginatedResponse<AgencyExportLogEntry>> => {
+    const response = await apiClient.get('/agency/export-logs', {
+      params: { clientTenantId, page, limit },
+    });
     return unwrapApiResponse(response);
   },
 };

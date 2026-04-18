@@ -14,6 +14,7 @@ import {
   Res,
   ParseIntPipe,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { Response } from 'express';
 import { AgencyService } from './agency.service';
@@ -196,6 +197,14 @@ export class AgencyController {
 
   // ─── Fiscal validator ───────────────────────────────────────────────────
 
+  @Get('fiscal-alerts/summary')
+  @ApiOperation({ summary: 'Resumen de alertas fiscales de todos los clientes activos' })
+  @ApiResponse({ status: 200, description: 'Array de clientes con sus conteos de alertas' })
+  getFiscalAlertsSummary(@CurrentTenant() tenantId: string) {
+    return this.agencyService.getFiscalAlertsSummary(tenantId);
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Get('clients/:clientTenantId/fiscal-alerts')
   @ApiOperation({ summary: 'Validación fiscal preventiva de un cliente' })
   @ApiResponse({ status: 200, description: 'Lista de alertas fiscales (puede estar vacía)' })
@@ -204,5 +213,19 @@ export class AgencyController {
     @Param('clientTenantId', ParseUUIDPipe) clientTenantId: string
   ) {
     return this.fiscalValidatorService.validateClientFiscalHealth(tenantId, clientTenantId);
+  }
+
+  // ─── Export logs ───────────────────────────────────────────────────────
+
+  @Get('export-logs')
+  @ApiOperation({ summary: 'Historial de exportaciones realizadas' })
+  @ApiResponse({ status: 200, description: 'Lista paginada de exports' })
+  getExportLogs(
+    @CurrentTenant() tenantId: string,
+    @Query('clientTenantId') clientTenantId?: string,
+    @Query('page', new ParseIntPipe({ optional: true })) page = 1,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit = 20
+  ) {
+    return this.agencyService.getExportLogs(tenantId, clientTenantId, page, limit);
   }
 }

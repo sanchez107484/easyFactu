@@ -10,6 +10,7 @@ import {
   useUpdateClientNotes,
   useExportContaPlus,
   useClientFiscalAlerts,
+  useExportLogs,
 } from '@/hooks/use-agency';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -62,10 +63,12 @@ import {
   AlertCircle,
   ShieldAlert,
   Info,
+  RefreshCw,
+  CheckCircle2,
 } from 'lucide-react';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
 import { AccountType } from '@easyfactura/shared-types';
-import type { FiscalAlert } from '@easyfactura/shared-types';
+import type { FiscalAlert, AgencyExportLogEntry } from '@easyfactura/shared-types';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -133,10 +136,12 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
   const [notesValue, setNotesValue] = useState('');
 
   const { data, isLoading, error } = useAgencyClient(clientTenantId);
-  const { revokeClient, isPending: isRevoking } = { revokeClient: useRevokeClient().mutate, isPending: useRevokeClient().isPending };
+  const { mutate: revokeClient, isPending: isRevoking } = useRevokeClient();
   const { mutate: updateNotes, isPending: isSavingNotes } = useUpdateClientNotes();
   const { mutate: exportContaPlus, isPending: isExporting } = useExportContaPlus();
-  const { data: fiscalAlerts, isLoading: isLoadingAlerts } = useClientFiscalAlerts(clientTenantId);
+  const { data: fiscalAlerts, isLoading: isLoadingAlerts, refetch: refetchAlerts, isFetching: isRefetchingAlerts } =
+    useClientFiscalAlerts(clientTenantId);
+  const { data: exportLogsData } = useExportLogs(clientTenantId);
 
   const isAgency = currentTenant?.accountType === AccountType.AGENCY;
 
@@ -213,6 +218,7 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
   const client = data.clientTenant;
   const errorAlerts = fiscalAlerts?.filter((a) => a.type === 'error') ?? [];
   const hasAlerts = (fiscalAlerts?.length ?? 0) > 0;
+  const alertsLoaded = !isLoadingAlerts && fiscalAlerts !== undefined;
 
   return (
     <div className="space-y-6">
@@ -315,13 +321,25 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
       </div>
 
       {/* Fiscal alerts */}
-      {(isLoadingAlerts || hasAlerts) && (
+      {(isLoadingAlerts || alertsLoaded) && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-              <ShieldAlert className="h-4 w-4" />
-              Revisión fiscal preventiva
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                <ShieldAlert className="h-4 w-4" />
+                Revisión fiscal preventiva
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => refetchAlerts()}
+                disabled={isRefetchingAlerts}
+                title="Actualizar alertas"
+              >
+                <RefreshCw className={cn('h-3.5 w-3.5', isRefetchingAlerts && 'animate-spin')} />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoadingAlerts ? (
@@ -335,7 +353,14 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
                   <FiscalAlertRow key={`${alert.code}-${i}`} alert={alert} />
                 ))}
               </div>
-            ) : null}
+            ) : (
+              <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800/50 dark:bg-green-950/20">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
+                <p className="text-sm font-medium text-green-800 dark:text-green-400">
+                  Sin alertas fiscales. Todo en orden.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -516,6 +541,44 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
         </div>
       </div>
 
+      {/* Export history */}
+      {exportLogsData && exportLogsData.data.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <Clock className="h-4 w-4" />
+              Historial de exportaciones
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y">
+              {exportLogsData.data.slice(0, 5).map((log: AgencyExportLogEntry) => (
+                <div key={log.id} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+                  <div>
+                    <p className="text-sm font-medium">
+                      {log.format}{' '}
+                      <span className="font-normal text-muted-foreground">
+                        {log.year}{log.quarter ? ` · T${log.quarter}` : ''}
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(log.createdAt)}
+                      {log.requestedByUser && ` · ${log.requestedByUser.name}`}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm tabular-nums">{log.invoicesCount} facturas</p>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      {formatCurrency(log.totalRevenue)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Export ContaPlus dialog */}
       <Dialog open={exportOpen} onOpenChange={setExportOpen}>
         <DialogContent className="sm:max-w-sm">
@@ -584,137 +647,6 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Revoke confirmation */}
-      <AlertDialog open={revokeOpen} onOpenChange={setRevokeOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Revocar acceso</AlertDialogTitle>
-            <AlertDialogDescription>
-              ¿Estás seguro de que quieres revocar el acceso a{' '}
-              <strong>{client.businessName}</strong>? Dejarás de poder gestionar su facturación. Los
-              datos del cliente no se eliminarán.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleRevoke}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={isRevoking}
-            >
-              Revocar acceso
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
-}
-
-                    Editar
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              {editingNotes ? (
-                <div className="space-y-2">
-                  <Textarea
-                    value={notesValue}
-                    onChange={(e) => setNotesValue(e.target.value)}
-                    placeholder="Añade notas internas sobre este cliente..."
-                    rows={4}
-                    className="resize-none text-sm"
-                    autoFocus
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setEditingNotes(false)}
-                      disabled={isSavingNotes}
-                    >
-                      <X className="mr-1 h-3.5 w-3.5" />
-                      Cancelar
-                    </Button>
-                    <Button size="sm" onClick={handleSaveNotes} disabled={isSavingNotes}>
-                      <Check className="mr-1 h-3.5 w-3.5" />
-                      Guardar
-                    </Button>
-                  </div>
-                </div>
-              ) : data.notes ? (
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{data.notes}</p>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">
-                  Sin notas. Haz clic en Editar para añadir.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent invoices */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                  <FileText className="h-4 w-4" />
-                  Últimas facturas
-                </CardTitle>
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleManage}>
-                  Ver todas
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {data.recentInvoices.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-                  <FileText className="h-8 w-8 text-muted-foreground/40" />
-                  <p className="text-sm text-muted-foreground">
-                    Este cliente no tiene facturas aún
-                  </p>
-                  <Button size="sm" variant="outline" onClick={handleManage}>
-                    <LayoutDashboard className="mr-1.5 h-3.5 w-3.5" />
-                    Ir al dashboard del cliente
-                  </Button>
-                </div>
-              ) : (
-                <div className="divide-y">
-                  {data.recentInvoices.map((invoice) => (
-                    <div
-                      key={invoice.id}
-                      className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">
-                          {invoice.number ?? 'Sin número'}
-                          {invoice.customer && (
-                            <span className="ml-2 font-normal text-muted-foreground">
-                              · {invoice.customer.name}
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(invoice.issueDate)}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-3">
-                        <InvoiceStatusBadge status={invoice.status} />
-                        <span className="text-sm font-semibold tabular-nums">
-                          {formatCurrency(invoice.total)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
 
       {/* Revoke confirmation */}
       <AlertDialog open={revokeOpen} onOpenChange={setRevokeOpen}>
