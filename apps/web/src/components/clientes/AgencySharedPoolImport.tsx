@@ -143,7 +143,7 @@ export function AgencySharedPoolImport({ form }: AgencySharedPoolImportProps) {
                   <Skeleton key={i} className="h-9 w-full rounded-md" />
                 ))}
               </div>
-            ) : !customers?.length ? (
+            ) : !customers?.data.length ? (
               <div className="flex flex-col items-center justify-center gap-1 py-6 text-center">
                 <Building2 className="h-6 w-6 text-muted-foreground/40" />
                 <p className="text-xs text-muted-foreground">
@@ -154,7 +154,7 @@ export function AgencySharedPoolImport({ form }: AgencySharedPoolImportProps) {
               </div>
             ) : (
               <ul className="p-1">
-                {customers.map((customer) => (
+                {customers.data.map((customer) => (
                   <li key={customer.id}>
                     <button
                       type="button"
