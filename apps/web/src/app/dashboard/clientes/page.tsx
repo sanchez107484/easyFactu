@@ -42,11 +42,14 @@ import {
   UserPlus,
   Users,
   X,
+  Info,
+  ArrowRight,
 } from 'lucide-react';
-import { CustomerType, Customer } from '@easyfactura/shared-types';
+import { CustomerType, Customer, AccountType } from '@easyfactura/shared-types';
 import { useCustomers, useDeleteCustomer } from '@/hooks/use-customers';
 import { useSortTable } from '@/hooks/use-sort-table';
 import { SortableHeader } from '@/components/common/sortable-header';
+import { useAuthStore } from '@/store/auth-store';
 
 // ==================== CONSTANTS ====================
 
@@ -175,6 +178,8 @@ export default function ClientesPage() {
   const [page, setPage] = useState(1);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const { sortKey, sortDir, handleSort } = useSortTable('name', 'asc');
+  const currentTenant = useAuthStore((state) => state.currentTenant);
+  const isAgency = currentTenant?.accountType === AccountType.AGENCY;
 
   useEffect(() => {
     setPage(1);
@@ -211,7 +216,9 @@ export default function ClientesPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {isAgency ? 'Mis contactos' : 'Clientes'}
+        </h1>
         <Card>
           <CardContent className="p-8 text-center">
             <p className="text-destructive font-medium">Error al cargar los clientes.</p>
@@ -234,13 +241,42 @@ export default function ClientesPage() {
       />
 
       <div className="space-y-6">
+        {/* Agency context banner */}
+        {isAgency && (
+          <div className="flex items-start gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950/30">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-indigo-800 dark:text-indigo-300">
+                Estos contactos son los destinatarios de{' '}
+                <strong>tus propias facturas como gestoría</strong>.
+              </p>
+              <p className="mt-0.5 text-xs text-indigo-600 dark:text-indigo-400">
+                Por ejemplo: si tu gestoría factura a un cliente por sus honorarios, ese cliente va
+                aquí. No confundir con los autónomos y empresas que <em>gestionas</em> en nombre de
+                terceros.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/asesoria/clientes"
+              className="flex shrink-0 items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
+            >
+              Ver mis clientes
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {isAgency ? 'Mis contactos' : 'Clientes'}
+            </h1>
             <div className="text-sm text-muted-foreground mt-1">
               {isLoading ? (
                 <Skeleton className="h-4 w-32" />
+              ) : isAgency ? (
+                `${total} contacto${total !== 1 ? 's' : ''} para tus facturas`
               ) : (
                 `${total} cliente${total !== 1 ? 's' : ''} en total`
               )}

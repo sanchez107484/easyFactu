@@ -8,6 +8,7 @@ import { getApiErrorMessage } from '@/lib/api-error';
 import { seriesApi } from '@/lib/api/series-api';
 import {
   Customer,
+  SharedPoolCustomer,
   PaginatedResponse,
   QueryCustomersInput,
   CreateCustomerInput,
@@ -153,5 +154,56 @@ export function useInvoiceSeries(year?: number) {
   return useQuery({
     queryKey: ['invoice-series', 'list', currentYear],
     queryFn: () => seriesApi.getAll(currentYear),
+  });
+}
+
+// ==================== AGENCY SHARED POOL ====================
+
+const SHARED_POOL_MIN_LENGTH = 2;
+
+/**
+ * Searches customers across sibling tenants in the same agency network.
+ * Only fires when the search term is at least 2 characters long.
+ * Returns an empty array when no agency relation exists — never throws.
+ */
+export function useSharedCustomerPool(search: string) {
+  const trimmed = search.trim();
+  return useQuery({
+    queryKey: ['customers', 'shared-pool', trimmed],
+    queryFn: () => customerApi.getSharedPool(trimmed),
+    enabled: trimmed.length >= SHARED_POOL_MIN_LENGTH,
+    staleTime: 30_000,
+    placeholderData: [] as SharedPoolCustomer[],
+  });
+}
+
+/**
+ * Copies a customer from the agency shared pool into the current tenant.
+ * If the customer (by NIF) already exists locally, returns the existing one.
+ * On success, updates the local customers cache so selects react immediately.
+ */
+export function useImportFromPool() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (nif: string) => customerApi.importFromPool(nif),
+    onSuccess: (importedCustomer) => {
+      queryClient.setQueriesData<PaginatedResponse<Customer>>(
+        { queryKey: ['customers', 'list'] },
+        (old) => {
+          if (!old) return old;
+          if (old.data.some((c) => c.id === importedCustomer.id)) return old;
+          return {
+            ...old,
+            data: [importedCustomer, ...old.data],
+            meta: { ...old.meta, total: old.meta.total + 1 },
+          };
+        },
+      );
+      queryClient.invalidateQueries({ queryKey: ['customers'], refetchType: 'none' });
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
   });
 }

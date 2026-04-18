@@ -44,6 +44,9 @@ import {
   X,
   Clock,
   XCircle,
+  ArrowRightLeft,
+  FileText,
+  Send,
 } from 'lucide-react';
 import type { AgencyClientWithDetails, AgencyInvitation } from '@easyfactura/shared-types';
 import { AccountType } from '@easyfactura/shared-types';
@@ -93,13 +96,15 @@ export default function AgencyClientsPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Mis clientes</h1>
-          <p className="mt-1 text-muted-foreground">Todos los clientes de tu cartera</p>
+          <p className="mt-1 text-muted-foreground">
+            Los autónomos y empresas de tu cartera que gestionas en su nombre
+          </p>
         </div>
         <div className="flex gap-2">
           <Link href="/dashboard/asesoria/clientes/invitar">
             <Button variant="outline">
               <Mail className="mr-2 h-4 w-4" />
-              Invitar
+              Invitar cliente
             </Button>
           </Link>
           <Link href="/dashboard/asesoria/clientes/nuevo">
@@ -110,6 +115,42 @@ export default function AgencyClientsPage() {
           </Link>
         </div>
       </div>
+
+      {/* How it works — shown when there are no clients yet */}
+      {!isLoading && !data?.data.length && !pendingInvitations.length && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border bg-card p-4">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40">
+              <ArrowRightLeft className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <p className="font-semibold text-sm">Cambia entre cuentas al instante</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Con un clic accedes a la cuenta de cada cliente y gestionas sus facturas como si
+              fueras él. Sin cerrar sesión, sin contraseñas.
+            </p>
+          </div>
+          <div className="rounded-xl border bg-card p-4">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40">
+              <FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <p className="font-semibold text-sm">VeriFactu por cada NIF</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Cada cliente tiene su propio sistema de facturación con VeriFactu activado. Tú solo te
+              preocupas de crear las facturas.
+            </p>
+          </div>
+          <div className="rounded-xl border bg-card p-4">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40">
+              <Send className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <p className="font-semibold text-sm">Dos formas de añadir clientes</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              <strong>Añadir:</strong> creas tú la cuenta del cliente directamente.{' '}
+              <strong>Invitar:</strong> el cliente que ya usa NovaFactura acepta la vinculación.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative">

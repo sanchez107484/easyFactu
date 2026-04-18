@@ -13,6 +13,7 @@ import type {
 const AGENCY_KEYS = {
   all: ['agency'] as const,
   stats: () => [...AGENCY_KEYS.all, 'stats'] as const,
+  quarterlyIva: () => [...AGENCY_KEYS.all, 'quarterly-iva'] as const,
   clients: (query?: QueryAgencyClientsInput) => [...AGENCY_KEYS.all, 'clients', query] as const,
   client: (id: string) => [...AGENCY_KEYS.all, 'clients', id] as const,
   invitations: () => [...AGENCY_KEYS.all, 'invitations'] as const,
@@ -70,7 +71,8 @@ export function useCreateDirectClient() {
   return useMutation({
     mutationFn: (data: CreateDirectClientInput) => agencyApi.createDirectClient(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clients() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.stats() });
       toast.success('Cliente añadido correctamente');
     },
     onError: (error) => {
@@ -85,7 +87,8 @@ export function useInviteClient() {
   return useMutation({
     mutationFn: (data: InviteClientInput) => agencyApi.inviteClient(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.invitations() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.stats() });
       toast.success('Invitación enviada correctamente');
     },
     onError: (error) => {
@@ -100,7 +103,8 @@ export function useRevokeClient() {
   return useMutation({
     mutationFn: (clientTenantId: string) => agencyApi.revokeClient(clientTenantId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clients() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.stats() });
       toast.success('Acceso revocado');
     },
     onError: (error) => {
@@ -132,7 +136,8 @@ export function useCancelInvitation() {
   return useMutation({
     mutationFn: (id: string) => agencyApi.cancelInvitation(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.invitations() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.stats() });
       toast.success('Invitación cancelada');
     },
     onError: (error) => {
@@ -186,5 +191,13 @@ export function useExportLogs(clientTenantId?: string, page = 1, enabled = true)
     queryFn: () => agencyApi.getExportLogs(clientTenantId, page),
     enabled,
     staleTime: 2 * 60 * 1000,
+  });
+}
+
+export function useAgencyQuarterlyIva() {
+  return useQuery({
+    queryKey: AGENCY_KEYS.quarterlyIva(),
+    queryFn: agencyApi.getQuarterlyIvaSummary,
+    staleTime: 5 * 60 * 1000,
   });
 }

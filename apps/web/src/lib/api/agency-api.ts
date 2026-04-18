@@ -14,6 +14,7 @@ import type {
   FiscalAlertSummaryItem,
   AgencyExportLogEntry,
   ExportContaPlusInput,
+  QuarterlyIvaSummary,
 } from '@easyfactura/shared-types';
 
 export interface InvitationPublicInfo {
@@ -131,6 +132,11 @@ export const agencyApi = {
     const response = await apiClient.get('/agency/export-logs', {
       params: { clientTenantId, page, limit },
     });
+    return unwrapApiResponse(response);
+  },
+
+  getQuarterlyIvaSummary: async (): Promise<QuarterlyIvaSummary> => {
+    const response = await apiClient.get('/agency/stats/quarterly-iva');
     return unwrapApiResponse(response);
   },
 };

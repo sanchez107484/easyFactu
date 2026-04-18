@@ -42,8 +42,6 @@ export class AgencyService {
   // ─── Clients list ─────────────────────────────────────────────────────────
 
   async findAllClients(agencyTenantId: string, query: QueryAgencyClientsDto) {
-    await this.assertAgencyTenant(agencyTenantId);
-
     const { page = 1, limit = 20, search, status } = query;
     const skip = (page - 1) * limit;
 
@@ -81,6 +79,7 @@ export class AgencyService {
               setupCompleted: true,
               isActive: true,
               createdAt: true,
+              certificateExpiry: true,
             },
           },
         },
@@ -88,50 +87,118 @@ export class AgencyService {
       this.prisma.agencyClientRelation.count({ where }),
     ]);
 
-    // Batch-fetch invoice stats for all clients in 3 queries (not N*3)
+    // Merge 3 groupBy queries into 1 conditional-aggregate query
     const clientIds = relations.map((r) => r.clientTenantId);
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
-    const [totalCounts, pendingCounts, monthlyRevenues] = await Promise.all([
-      this.prisma.invoice.groupBy({
-        by: ['tenantId'],
-        where: { tenantId: { in: clientIds }, status: { notIn: ['DRAFT'] } },
-        _count: { id: true },
-      }),
-      this.prisma.invoice.groupBy({
-        by: ['tenantId'],
-        where: { tenantId: { in: clientIds }, status: { in: ['CONFIRMED', 'SENT'] } },
-        _count: { id: true },
-      }),
-      this.prisma.invoice.groupBy({
-        by: ['tenantId'],
-        where: {
-          tenantId: { in: clientIds },
-          status: { in: ['CONFIRMED', 'SENT', 'PAID'] },
-          issueDate: { gte: startOfMonth },
+    type InvoiceStatRow = {
+      tenant_id: string;
+      total_invoices: bigint;
+      pending_invoices: bigint;
+      monthly_revenue: string | null;
+      last_activity: Date | null;
+    };
+
+    const invoiceStats =
+      clientIds.length > 0
+        ? await this.prisma.$queryRaw<InvoiceStatRow[]>`
+            SELECT
+              tenant_id,
+              COUNT(*) FILTER (WHERE status != 'DRAFT') AS total_invoices,
+              COUNT(*) FILTER (WHERE status IN ('CONFIRMED', 'SENT')) AS pending_invoices,
+              SUM(total) FILTER (
+                WHERE status IN ('CONFIRMED', 'SENT', 'PAID') AND issue_date >= ${startOfMonth}
+              ) AS monthly_revenue,
+              MAX(issue_date) FILTER (WHERE status != 'DRAFT') AS last_activity
+            FROM invoices
+            WHERE tenant_id = ANY(${clientIds}::uuid[])
+            GROUP BY tenant_id
+          `
+        : [];
+
+    const statsMap = new Map(invoiceStats.map((r) => [r.tenant_id, r]));
+
+    const enriched = relations.map((relation) => {
+      const stats = statsMap.get(relation.clientTenantId);
+      return {
+        ...relation,
+        stats: {
+          totalInvoices: Number(stats?.total_invoices ?? 0),
+          pendingInvoices: Number(stats?.pending_invoices ?? 0),
+          monthlyRevenue: Number(stats?.monthly_revenue ?? 0),
+          lastActivity: stats?.last_activity ? (stats.last_activity as Date).toISOString() : null,
         },
-        _sum: { total: true },
-      }),
-    ]);
-
-    const totalCountMap = new Map(totalCounts.map((r) => [r.tenantId, r._count.id]));
-    const pendingCountMap = new Map(pendingCounts.map((r) => [r.tenantId, r._count.id]));
-    const monthlyRevenueMap = new Map(
-      monthlyRevenues.map((r) => [r.tenantId, Number(r._sum.total ?? 0)])
-    );
-
-    const enriched = relations.map((relation) => ({
-      ...relation,
-      stats: {
-        totalInvoices: totalCountMap.get(relation.clientTenantId) ?? 0,
-        pendingInvoices: pendingCountMap.get(relation.clientTenantId) ?? 0,
-        monthlyRevenue: monthlyRevenueMap.get(relation.clientTenantId) ?? 0,
-      },
-    }));
+      };
+    });
 
     return {
       data: enriched,
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  // ─── Quarterly IVA summary across all active clients ──────────────────────
+
+  async getQuarterlyIvaSummary(agencyTenantId: string) {
+    const now = new Date();
+    const quarter = Math.ceil((now.getMonth() + 1) / 3);
+    const year = now.getFullYear();
+    const startDate = new Date(year, (quarter - 1) * 3, 1);
+    const endDate = new Date(year, quarter * 3, 0, 23, 59, 59);
+
+    const relations = await this.prisma.agencyClientRelation.findMany({
+      where: { agencyTenantId, status: 'ACTIVE' },
+      select: { clientTenantId: true },
+    });
+
+    if (relations.length === 0) {
+      return {
+        quarter,
+        year,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        totalIva: 0,
+        totalIrpf: 0,
+        totalRevenue: 0,
+        invoicesCount: 0,
+        clientsWithData: 0,
+      };
+    }
+
+    const clientIds = relations.map((r) => r.clientTenantId);
+
+    type IvaRow = {
+      total_iva: string | null;
+      total_irpf: string | null;
+      total_revenue: string | null;
+      invoices_count: bigint;
+      clients_count: bigint;
+    };
+
+    const [result] = await this.prisma.$queryRaw<IvaRow[]>`
+      SELECT
+        SUM(tax_total)  AS total_iva,
+        SUM(irpf_total) AS total_irpf,
+        SUM(total)      AS total_revenue,
+        COUNT(*)        AS invoices_count,
+        COUNT(DISTINCT tenant_id) AS clients_count
+      FROM invoices
+      WHERE tenant_id = ANY(${clientIds}::uuid[])
+        AND status IN ('CONFIRMED', 'SENT', 'PAID')
+        AND issue_date >= ${startDate}
+        AND issue_date <= ${endDate}
+    `;
+
+    return {
+      quarter,
+      year,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      totalIva: Number(result?.total_iva ?? 0),
+      totalIrpf: Number(result?.total_irpf ?? 0),
+      totalRevenue: Number(result?.total_revenue ?? 0),
+      invoicesCount: Number(result?.invoices_count ?? 0),
+      clientsWithData: Number(result?.clients_count ?? 0),
     };
   }
 
@@ -142,8 +209,6 @@ export class AgencyService {
     addedByUserId: string,
     dto: CreateDirectClientDto
   ) {
-    await this.assertAgencyTenant(agencyTenantId);
-
     // Verify the NIF is not already registered
     const existingTenant = await this.prisma.tenant.findFirst({
       where: { nif: dto.nif.toUpperCase().trim() },
@@ -173,8 +238,10 @@ export class AgencyService {
       const clientTenant = await tx.tenant.create({
         data: {
           businessName: dto.businessName,
+          legalName: dto.legalName ?? null,
           nif: dto.nif.toUpperCase().trim(),
           email: dto.email,
+          accountType: dto.accountType ?? 'INDIVIDUAL',
           address: dto.address ?? '',
           postalCode: dto.postalCode ?? '',
           city: dto.city ?? '',
@@ -260,8 +327,6 @@ export class AgencyService {
   // ─── Send invitation to existing user ────────────────────────────────────
 
   async inviteClient(agencyTenantId: string, dto: InviteClientDto) {
-    await this.assertAgencyTenant(agencyTenantId);
-
     // Check for an active pending invitation to same email
     const existingInvitation = await this.prisma.agencyInvitation.findFirst({
       where: {
@@ -456,8 +521,6 @@ export class AgencyService {
   // ─── Revoke access ────────────────────────────────────────────────────────
 
   async revokeClient(agencyTenantId: string, clientTenantId: string) {
-    await this.assertAgencyTenant(agencyTenantId);
-
     const relation = await this.prisma.agencyClientRelation.findUnique({
       where: {
         agencyTenantId_clientTenantId: { agencyTenantId, clientTenantId },
@@ -496,8 +559,6 @@ export class AgencyService {
   // ─── Pending invitations list ─────────────────────────────────────────────
 
   async findPendingInvitations(agencyTenantId: string) {
-    await this.assertAgencyTenant(agencyTenantId);
-
     return this.prisma.agencyInvitation.findMany({
       where: {
         agencyTenantId,
@@ -517,8 +578,6 @@ export class AgencyService {
   }
 
   async cancelInvitation(agencyTenantId: string, invitationId: string) {
-    await this.assertAgencyTenant(agencyTenantId);
-
     const invitation = await this.prisma.agencyInvitation.findFirst({
       where: { id: invitationId, agencyTenantId },
     });
@@ -537,8 +596,6 @@ export class AgencyService {
   // ─── Get single client detail ─────────────────────────────────────────────
 
   async findOneClient(agencyTenantId: string, clientTenantId: string) {
-    await this.assertAgencyTenant(agencyTenantId);
-
     const relation = await this.prisma.agencyClientRelation.findUnique({
       where: { agencyTenantId_clientTenantId: { agencyTenantId, clientTenantId } },
       include: {
@@ -567,21 +624,24 @@ export class AgencyService {
 
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
-    const [totalCount, pendingCount, monthlyRevenue, recentInvoices] = await Promise.all([
-      this.prisma.invoice.count({
-        where: { tenantId: clientTenantId, status: { notIn: ['DRAFT'] } },
-      }),
-      this.prisma.invoice.count({
-        where: { tenantId: clientTenantId, status: { in: ['CONFIRMED', 'SENT'] } },
-      }),
-      this.prisma.invoice.aggregate({
-        where: {
-          tenantId: clientTenantId,
-          status: { in: ['CONFIRMED', 'SENT', 'PAID'] },
-          issueDate: { gte: startOfMonth },
-        },
-        _sum: { total: true },
-      }),
+    // Merge 3 invoice queries into 1 conditional-aggregate + 1 findMany (parallel)
+    type ClientInvoiceStats = {
+      total_invoices: bigint;
+      pending_invoices: bigint;
+      monthly_revenue: string | null;
+    };
+
+    const [invoiceStats, recentInvoices] = await Promise.all([
+      this.prisma.$queryRaw<ClientInvoiceStats[]>`
+        SELECT
+          COUNT(*) FILTER (WHERE status != 'DRAFT') AS total_invoices,
+          COUNT(*) FILTER (WHERE status IN ('CONFIRMED', 'SENT')) AS pending_invoices,
+          SUM(total) FILTER (
+            WHERE status IN ('CONFIRMED', 'SENT', 'PAID') AND issue_date >= ${startOfMonth}
+          ) AS monthly_revenue
+        FROM invoices
+        WHERE tenant_id = ${clientTenantId}::uuid
+      `,
       this.prisma.invoice.findMany({
         where: { tenantId: clientTenantId, status: { notIn: ['DRAFT'] } },
         orderBy: { issueDate: 'desc' },
@@ -597,12 +657,14 @@ export class AgencyService {
       }),
     ]);
 
+    const stats = invoiceStats[0];
+
     return {
       ...relation,
       stats: {
-        totalInvoices: totalCount,
-        pendingInvoices: pendingCount,
-        monthlyRevenue: Number(monthlyRevenue._sum.total ?? 0),
+        totalInvoices: Number(stats?.total_invoices ?? 0),
+        pendingInvoices: Number(stats?.pending_invoices ?? 0),
+        monthlyRevenue: Number(stats?.monthly_revenue ?? 0),
       },
       recentInvoices,
     };
@@ -611,8 +673,6 @@ export class AgencyService {
   // ─── Update notes for a client relation ───────────────────────────────────
 
   async updateClientNotes(agencyTenantId: string, clientTenantId: string, notes: string) {
-    await this.assertAgencyTenant(agencyTenantId);
-
     const relation = await this.prisma.agencyClientRelation.findUnique({
       where: { agencyTenantId_clientTenantId: { agencyTenantId, clientTenantId } },
     });
@@ -632,8 +692,6 @@ export class AgencyService {
   // shared pool. This endpoint returns them so the frontend can suggest imports.
 
   async findSharedCustomers(agencyTenantId: string, search?: string, page = 1, limit = 20) {
-    await this.assertAgencyTenant(agencyTenantId);
-
     const skip = (page - 1) * limit;
 
     const where = {
@@ -668,88 +726,84 @@ export class AgencyService {
   // ─── Dashboard stats for agency hub ──────────────────────────────────────
 
   async getAgencyStats(agencyTenantId: string) {
-    await this.assertAgencyTenant(agencyTenantId);
-
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
 
-    const [
-      totalClients,
-      activeClients,
-      pendingInvitations,
-      clientsNeedingAttention,
-      monthlyRevenueResult,
-      clientsWithoutRecentInvoice,
-      pendingVerifactuResult,
-    ] = await Promise.all([
-      this.prisma.agencyClientRelation.count({ where: { agencyTenantId } }),
-      this.prisma.agencyClientRelation.count({
+    // RT1 (3 parallel): get counts + active client IDs in one round trip
+    const [activeRelations, totalClients, pendingInvitations] = await Promise.all([
+      this.prisma.agencyClientRelation.findMany({
         where: { agencyTenantId, status: 'ACTIVE' },
+        select: { clientTenantId: true },
       }),
+      this.prisma.agencyClientRelation.count({ where: { agencyTenantId } }),
       this.prisma.agencyInvitation.count({
-        where: {
-          agencyTenantId,
-          status: 'PENDING',
-          expiresAt: { gt: now },
-        },
-      }),
-      // Clients with pending/sent invoices (need attention — awaiting payment)
-      this.prisma.agencyClientRelation.count({
-        where: {
-          agencyTenantId,
-          status: 'ACTIVE',
-          clientTenant: {
-            invoices: { some: { status: { in: ['CONFIRMED', 'SENT'] } } },
-          },
-        },
-      }),
-      // Total revenue across all active clients this month
-      this.prisma.invoice.aggregate({
-        where: {
-          tenant: {
-            clientRelations: { some: { agencyTenantId, status: 'ACTIVE' } },
-          },
-          status: { in: ['CONFIRMED', 'SENT', 'PAID'] },
-          issueDate: { gte: startOfMonth },
-        },
-        _sum: { total: true },
-      }),
-      // Active clients with NO confirmed invoice in the last 3 months
-      this.prisma.agencyClientRelation.count({
-        where: {
-          agencyTenantId,
-          status: 'ACTIVE',
-          clientTenant: {
-            invoices: {
-              none: {
-                status: { in: ['CONFIRMED', 'SENT', 'PAID'] },
-                issueDate: { gte: threeMonthsAgo },
-              },
-            },
-          },
-        },
-      }),
-      // Active clients with VeriFactu errors/pending
-      this.prisma.agencyClientRelation.count({
-        where: {
-          agencyTenantId,
-          status: 'ACTIVE',
-          clientTenant: {
-            invoices: {
-              some: {
-                status: { in: ['CONFIRMED', 'SENT', 'PAID'] },
-                verifactuStatus: { in: ['PENDING', 'ERROR', 'REJECTED'] },
-              },
-            },
-          },
-        },
+        where: { agencyTenantId, status: 'PENDING', expiresAt: { gt: now } },
       }),
     ]);
 
+    const activeClients = activeRelations.length;
+    const clientIds = activeRelations.map((r) => r.clientTenantId);
+
+    if (clientIds.length === 0) {
+      return {
+        totalClients,
+        activeClients: 0,
+        pendingInvitations,
+        clientsNeedingAttention: 0,
+        monthlyRevenue: 0,
+        alerts: [],
+      };
+    }
+
+    // RT2 (4 parallel): simple tenantId IN clause — no correlated subqueries
+    const [attentionGroups, monthlyRevenueResult, recentInvoiceGroups, verifactuGroups] =
+      await Promise.all([
+        // Distinct clients with at least one CONFIRMED/SENT invoice (awaiting payment)
+        this.prisma.invoice.groupBy({
+          by: ['tenantId'],
+          where: { tenantId: { in: clientIds }, status: { in: ['CONFIRMED', 'SENT'] } },
+          _count: { id: true },
+        }),
+        // Total revenue across all active clients this month
+        this.prisma.invoice.aggregate({
+          where: {
+            tenantId: { in: clientIds },
+            status: { in: ['CONFIRMED', 'SENT', 'PAID'] },
+            issueDate: { gte: startOfMonth },
+          },
+          _sum: { total: true },
+        }),
+        // Clients WITH a confirmed invoice in the last 3 months (subtract to get "without")
+        this.prisma.invoice.groupBy({
+          by: ['tenantId'],
+          where: {
+            tenantId: { in: clientIds },
+            status: { in: ['CONFIRMED', 'SENT', 'PAID'] },
+            issueDate: { gte: threeMonthsAgo },
+          },
+          _count: { id: true },
+        }),
+        // Clients with VeriFactu errors/pending
+        this.prisma.invoice.groupBy({
+          by: ['tenantId'],
+          where: {
+            tenantId: { in: clientIds },
+            status: { in: ['CONFIRMED', 'SENT', 'PAID'] },
+            verifactuStatus: { in: ['PENDING', 'ERROR', 'REJECTED'] },
+          },
+          _count: { id: true },
+        }),
+      ]);
+
+    const clientsNeedingAttention = attentionGroups.length;
+    const clientsWithoutRecentInvoice =
+      activeClients - new Set(recentInvoiceGroups.map((r) => r.tenantId)).size;
+    const pendingVerifactu = verifactuGroups.length;
+
     const alerts = this.buildDashboardAlerts({
       clientsWithoutRecentInvoice,
-      pendingVerifactu: pendingVerifactuResult,
+      pendingVerifactu,
       clientsNeedingAttention,
     });
 
@@ -812,88 +866,76 @@ export class AgencyService {
     if (relations.length === 0) return [];
 
     // Run in batches of 10 to avoid overloading the DB
-    const BATCH_SIZE = 10;
-    const results: Array<{
-      clientTenantId: string;
-      clientName: string;
-      nif: string;
-      errorCount: number;
-      warningCount: number;
-      infoCount: number;
-    }> = [];
+    const clientIds = relations.map((r) => r.clientTenantId);
+    const startOfYear = new Date(new Date().getFullYear(), 0, 1);
 
-    for (let i = 0; i < relations.length; i += BATCH_SIZE) {
-      const batch = relations.slice(i, i + BATCH_SIZE);
-      const batchResults = await Promise.all(
-        batch.map(async (relation) => {
-          const alerts = await this.prisma.$queryRaw<Array<{ count: bigint; type: string }>>`
-            SELECT
-              COUNT(*) as count,
-              CASE
-                WHEN nif !~ '^[0-9]{8}[A-Z]$' AND nif !~ '^[ABCDEFGHJKLMNPQRSUVW][0-9]{7}[0-9A-J]$' AND nif !~ '^[XYZ][0-9]{7}[A-Z]$' THEN 'error'
-                ELSE 'info'
-              END as type
-            FROM tenant
-            WHERE id = ${relation.clientTenantId}
-            GROUP BY type
-          `.catch(() => []);
+    // Replace N×5 per-client queries with 4 parallel batch queries across all clients at once
+    const [
+      pendingVerifactuGroups,
+      verifactuErrorGroups,
+      simplifiedOver400Groups,
+      duplicateNifRows,
+    ] = await Promise.all([
+      // Error: invoices pending VeriFactu submission
+      this.prisma.invoice.groupBy({
+        by: ['tenantId'],
+        where: {
+          tenantId: { in: clientIds },
+          verifactuStatus: { in: ['PENDING', 'ERROR'] },
+          status: 'CONFIRMED',
+        },
+        _count: { id: true },
+      }),
+      // Error: invoices with VeriFactu rejection/error after submission
+      this.prisma.invoice.groupBy({
+        by: ['tenantId'],
+        where: {
+          tenantId: { in: clientIds },
+          status: { in: ['CONFIRMED', 'PAID'] },
+          verifactuStatus: 'ERROR',
+        },
+        _count: { id: true },
+      }),
+      // Warning: simplified invoices exceeding the 400 € limit
+      this.prisma.invoice.groupBy({
+        by: ['tenantId'],
+        where: {
+          tenantId: { in: clientIds },
+          invoiceType: 'simplified',
+          total: { gt: 400 },
+          issueDate: { gte: startOfYear },
+        },
+        _count: { id: true },
+      }),
+      // Info: customers with > 50 invoices in the last 12 months (potential duplicate NIF)
+      this.prisma.$queryRaw<Array<{ tenant_id: string }>>`
+          SELECT DISTINCT i.tenant_id
+          FROM invoices i
+          JOIN customers c ON c.id = i.customer_id
+          WHERE i.tenant_id = ANY(${clientIds}::uuid[])
+            AND i.issue_date >= NOW() - INTERVAL '12 months'
+          GROUP BY i.tenant_id, c.nif
+          HAVING COUNT(i.id) > 50
+        `.catch(() => [] as Array<{ tenant_id: string }>),
+    ]);
 
-          // Fast path: just count by alert type using raw counts from fiscal checks
-          const [pendingVerifactu, duplicateNifs, simplifiedOver400, numberingGaps] =
-            await Promise.all([
-              this.prisma.invoice.count({
-                where: {
-                  tenantId: relation.clientTenantId,
-                  verifactuStatus: { in: ['PENDING', 'ERROR'] },
-                  status: 'CONFIRMED',
-                },
-              }),
-              this.prisma.$queryRaw<Array<{ nif: string; cnt: bigint }>>`
-                SELECT c.nif, COUNT(i.id) as cnt
-                FROM invoice i
-                JOIN customer c ON c.id = i."customerId"
-                WHERE i."tenantId" = ${relation.clientTenantId}
-                  AND i."issueDate" >= NOW() - INTERVAL '12 months'
-                GROUP BY c.nif
-                HAVING COUNT(i.id) > 50
-              `.catch(() => []),
-              this.prisma.invoice.count({
-                where: {
-                  tenantId: relation.clientTenantId,
-                  invoiceType: 'simplified',
-                  total: { gt: 400 },
-                  issueDate: { gte: new Date(new Date().getFullYear(), 0, 1) },
-                },
-              }),
-              this.prisma.invoice.count({
-                where: {
-                  tenantId: relation.clientTenantId,
-                  status: { in: ['CONFIRMED', 'PAID'] },
-                  verifactuStatus: 'ERROR',
-                },
-              }),
-            ]);
-
-          const errorCount =
-            Number(pendingVerifactu > 0 ? 1 : 0) + Number(numberingGaps > 0 ? 1 : 0);
-          const warningCount = Number(simplifiedOver400 > 0 ? 1 : 0);
-          const infoCount = Number((duplicateNifs as unknown[]).length > 0 ? 1 : 0);
-
-          return {
-            clientTenantId: relation.clientTenantId,
-            clientName: relation.clientTenant?.businessName ?? '',
-            nif: relation.clientTenant?.nif ?? '',
-            errorCount,
-            warningCount,
-            infoCount,
-          };
-        })
-      );
-      results.push(...batchResults);
-    }
+    const pendingVerifactuSet = new Set(pendingVerifactuGroups.map((r) => r.tenantId));
+    const verifactuErrorSet = new Set(verifactuErrorGroups.map((r) => r.tenantId));
+    const simplifiedOver400Set = new Set(simplifiedOver400Groups.map((r) => r.tenantId));
+    const duplicateNifSet = new Set(duplicateNifRows.map((r) => r.tenant_id));
 
     // Only return clients that have at least one alert
-    return results
+    return relations
+      .map((relation) => ({
+        clientTenantId: relation.clientTenantId,
+        clientName: relation.clientTenant?.businessName ?? '',
+        nif: relation.clientTenant?.nif ?? '',
+        errorCount:
+          Number(pendingVerifactuSet.has(relation.clientTenantId)) +
+          Number(verifactuErrorSet.has(relation.clientTenantId)),
+        warningCount: Number(simplifiedOver400Set.has(relation.clientTenantId)),
+        infoCount: Number(duplicateNifSet.has(relation.clientTenantId)),
+      }))
       .filter((r) => r.errorCount + r.warningCount + r.infoCount > 0)
       .sort((a, b) => b.errorCount - a.errorCount || b.warningCount - a.warningCount);
   }

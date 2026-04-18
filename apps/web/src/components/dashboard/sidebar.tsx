@@ -28,11 +28,19 @@ interface NavItem {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+  description?: string;
 }
+
+interface NavSeparator {
+  type: 'separator';
+  label?: string;
+}
+
+type NavEntry = NavItem | NavSeparator;
 
 // ─── Navigation sets ──────────────────────────────────────────────────────────
 
-const defaultNavItems: NavItem[] = [
+const defaultNavItems: NavEntry[] = [
   { title: 'Inicio', href: '/dashboard', icon: LayoutDashboard },
   { title: 'Facturas', href: '/dashboard/facturas', icon: FileText },
   { title: 'Clientes', href: '/dashboard/clientes', icon: Users },
@@ -43,7 +51,7 @@ const defaultNavItems: NavItem[] = [
 ];
 
 // Nav when agency is operating inside a client tenant ("acting as")
-const actingAsNavItems: NavItem[] = [
+const actingAsNavItems: NavEntry[] = [
   { title: 'Inicio', href: '/dashboard', icon: LayoutDashboard },
   { title: 'Facturas', href: '/dashboard/facturas', icon: FileText },
   { title: 'Clientes', href: '/dashboard/clientes', icon: Users },
@@ -54,10 +62,30 @@ const actingAsNavItems: NavItem[] = [
 ];
 
 // Nav for the AGENCY's own tenant hub
-const agencyNavItems: NavItem[] = [
+const agencyNavItems: NavEntry[] = [
+  // ── Gestión de cartera ────────────────────────────────────────────────────
+  { type: 'separator', label: 'Gestión de clientes' },
   { title: 'Mi panel', href: '/dashboard/asesoria', icon: Briefcase },
-  { title: 'Mis clientes', href: '/dashboard/asesoria/clientes', icon: UserCheck },
-  { title: 'Directorio', href: '/dashboard/clientes', icon: Users },
+  {
+    title: 'Mis clientes',
+    href: '/dashboard/asesoria/clientes',
+    icon: UserCheck,
+    description: 'Autónomos y empresas que gestionas',
+  },
+  // ── Facturación propia de la asesoría ─────────────────────────────────────
+  { type: 'separator', label: 'Mi asesoría' },
+  { title: 'Facturas', href: '/dashboard/facturas', icon: FileText },
+  {
+    title: 'Clientes para facturar',
+    href: '/dashboard/clientes',
+    icon: Users,
+    description: 'Destinatarios de tus facturas propias',
+  },
+  { title: 'Productos', href: '/dashboard/productos', icon: Package },
+  { title: 'Presupuestos', href: '/dashboard/presupuestos', icon: ClipboardList },
+  { title: 'Recurrentes', href: '/dashboard/recurrentes', icon: RefreshCw },
+  // ── Config ────────────────────────────────────────────────────────────────
+  { type: 'separator' },
   { title: 'Ajustes', href: '/dashboard/ajustes', icon: Settings },
 ];
 
@@ -76,7 +104,7 @@ export function DashboardSidebar() {
   const isActingAsClient =
     isAgencyUser && currentTenant !== null && currentTenant.id !== agencyTenantInfo!.tenant.id;
 
-  const navItems = isInAgencyOwnTenant
+  const navItems: NavEntry[] = isInAgencyOwnTenant
     ? agencyNavItems
     : isActingAsClient
       ? actingAsNavItems
@@ -138,7 +166,21 @@ export function DashboardSidebar() {
 
       {/* Navigation */}
       <nav className="space-y-1 p-2">
-        {navItems.map((item) => {
+        {navItems.map((entry, index) => {
+          if ('type' in entry && entry.type === 'separator') {
+            return (
+              <div key={`sep-${index}`} className="px-1 pt-2 pb-1">
+                <div className="border-t border-border" />
+                {!sidebarCollapsed && entry.label && (
+                  <p className="mt-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">
+                    {entry.label}
+                  </p>
+                )}
+              </div>
+            );
+          }
+
+          const item = entry as NavItem;
           const Icon = item.icon;
           const isActive =
             item.href === '/dashboard' || item.href === '/dashboard/asesoria'
@@ -159,7 +201,21 @@ export function DashboardSidebar() {
               title={sidebarCollapsed ? item.title : undefined}
             >
               <Icon className="h-5 w-5 shrink-0" />
-              {!sidebarCollapsed && <span>{item.title}</span>}
+              {!sidebarCollapsed && (
+                <div className="min-w-0 flex-1">
+                  <span className="block leading-tight">{item.title}</span>
+                  {item.description && (
+                    <span
+                      className={cn(
+                        'block truncate text-xs leading-tight mt-0.5',
+                        isActive ? 'text-primary-foreground/70' : 'opacity-55',
+                      )}
+                    >
+                      {item.description}
+                    </span>
+                  )}
+                </div>
+              )}
             </Link>
           );
         })}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -171,6 +172,7 @@ function AgencySidePanel() {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function RegisterAgencyPage() {
   const register = useAuthStore((state) => state.register);
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -194,9 +196,7 @@ export default function RegisterAgencyPage() {
     try {
       await register({ ...data, accountType: AccountType.AGENCY });
       toast.success('¡Cuenta de asesoría creada!');
-      setTimeout(() => {
-        window.location.href = '/dashboard/asesoria';
-      }, 500);
+      router.push('/dashboard/asesoria');
     } catch (error) {
       toast.error(getErrorMessage(error));
       setIsLoading(false);

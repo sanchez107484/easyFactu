@@ -334,6 +334,15 @@ export interface QueryCustomersInput {
   sortOrder?: 'asc' | 'desc';
 }
 
+/**
+ * A customer from a sibling tenant in the same agency network.
+ * Includes metadata identifying the source tenant for display purposes.
+ */
+export interface SharedPoolCustomer extends Customer {
+  sourceTenantId: string;
+  sourceTenantName: string;
+}
+
 // ==================== PRODUCT ====================
 
 export interface Product {
@@ -999,8 +1008,10 @@ export interface AgencyInvitation {
 
 export interface CreateDirectClientInput {
   businessName: string;
+  legalName?: string;
   nif: string;
   email: string;
+  accountType?: AccountType;
   address?: string;
   postalCode?: string;
   city?: string;
@@ -1072,6 +1083,18 @@ export interface AgencyStats {
   clientsNeedingAttention: number;
   monthlyRevenue: number;
   alerts: AgencyDashboardAlert[];
+}
+
+export interface QuarterlyIvaSummary {
+  quarter: number;
+  year: number;
+  startDate: string;
+  endDate: string;
+  totalIva: number;
+  totalIrpf: number;
+  totalRevenue: number;
+  invoicesCount: number;
+  clientsWithData: number;
 }
 
 // ==================== AGENCY EXPORT ====================

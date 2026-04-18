@@ -51,6 +51,13 @@ export class AgencyController {
     return this.agencyService.getAgencyStats(tenantId);
   }
 
+  @Get('stats/quarterly-iva')
+  @ApiOperation({ summary: 'Resumen de IVA trimestral agregado de todos los clientes activos' })
+  @ApiResponse({ status: 200, description: 'Resumen IVA del trimestre en curso' })
+  getQuarterlyIvaSummary(@CurrentTenant() tenantId: string) {
+    return this.agencyService.getQuarterlyIvaSummary(tenantId);
+  }
+
   // ─── Client management ─────────────────────────────────────────────────
 
   @Get('clients')

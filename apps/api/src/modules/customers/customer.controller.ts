@@ -1,9 +1,28 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+} from '@nestjs/swagger';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
+import { ImportFromPoolDto } from './dto/import-from-pool.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 
@@ -26,6 +45,21 @@ export class CustomerController {
   @ApiOkResponse({ description: 'Lista paginada de clientes' })
   findAll(@CurrentTenant() tenantId: string, @Query() query: QueryCustomerDto) {
     return this.customerService.findAll(tenantId, query);
+  }
+
+  // NOTE: Static routes must be declared before /:id to avoid param capture
+  @Get('shared-pool')
+  @ApiOperation({ summary: 'Buscar clientes en el directorio compartido de la asesoría' })
+  @ApiOkResponse({ description: 'Clientes de otros tenants de la misma asesoría' })
+  findSharedPool(@CurrentTenant() tenantId: string, @Query('search') search?: string) {
+    return this.customerService.findAgencySharedPool(tenantId, search);
+  }
+
+  @Post('import-from-pool')
+  @ApiOperation({ summary: 'Copiar un cliente del directorio compartido al tenant actual' })
+  @ApiCreatedResponse({ description: 'Cliente copiado o ya existente devuelto' })
+  importFromPool(@CurrentTenant() tenantId: string, @Body() dto: ImportFromPoolDto) {
+    return this.customerService.importFromAgencyPool(tenantId, dto.nif);
   }
 
   @Get(':id')
