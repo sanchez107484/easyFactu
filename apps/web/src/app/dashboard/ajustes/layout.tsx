@@ -13,6 +13,7 @@ import {
   Bell,
   LayoutTemplate,
   SlidersHorizontal,
+  UserCircle,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth-store';
 import { AccountType } from '@easyfactura/shared-types';
@@ -22,6 +23,11 @@ const BASE_SECTIONS = [
     title: 'General',
     href: '/dashboard/ajustes',
     icon: Settings,
+  },
+  {
+    title: 'Cuenta',
+    href: '/dashboard/ajustes/cuenta',
+    icon: UserCircle,
   },
   {
     title: 'Empresa',
