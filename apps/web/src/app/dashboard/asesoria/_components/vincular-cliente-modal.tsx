@@ -163,7 +163,8 @@ export function VincularClienteModal({ isOpen, onClose }: VincularClienteModalPr
     [onClose, router],
   );
 
-  const showSpinner = isChecking && (debouncedQuery.includes('@') || debouncedQuery.trim().length >= 9);
+  const showSpinner =
+    isChecking && (debouncedQuery.includes('@') || debouncedQuery.trim().length >= 9);
   const isInputTooShort =
     query.trim().length > 0 && query.trim().length < 9 && !query.includes('@');
 
@@ -312,66 +313,69 @@ export function VincularClienteModal({ isOpen, onClose }: VincularClienteModalPr
         )}
 
         {/* ── Not found by NIF — two-option flow ── */}
-        {flowStep.type === 'not_found_nif' && !isChecking && !nifValidationError && query.trim().toUpperCase() === flowStep.nif && (
-          <div className="space-y-3">
-            <div className="rounded-xl border border-dashed p-4 text-center">
-              <p className="text-sm font-medium">Ningún usuario registrado con ese NIF</p>
-              <p className="mt-1 text-xs text-muted-foreground">¿Cómo quieres proceder?</p>
-            </div>
+        {flowStep.type === 'not_found_nif' &&
+          !isChecking &&
+          !nifValidationError &&
+          query.trim().toUpperCase() === flowStep.nif && (
+            <div className="space-y-3">
+              <div className="rounded-xl border border-dashed p-4 text-center">
+                <p className="text-sm font-medium">Ningún usuario registrado con ese NIF</p>
+                <p className="mt-1 text-xs text-muted-foreground">¿Cómo quieres proceder?</p>
+              </div>
 
-            <div className="grid gap-2">
-              {/* Option 1: Create directly */}
-              <button
-                type="button"
-                onClick={() => handleGoToDirectClient(flowStep.nif)}
-                className={cn(
-                  'flex items-start gap-3 rounded-xl border p-4 text-left transition-colors',
-                  'hover:border-primary/50 hover:bg-muted/40',
-                )}
-              >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-customer-100 text-customer-600 dark:bg-customer-950 dark:text-customer-400">
-                  <UserPlus className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">Crear cliente directamente</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Tú gestionas su cuenta. Ideal si el cliente no usa {brandConfig.app.name}.
-                  </p>
-                </div>
-                <ArrowRight className="ml-auto mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/50" />
-              </button>
-
-              {/* Option 2: Send invitation by email */}
-              {flowStep.type === 'not_found_nif' && (
+              <div className="grid gap-2">
+                {/* Option 1: Create directly */}
                 <button
                   type="button"
-                  onClick={() =>
-                    setFlowStep({
-                      type: 'invite_email_form',
-                      nif: flowStep.nif,
-                      email: '',
-                    })
-                  }
+                  onClick={() => handleGoToDirectClient(flowStep.nif)}
                   className={cn(
                     'flex items-start gap-3 rounded-xl border p-4 text-left transition-colors',
                     'hover:border-primary/50 hover:bg-muted/40',
                   )}
                 >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-agency-100 text-agency-600 dark:bg-agency-950 dark:text-agency-400">
-                    <Mail className="h-4 w-4" />
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-customer-100 text-customer-600 dark:bg-customer-950 dark:text-customer-400">
+                    <UserPlus className="h-4 w-4" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold">Enviar invitación por email</p>
+                    <p className="text-sm font-semibold">Crear cliente directamente</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      El cliente recibirá un enlace para crear su cuenta y vincularse contigo.
+                      Tú gestionas su cuenta. Ideal si el cliente no usa {brandConfig.app.name}.
                     </p>
                   </div>
                   <ArrowRight className="ml-auto mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/50" />
                 </button>
-              )}
+
+                {/* Option 2: Send invitation by email */}
+                {flowStep.type === 'not_found_nif' && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFlowStep({
+                        type: 'invite_email_form',
+                        nif: flowStep.nif,
+                        email: '',
+                      })
+                    }
+                    className={cn(
+                      'flex items-start gap-3 rounded-xl border p-4 text-left transition-colors',
+                      'hover:border-primary/50 hover:bg-muted/40',
+                    )}
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-agency-100 text-agency-600 dark:bg-agency-950 dark:text-agency-400">
+                      <Mail className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">Enviar invitación por email</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        El cliente recibirá un enlace para crear su cuenta y vincularse contigo.
+                      </p>
+                    </div>
+                    <ArrowRight className="ml-auto mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/50" />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* ── Invite by email form (after choosing option 2 from NIF not found) ── */}
         {flowStep.type === 'invite_email_form' && (

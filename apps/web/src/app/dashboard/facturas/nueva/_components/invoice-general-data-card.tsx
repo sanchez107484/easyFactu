@@ -38,7 +38,7 @@ type FormData = {
   customerId: string;
   issueDate: string;
   dueDate?: string;
-  seriesId?: string;
+  seriesId: string; // required — always has a default '' from the schema
   discountPercent?: number;
   irpfPercent?: number;
   paymentMethod?: PaymentMethod;
