@@ -59,6 +59,20 @@ const actingAsNavItems: NavEntry[] = defaultNavItems;
 
 // Nav for the AGENCY's own tenant hub
 const agencyNavItems: NavEntry[] = [
+  // ── Facturación propia de la asesoría ─────────────────────────────────────
+  { title: 'Inicio', href: '/dashboard', icon: LayoutDashboard },
+  { title: 'Facturas', href: '/dashboard/facturas', icon: FileText },
+  {
+    title: 'Clientes para facturar',
+    href: '/dashboard/clientes',
+    icon: Users,
+    description: 'Destinatarios de tus facturas propias',
+  },
+  { title: 'Productos', href: '/dashboard/productos', icon: Package },
+  { title: 'Presupuestos', href: '/dashboard/presupuestos', icon: ClipboardList },
+  { title: 'Recurrentes', href: '/dashboard/recurrentes', icon: RefreshCw },
+  { title: 'Ajustes', href: '/dashboard/ajustes', icon: Settings },
+
   // ── Gestión de cartera ────────────────────────────────────────────────────
   { type: 'separator', label: 'Gestión de clientes' },
   { title: 'Mi panel', href: '/dashboard/asesoria', icon: Briefcase },
@@ -74,21 +88,6 @@ const agencyNavItems: NavEntry[] = [
     icon: Mail,
     description: 'Historial de invitaciones enviadas',
   },
-  // ── Facturación propia de la asesoría ─────────────────────────────────────
-  { type: 'separator', label: 'Mi asesoría' },
-  { title: 'Facturas', href: '/dashboard/facturas', icon: FileText },
-  {
-    title: 'Clientes para facturar',
-    href: '/dashboard/clientes',
-    icon: Users,
-    description: 'Destinatarios de tus facturas propias',
-  },
-  { title: 'Productos', href: '/dashboard/productos', icon: Package },
-  { title: 'Presupuestos', href: '/dashboard/presupuestos', icon: ClipboardList },
-  { title: 'Recurrentes', href: '/dashboard/recurrentes', icon: RefreshCw },
-  // ── Config ────────────────────────────────────────────────────────────────
-  { type: 'separator' },
-  { title: 'Ajustes', href: '/dashboard/ajustes', icon: Settings },
 ];
 
 export function DashboardSidebar() {
