@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { apiClient, setAccessToken, setRefreshToken, clearTokens } from '@/lib/api-client';
 import { unwrapApiResponse } from '@/lib/api-response';
-import type { User, Tenant, AccountType } from '@easyfactura/shared-types';
+import type { User, Tenant, AccountType, AuthResponse } from '@easyfactura/shared-types';
 
 // Definir localmente hasta que se resuelva la cache de VSCode
 const TenantUserRole = {
@@ -33,6 +33,7 @@ interface AuthState {
   checkAuth: () => Promise<void>;
   switchTenant: (tenantId: string) => Promise<void>;
   updateCurrentTenant: (tenant: Tenant) => void;
+  updateUser: (userData: Partial<Pick<User, 'firstName' | 'lastName'>>) => void;
 }
 
 interface RegisterData {
@@ -54,7 +55,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   login: async (email, password, tenantId) => {
     const response = await apiClient.post('/auth/login', { email, password });
-    const authData: any = unwrapApiResponse(response);
+    const authData = unwrapApiResponse<AuthResponse>(response);
 
     if (!authData.accessToken || !authData.refreshToken) {
       throw new Error('El servidor no devolvió los tokens necesarios');
@@ -74,7 +75,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   register: async (registerData) => {
     const response = await apiClient.post('/auth/register', registerData);
-    const authData: any = unwrapApiResponse(response);
+    const authData = unwrapApiResponse<AuthResponse>(response);
 
     if (!authData.accessToken || !authData.refreshToken) {
       throw new Error('El servidor no devolvió los tokens necesarios');
@@ -126,7 +127,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       const response = await apiClient.get('/auth/me');
-      const userData: any = unwrapApiResponse(response);
+      const userData = unwrapApiResponse<
+        User & { tenants: TenantWithRole[]; lastActiveTenantId?: string }
+      >(response);
 
       // Extraer el tenant actual del lastActiveTenantId
       const currentTenantData =
@@ -158,9 +161,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ currentTenant: tenant });
   },
 
+  updateUser: (userData) => {
+    set((state) => ({
+      user: state.user ? { ...state.user, ...userData } : null,
+    }));
+  },
+
   switchTenant: async (tenantId: string) => {
     const response = await apiClient.post('/auth/switch-tenant', { tenantId });
-    const authData: any = unwrapApiResponse(response);
+    const authData = unwrapApiResponse<AuthResponse>(response);
 
     if (!authData.accessToken || !authData.refreshToken) {
       throw new Error('El servidor no devolvió los tokens necesarios');

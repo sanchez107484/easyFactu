@@ -171,7 +171,7 @@ export class CustomerService {
    */
   async findAgencySharedPool(tenantId: string, search?: string) {
     const relation = await this.prisma.agencyClientRelation.findFirst({
-      where: { clientTenantId: tenantId, status: 'ACTIVE' },
+      where: { clientTenantId: tenantId },
       select: { agencyTenantId: true },
     });
 
@@ -180,7 +180,6 @@ export class CustomerService {
     const siblings = await this.prisma.agencyClientRelation.findMany({
       where: {
         agencyTenantId: relation.agencyTenantId,
-        status: 'ACTIVE',
         clientTenantId: { not: tenantId },
       },
       select: {
@@ -229,7 +228,7 @@ export class CustomerService {
    */
   async importFromAgencyPool(tenantId: string, nif: string) {
     const relation = await this.prisma.agencyClientRelation.findFirst({
-      where: { clientTenantId: tenantId, status: 'ACTIVE' },
+      where: { clientTenantId: tenantId },
       select: { agencyTenantId: true },
     });
 
@@ -248,7 +247,6 @@ export class CustomerService {
     const siblings = await this.prisma.agencyClientRelation.findMany({
       where: {
         agencyTenantId: relation.agencyTenantId,
-        status: 'ACTIVE',
         clientTenantId: { not: tenantId },
       },
       select: { clientTenantId: true },

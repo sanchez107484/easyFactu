@@ -23,6 +23,7 @@ import {
   UserCheck,
   ArrowLeft,
   Loader2,
+  Mail,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,6 +68,12 @@ const agencyNavItems: NavEntry[] = [
     icon: UserCheck,
     description: 'Autónomos y empresas que gestionas',
   },
+  {
+    title: 'Invitaciones',
+    href: '/dashboard/asesoria/invitaciones',
+    icon: Mail,
+    description: 'Historial de invitaciones enviadas',
+  },
   // ── Facturación propia de la asesoría ─────────────────────────────────────
   { type: 'separator', label: 'Mi asesoría' },
   { title: 'Facturas', href: '/dashboard/facturas', icon: FileText },
@@ -102,7 +109,7 @@ export function DashboardSidebar() {
       className={cn(
         'fixed left-0 top-0 z-40 flex h-screen flex-col border-r bg-card transition-all duration-300',
         sidebarCollapsed ? 'w-16' : 'w-64',
-        isActingAsClient && 'border-indigo-200 dark:border-indigo-800',
+        isActingAsClient && 'border-customer-200 dark:border-customer-800',
       )}
     >
       {/* Logo */}
@@ -145,13 +152,13 @@ export function DashboardSidebar() {
 
       {/* "Acting as" return button — shown when managing a client tenant */}
       {isActingAsClient && (
-        <div className="shrink-0 border-b border-indigo-100 bg-indigo-50/60 dark:border-indigo-900 dark:bg-indigo-950/30">
+        <div className="shrink-0 border-b border-customer-100 bg-customer-50/60 dark:border-customer-900 dark:bg-customer-950/30">
           <button
             onClick={returnToAgency}
             disabled={isReturning}
             className={cn(
               'flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm',
-              'text-indigo-700 transition-colors hover:bg-indigo-100/80 dark:text-indigo-300 dark:hover:bg-indigo-900/50',
+              'text-customer-700 transition-colors hover:bg-customer-100/80 dark:text-customer-300 dark:hover:bg-customer-900/50',
               'disabled:cursor-not-allowed disabled:opacity-60',
               sidebarCollapsed && 'justify-center',
             )}
@@ -167,7 +174,7 @@ export function DashboardSidebar() {
             )}
           </button>
           {!sidebarCollapsed && (
-            <p className="truncate px-3 pb-2 text-xs text-indigo-500 dark:text-indigo-400">
+            <p className="truncate px-3 pb-2 text-xs text-customer-500 dark:text-customer-400">
               Gestionando: {currentTenant?.businessName}
             </p>
           )}

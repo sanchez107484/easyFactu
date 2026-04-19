@@ -1,87 +1,44 @@
 ﻿'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAgencyContext } from '@/hooks/use-agency-context';
 import { useSwitchTenant } from '@/hooks/use-switch-tenant';
-import {
-  useAgencyStats,
-  useAgencyClients,
-  useFiscalAlertsSummary,
-  useAgencyPendingInvitations,
-} from '@/hooks/use-agency';
+import { useAgencyStats, useAgencyClients, useAgencyPendingInvitations } from '@/hooks/use-agency';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  AlertTriangle,
   UserPlus,
   Mail,
-  AlertCircle,
-  ShieldAlert,
   ArrowRight,
   Users,
-  Info,
   MousePointerClick,
   SwitchCamera,
   ClipboardCheck,
   Loader2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import type { AgencyDashboardAlert, FiscalAlertSummaryItem } from '@easyfactura/shared-types';
 import { AgencyKpiStrip } from './_components/agency-kpi-strip';
-import { ClientsNeedingAttention } from './_components/clients-needing-attention';
 import { PendingInvitationsWidget } from './_components/pending-invitations-widget';
-
-function AlertBanner({ alert }: { alert: AgencyDashboardAlert }) {
-  const config = {
-    error: {
-      icon: AlertCircle,
-      className: 'border-destructive/30 bg-destructive/5 text-destructive',
-      iconClass: 'text-destructive',
-    },
-    warning: {
-      icon: AlertTriangle,
-      className:
-        'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/50 dark:bg-amber-950/20 dark:text-amber-400',
-      iconClass: 'text-amber-600 dark:text-amber-400',
-    },
-    info: {
-      icon: ShieldAlert,
-      className:
-        'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800/50 dark:bg-blue-950/20 dark:text-blue-400',
-      iconClass: 'text-blue-600 dark:text-blue-400',
-    },
-  }[alert.type];
-  const Icon = config.icon;
-  return (
-    <div className={cn('flex items-center gap-3 rounded-lg border px-4 py-3', config.className)}>
-      <Icon className={cn('h-4 w-4 shrink-0', config.iconClass)} />
-      <p className="text-sm font-medium">{alert.message}</p>
-    </div>
-  );
-}
+import { VincularClienteModal } from './_components/vincular-cliente-modal';
 
 export default function AgencyHubPage() {
   const router = useRouter();
   const { switchTenant, isPending: isSwitching } = useSwitchTenant();
   const { isOnAgencyTenant } = useAgencyContext();
   const [managingClientId, setManagingClientId] = useState<string | null>(null);
-  const { data: stats, isLoading: statsLoading } = useAgencyStats();
-  const { data: clientsData, isLoading: clientsLoading } = useAgencyClients({ limit: 50 });
-  const { data: alertsSummary } = useFiscalAlertsSummary();
-  const { data: invitations = [] } = useAgencyPendingInvitations();
+  const [isVincularModalOpen, setIsVincularModalOpen] = useState(false);
+  const { data: stats, isLoading: statsLoading } = useAgencyStats(isOnAgencyTenant);
+  const { data: clientsData, isLoading: clientsLoading } = useAgencyClients(
+    { limit: 50 },
+    isOnAgencyTenant,
+  );
+  const { data: invitations = [] } = useAgencyPendingInvitations(isOnAgencyTenant);
 
   useEffect(() => {
     if (!isOnAgencyTenant) router.replace('/dashboard');
   }, [isOnAgencyTenant, router]);
-
-  const alertsMap = useMemo(() => {
-    const map = new Map<string, FiscalAlertSummaryItem>();
-    alertsSummary?.forEach((item) => map.set(item.clientTenantId, item));
-    return map;
-  }, [alertsSummary]);
 
   if (!isOnAgencyTenant) return null;
 
@@ -158,7 +115,7 @@ export default function AgencyHubPage() {
                 disabled={managingClientId === relation.clientTenantId || isSwitching}
                 className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-customer-100 text-xs font-bold text-customer-600 dark:bg-customer-950 dark:text-customer-400">
                   {relation.clientTenant?.businessName.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -168,33 +125,15 @@ export default function AgencyHubPage() {
                   <p className="text-xs text-muted-foreground">{relation.clientTenant?.nif}</p>
                 </div>
                 {managingClientId === relation.clientTenantId ? (
-                  <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-indigo-500" />
+                  <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-customer-500" />
                 ) : (
-                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-indigo-500" />
+                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-customer-500" />
                 )}
               </button>
             ))}
           </div>
         )}
       </div>
-
-      {/* ── Alertas del sistema ── */}
-      {!statsLoading && stats?.alerts && stats.alerts.length > 0 && (
-        <div className="space-y-2">
-          {stats.alerts.map((alert, i) => (
-            <AlertBanner key={i} alert={alert} />
-          ))}
-        </div>
-      )}
-
-      {/* ── Clientes que requieren atención ── */}
-      {clientsData?.data && (
-        <ClientsNeedingAttention
-          clients={clientsData.data}
-          alertsMap={alertsMap}
-          onSwitchToClient={handleSwitchToClient}
-        />
-      )}
 
       {/* ── Invitaciones pendientes ── */}
       <PendingInvitationsWidget invitations={invitations} />
@@ -203,7 +142,7 @@ export default function AgencyHubPage() {
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-3 rounded-xl border bg-card p-5">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-customer-100 text-customer-600 dark:bg-customer-950 dark:text-customer-400">
               <UserPlus className="h-5 w-5" />
             </div>
             <div>
@@ -224,23 +163,25 @@ export default function AgencyHubPage() {
 
         <div className="flex flex-col gap-3 rounded-xl border bg-card p-5">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-agency-100 text-agency-600 dark:bg-agency-950 dark:text-agency-400">
               <Mail className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-semibold">Invitar cliente por email</p>
+              <p className="font-semibold">Vincular cliente existente</p>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                El cliente recibe un enlace para registrarse. Una vez acepte, podrás gestionar su
-                facturación.
+                Busca al cliente por NIF o email. Si ya usa EasyFactura, se vincula al instante.
               </p>
             </div>
           </div>
-          <Link href="/dashboard/asesoria/clientes/invitar" className="mt-auto">
-            <Button variant="outline" className="w-full" size="sm">
-              <Mail className="mr-2 h-4 w-4" />
-              Enviar invitación
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            className="w-full"
+            size="sm"
+            onClick={() => setIsVincularModalOpen(true)}
+          >
+            <Users className="mr-2 h-4 w-4" />
+            Vincular cliente
+          </Button>
         </div>
       </div>
 
@@ -282,9 +223,9 @@ export default function AgencyHubPage() {
             },
           ].map(({ step, icon: Icon, title, description }) => (
             <div key={step} className="relative flex flex-col items-center gap-3 text-center">
-              <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-indigo-200 bg-card dark:border-indigo-800">
-                <Icon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white dark:bg-indigo-500">
+              <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-customer-200 bg-card dark:border-customer-800">
+                <Icon className="h-5 w-5 text-customer-600 dark:text-customer-400" />
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-customer-600 text-[10px] font-bold text-white dark:bg-customer-500">
                   {step}
                 </span>
               </div>
@@ -296,6 +237,12 @@ export default function AgencyHubPage() {
           ))}
         </div>
       </div>
+
+      {/* Vincular cliente modal */}
+      <VincularClienteModal
+        isOpen={isVincularModalOpen}
+        onClose={() => setIsVincularModalOpen(false)}
+      />
     </div>
   );
 }

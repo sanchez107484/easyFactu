@@ -205,7 +205,10 @@ export function LiveInvoicePreview({
       </div>
 
       {/* Preview scrollable area */}
-      <div ref={containerRef} className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-4">
+      <div
+        ref={containerRef}
+        className="flex-1 overflow-auto bg-neutral-100 dark:bg-neutral-900 p-4"
+      >
         {/* Scaled A4 document */}
         <div
           style={{
@@ -262,18 +265,20 @@ export function LiveInvoicePreview({
               </h1>
               <div className="flex gap-8">
                 <div>
-                  <p className="text-[9px] text-gray-500 uppercase tracking-wide mb-0.5">Número</p>
+                  <p className="text-[9px] text-neutral-500 uppercase tracking-wide mb-0.5">
+                    Número
+                  </p>
                   <p className="font-semibold text-[11px]">{invoice.number || '—'}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-gray-500 uppercase tracking-wide mb-0.5">
+                  <p className="text-[9px] text-neutral-500 uppercase tracking-wide mb-0.5">
                     Fecha de emisión
                   </p>
                   <p className="font-semibold text-[11px]">{formatDate(invoice.issueDate)}</p>
                 </div>
                 {invoice.dueDate && (
                   <div>
-                    <p className="text-[9px] text-gray-500 uppercase tracking-wide mb-0.5">
+                    <p className="text-[9px] text-neutral-500 uppercase tracking-wide mb-0.5">
                       {invoiceType === 'quote' ? 'Válido hasta' : 'Vencimiento'}
                     </p>
                     <p className="font-semibold text-[11px]">{formatDate(invoice.dueDate)}</p>

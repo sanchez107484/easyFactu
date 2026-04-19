@@ -17,7 +17,7 @@ function TotalsRow({ label, value, bold, color }: TotalsRowProps) {
   return (
     <div className="flex justify-between items-center py-0.5">
       <span
-        className={`text-[10px] ${bold ? 'font-semibold' : 'text-gray-500'}`}
+        className={`text-[10px] ${bold ? 'font-semibold' : 'text-neutral-500'}`}
         style={color ? { color } : undefined}
       >
         {label}

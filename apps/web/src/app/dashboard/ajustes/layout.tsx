@@ -14,8 +14,10 @@ import {
   LayoutTemplate,
   SlidersHorizontal,
 } from 'lucide-react';
+import { useAuthStore } from '@/store/auth-store';
+import { AccountType } from '@easyfactura/shared-types';
 
-const settingsSections = [
+const BASE_SECTIONS = [
   {
     title: 'General',
     href: '/dashboard/ajustes',
@@ -41,31 +43,19 @@ const settingsSections = [
     href: '/dashboard/ajustes/plantilla',
     icon: LayoutTemplate,
   },
-  /*  {
-    title: 'Usuarios',
-    href: '/dashboard/ajustes/usuarios',
-    icon: Users,
-  },
-  {
-    title: 'Plan y Facturación',
-    href: '/dashboard/ajustes/plan',
-    icon: CreditCard,
-  }, */
-  /*
-  {
-    title: 'Seguridad',
-    href: '/dashboard/ajustes/seguridad',
-    icon: Shield,
-  },
-   {
-    title: 'Notificaciones',
-    href: '/dashboard/ajustes/notificaciones',
-    icon: Bell,
-  }, */
 ];
 
 export default function AjustesLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const currentTenant = useAuthStore((s) => s.currentTenant);
+
+  const settingsSections = [
+    ...BASE_SECTIONS,
+    // Only show "Mis asesorías" for non-agency tenants (clients)
+    ...(currentTenant?.accountType !== AccountType.AGENCY
+      ? [{ title: 'Mis asesorías', href: '/dashboard/ajustes/asesorias', icon: Users }]
+      : []),
+  ];
 
   return (
     <div className="space-y-6">

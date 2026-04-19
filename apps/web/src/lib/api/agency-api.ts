@@ -5,6 +5,9 @@ import type {
   AgencyClientWithDetails,
   AgencyClientDetail,
   AgencyInvitation,
+  AgencyInvitationFull,
+  MyAgencyRelation,
+  ReceivedInvitation,
   PaginatedResponse,
   CreateDirectClientInput,
   InviteClientInput,
@@ -33,6 +36,27 @@ export interface NifCheckResult {
   email?: string;
   businessName?: string;
 }
+
+export type IdentifierCheckStatus = 'AVAILABLE' | 'ALREADY_IN_PORTFOLIO' | 'EXISTS_CAN_INVITE';
+
+export type IdentifierCheckResult =
+  | { status: 'AVAILABLE'; identifierType: 'nif' | 'email' }
+  | {
+      status: 'ALREADY_IN_PORTFOLIO';
+      email: string;
+      businessName: string;
+      nif: string;
+      city: string | null;
+      province: string | null;
+    }
+  | {
+      status: 'EXISTS_CAN_INVITE';
+      email: string;
+      businessName: string;
+      nif: string;
+      city: string | null;
+      province: string | null;
+    };
 
 export const agencyApi = {
   getStats: async (): Promise<AgencyStats> => {
@@ -66,8 +90,21 @@ export const agencyApi = {
     return unwrapApiResponse(response);
   },
 
+  checkIdentifier: async (q: string): Promise<IdentifierCheckResult> => {
+    const response = await apiClient.get('/agency/clients/check-identifier', { params: { q } });
+    return unwrapApiResponse(response);
+  },
+
   acceptInvitation: async (token: string): Promise<AgencyClientWithDetails> => {
     const response = await apiClient.post(`/agency/invitations/${token}/accept`);
+    return unwrapApiResponse(response);
+  },
+  rejectInvitation: async (token: string): Promise<void> => {
+    await apiClient.post(`/agency/invitations/${token}/reject`);
+  },
+
+  getReceivedInvitations: async (): Promise<ReceivedInvitation[]> => {
+    const response = await apiClient.get('/agency/invitations/received');
     return unwrapApiResponse(response);
   },
 
@@ -151,5 +188,22 @@ export const agencyApi = {
   getQuarterlyIvaSummary: async (): Promise<QuarterlyIvaSummary> => {
     const response = await apiClient.get('/agency/stats/quarterly-iva');
     return unwrapApiResponse(response);
+  },
+
+  /** Returns all invitations sent by the agency (across all statuses). */
+  getAllInvitations: async (): Promise<AgencyInvitationFull[]> => {
+    const response = await apiClient.get('/agency/invitations/all');
+    return unwrapApiResponse(response);
+  },
+
+  /** Returns agencies that have active access to the current client tenant. */
+  getMyAgencies: async (): Promise<MyAgencyRelation[]> => {
+    const response = await apiClient.get('/agency/my-agencies');
+    return unwrapApiResponse(response);
+  },
+
+  /** Client revokes an agency's access to their account. */
+  revokeMyAgency: async (agencyTenantId: string): Promise<void> => {
+    await apiClient.delete(`/agency/my-agencies/${agencyTenantId}`);
   },
 };

@@ -43,13 +43,13 @@ export function ClientsNeedingAttention({
               <div
                 className={cn(
                   'flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
-                  hasErrors ? 'bg-destructive/10' : 'bg-amber-100 dark:bg-amber-950/40',
+                  hasErrors ? 'bg-destructive/10' : 'bg-proforma-100 dark:bg-proforma-950/40',
                 )}
               >
                 {hasErrors ? (
                   <AlertCircle className="h-4 w-4 text-destructive" />
                 ) : (
-                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <AlertTriangle className="h-4 w-4 text-proforma-600 dark:text-proforma-400" />
                 )}
               </div>
               <div className="min-w-0 flex-1">

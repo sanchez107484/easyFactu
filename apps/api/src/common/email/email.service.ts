@@ -99,6 +99,32 @@ export class EmailService {
     });
   }
 
+  async sendClientRejectedInvitationNotification(opts: {
+    to: string;
+    agencyName: string;
+    clientName: string;
+    clientEmail: string;
+  }): Promise<void> {
+    const html = this.buildBaseLayout(`
+      <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;">
+        Invitación rechazada
+      </h1>
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
+        <strong>${opts.clientName}</strong> (${opts.clientEmail}) ha rechazado tu invitación para
+        unirse a <strong>${opts.agencyName}</strong> en NovaFactura.
+      </p>
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0;">
+        Si lo deseas, podrás enviar una nueva invitación pasado el período de espera establecido.
+      </p>
+    `);
+
+    await this.send({
+      to: opts.to,
+      subject: `${opts.clientName} ha rechazado tu invitación en NovaFactura`,
+      html,
+    });
+  }
+
   async sendClientAcceptedInvitationNotification(opts: {
     to: string;
     agencyName: string;

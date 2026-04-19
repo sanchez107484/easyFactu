@@ -22,11 +22,11 @@ export function PendingInvitationsWidget({ invitations }: PendingInvitationsWidg
   if (invitations.length === 0) return null;
 
   return (
-    <div className="space-y-3 rounded-xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-800/50 dark:bg-violet-950/20">
+    <div className="space-y-3 rounded-xl border border-agency-200 bg-agency-50 p-4 dark:border-agency-800/50 dark:bg-agency-950/20">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Mail className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-          <p className="text-sm font-semibold text-violet-900 dark:text-violet-300">
+          <Mail className="h-4 w-4 text-agency-600 dark:text-agency-400" />
+          <p className="text-sm font-semibold text-agency-900 dark:text-agency-300">
             {invitations.length} invitación{invitations.length > 1 ? 'es' : ''} pendiente
             {invitations.length > 1 ? 's' : ''}
           </p>
@@ -35,7 +35,7 @@ export function PendingInvitationsWidget({ invitations }: PendingInvitationsWidg
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-xs text-violet-700 hover:text-violet-900 dark:text-violet-400"
+            className="h-7 text-xs text-agency-700 hover:text-agency-900 dark:text-agency-400"
           >
             Gestionar
             <ArrowRight className="ml-1 h-3 w-3" />
@@ -46,17 +46,17 @@ export function PendingInvitationsWidget({ invitations }: PendingInvitationsWidg
       <div className="space-y-1.5">
         {invitations.slice(0, 3).map((inv) => (
           <div key={inv.id} className="flex items-center gap-2">
-            <Clock className="h-3 w-3 shrink-0 text-violet-500" />
-            <p className="min-w-0 flex-1 truncate text-xs text-violet-800 dark:text-violet-300">
+            <Clock className="h-3 w-3 shrink-0 text-agency-500" />
+            <p className="min-w-0 flex-1 truncate text-xs text-agency-800 dark:text-agency-300">
               {inv.inviteeName ?? inv.inviteeEmail}
             </p>
-            <span className="shrink-0 text-[10px] text-violet-600 dark:text-violet-400">
+            <span className="shrink-0 text-[10px] text-agency-600 dark:text-agency-400">
               {formatExpiryLabel(inv.expiresAt)}
             </span>
           </div>
         ))}
         {invitations.length > 3 && (
-          <p className="text-xs text-violet-600 dark:text-violet-400">
+          <p className="text-xs text-agency-600 dark:text-agency-400">
             y {invitations.length - 3} más…
           </p>
         )}

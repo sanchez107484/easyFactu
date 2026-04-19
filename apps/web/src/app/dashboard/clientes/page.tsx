@@ -243,14 +243,14 @@ export default function ClientesPage() {
       <div className="space-y-6">
         {/* Agency context banner */}
         {isAgency && (
-          <div className="flex items-start gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950/30">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
+          <div className="flex items-start gap-3 rounded-xl border border-customer-200 bg-customer-50 px-4 py-3 dark:border-customer-800 dark:bg-customer-950/30">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-customer-500" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-indigo-800 dark:text-indigo-300">
+              <p className="text-sm font-medium text-customer-800 dark:text-customer-300">
                 Estos contactos son los destinatarios de{' '}
                 <strong>tus propias facturas como gestoría</strong>.
               </p>
-              <p className="mt-0.5 text-xs text-indigo-600 dark:text-indigo-400">
+              <p className="mt-0.5 text-xs text-customer-600 dark:text-customer-400">
                 Por ejemplo: si tu gestoría factura a un cliente por sus honorarios, ese cliente va
                 aquí. No confundir con los autónomos y empresas que <em>gestionas</em> en nombre de
                 terceros.
@@ -258,7 +258,7 @@ export default function ClientesPage() {
             </div>
             <Link
               href="/dashboard/asesoria/clientes"
-              className="flex shrink-0 items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
+              className="flex shrink-0 items-center gap-1 text-xs font-medium text-customer-600 hover:text-customer-800 dark:text-customer-400 dark:hover:text-customer-200"
             >
               Ver mis clientes
               <ArrowRight className="h-3 w-3" />

@@ -98,14 +98,14 @@ function FiscalAlertRow({ alert }: { alert: FiscalAlert }) {
     warning: {
       icon: AlertTriangle,
       className:
-        'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/50 dark:bg-amber-950/20 dark:text-amber-400',
-      iconClass: 'text-amber-600 dark:text-amber-400',
+        'border-proforma-200 bg-proforma-50 text-proforma-800 dark:border-proforma-800/50 dark:bg-proforma-950/20 dark:text-proforma-400',
+      iconClass: 'text-proforma-600 dark:text-proforma-400',
     },
     info: {
       icon: Info,
       className:
-        'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800/50 dark:bg-blue-950/20 dark:text-blue-400',
-      iconClass: 'text-blue-600 dark:text-blue-400',
+        'border-primary-200 bg-primary-50 text-primary-800 dark:border-primary-800/50 dark:bg-primary-950/20 dark:text-primary-400',
+      iconClass: 'text-primary-600 dark:text-primary-400',
     },
   }[alert.type];
 
@@ -293,8 +293,8 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
                 </p>
                 <p className="mt-1 text-2xl font-bold">{data.stats.totalInvoices}</p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-950/30">
-                <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-950/30">
+                <FileText className="h-5 w-5 text-primary-600 dark:text-primary-400" />
               </div>
             </div>
           </CardContent>
@@ -309,8 +309,8 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
                 </p>
                 <p className="mt-1 text-2xl font-bold">{data.stats.pendingInvoices}</p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-950/30">
-                <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-overdue-50 dark:bg-overdue-950/30">
+                <Clock className="h-5 w-5 text-overdue-600 dark:text-overdue-400" />
               </div>
             </div>
           </CardContent>
@@ -327,8 +327,8 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
                   {formatCurrency(data.stats.monthlyRevenue)}
                 </p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50 dark:bg-green-950/30">
-                <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary-50 dark:bg-secondary-950/30">
+                <TrendingUp className="h-5 w-5 text-secondary-600 dark:text-secondary-400" />
               </div>
             </div>
           </CardContent>
@@ -369,9 +369,9 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
                 ))}
               </div>
             ) : (
-              <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800/50 dark:bg-green-950/20">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
-                <p className="text-sm font-medium text-green-800 dark:text-green-400">
+              <div className="flex items-center gap-3 rounded-lg border border-secondary-200 bg-secondary-50 px-4 py-3 dark:border-secondary-800/50 dark:bg-secondary-950/20">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-secondary-600 dark:text-secondary-400" />
+                <p className="text-sm font-medium text-secondary-800 dark:text-secondary-400">
                   Sin alertas fiscales. Todo en orden.
                 </p>
               </div>
@@ -428,7 +428,7 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
                 {!client.setupCompleted && (
                   <Badge
                     variant="outline"
-                    className="mt-2 border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400"
+                    className="mt-2 border-proforma-200 bg-proforma-50 text-proforma-700 dark:border-proforma-800 dark:bg-proforma-950/30 dark:text-proforma-400"
                   >
                     Configuración pendiente
                   </Badge>

@@ -63,6 +63,7 @@ import { toast } from 'sonner';
 import type { AgencyClientWithDetails, AgencyInvitation } from '@easyfactura/shared-types';
 import { useAgencyContext } from '@/hooks/use-agency-context';
 import { useSwitchTenant } from '@/hooks/use-switch-tenant';
+import { VincularClienteModal } from '../_components/vincular-cliente-modal';
 
 export default function AgencyClientsPage() {
   const router = useRouter();
@@ -72,6 +73,7 @@ export default function AgencyClientsPage() {
   const [managingClientId, setManagingClientId] = useState<string | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<AgencyClientWithDetails | null>(null);
   const [cancelTarget, setCancelTarget] = useState<AgencyInvitation | null>(null);
+  const [isVincularModalOpen, setIsVincularModalOpen] = useState(false);
 
   const { data, isLoading } = useAgencyClients({ search: search || undefined });
   const { data: invitationsData, isLoading: isLoadingInvitations } = useAgencyPendingInvitations();
@@ -123,12 +125,10 @@ export default function AgencyClientsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Link href="/dashboard/asesoria/clientes/invitar">
-            <Button variant="outline">
-              <Mail className="mr-2 h-4 w-4" />
-              Invitar cliente
-            </Button>
-          </Link>
+          <Button variant="outline" onClick={() => setIsVincularModalOpen(true)}>
+            <Users className="mr-2 h-4 w-4" />
+            Vincular cliente
+          </Button>
           <Link href="/dashboard/asesoria/clientes/nuevo">
             <Button>
               <UserPlus className="mr-2 h-4 w-4" />
@@ -142,8 +142,8 @@ export default function AgencyClientsPage() {
       {!isLoading && !data?.data.length && !pendingInvitations.length && (
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border bg-card p-4">
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40">
-              <ArrowRightLeft className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-customer-50 dark:bg-customer-950/40">
+              <ArrowRightLeft className="h-5 w-5 text-customer-600 dark:text-customer-400" />
             </div>
             <p className="font-semibold text-sm">Cambia entre cuentas al instante</p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -152,8 +152,8 @@ export default function AgencyClientsPage() {
             </p>
           </div>
           <div className="rounded-xl border bg-card p-4">
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40">
-              <FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-customer-50 dark:bg-customer-950/40">
+              <FileText className="h-5 w-5 text-customer-600 dark:text-customer-400" />
             </div>
             <p className="font-semibold text-sm">VeriFactu por cada NIF</p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -162,8 +162,8 @@ export default function AgencyClientsPage() {
             </p>
           </div>
           <div className="rounded-xl border bg-card p-4">
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40">
-              <Send className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-customer-50 dark:bg-customer-950/40">
+              <Send className="h-5 w-5 text-customer-600 dark:text-customer-400" />
             </div>
             <p className="font-semibold text-sm">Dos formas de añadir clientes</p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -268,7 +268,7 @@ export default function AgencyClientsPage() {
                         href={`/dashboard/asesoria/clientes/${relation.clientTenantId}`}
                         className="flex items-center gap-3 min-w-0"
                       >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-customer-100 text-xs font-bold text-customer-700 dark:bg-customer-950 dark:text-customer-300">
                           {client.businessName.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
@@ -307,7 +307,7 @@ export default function AgencyClientsPage() {
                       {(stats?.pendingInvoices ?? 0) > 0 ? (
                         <Badge
                           variant="outline"
-                          className="border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-400"
+                          className="border-overdue-200 bg-overdue-50 text-overdue-700 dark:border-overdue-800 dark:bg-overdue-950/30 dark:text-overdue-400"
                         >
                           {stats!.pendingInvoices}
                         </Badge>
@@ -430,7 +430,7 @@ export default function AgencyClientsPage() {
                             )}
                           </p>
                           <p
-                            className={`text-xs ${isExpiringSoon ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}
+                            className={`text-xs ${isExpiringSoon ? 'text-overdue-600 dark:text-overdue-400' : 'text-muted-foreground'}`}
                           >
                             Expira el{' '}
                             {expiresAt.toLocaleDateString('es-ES', {
@@ -516,6 +516,12 @@ export default function AgencyClientsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Vincular cliente modal */}
+      <VincularClienteModal
+        isOpen={isVincularModalOpen}
+        onClose={() => setIsVincularModalOpen(false)}
+      />
     </div>
   );
 }

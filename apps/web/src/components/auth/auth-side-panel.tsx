@@ -119,7 +119,7 @@ export function AuthSidePanel({ variant = 'login' }: AuthSidePanelProps) {
           {/* Stars */}
           <div className="mb-3 flex gap-1">
             {Array.from({ length: testimonial.rating }).map((_, i) => (
-              <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <Star key={i} className="h-4 w-4 fill-proforma-400 text-proforma-400" />
             ))}
           </div>
 

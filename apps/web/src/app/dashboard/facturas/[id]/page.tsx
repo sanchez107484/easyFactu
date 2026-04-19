@@ -4,8 +4,6 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,23 +26,15 @@ import {
   ArrowLeft,
   MoreVertical,
   Trash2,
-  CheckCircle2,
   Copy,
   RotateCcw,
   AlertCircle,
   Building2,
-  Calendar,
-  Layers,
   Banknote,
   FileText,
-  Hash,
   Pencil,
   ArrowRightLeft,
-  Save,
-  X,
   RefreshCw,
-  Send,
-  Undo2,
 } from 'lucide-react';
 import { DownloadInvoiceButton } from '@/components/ui/download-invoice-button';
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
@@ -64,11 +54,12 @@ import {
 } from '@/hooks/use-invoices';
 import { ConvertProformaModal } from '@/components/facturas/ConvertProformaModal';
 import { ConvertDraftToProformaModal } from '@/components/facturas/ConvertDraftToProformaModal';
-import { InvoicePaymentSection } from '@/components/facturas/InvoicePaymentSection';
 import { RegisterPaymentDialog } from '@/components/facturas/RegisterPaymentDialog';
 import { InvoiceDetailSkeleton } from '@/components/facturas/InvoiceDetailSkeleton';
 import { SectionLabel } from '@/components/common/section-label';
-import { DataRow } from '@/components/common/data-row';
+import { InvoiceStatusHero } from './_components/invoice-status-hero';
+import { InvoiceLinesCard } from './_components/invoice-lines-card';
+import { InvoiceNotesCard } from './_components/invoice-notes-card';
 import {
   ConvertToRecurringModal,
   type RecurringSettings,
@@ -80,7 +71,7 @@ import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge'
 import { useInvoiceTemplate, useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useAuthStore } from '@/store/auth-store';
 import { useTenant } from '@/hooks/use-tenant';
-import { cn, resolveUrl, formatCurrency, formatDateShort, parseNum } from '@/lib/utils';
+import { resolveUrl, parseNum } from '@/lib/utils';
 
 // ==================== CONSTANTS ====================
 
@@ -116,39 +107,9 @@ export default function FacturaDetailPage() {
   const createRecurringMutation = useCreateRecurringInvoice();
   // FIX: useDuplicateInvoice eliminado — duplicar es solo navegar a /nueva?duplicate=ID
 
-  const templateId = (invoice as any)?.templateId ?? (invoice as any)?.template?.id ?? '';
+  const templateId = invoice?.templateId ?? invoice?.template?.id ?? '';
   const { data: specificTemplate } = useInvoiceTemplate(templateId);
   const { data: defaultTemplate } = useDefaultTemplate();
-  // When the invoice has no templateId (existing data), fall back to the tenant's default template
-  const baseTemplate = specificTemplate ?? defaultTemplate;
-
-  // Apply per-invoice layoutOverride on top of the base template
-  const invoiceLayoutOverride = (invoice as any)?.layoutOverride as
-    | {
-        itemsTable?: Partial<{
-          showUnitPrice: boolean;
-          showTaxColumn: boolean;
-          showLineTotal: boolean;
-        }>;
-      }
-    | null
-    | undefined;
-  const template =
-    baseTemplate && invoiceLayoutOverride?.itemsTable
-      ? {
-          ...baseTemplate,
-          layout: {
-            ...baseTemplate.layout,
-            itemsTable: {
-              ...baseTemplate.layout.itemsTable,
-              ...invoiceLayoutOverride.itemsTable,
-            },
-          },
-        }
-      : baseTemplate;
-
-  const paymentDetails = (invoice as any)?.paymentDetails as PaymentDetails | undefined;
-  const activePaymentMethod = invoice?.paymentMethod as string | null | undefined;
 
   // ==================== HANDLERS ====================
 
@@ -218,7 +179,7 @@ export default function FacturaDetailPage() {
         quantity: l.quantity,
         unitPrice: l.unitPrice,
         taxRate: l.taxRate,
-        hideQty: (l as any).hideQty ?? false,
+        hideQty: l.hideQty ?? false,
       })),
       paymentMethod: invoice!.paymentMethod ?? undefined,
       discountPercent: invoice!.discountPercent ? Number(invoice!.discountPercent) : undefined,
@@ -272,15 +233,35 @@ export default function FacturaDetailPage() {
   const isSent = invoice.status === InvoiceStatus.SENT;
   const isPaid = invoice.status === InvoiceStatus.PAID;
   const canRectify = isConfirmed || isSent || isPaid;
-  const isProforma = (invoice as any).invoiceType === 'proforma';
+  const isProforma = invoice.invoiceType === 'proforma';
 
-  const pdfFileName = [invoice.number, (invoice as any).customer?.name].filter(Boolean).join(' - ');
+  const pdfFileName = [invoice.number, invoice.customer?.name].filter(Boolean).join(' - ');
 
   const statusCfg = isProforma
     ? INVOICE_STATUS_CONFIG[InvoiceStatus.PROFORMA]
     : (INVOICE_STATUS_CONFIG[invoice.status as InvoiceStatus] ??
       INVOICE_STATUS_CONFIG[InvoiceStatus.DRAFT]);
-  const series = (invoice as any).series;
+  const series = invoice.series;
+
+  // When the invoice has no templateId (existing data), fall back to the tenant's default template
+  const baseTemplate = specificTemplate ?? defaultTemplate;
+  const invoiceLayoutOverride = invoice.layoutOverride;
+  const template =
+    baseTemplate && invoiceLayoutOverride?.itemsTable
+      ? {
+          ...baseTemplate,
+          layout: {
+            ...baseTemplate.layout,
+            itemsTable: {
+              ...baseTemplate.layout.itemsTable,
+              ...invoiceLayoutOverride.itemsTable,
+            },
+          },
+        }
+      : baseTemplate;
+
+  const paymentDetails = invoice.paymentDetails as PaymentDetails | undefined;
+  const activePaymentMethod = invoice.paymentMethod ?? null;
 
   // ==================== RENDER ====================
 
@@ -421,169 +402,31 @@ export default function FacturaDetailPage() {
         <div className="w-[60%] overflow-y-auto border-r">
           <div className="px-6 py-5 space-y-4">
             {/* ZONA A — Hero de estado */}
-            <div className={cn('rounded-xl border p-5', statusCfg.bg, statusCfg.border)}>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={cn('h-2 w-2 rounded-full', statusCfg.dot)} />
-                    <span
-                      className={cn(
-                        'text-xs font-semibold uppercase tracking-widest',
-                        statusCfg.color,
-                      )}
-                    >
-                      {statusCfg.label}
-                    </span>
-                  </div>
-                  <p className="text-3xl font-bold tracking-tight tabular-nums">
-                    {formatCurrency(invoice.total)}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Base: {formatCurrency(invoice.subtotal)} ·{' '}
-                    {(() => {
-                      const rates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
-                      return rates.length === 1 ? `IVA (${rates[0]}%)` : 'IVA';
-                    })()}
-                    : {formatCurrency(invoice.taxTotal)}
-                    {parseNum(invoice.irpfPercent) > 0 && (
-                      <> · IRPF: −{formatCurrency(invoice.irpfTotal)}</>
-                    )}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2 items-end shrink-0">
-                  {isDraft && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => router.push(`/dashboard/facturas/nueva?edit=${id}`)}
-                      className="min-w-[160px]"
-                    >
-                      <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                      {isProforma ? 'Editar proforma' : 'Editar borrador'}
-                    </Button>
-                  )}
-                  {isDraft && isProforma && (
-                    <Button
-                      size="sm"
-                      onClick={() => setShowConvertModal(true)}
-                      disabled={convertMutation.isPending}
-                      className="min-w-[160px]"
-                    >
-                      <ArrowRightLeft className="mr-1.5 h-3.5 w-3.5" />
-                      {convertMutation.isPending ? 'Convirtiendo...' : 'Convertir a oficial'}
-                    </Button>
-                  )}
-                  {isDraft && !isProforma && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowConvertToProformaModal(true)}
-                      disabled={convertToProformaMutation.isPending}
-                      //className="min-w-[160px] text-proforma-700 border-proforma-300 hover:bg-proforma-50 hover:text-proforma-800"
-                      className="min-w-[160px] text-proforma-50 bg-proforma-500 border-proforma-300 hover:bg-proforma-300 hover:text-proforma-800"
-                    >
-                      <FileText className="mr-1.5 h-3.5 w-3.5" />
-                      {convertToProformaMutation.isPending
-                        ? 'Convirtiendo...'
-                        : 'Guardar como proforma'}
-                    </Button>
-                  )}
-                  {isDraft && !isProforma && (
-                    <Button
-                      size="sm"
-                      onClick={handleConfirm}
-                      disabled={confirmMutation.isPending}
-                      className="min-w-[160px]"
-                    >
-                      <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-                      {confirmMutation.isPending ? 'Confirmando...' : 'Confirmar factura'}
-                    </Button>
-                  )}
-                  {isConfirmed && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleMarkSent}
-                      disabled={markSentMutation.isPending}
-                      className="min-w-[140px]"
-                    >
-                      <Send className="mr-1.5 h-3.5 w-3.5" />
-                      {markSentMutation.isPending ? 'Procesando...' : 'Marcar como enviada'}
-                    </Button>
-                  )}
-                  {isSent && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleUnmarkSent}
-                      disabled={unmarkSentMutation.isPending}
-                      className="min-w-[140px] text-muted-foreground"
-                    >
-                      <Undo2 className="mr-1.5 h-3.5 w-3.5" />
-                      {unmarkSentMutation.isPending ? 'Procesando...' : 'Deshacer envío'}
-                    </Button>
-                  )}
-                  {isPaid && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleUnmarkPaid}
-                      disabled={unmarkPaidMutation.isPending}
-                      className="min-w-[140px] text-muted-foreground"
-                    >
-                      <Undo2 className="mr-1.5 h-3.5 w-3.5" />
-                      {unmarkPaidMutation.isPending ? 'Procesando...' : 'Deshacer pago'}
-                    </Button>
-                  )}
-                  {!isDraft && parseNum(invoice.amountPaid) < parseNum(invoice.total) && (
-                    <Button
-                      size="sm"
-                      onClick={() => setShowPaymentDialog(true)}
-                      className="min-w-[140px]"
-                    >
-                      <Banknote className="mr-1.5 h-3.5 w-3.5" />
-                      Registrar cobro
-                    </Button>
-                  )}
-                  {!isDraft && (
-                    <DownloadInvoiceButton
-                      invoiceId={id}
-                      fileName={pdfFileName}
-                      variant="outline"
-                      size="sm"
-                    />
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-4 mt-4 pt-4 border-t border-current/10">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Hash className="h-3 w-3" />
-                  <span>{invoice.number}</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  <span>Emitida {formatDateShort(invoice.issueDate)}</span>
-                </div>
-                {invoice.dueDate && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    <span>Vence {formatDateShort(invoice.dueDate)}</span>
-                  </div>
-                )}
-                {series && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Layers className="h-3 w-3" />
-                    <span>{series.name}</span>
-                  </div>
-                )}
-                {!isDraft && (
-                  <InvoicePaymentSection
-                    invoice={invoice}
-                    onRegisterPayment={() => setShowPaymentDialog(true)}
-                  />
-                )}
-              </div>
-            </div>
+            <InvoiceStatusHero
+              invoice={invoice}
+              id={id}
+              isProforma={isProforma}
+              isDraft={isDraft}
+              isConfirmed={isConfirmed}
+              isSent={isSent}
+              isPaid={isPaid}
+              pdfFileName={pdfFileName}
+              statusCfg={statusCfg}
+              series={series}
+              confirmPending={confirmMutation.isPending}
+              convertPending={convertMutation.isPending}
+              convertToProformaPending={convertToProformaMutation.isPending}
+              markSentPending={markSentMutation.isPending}
+              unmarkSentPending={unmarkSentMutation.isPending}
+              unmarkPaidPending={unmarkPaidMutation.isPending}
+              onConfirm={handleConfirm}
+              onShowConvertModal={() => setShowConvertModal(true)}
+              onShowConvertToProformaModal={() => setShowConvertToProformaModal(true)}
+              onMarkSent={handleMarkSent}
+              onUnmarkSent={handleUnmarkSent}
+              onUnmarkPaid={handleUnmarkPaid}
+              onShowPaymentDialog={() => setShowPaymentDialog(true)}
+            />
 
             {/* ZONA A.5 — Vinculada a recurrente */}
             {invoice.recurringInvoiceId && (
@@ -628,103 +471,7 @@ export default function FacturaDetailPage() {
             </div>
 
             {/* ZONA C — Líneas + totales */}
-            <div className="rounded-xl border bg-card p-5">
-              <SectionLabel icon={FileText}>Líneas de factura</SectionLabel>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
-                      Descripción
-                    </th>
-                    {(invoice.lines ?? []).some((l) => !l.hideQty) && (
-                      <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
-                        Cant.
-                      </th>
-                    )}
-                    {(template?.layout.itemsTable.showUnitPrice ?? true) && (
-                      <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
-                        Precio
-                      </th>
-                    )}
-                    {(template?.layout.itemsTable.showTaxColumn ?? true) && (
-                      <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
-                        IVA
-                      </th>
-                    )}
-                    {(template?.layout.itemsTable.showLineTotal ?? true) && (
-                      <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
-                        Subtotal
-                      </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {(invoice.lines ?? []).map((line) => (
-                    <tr key={line.id}>
-                      <td className="py-2.5 pr-4">{line.description}</td>
-                      {(invoice.lines ?? []).some((l) => !l.hideQty) && (
-                        <td className="py-2.5 text-right tabular-nums">
-                          {line.hideQty ? '' : parseNum(line.quantity)}
-                        </td>
-                      )}
-                      {(template?.layout.itemsTable.showUnitPrice ?? true) && (
-                        <td className="py-2.5 text-right tabular-nums">
-                          {formatCurrency(line.unitPrice)}
-                        </td>
-                      )}
-                      {(template?.layout.itemsTable.showTaxColumn ?? true) && (
-                        <td className="py-2.5 text-right tabular-nums text-muted-foreground">
-                          {parseNum(line.taxRate)}%
-                        </td>
-                      )}
-                      {(template?.layout.itemsTable.showLineTotal ?? true) && (
-                        <td className="py-2.5 text-right tabular-nums font-medium">
-                          {formatCurrency(line.subtotal)}
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <div className="mt-4 pt-4 border-t ml-auto w-64 space-y-1.5">
-                <DataRow label="Base imponible" value={formatCurrency(invoice.subtotal)} />
-                {parseNum(invoice.discountPercent) > 0 && (
-                  <div className="flex justify-between items-baseline py-1">
-                    <span className="text-sm text-secondary-600">
-                      Descuento ({invoice.discountPercent}%)
-                    </span>
-                    <span className="text-sm text-secondary-600">
-                      −{formatCurrency(invoice.discountAmount ?? 0)}
-                    </span>
-                  </div>
-                )}
-                <DataRow
-                  label={(() => {
-                    const rates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
-                    return rates.length === 1 ? `IVA (${rates[0]}%)` : 'IVA';
-                  })()}
-                  value={formatCurrency(invoice.taxTotal)}
-                />
-                {parseNum(invoice.irpfPercent) > 0 && (
-                  <div className="flex justify-between items-baseline py-1">
-                    <span className="text-sm text-rectificativa-600">
-                      IRPF ({invoice.irpfPercent}%)
-                    </span>
-                    <span className="text-sm text-rectificativa-600">
-                      −{formatCurrency(invoice.irpfTotal ?? 0)}
-                    </span>
-                  </div>
-                )}
-                <Separator />
-                <div className="flex justify-between items-baseline py-1">
-                  <span className="font-semibold">Total</span>
-                  <span className="font-bold text-lg tabular-nums">
-                    {formatCurrency(invoice.total)}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <InvoiceLinesCard invoice={invoice} template={template} />
 
             {/* ZONA D — Forma de pago */}
             {activePaymentMethod && (
@@ -736,8 +483,10 @@ export default function FacturaDetailPage() {
                 </p>
                 {paymentDetails && (
                   <div className="space-y-1">
-                    {getPaymentDetailFields(activePaymentMethod as any).map((field) => {
-                      const value = (paymentDetails as any)[field.key];
+                    {getPaymentDetailFields(activePaymentMethod as PaymentMethod).map((field) => {
+                      const value = (paymentDetails as Record<string, string | undefined>)[
+                        field.key
+                      ];
                       if (!value) return null;
                       return (
                         <div key={field.key} className="flex items-baseline gap-2">
@@ -765,72 +514,23 @@ export default function FacturaDetailPage() {
             )}
 
             {/* Notas */}
-            <div className="rounded-xl border bg-card p-5">
-              <div className="flex items-center justify-between mb-3">
-                <SectionLabel>Notas</SectionLabel>
-                {!isEditingNotes && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-muted-foreground hover:text-foreground"
-                    onClick={handleStartEditNotes}
-                  >
-                    <Pencil className="h-3.5 w-3.5 mr-1" />
-                    {invoice.notes ? 'Editar' : 'Añadir nota'}
-                  </Button>
-                )}
-              </div>
-              {isEditingNotes ? (
-                <div className="space-y-2">
-                  <Textarea
-                    value={editingNotesValue}
-                    onChange={(e) => setEditingNotesValue(e.target.value)}
-                    placeholder="Añade una nota visible en la factura..."
-                    className="text-sm resize-none"
-                    rows={4}
-                    maxLength={1000}
-                    autoFocus
-                  />
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      {editingNotesValue.length}/1000
-                    </span>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleCancelEditNotes}
-                        disabled={updateNotesMutation.isPending}
-                      >
-                        <X className="h-3.5 w-3.5 mr-1" />
-                        Cancelar
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleSaveNotes}
-                        disabled={updateNotesMutation.isPending}
-                      >
-                        <Save className="h-3.5 w-3.5 mr-1" />
-                        {updateNotesMutation.isPending ? 'Guardando...' : 'Guardar nota'}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ) : invoice.notes ? (
-                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                  {invoice.notes}
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground/50 italic">Sin notas</p>
-              )}
-            </div>
+            <InvoiceNotesCard
+              notes={invoice.notes}
+              isEditing={isEditingNotes}
+              editingValue={editingNotesValue}
+              isPending={updateNotesMutation.isPending}
+              onEditStart={handleStartEditNotes}
+              onEditCancel={handleCancelEditNotes}
+              onEditChange={setEditingNotesValue}
+              onSave={handleSaveNotes}
+            />
 
             {/* VeriFactu */}
-            {(invoice as any).verifactuQr && (
+            {invoice.verifactuQr && (
               <div className="rounded-xl border bg-card p-5">
                 <SectionLabel>Verificación VeriFactu</SectionLabel>
                 <a
-                  href={(invoice as any).verifactuQr}
+                  href={invoice.verifactuQr}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-primary hover:underline"
@@ -876,7 +576,7 @@ export default function FacturaDetailPage() {
 
       <ConvertToRecurringModal
         open={showConvertToRecurringModal}
-        customerName={(invoice as any).customer?.name ?? '—'}
+        customerName={invoice.customer?.name ?? '—'}
         isPending={createRecurringMutation.isPending}
         onCancel={() => setShowConvertToRecurringModal(false)}
         onConfirm={handleConvertToRecurring}

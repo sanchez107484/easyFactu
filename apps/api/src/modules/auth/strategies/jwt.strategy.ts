@@ -65,7 +65,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     const agencyRelation = await this.prisma.agencyClientRelation.findFirst({
       where: {
         clientTenantId: payload.tenantId,
-        status: 'ACTIVE',
         agencyTenant: {
           isActive: true,
           tenantUsers: { some: { userId: payload.sub } },

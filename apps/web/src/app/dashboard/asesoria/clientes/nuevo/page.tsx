@@ -126,14 +126,14 @@ interface NifConflictInfo {
 
 function AlreadyInPortfolioBanner({ info }: { info: NifConflictInfo }) {
   return (
-    <div className="rounded-xl border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
+    <div className="rounded-xl border border-primary-200 bg-primary-50 dark:border-primary-800 dark:bg-primary-950/30 p-4">
       <div className="flex items-start gap-3">
-        <Users className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+        <Users className="h-5 w-5 text-primary-600 dark:text-primary-400 mt-0.5 shrink-0" />
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+          <p className="text-sm font-semibold text-primary-900 dark:text-primary-200">
             Este cliente ya está en tu cartera
           </p>
-          <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
+          <p className="mt-1 text-sm text-primary-700 dark:text-primary-300">
             <span className="font-medium">{info.businessName}</span> ({info.email}) ya figura como
             cliente tuyo. No es necesario volver a añadirlo.
           </p>
@@ -155,14 +155,14 @@ function NifConflictBanner({
   isInviting: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-4">
+    <div className="rounded-xl border border-proforma-200 bg-proforma-50 dark:border-proforma-800 dark:bg-proforma-950/30 p-4">
       <div className="flex items-start gap-3">
-        <UserCheck className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+        <UserCheck className="h-5 w-5 text-proforma-600 dark:text-proforma-400 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+          <p className="text-sm font-semibold text-proforma-900 dark:text-proforma-200">
             Este NIF ya tiene una cuenta en la aplicación
           </p>
-          <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+          <p className="mt-1 text-sm text-proforma-700 dark:text-proforma-300">
             <span className="font-medium">{info.businessName}</span> ya está registrado con el email{' '}
             <span className="font-mono font-medium">{info.email}</span>. Para añadirlo a tu cartera,
             envía una invitación y podrán vincular su cuenta.
@@ -173,7 +173,7 @@ function NifConflictBanner({
               variant="default"
               onClick={onInvite}
               disabled={isInviting || isCheckingNif}
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className="bg-proforma-600 hover:bg-proforma-700 text-white"
             >
               {isInviting ? (
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />

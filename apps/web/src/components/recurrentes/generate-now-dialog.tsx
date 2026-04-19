@@ -27,15 +27,15 @@ export function GenerateNowDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
-          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/40 mx-auto mb-3">
-            <Bot className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-proforma-100 dark:bg-proforma-950/40 mx-auto mb-3">
+            <Bot className="h-6 w-6 text-proforma-600 dark:text-proforma-400" />
           </div>
           <AlertDialogTitle className="text-center">Generar factura manualmente</AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-3 text-sm">
-              <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 p-3 flex gap-2.5">
-                <TriangleAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                <p className="text-amber-800 dark:text-amber-300 leading-snug">
+              <div className="rounded-lg border border-proforma-200 bg-proforma-50 dark:border-proforma-900 dark:bg-proforma-950/30 p-3 flex gap-2.5">
+                <TriangleAlert className="h-4 w-4 text-proforma-600 dark:text-proforma-400 shrink-0 mt-0.5" />
+                <p className="text-proforma-800 dark:text-proforma-300 leading-snug">
                   Esta factura se genera <strong>automáticamente</strong> según su periodicidad. En
                   condiciones normales no necesitas hacer esto.
                 </p>
@@ -54,7 +54,7 @@ export function GenerateNowDialog({
         <AlertDialogFooter className="mt-2">
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
-            className="bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-500"
+            className="bg-proforma-600 text-white hover:bg-proforma-700 dark:bg-proforma-600 dark:hover:bg-proforma-500"
             onClick={onConfirm}
             disabled={isPending}
           >

@@ -30,11 +30,14 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest: any = error.config;
+    const originalRequest = error.config as
+      | (typeof error.config & { _retry?: boolean })
+      | undefined;
 
     // Si es 401 y no es el endpoint de login ni refresh, intentar refresh
     if (
       error.response?.status === 401 &&
+      originalRequest &&
       !originalRequest._retry &&
       !originalRequest.url?.includes('/auth/login') &&
       !originalRequest.url?.includes('/auth/refresh')
@@ -65,8 +68,10 @@ apiClient.interceptors.response.use(
         }
 
         // Reintentar request original
-        originalRequest.headers.Authorization = `Bearer ${authData.accessToken}`;
-        return apiClient(originalRequest);
+        if (originalRequest?.headers) {
+          originalRequest.headers.Authorization = `Bearer ${authData.accessToken}`;
+        }
+        return apiClient(originalRequest!);
       } catch (refreshError) {
         // Refresh falló, limpiar tokens y redirigir
         clearTokens();

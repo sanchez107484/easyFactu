@@ -63,7 +63,7 @@ export function PrefixYearWarningDialog({
       <AlertDialogContent className="sm:max-w-md">
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-500" />
+            <AlertTriangle className="h-5 w-5 text-proforma-500" />
             Serie sin referencia al año
           </AlertDialogTitle>
           <AlertDialogDescription asChild>
@@ -78,29 +78,29 @@ export function PrefixYearWarningDialog({
               {/* Comparativa visual */}
               <div className="grid grid-cols-2 gap-2">
                 {/* Sin año — actual */}
-                <div className="rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
-                  <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-red-700 dark:text-red-400">
+                <div className="rounded-md border border-rectificativa-200 bg-rectificativa-50 p-3 dark:border-rectificativa-800 dark:bg-rectificativa-950">
+                  <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-rectificativa-700 dark:text-rectificativa-400">
                     <X className="h-3.5 w-3.5" />
                     Sin año (actual)
                   </div>
-                  <p className="font-mono text-base font-bold text-red-800 dark:text-red-300">
+                  <p className="font-mono text-base font-bold text-rectificativa-800 dark:text-rectificativa-300">
                     {exampleWithout}
                   </p>
-                  <p className="mt-1 font-mono text-xs text-red-600 dark:text-red-400 opacity-70">
+                  <p className="mt-1 font-mono text-xs text-rectificativa-600 dark:text-rectificativa-400 opacity-70">
                     {prefix}0002, {prefix}0003…
                   </p>
                 </div>
 
                 {/* Con año — sugerido */}
-                <div className="rounded-md border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950">
-                  <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-green-700 dark:text-green-400">
+                <div className="rounded-md border border-secondary-200 bg-secondary-50 p-3 dark:border-secondary-800 dark:bg-secondary-950">
+                  <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-secondary-700 dark:text-secondary-400">
                     <Check className="h-3.5 w-3.5" />
                     Con año (sugerido)
                   </div>
-                  <p className="font-mono text-base font-bold text-green-800 dark:text-green-300">
+                  <p className="font-mono text-base font-bold text-secondary-800 dark:text-secondary-300">
                     {exampleWith}
                   </p>
-                  <p className="mt-1 font-mono text-xs text-green-600 dark:text-green-400 opacity-70">
+                  <p className="mt-1 font-mono text-xs text-secondary-600 dark:text-secondary-400 opacity-70">
                     {suggestedPrefix}0002…
                   </p>
                 </div>

@@ -71,7 +71,7 @@ type Step5Data = z.infer<typeof step5Schema>;
 export default function SetupPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
-  const [setupData, setSetupData] = useState<any>({});
+  const [setupData, setSetupData] = useState<Partial<Step1Data & Step3Data & Step5Data>>({});
   const [logo, setLogo] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
   const [certificate, setCertificate] = useState<File | null>(null);

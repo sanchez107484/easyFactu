@@ -32,10 +32,10 @@ export class FiscalValidatorService {
     // Verify the agency-client relationship
     const relation = await this.prisma.agencyClientRelation.findUnique({
       where: { agencyTenantId_clientTenantId: { agencyTenantId, clientTenantId } },
-      select: { status: true },
+      select: { id: true },
     });
 
-    if (!relation || relation.status !== 'ACTIVE') {
+    if (!relation) {
       return [];
     }
 

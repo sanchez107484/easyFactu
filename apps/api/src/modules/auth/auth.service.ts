@@ -318,7 +318,6 @@ export class AuthService {
     const agencyRelation = await this.prisma.agencyClientRelation.findFirst({
       where: {
         clientTenantId: dto.tenantId,
-        status: 'ACTIVE',
         agencyTenant: {
           isActive: true,
           tenantUsers: { some: { userId } },
@@ -519,6 +518,27 @@ export class AuthService {
         isOwner: tu.isOwner,
       })),
     };
+  }
+
+  async updateProfile(userId: string, dto: { firstName?: string; lastName?: string }) {
+    const updateData: { firstName?: string; lastName?: string } = {};
+    if (dto.firstName !== undefined) updateData.firstName = dto.firstName;
+    if (dto.lastName !== undefined) updateData.lastName = dto.lastName;
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        emailVerified: true,
+        lastActiveTenantId: true,
+      },
+    });
+
+    return user;
   }
 
   async changePassword(userId: string, currentPassword: string, newPassword: string) {

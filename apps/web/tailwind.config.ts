@@ -69,6 +69,9 @@ const config: Config = {
         rectificativa: scale(themeConfig.scales.rectificativa),
         customer: scale(themeConfig.scales.customer),
         product: scale(themeConfig.scales.product),
+        agency: scale(themeConfig.scales.agency),
+        overdue: scale(themeConfig.scales.overdue),
+        neutral: scale(themeConfig.scales.neutral),
       },
       borderRadius: {
         lg: 'var(--radius)',

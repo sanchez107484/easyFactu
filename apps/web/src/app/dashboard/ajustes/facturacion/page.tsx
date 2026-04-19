@@ -162,7 +162,7 @@ function SeriesCreateConfirmDialog({
               </div>
               {hasYearWarning && (
                 <>
-                  <div className="flex gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">
+                  <div className="flex gap-2 rounded-md border border-proforma-200 bg-proforma-50 p-3 text-proforma-800 dark:border-proforma-800 dark:bg-proforma-950 dark:text-proforma-200">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                     <p>
                       El prefijo no contiene el año {year}. Las facturas no llevarán referencia al

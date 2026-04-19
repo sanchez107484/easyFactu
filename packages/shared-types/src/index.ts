@@ -87,17 +87,17 @@ export enum PaymentMethod {
   BIZUM = 'BIZUM',
 }
 
-export enum AgencyClientStatus {
-  ACTIVE = 'ACTIVE',
-  SUSPENDED = 'SUSPENDED',
-  REVOKED = 'REVOKED',
-}
-
 export enum AgencyInvitationStatus {
   PENDING = 'PENDING',
   ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED',
   EXPIRED = 'EXPIRED',
   CANCELLED = 'CANCELLED',
+}
+
+export enum RelationTerminator {
+  AGENCY = 'AGENCY',
+  CLIENT = 'CLIENT',
 }
 
 // ==================== BASE TYPES ====================
@@ -975,13 +975,30 @@ export interface AgencyClientRelation {
   id: string;
   agencyTenantId: string;
   clientTenantId: string;
-  status: AgencyClientStatus;
   addedByUserId: string;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
   clientTenant?: Tenant;
   agencyTenant?: Tenant;
+}
+
+/** Permanent audit record of every asesoría–client relationship period. Never deleted. */
+export interface AgencyRelationHistory {
+  id: string;
+  agencyTenantId: string;
+  clientTenantId: string;
+  /** Snapshot of the agency name at the moment the relationship started. */
+  agencyBusinessName: string;
+  /** Snapshot of the client name at the moment the relationship started. */
+  clientBusinessName: string;
+  clientNif: string;
+  startedAt: string;
+  endedAt: string | null;
+  terminatedBy: RelationTerminator | null;
+  terminatedByUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AgencyClientWithDetails extends AgencyClientRelation {
@@ -1002,6 +1019,44 @@ export interface AgencyInvitation {
   token: string;
   status: AgencyInvitationStatus;
   expiresAt: string;
+  rejectedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Invitation received by a non-agency user (includes agency public details). */
+export interface ReceivedInvitation {
+  id: string;
+  token: string;
+  inviteeName: string | null;
+  agencyName: string;
+  agencyNif: string;
+  agencyCity: string | null;
+  status: AgencyInvitationStatus;
+  expiresAt: string;
+  createdAt: string;
+}
+
+/** An agency relation as seen by the client (the managed party). */
+export interface MyAgencyRelation {
+  id: string;
+  agencyTenantId: string;
+  agencyName: string;
+  agencyNif: string;
+  agencyEmail: string | null;
+  agencyPhone: string | null;
+  agencyCity: string | null;
+  linkedAt: string;
+}
+
+/** Full invitation record returned to the agency in the invitations history view. */
+export interface AgencyInvitationFull {
+  id: string;
+  inviteeEmail: string;
+  inviteeName: string | null;
+  status: AgencyInvitationStatus;
+  expiresAt: string;
+  rejectedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1029,7 +1084,6 @@ export interface QueryAgencyClientsInput {
   page?: number;
   limit?: number;
   search?: string;
-  status?: AgencyClientStatus;
 }
 
 export interface AgencyClientRecentInvoice {

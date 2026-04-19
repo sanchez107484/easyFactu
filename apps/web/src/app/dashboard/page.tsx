@@ -29,6 +29,7 @@ import { useInvoices, useInvoiceStats } from '@/hooks/use-invoices';
 import { InvoiceStatus } from '@easyfactura/shared-types';
 import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge';
 import { cn, formatCurrency } from '@/lib/utils';
+import { InvitationCards } from '@/components/common/invitation-alert';
 
 // ==================== HELPERS ====================
 
@@ -212,6 +213,9 @@ export default function DashboardPage() {
       {!tenant?.setupCompleted && !isBannerDismissed && (
         <SetupBanner completedSteps={completedSteps} onDismiss={dismissBanner} />
       )}
+
+      {/* Pending agency invitations */}
+      <InvitationCards />
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">

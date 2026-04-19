@@ -7,10 +7,10 @@ export const INVOICE_STATUS_CONFIG: Record<
 > = {
   [InvoiceStatus.DRAFT]: {
     label: 'Borrador',
-    color: 'text-zinc-600 dark:text-zinc-400',
-    bg: 'bg-zinc-50 dark:bg-zinc-900/50',
-    border: 'border-zinc-200 dark:border-zinc-800',
-    dot: 'bg-zinc-400',
+    color: 'text-neutral-600 dark:text-neutral-400',
+    bg: 'bg-neutral-50 dark:bg-neutral-900/50',
+    border: 'border-neutral-200 dark:border-neutral-800',
+    dot: 'bg-neutral-400',
   },
   [InvoiceStatus.PROFORMA]: {
     label: 'Proforma',

@@ -1,7 +1,6 @@
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { AgencyClientStatus } from '@easyfactura/shared-types';
 
 export class QueryAgencyClientsDto {
   @ApiPropertyOptional({ default: 1 })
@@ -23,9 +22,4 @@ export class QueryAgencyClientsDto {
   @IsOptional()
   @IsString()
   search?: string;
-
-  @ApiPropertyOptional({ enum: AgencyClientStatus })
-  @IsOptional()
-  @IsEnum(AgencyClientStatus)
-  status?: AgencyClientStatus;
 }

@@ -76,24 +76,24 @@ interface PageProps {
 const RECURRING_STATUS_CONFIG = {
   [RecurringStatus.ACTIVE]: {
     label: 'Activa',
-    dot: 'bg-emerald-500',
-    color: 'text-emerald-700 dark:text-emerald-400',
-    bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-    border: 'border-emerald-200 dark:border-emerald-900',
+    dot: 'bg-product-500',
+    color: 'text-product-700 dark:text-product-400',
+    bg: 'bg-product-50 dark:bg-product-950/30',
+    border: 'border-product-200 dark:border-product-900',
   },
   [RecurringStatus.PAUSED]: {
     label: 'Pausada',
-    dot: 'bg-amber-500',
-    color: 'text-amber-700 dark:text-amber-400',
-    bg: 'bg-amber-50 dark:bg-amber-950/30',
-    border: 'border-amber-200 dark:border-amber-900',
+    dot: 'bg-proforma-500',
+    color: 'text-proforma-700 dark:text-proforma-400',
+    bg: 'bg-proforma-50 dark:bg-proforma-950/30',
+    border: 'border-proforma-200 dark:border-proforma-900',
   },
   [RecurringStatus.COMPLETED]: {
     label: 'Completada',
-    dot: 'bg-slate-400',
-    color: 'text-slate-600 dark:text-slate-400',
-    bg: 'bg-slate-50 dark:bg-slate-900/30',
-    border: 'border-slate-200 dark:border-slate-800',
+    dot: 'bg-neutral-400',
+    color: 'text-neutral-600 dark:text-neutral-400',
+    bg: 'bg-neutral-50 dark:bg-neutral-900/30',
+    border: 'border-neutral-200 dark:border-neutral-800',
   },
 };
 
@@ -393,7 +393,7 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
                       {formatDate(recurring.nextRunDate)}
                     </p>
                     {isOverdue && (
-                      <div className="flex items-center gap-1.5 mt-2 text-amber-600 dark:text-amber-400 text-xs font-medium">
+                      <div className="flex items-center gap-1.5 mt-2 text-proforma-600 dark:text-proforma-400 text-xs font-medium">
                         <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                         Atrasada — pendiente en el siguiente ciclo del planificador
                       </div>

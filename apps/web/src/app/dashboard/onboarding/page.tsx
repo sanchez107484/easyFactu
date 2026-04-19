@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,6 +25,7 @@ import { useOnboardingStore } from '@/hooks/use-onboarding';
 import { useTenant, useUpdateTenant, useCompleteSetup } from '@/hooks/use-tenant';
 import { useCreateSeries, useUpdateSeries, useInvoiceSeries } from '@/hooks/use-invoice-series';
 import { useInvoiceDefaults, useUpdateInvoiceDefaults } from '@/hooks/use-invoice-defaults';
+import { useAuthStore } from '@/store/auth-store';
 import { AccountType, SeriesType, PaymentMethod } from '@easyfactura/shared-types';
 import { PROVINCES, PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import {
@@ -482,43 +483,43 @@ function Step3InvoiceSeries({ onSuccess, onBack }: { onSuccess: () => void; onBa
 
   return (
     <>
-    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold">Configura tu numeración de facturas</h2>
-        <p className="mt-2 text-muted-foreground">
-          Define cómo se numerarán tus facturas del {currentYear}
-        </p>
-      </div>
-
-      {existingSeries && (
-        <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3 text-sm">
-          <span className="text-muted-foreground">Serie actual:</span>
-          <span className="font-mono font-semibold">{existingSeries.code}</span>
-          <Badge variant="outline" className="ml-auto text-xs">
-            {existingSeries.type === SeriesType.INVOICE ? 'Factura' : 'Rectificativa'}
-          </Badge>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold">Configura tu numeración de facturas</h2>
+          <p className="mt-2 text-muted-foreground">
+            Define cómo se numerarán tus facturas del {currentYear}
+          </p>
         </div>
-      )}
 
-      <InvoiceSeriesFormFields
-        form={form}
+        {existingSeries && (
+          <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3 text-sm">
+            <span className="text-muted-foreground">Serie actual:</span>
+            <span className="font-mono font-semibold">{existingSeries.code}</span>
+            <Badge variant="outline" className="ml-auto text-xs">
+              {existingSeries.type === SeriesType.INVOICE ? 'Factura' : 'Rectificativa'}
+            </Badge>
+          </div>
+        )}
+
+        <InvoiceSeriesFormFields
+          form={form}
+          year={currentYear}
+          showIsDefault={false}
+          showNextNumber
+        />
+
+        <StepActions isSaving={isSaving} onBack={onBack} />
+      </form>
+
+      <PrefixYearWarningDialog
+        open={pendingData !== null}
+        onClose={() => setPendingData(null)}
+        onConfirm={() => pendingData && performSubmit(pendingData)}
+        prefix={pendingData?.prefix ?? ''}
         year={currentYear}
-        showIsDefault={false}
-        showNextNumber
+        confirmLabel="Sí, continuar sin año"
+        isPending={isSaving}
       />
-
-      <StepActions isSaving={isSaving} onBack={onBack} />
-    </form>
-
-    <PrefixYearWarningDialog
-      open={pendingData !== null}
-      onClose={() => setPendingData(null)}
-      onConfirm={() => pendingData && performSubmit(pendingData)}
-      prefix={pendingData?.prefix ?? ''}
-      year={currentYear}
-      confirmLabel="Sí, continuar sin año"
-      isPending={isSaving}
-    />
     </>
   );
 }
@@ -661,39 +662,58 @@ function Step4InvoiceDefaults({
 // Completion Screen
 // ---------------------------------
 
-function CompletionScreen({ onGoToDashboard }: { onGoToDashboard: () => void }) {
+function CompletionScreen({
+  onGoToDashboard,
+  isAgency,
+}: {
+  onGoToDashboard: () => void;
+  isAgency: boolean;
+}) {
   return (
     <div className="py-12 text-center">
-      <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-        <PartyPopper className="h-10 w-10 text-green-600" />
+      <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-secondary-100 dark:bg-secondary-900/30">
+        <PartyPopper className="h-10 w-10 text-secondary-600" />
       </div>
 
       <h2 className="mb-3 text-3xl font-bold">¡Todo listo!</h2>
-      <p className="mx-auto max-w-md text-lg text-muted-foreground">
-        Tu cuenta está configurada y lista para empezar a facturar cumpliendo con VeriFactu.
-      </p>
+      {isAgency ? (
+        <p className="mx-auto max-w-md text-lg text-muted-foreground">
+          Tu asesoría está configurada. Ahora puedes empezar a añadir y gestionar los clientes de tu
+          cartera.
+        </p>
+      ) : (
+        <p className="mx-auto max-w-md text-lg text-muted-foreground">
+          Tu cuenta está configurada y lista para empezar a facturar cumpliendo con VeriFactu.
+        </p>
+      )}
 
       <div className="mx-auto mt-8 max-w-md space-y-3 rounded-xl border bg-muted/30 p-6">
         <div className="flex items-center gap-3">
-          <CheckCircle2 className="h-5 w-5 text-green-600" />
+          <CheckCircle2 className="h-5 w-5 text-secondary-600" />
           <span className="text-sm font-medium">Tipo de cuenta configurado</span>
         </div>
         <div className="flex items-center gap-3">
-          <CheckCircle2 className="h-5 w-5 text-green-600" />
+          <CheckCircle2 className="h-5 w-5 text-secondary-600" />
           <span className="text-sm font-medium">Datos fiscales guardados</span>
         </div>
         <div className="flex items-center gap-3">
-          <CheckCircle2 className="h-5 w-5 text-green-600" />
+          <CheckCircle2 className="h-5 w-5 text-secondary-600" />
           <span className="text-sm font-medium">Serie de facturación creada</span>
         </div>
         <div className="flex items-center gap-3">
-          <CheckCircle2 className="h-5 w-5 text-green-600" />
+          <CheckCircle2 className="h-5 w-5 text-secondary-600" />
           <span className="text-sm font-medium">Preferencias configuradas</span>
         </div>
+        {isAgency && (
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="h-5 w-5 text-secondary-600" />
+            <span className="text-sm font-medium">Panel de asesoría activado</span>
+          </div>
+        )}
       </div>
 
       <Button onClick={onGoToDashboard} size="lg" className="mt-8">
-        Ir al panel de control
+        {isAgency ? 'Ir al panel de asesoría' : 'Ir al panel de control'}
         <ArrowRight className="ml-2 h-4 w-4" />
       </Button>
     </div>
@@ -706,8 +726,28 @@ function CompletionScreen({ onGoToDashboard }: { onGoToDashboard: () => void }) 
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { currentStep, completedSteps, setStep, completeStep, resetOnboarding } =
-    useOnboardingStore();
+  const {
+    currentStep,
+    completedSteps,
+    setStep,
+    completeStep,
+    resetOnboarding,
+    tenantId: storedTenantId,
+    setTenantId,
+  } = useOnboardingStore();
+  const { data: tenant } = useTenant();
+  const currentTenantId = useAuthStore((s) => s.currentTenant?.id);
+  const isAgency = tenant?.accountType === AccountType.AGENCY;
+
+  // Reset onboarding when the active tenant changes (prevents stale localStorage from
+  // a previous session's progress leaking into a new user/tenant's onboarding).
+  useEffect(() => {
+    if (!currentTenantId) return;
+    if (storedTenantId && storedTenantId !== currentTenantId) {
+      resetOnboarding();
+    }
+    setTenantId(currentTenantId);
+  }, [currentTenantId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleStepSuccess(stepNumber: number) {
     completeStep(stepNumber);
@@ -719,7 +759,7 @@ export default function OnboardingPage() {
 
   function handleGoToDashboard() {
     resetOnboarding();
-    router.push('/dashboard');
+    router.push(isAgency ? '/dashboard/asesoria' : '/dashboard');
   }
 
   return (
@@ -752,7 +792,7 @@ export default function OnboardingPage() {
                 onBack={() => setStep(3)}
               />
             ) : (
-              <CompletionScreen onGoToDashboard={handleGoToDashboard} />
+              <CompletionScreen onGoToDashboard={handleGoToDashboard} isAgency={isAgency} />
             )}
           </CardContent>
         </Card>

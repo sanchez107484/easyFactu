@@ -323,7 +323,7 @@ function RecurringRow({ item, onPause, onResume, onDelete, onEdit }: RecurringRo
         <div className="flex items-center gap-2 flex-wrap">
           {isCompleted ? '—' : formatDate(item.nextRunDate)}
           {isOverdue && (
-            <Badge className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 border-transparent">
+            <Badge className="text-xs bg-proforma-100 text-proforma-800 dark:bg-proforma-900 dark:text-proforma-100 border-transparent">
               Atrasada
             </Badge>
           )}

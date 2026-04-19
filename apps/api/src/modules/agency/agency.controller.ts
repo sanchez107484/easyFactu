@@ -91,9 +91,10 @@ export class AgencyController {
   @ApiResponse({ status: 204, description: 'Acceso revocado' })
   revokeClient(
     @CurrentTenant() tenantId: string,
+    @CurrentUser('id') userId: string,
     @Param('clientTenantId', ParseUUIDPipe) clientTenantId: string
   ) {
-    return this.agencyService.revokeClient(tenantId, clientTenantId);
+    return this.agencyService.revokeClient(tenantId, clientTenantId, userId);
   }
 
   @Get('clients/check-nif')
@@ -101,6 +102,13 @@ export class AgencyController {
   @ApiResponse({ status: 200, description: 'Estado del NIF' })
   checkNif(@CurrentTenant() tenantId: string, @Query('nif') nif: string) {
     return this.agencyService.checkNif(tenantId, nif);
+  }
+
+  @Get('clients/check-identifier')
+  @ApiOperation({ summary: 'Comprueba un NIF o email para vinculación en tiempo real' })
+  @ApiResponse({ status: 200, description: 'Estado del identificador' })
+  checkIdentifier(@CurrentTenant() tenantId: string, @Query('q') q: string) {
+    return this.agencyService.checkIdentifier(tenantId, q);
   }
 
   @Get('clients/:clientTenantId')
@@ -124,9 +132,25 @@ export class AgencyController {
 
   // ─── Invitations ────────────────────────────────────────────────────────
 
+  @Get('invitations')
+  @ApiOperation({ summary: 'Listar invitaciones pendientes de la asesoría' })
+  findPendingInvitations(@CurrentTenant() tenantId: string) {
+    return this.agencyService.findPendingInvitations(tenantId);
+  }
+
+  /** Returns pending invitations received by the authenticated user (non-agency clients).
+   *  Declared BEFORE GET invitations/:token to prevent NestJS capturing "received" as :token. */
+  @SkipAgencyGuard()
+  @Get('invitations/received')
+  @ApiOperation({ summary: 'Invitaciones de asesoría recibidas por el usuario autenticado' })
+  getReceivedInvitations(@CurrentUser('email') userEmail: string) {
+    return this.agencyService.getReceivedInvitations(userEmail);
+  }
+
   /**
    * Public endpoint — no auth required. Returns safe public info about the invitation.
    * AgencyAccessGuard is bypassed automatically because @Public() skips it.
+   * Declared AFTER the static /received route to avoid conflict.
    */
   @Public()
   @Get('invitations/:token')
@@ -137,12 +161,6 @@ export class AgencyController {
     return this.agencyService.findInvitationByToken(token);
   }
 
-  @Get('invitations')
-  @ApiOperation({ summary: 'Listar invitaciones pendientes de la asesoría' })
-  findPendingInvitations(@CurrentTenant() tenantId: string) {
-    return this.agencyService.findPendingInvitations(tenantId);
-  }
-
   /** Called by the CLIENT (non-AGENCY tenant) to accept an invitation from an agency. */
   @SkipAgencyGuard()
   @Post('invitations/:token/accept')
@@ -150,9 +168,23 @@ export class AgencyController {
   acceptInvitation(
     @Param('token') token: string,
     @CurrentTenant() clientTenantId: string,
-    @CurrentUser('id') userId: string
+    @CurrentUser('id') userId: string,
+    @CurrentUser('email') userEmail: string
   ) {
-    return this.agencyService.acceptInvitation(token, clientTenantId, userId);
+    return this.agencyService.acceptInvitation(token, clientTenantId, userId, userEmail);
+  }
+
+  /** Called by the CLIENT (non-AGENCY tenant) to reject an invitation from an agency. */
+  @SkipAgencyGuard()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('invitations/:token/reject')
+  @ApiOperation({ summary: 'Rechazar invitación de asesoría (llamado por el cliente)' })
+  rejectInvitation(
+    @Param('token') token: string,
+    @CurrentTenant() clientTenantId: string,
+    @CurrentUser('email') userEmail: string
+  ) {
+    return this.agencyService.rejectInvitation(token, clientTenantId, userEmail);
   }
 
   @Patch('invitations/:id/cancel')
@@ -241,5 +273,39 @@ export class AgencyController {
     @Query('limit', new ParseIntPipe({ optional: true })) limit = 20
   ) {
     return this.agencyService.getExportLogs(tenantId, clientTenantId, page, limit);
+  }
+
+  // ─── All invitations (for agency invitations history view) ─────────────
+
+  @Get('invitations/all')
+  @ApiOperation({ summary: 'Todas las invitaciones enviadas por la asesoría (todos los estados)' })
+  @ApiResponse({ status: 200, description: 'Lista de invitaciones' })
+  findAllInvitations(@CurrentTenant() tenantId: string) {
+    return this.agencyService.findAllInvitations(tenantId);
+  }
+
+  // ─── My agencies (client side) ─────────────────────────────────────────
+
+  /** Returns the agencies that currently manage the authenticated client tenant. */
+  @SkipAgencyGuard()
+  @Get('my-agencies')
+  @ApiOperation({ summary: 'Asesorías que gestionan mi cuenta (llamado por el cliente)' })
+  @ApiResponse({ status: 200, description: 'Lista de asesorías con acceso activo' })
+  findMyAgencies(@CurrentTenant() clientTenantId: string) {
+    return this.agencyService.findMyAgencies(clientTenantId);
+  }
+
+  /** Client revokes an agency's access to their account. */
+  @SkipAgencyGuard()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('my-agencies/:agencyTenantId')
+  @ApiOperation({ summary: 'Revocar acceso de una asesoría a mi cuenta (llamado por el cliente)' })
+  @ApiResponse({ status: 204, description: 'Acceso revocado' })
+  revokeMyAgency(
+    @CurrentTenant() clientTenantId: string,
+    @CurrentUser('id') userId: string,
+    @Param('agencyTenantId', ParseUUIDPipe) agencyTenantId: string
+  ) {
+    return this.agencyService.revokeMyAgency(clientTenantId, agencyTenantId, userId);
   }
 }

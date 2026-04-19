@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { agencyApi } from '@/lib/api/agency-api';
+import type { IdentifierCheckResult } from '@/lib/api/agency-api';
 import { getErrorMessage } from '@/lib/api-client';
 import { triggerBlobDownload } from '@/lib/blob-download';
 import { validateNif } from '@easyfactura/shared-validators';
@@ -9,6 +10,9 @@ import type {
   CreateDirectClientInput,
   InviteClientInput,
   ExportContaPlusInput,
+  ReceivedInvitation,
+  MyAgencyRelation,
+  AgencyInvitationFull,
 } from '@easyfactura/shared-types';
 
 const AGENCY_KEYS = {
@@ -18,6 +22,9 @@ const AGENCY_KEYS = {
   clients: (query?: QueryAgencyClientsInput) => [...AGENCY_KEYS.all, 'clients', query] as const,
   client: (id: string) => [...AGENCY_KEYS.all, 'clients', id] as const,
   invitations: () => [...AGENCY_KEYS.all, 'invitations'] as const,
+  allInvitations: () => [...AGENCY_KEYS.all, 'invitations-all'] as const,
+  receivedInvitations: () => [...AGENCY_KEYS.all, 'received-invitations'] as const,
+  myAgencies: () => [...AGENCY_KEYS.all, 'my-agencies'] as const,
   sharedCustomers: (search?: string, page?: number) =>
     [...AGENCY_KEYS.all, 'shared-customers', search, page] as const,
   fiscalAlerts: (id: string) => [...AGENCY_KEYS.all, 'fiscal-alerts', id] as const,
@@ -26,19 +33,21 @@ const AGENCY_KEYS = {
     [...AGENCY_KEYS.all, 'export-logs', clientTenantId, page] as const,
 };
 
-export function useAgencyStats() {
+export function useAgencyStats(enabled = true) {
   return useQuery({
     queryKey: AGENCY_KEYS.stats(),
     queryFn: agencyApi.getStats,
     staleTime: 2 * 60 * 1000, // 2 minutes
+    enabled,
   });
 }
 
-export function useAgencyClients(query?: QueryAgencyClientsInput) {
+export function useAgencyClients(query?: QueryAgencyClientsInput, enabled = true) {
   return useQuery({
     queryKey: AGENCY_KEYS.clients(query),
     queryFn: () => agencyApi.getClients(query),
     staleTime: 30 * 1000, // 30 seconds
+    enabled,
   });
 }
 
@@ -119,6 +128,23 @@ export function useCheckNif(nif: string) {
   };
 }
 
+export function useCheckIdentifier(q: string) {
+  const trimmed = q.trim();
+  const isEmail = trimmed.includes('@');
+  const isValidEmail = isEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+  const isPotentialNif = !isEmail && trimmed.length >= 9;
+  const isValidNif = isPotentialNif && validateNif(trimmed.toUpperCase()).isValid;
+  const enabled = isValidEmail || isValidNif;
+
+  return useQuery<IdentifierCheckResult>({
+    queryKey: [...AGENCY_KEYS.all, 'check-identifier', trimmed] as const,
+    queryFn: () => agencyApi.checkIdentifier(trimmed),
+    enabled,
+    staleTime: 30 * 1000,
+    retry: false,
+  });
+}
+
 export function useRevokeClient() {
   const queryClient = useQueryClient();
 
@@ -144,11 +170,51 @@ export function useAgencySharedCustomers(search?: string, page = 1, enabled = tr
   });
 }
 
-export function useAgencyPendingInvitations() {
+export function useAgencyPendingInvitations(enabled = true) {
   return useQuery({
     queryKey: AGENCY_KEYS.invitations(),
     queryFn: agencyApi.getPendingInvitations,
     staleTime: 30 * 1000,
+    enabled,
+  });
+}
+
+export function useReceivedInvitations() {
+  return useQuery<ReceivedInvitation[]>({
+    queryKey: AGENCY_KEYS.receivedInvitations(),
+    queryFn: agencyApi.getReceivedInvitations,
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useAcceptInvitation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (token: string) => agencyApi.acceptInvitation(token),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.receivedInvitations() });
+      toast.success('Te has vinculado a la asesoría correctamente');
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
+    },
+  });
+}
+
+export function useRejectInvitation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (token: string) => agencyApi.rejectInvitation(token),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.receivedInvitations() });
+      toast.success('Has rechazado la invitación');
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
+    },
   });
 }
 
@@ -204,6 +270,37 @@ export function useFiscalAlertsSummary(enabled = true) {
     queryFn: agencyApi.getFiscalAlertsSummary,
     enabled,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useAllInvitations() {
+  return useQuery<AgencyInvitationFull[]>({
+    queryKey: AGENCY_KEYS.allInvitations(),
+    queryFn: agencyApi.getAllInvitations,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useMyAgencies() {
+  return useQuery<MyAgencyRelation[]>({
+    queryKey: AGENCY_KEYS.myAgencies(),
+    queryFn: agencyApi.getMyAgencies,
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useRevokeMyAgency() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (agencyTenantId: string) => agencyApi.revokeMyAgency(agencyTenantId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.myAgencies() });
+      toast.success('Acceso de la asesoría revocado correctamente');
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
+    },
   });
 }
 

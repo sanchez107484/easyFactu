@@ -19,30 +19,31 @@ export function AgencyKpiStrip({ stats, isLoading }: AgencyKpiStripProps) {
       label: 'Clientes totales',
       value: stats?.totalClients ?? 0,
       icon: Users,
-      color: 'text-indigo-600 dark:text-indigo-400',
-      bg: 'bg-indigo-100 dark:bg-indigo-950',
+      color: 'text-customer-600 dark:text-customer-400',
+      bg: 'bg-customer-100 dark:bg-customer-950',
     },
     {
       label: 'Clientes activos',
       value: stats?.activeClients ?? 0,
       icon: UserCheck,
-      color: 'text-emerald-600 dark:text-emerald-400',
-      bg: 'bg-emerald-100 dark:bg-emerald-950',
+      color: 'text-product-600 dark:text-product-400',
+      bg: 'bg-product-100 dark:bg-product-950',
     },
     {
       label: 'Necesitan atención',
       value: needsAttention,
       icon: AlertTriangle,
-      color: needsAttention > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground',
-      bg: needsAttention > 0 ? 'bg-amber-100 dark:bg-amber-950' : 'bg-muted',
+      color:
+        needsAttention > 0 ? 'text-proforma-600 dark:text-proforma-400' : 'text-muted-foreground',
+      bg: needsAttention > 0 ? 'bg-proforma-100 dark:bg-proforma-950' : 'bg-muted',
     },
     {
       label: 'Invitaciones pendientes',
       value: pendingInvitations,
       icon: Mail,
       color:
-        pendingInvitations > 0 ? 'text-violet-600 dark:text-violet-400' : 'text-muted-foreground',
-      bg: pendingInvitations > 0 ? 'bg-violet-100 dark:bg-violet-950' : 'bg-muted',
+        pendingInvitations > 0 ? 'text-agency-600 dark:text-agency-400' : 'text-muted-foreground',
+      bg: pendingInvitations > 0 ? 'bg-agency-100 dark:bg-agency-950' : 'bg-muted',
     },
   ];
 

@@ -50,11 +50,13 @@ model Tenant {
   payments           Payment[]
 
   // Agency relations
-  agencyRelations   AgencyClientRelation[] @relation("AgencyRelations")
-  clientRelations   AgencyClientRelation[] @relation("ClientRelations")
-  agencyInvitations AgencyInvitation[]
-  agencyExportLogs  AgencyExportLog[]      @relation("AgencyExportLogs")
-  clientExportLogs  AgencyExportLog[]      @relation("ClientExportLogs")
+  agencyRelations         AgencyClientRelation[]  @relation("AgencyRelations")
+  clientRelations         AgencyClientRelation[]  @relation("ClientRelations")
+  agencyInvitations       AgencyInvitation[]
+  agencyExportLogs        AgencyExportLog[]        @relation("AgencyExportLogs")
+  clientExportLogs        AgencyExportLog[]        @relation("ClientExportLogs")
+  agencyRelationHistory   AgencyRelationHistory[] @relation("AgencyHistoryRelations")
+  clientRelationHistory   AgencyRelationHistory[] @relation("ClientHistoryRelations")
 
   @@map("tenants")
 }
@@ -492,31 +494,30 @@ model InvoiceNoteLog {
 
 // ==================== AGENCY MODULE ====================
 
-enum AgencyClientStatus {
-  ACTIVE
-  SUSPENDED
-  REVOKED
+enum RelationTerminator {
+  AGENCY
+  CLIENT
 }
 
 enum AgencyInvitationStatus {
   PENDING
   ACCEPTED
+  REJECTED
   EXPIRED
   CANCELLED
 }
 
 model AgencyClientRelation {
-  id             String             @id @default(uuid())
-  agencyTenantId String             @map("agency_tenant_id")
-  clientTenantId String             @map("client_tenant_id")
-  status         AgencyClientStatus @default(ACTIVE)
-  addedByUserId  String             @map("added_by_user_id")
-  notes          String?            @db.Text
-  createdAt      DateTime           @default(now()) @map("created_at")
-  updatedAt      DateTime           @updatedAt @map("updated_at")
+  id             String   @id @default(uuid())
+  agencyTenantId String   @map("agency_tenant_id")
+  clientTenantId String   @map("client_tenant_id")
+  addedByUserId  String   @map("added_by_user_id")
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
-  agencyTenant   Tenant             @relation("AgencyRelations", fields: [agencyTenantId], references: [id], onDelete: Cascade)
-  clientTenant   Tenant             @relation("ClientRelations", fields: [clientTenantId], references: [id], onDelete: Cascade)
+  agencyTenant   Tenant   @relation("AgencyRelations", fields: [agencyTenantId], references: [id], onDelete: Cascade)
+  clientTenant   Tenant   @relation("ClientRelations", fields: [clientTenantId], references: [id], onDelete: Cascade)
 
   @@unique([agencyTenantId, clientTenantId])
   @@index([agencyTenantId])
@@ -532,14 +533,46 @@ model AgencyInvitation {
   token          String                 @unique
   status         AgencyInvitationStatus @default(PENDING)
   expiresAt      DateTime               @map("expires_at")
+  rejectedAt     DateTime?              @map("rejected_at")
   createdAt      DateTime               @default(now()) @map("created_at")
   updatedAt      DateTime               @updatedAt @map("updated_at")
 
   agencyTenant   Tenant                 @relation(fields: [agencyTenantId], references: [id], onDelete: Cascade)
 
   @@index([agencyTenantId])
+  @@index([inviteeEmail])
   @@index([token])
   @@map("agency_invitations")
+}
+
+// Audit trail: permanent record of every asesoría–client relationship.
+// Rows are NEVER deleted — they are the legal proof of who managed whom and when.
+model AgencyRelationHistory {
+  id                 String              @id @default(uuid())
+  agencyTenantId     String              @map("agency_tenant_id")
+  clientTenantId     String              @map("client_tenant_id")
+  // Snapshots of business names at the moment the relationship was created.
+  // Preserved even if the tenant later changes its razón social.
+  agencyBusinessName String              @map("agency_business_name") @db.VarChar(255)
+  clientBusinessName String              @map("client_business_name") @db.VarChar(255)
+  clientNif          String              @map("client_nif") @db.VarChar(20)
+  startedAt          DateTime            @map("started_at")
+  endedAt            DateTime?           @map("ended_at")           // null → relationship still active
+  terminatedBy       RelationTerminator? @map("terminated_by")      // who initiated the revocation
+  terminatedByUserId String?             @map("terminated_by_user_id")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  // onDelete: Restrict — we must NEVER lose this audit trail when a tenant is removed.
+  // Tenants with history must be anonymised, not hard-deleted.
+  agencyTenant       Tenant              @relation("AgencyHistoryRelations", fields: [agencyTenantId], references: [id], onDelete: Restrict)
+  clientTenant       Tenant              @relation("ClientHistoryRelations", fields: [clientTenantId], references: [id], onDelete: Restrict)
+
+  @@index([agencyTenantId])
+  @@index([clientTenantId])
+  @@index([agencyTenantId, clientTenantId])
+  @@index([endedAt])         // fast queries for open relationships
+  @@map("agency_relation_history")
 }
 
 // ==================== AGENCY EXPORT LOGS ====================

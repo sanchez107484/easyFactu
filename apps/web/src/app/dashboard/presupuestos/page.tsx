@@ -62,10 +62,10 @@ const QUOTE_ACCEPTANCE_CONFIG: Record<
 > = {
   [QuoteAcceptanceStatus.PENDING]: {
     label: 'Pendiente',
-    color: 'text-zinc-600 dark:text-zinc-400',
-    bg: 'bg-zinc-50 dark:bg-zinc-900/50',
-    border: 'border-zinc-200 dark:border-zinc-800',
-    dot: 'bg-zinc-400',
+    color: 'text-neutral-600 dark:text-neutral-400',
+    bg: 'bg-neutral-50 dark:bg-neutral-900/50',
+    border: 'border-neutral-200 dark:border-neutral-800',
+    dot: 'bg-neutral-400',
   },
   [QuoteAcceptanceStatus.SENT]: {
     label: 'Enviado',
@@ -83,10 +83,10 @@ const QUOTE_ACCEPTANCE_CONFIG: Record<
   },
   [QuoteAcceptanceStatus.REJECTED]: {
     label: 'Rechazado',
-    color: 'text-destructive dark:text-red-400',
-    bg: 'bg-red-50 dark:bg-red-950/40',
-    border: 'border-red-200 dark:border-red-800',
-    dot: 'bg-red-500',
+    color: 'text-destructive dark:text-rectificativa-400',
+    bg: 'bg-rectificativa-50 dark:bg-rectificativa-950/40',
+    border: 'border-rectificativa-200 dark:border-rectificativa-800',
+    dot: 'bg-rectificativa-500',
   },
   [QuoteAcceptanceStatus.CONVERTED]: {
     label: 'Convertido',
@@ -449,7 +449,7 @@ export default function PresupuestosPage() {
                           className={cn(
                             'group transition-colors hover:bg-muted/30',
                             expired &&
-                              'bg-orange-50/50 hover:bg-orange-50 dark:bg-orange-950/10 dark:hover:bg-orange-950/20',
+                              'bg-overdue-50/50 hover:bg-overdue-50 dark:bg-overdue-950/10 dark:hover:bg-overdue-950/20',
                           )}
                         >
                           <td className="px-6 py-3">
@@ -485,14 +485,14 @@ export default function PresupuestosPage() {
                                 className={cn(
                                   'inline-flex items-center gap-1 text-sm',
                                   expired
-                                    ? 'text-orange-600 dark:text-orange-400 font-medium'
+                                    ? 'text-overdue-600 dark:text-overdue-400 font-medium'
                                     : 'text-muted-foreground',
                                 )}
                               >
                                 {expired && <CalendarClock className="h-3.5 w-3.5 shrink-0" />}
                                 {formatDate(quote.validUntil)}
                                 {expired && (
-                                  <span className="ml-1 rounded-full bg-orange-100 dark:bg-orange-900/50 border border-orange-200 dark:border-orange-800 text-orange-600 dark:text-orange-400 text-[10px] font-semibold px-1.5 py-0.5">
+                                  <span className="ml-1 rounded-full bg-overdue-100 dark:bg-overdue-900/50 border border-overdue-200 dark:border-overdue-800 text-overdue-600 dark:text-overdue-400 text-[10px] font-semibold px-1.5 py-0.5">
                                     Expirado
                                   </span>
                                 )}

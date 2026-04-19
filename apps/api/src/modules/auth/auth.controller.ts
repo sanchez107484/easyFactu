@@ -1,4 +1,13 @@
-import { Controller, Post, Body, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Patch,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -13,6 +22,7 @@ import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -122,5 +132,16 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'No autenticado' })
   async getMe(@CurrentUser('id') userId: string) {
     return this.authService.getMe(userId);
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Actualizar perfil del usuario autenticado' })
+  @ApiResponse({ status: 200, description: 'Perfil actualizado' })
+  @ApiResponse({ status: 401, description: 'No autenticado' })
+  async updateProfile(@CurrentUser('id') userId: string, @Body() dto: UpdateProfileDto) {
+    return this.authService.updateProfile(userId, dto);
   }
 }

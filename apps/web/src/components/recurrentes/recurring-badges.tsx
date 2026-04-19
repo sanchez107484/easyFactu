@@ -26,16 +26,17 @@ export function RecurringStatusBadge({ status, className }: RecurringStatusBadge
     [RecurringStatus.ACTIVE]: {
       label: 'Activa',
       className:
-        'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 border-transparent',
+        'bg-secondary-100 text-secondary-800 dark:bg-secondary-900 dark:text-secondary-100 border-transparent',
     },
     [RecurringStatus.PAUSED]: {
       label: 'Pausada',
       className:
-        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100 border-transparent',
+        'bg-proforma-100 text-proforma-800 dark:bg-proforma-900 dark:text-proforma-100 border-transparent',
     },
     [RecurringStatus.COMPLETED]: {
       label: 'Completada',
-      className: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 border-transparent',
+      className:
+        'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 border-transparent',
     },
   };
 

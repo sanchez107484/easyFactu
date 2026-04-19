@@ -116,8 +116,8 @@ export function ClientCard({ relation, fiscalAlert, onSwitchToClient }: ClientCa
         hasErrors
           ? 'border-destructive/40 hover:border-destructive/60'
           : hasWarning
-            ? 'border-amber-200 hover:border-amber-300 dark:border-amber-800/50 dark:hover:border-amber-700'
-            : 'hover:border-indigo-300 dark:hover:border-indigo-700',
+            ? 'border-proforma-200 hover:border-proforma-300 dark:border-proforma-800/50 dark:hover:border-proforma-700'
+            : 'hover:border-customer-300 dark:hover:border-customer-700',
       )}
     >
       {/* Export trigger — top-right corner, outside the clickable button */}
@@ -133,7 +133,7 @@ export function ClientCard({ relation, fiscalAlert, onSwitchToClient }: ClientCa
       >
         {/* Header */}
         <div className="flex items-center gap-3 pr-8">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-customer-100 text-sm font-bold text-customer-600 dark:bg-customer-950 dark:text-customer-400">
             {name.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
@@ -150,7 +150,7 @@ export function ClientCard({ relation, fiscalAlert, onSwitchToClient }: ClientCa
           (fiscalAlert?.warningCount ?? 0) > 0) && (
           <div className="flex flex-wrap items-center gap-1.5">
             {!setupCompleted && (
-              <span className="flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+              <span className="flex items-center gap-0.5 rounded-full bg-proforma-100 px-2 py-0.5 text-[11px] font-medium text-proforma-700 dark:bg-proforma-950/40 dark:text-proforma-400">
                 <Settings className="h-3 w-3" />
                 Sin configurar
               </span>
@@ -162,13 +162,13 @@ export function ClientCard({ relation, fiscalAlert, onSwitchToClient }: ClientCa
               </span>
             )}
             {certStatus === 'warning' && (
-              <span className="flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+              <span className="flex items-center gap-0.5 rounded-full bg-proforma-100 px-2 py-0.5 text-[11px] font-medium text-proforma-700 dark:bg-proforma-950/40 dark:text-proforma-400">
                 <ShieldOff className="h-3 w-3" />
                 Cert. caduca pronto
               </span>
             )}
             {pending > 0 && (
-              <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
+              <span className="rounded-full bg-overdue-100 px-2 py-0.5 text-[11px] font-medium text-overdue-700 dark:bg-overdue-950/40 dark:text-overdue-400">
                 {pending} pendiente{pending > 1 ? 's' : ''}
               </span>
             )}
@@ -179,7 +179,7 @@ export function ClientCard({ relation, fiscalAlert, onSwitchToClient }: ClientCa
               </span>
             )}
             {(fiscalAlert?.warningCount ?? 0) > 0 && (
-              <span className="flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+              <span className="flex items-center gap-0.5 rounded-full bg-proforma-100 px-2 py-0.5 text-[11px] font-medium text-proforma-700 dark:bg-proforma-950/40 dark:text-proforma-400">
                 <AlertTriangle className="h-3 w-3" />
                 {fiscalAlert!.warningCount} aviso{fiscalAlert!.warningCount > 1 ? 's' : ''}
               </span>
@@ -207,7 +207,7 @@ export function ClientCard({ relation, fiscalAlert, onSwitchToClient }: ClientCa
             {monthlyRevenue > 0 && (
               <span className="text-xs font-semibold">{formatCurrency(monthlyRevenue)}</span>
             )}
-            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-indigo-500" />
+            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-customer-500" />
           </div>
         </div>
       </button>

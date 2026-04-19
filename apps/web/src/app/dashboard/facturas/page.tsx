@@ -143,7 +143,7 @@ function QuickActionButton({
   onRequestPaid,
   onRequestConvert,
 }: QuickActionButtonProps) {
-  const isProforma = (invoice as any).invoiceType === 'proforma';
+  const isProforma = invoice.invoiceType === 'proforma';
 
   if (invoice.status === InvoiceStatus.DRAFT && !isProforma) {
     return (
@@ -173,7 +173,7 @@ function QuickActionButton({
       <Button
         size="sm"
         variant="outline"
-        className="h-7 text-xs px-3 whitespace-nowrap border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+        className="h-7 text-xs px-3 whitespace-nowrap border-product-300 text-product-700 hover:bg-product-50 hover:border-product-400 dark:border-product-700 dark:text-product-400 dark:hover:bg-product-950/30"
         onClick={onRequestPaid}
       >
         <Coins className="h-3.5 w-3.5 mr-1.5" />
@@ -493,7 +493,7 @@ export default function FacturasPage() {
                   <tbody className="divide-y">
                     {invoices.map((invoice) => {
                       const overdue = isOverdue(invoice);
-                      const isProforma = (invoice as any).invoiceType === 'proforma';
+                      const isProforma = invoice.invoiceType === 'proforma';
                       return (
                         <tr
                           key={invoice.id}
@@ -501,7 +501,7 @@ export default function FacturasPage() {
                           className={cn(
                             'group transition-colors hover:bg-muted/30',
                             overdue &&
-                              'bg-red-50/50 hover:bg-red-50 dark:bg-red-950/10 dark:hover:bg-red-950/20',
+                              'bg-overdue-50/50 hover:bg-overdue-50 dark:bg-overdue-950/10 dark:hover:bg-overdue-950/20',
                           )}
                         >
                           {/* Número */}
@@ -552,14 +552,14 @@ export default function FacturasPage() {
                                 className={cn(
                                   'inline-flex items-center gap-1 text-sm',
                                   overdue
-                                    ? 'text-red-600 dark:text-red-400 font-medium'
+                                    ? 'text-overdue-600 dark:text-overdue-400 font-medium'
                                     : 'text-muted-foreground',
                                 )}
                               >
                                 {overdue && <CalendarClock className="h-3.5 w-3.5 shrink-0" />}
                                 {formatDateShort(invoice.dueDate)}
                                 {overdue && (
-                                  <span className="ml-1 rounded-full bg-red-100 dark:bg-red-900/50 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-[10px] font-semibold px-1.5 py-0.5">
+                                  <span className="ml-1 rounded-full bg-overdue-100 dark:bg-overdue-900/50 border border-overdue-200 dark:border-overdue-800 text-overdue-600 dark:text-overdue-400 text-[10px] font-semibold px-1.5 py-0.5">
                                     Vencida
                                   </span>
                                 )}
@@ -765,7 +765,7 @@ export default function FacturasPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <AlertTriangle className="h-5 w-5 text-proforma-500" />
               ¿Confirmar factura?
             </AlertDialogTitle>
             <AlertDialogDescription asChild>

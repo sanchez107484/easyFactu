@@ -32,13 +32,13 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
 
   const thClass = cn(
     'text-[9px] font-semibold text-left py-1 px-2',
-    isGrid && 'border border-gray-200',
+    isGrid && 'border border-neutral-200',
   );
 
   const tdClass = cn(
     'text-[10px] py-1.5 px-2',
     isLines && 'border-b',
-    isGrid && 'border border-gray-200',
+    isGrid && 'border border-neutral-200',
   );
 
   const colSpanBase =
@@ -67,7 +67,7 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
         {lines.map((line) => {
           const hideQty = resolveHideQty(line as PreviewLine);
           return (
-            <tr key={line.id} className="hover:bg-gray-50/50">
+            <tr key={line.id} className="hover:bg-neutral-50/50">
               {showReference && <td className={tdClass}>{line.productId ?? '—'}</td>}
               <td className={cn(tdClass, 'whitespace-pre-wrap')}>{line.description}</td>
               {showQtyCol && (
@@ -88,7 +88,7 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
         })}
         {lines.length === 0 && (
           <tr>
-            <td colSpan={colSpanBase} className="text-center text-gray-400 py-4 text-[10px]">
+            <td colSpan={colSpanBase} className="text-center text-neutral-400 py-4 text-[10px]">
               Sin líneas
             </td>
           </tr>

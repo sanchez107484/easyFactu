@@ -101,13 +101,13 @@ const statusConfig = {
     label: 'Rechazada',
     icon: XCircle,
     variant: 'destructive' as const,
-    color: 'text-red-500',
+    color: 'text-rectificativa-500',
   },
   ERROR: {
     label: 'Error',
     icon: XCircle,
     variant: 'destructive' as const,
-    color: 'text-red-500',
+    color: 'text-rectificativa-500',
   },
 };
 
@@ -173,7 +173,7 @@ export default function VerifactuPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Con Errores</CardTitle>
-            <XCircle className="h-4 w-4 text-red-500" />
+            <XCircle className="h-4 w-4 text-rectificativa-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.errors}</div>

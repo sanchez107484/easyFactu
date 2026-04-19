@@ -154,7 +154,7 @@ export function FiscalCalendarWidget() {
                     isUrgent
                       ? 'bg-destructive/10 text-destructive'
                       : isWarning
-                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                        ? 'bg-proforma-100 text-proforma-700 dark:bg-proforma-950/40 dark:text-proforma-400'
                         : 'bg-muted text-muted-foreground',
                   )}
                 >
@@ -170,8 +170,8 @@ export function FiscalCalendarWidget() {
                       className={cn(
                         'inline-block rounded px-1.5 py-0.5 text-[10px] font-bold',
                         item.type === 'annual'
-                          ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400'
-                          : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400',
+                          ? 'bg-agency-100 text-agency-700 dark:bg-agency-950/40 dark:text-agency-400'
+                          : 'bg-customer-100 text-customer-700 dark:bg-customer-950/40 dark:text-customer-400',
                       )}
                     >
                       {item.model}

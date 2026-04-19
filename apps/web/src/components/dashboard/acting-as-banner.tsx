@@ -20,19 +20,19 @@ export function ActingAsBanner() {
   if (!isActingAsClient) return null;
 
   return (
-    <div className="sticky top-0 z-50 flex items-center justify-between gap-4 border-b border-indigo-200 bg-indigo-600 px-4 py-2.5 text-white dark:border-indigo-700 dark:bg-indigo-700">
+    <div className="sticky top-0 z-50 flex items-center justify-between gap-4 border-b border-customer-200 bg-customer-600 px-4 py-2.5 text-white dark:border-customer-700 dark:bg-customer-700">
       <div className="flex min-w-0 items-center gap-2.5">
-        <Eye className="h-4 w-4 shrink-0 text-indigo-200" />
-        <span className="text-sm text-indigo-100">Actuando en nombre de</span>
+        <Eye className="h-4 w-4 shrink-0 text-customer-200" />
+        <span className="text-sm text-customer-100">Actuando en nombre de</span>
         <span className="truncate text-sm font-semibold">{currentTenant?.businessName}</span>
-        <span className="hidden text-xs text-indigo-300 sm:block">({currentTenant?.nif})</span>
+        <span className="hidden text-xs text-customer-300 sm:block">({currentTenant?.nif})</span>
       </div>
       <Button
         variant="ghost"
         size="sm"
         onClick={returnToAgency}
         disabled={isReturning}
-        className="shrink-0 border border-indigo-400/30 text-white hover:bg-indigo-500 hover:text-white disabled:opacity-70"
+        className="shrink-0 border border-customer-400/30 text-white hover:bg-customer-500 hover:text-white disabled:opacity-70"
       >
         {isReturning ? (
           <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />

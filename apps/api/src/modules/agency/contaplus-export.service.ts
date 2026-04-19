@@ -43,15 +43,11 @@ export class ContaPlusExportService {
     // Verify the agency-client relationship is active
     const relation = await this.prisma.agencyClientRelation.findUnique({
       where: { agencyTenantId_clientTenantId: { agencyTenantId, clientTenantId } },
-      select: { status: true, clientTenant: { select: { businessName: true, nif: true } } },
+      select: { clientTenant: { select: { businessName: true, nif: true } } },
     });
 
     if (!relation) {
       throw new NotFoundException('Cliente no encontrado en tu cartera');
-    }
-
-    if (relation.status !== 'ACTIVE') {
-      throw new BadRequestException('No puedes exportar datos de un cliente con acceso revocado');
     }
 
     const { fromDate, toDate } = this.buildDateRange(year, quarter);

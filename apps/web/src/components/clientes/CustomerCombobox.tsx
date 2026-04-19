@@ -158,7 +158,7 @@ export function CustomerCombobox({
                               onSelect={() => handleSelectShared(c)}
                               className="gap-2"
                             >
-                              <Building2 className="h-3.5 w-3.5 shrink-0 text-indigo-500/70" />
+                              <Building2 className="h-3.5 w-3.5 shrink-0 text-customer-500/70" />
                               <span className="truncate">{c.name}</span>
                               <span className="text-muted-foreground shrink-0">â€” {c.nif}</span>
                               <span className="ml-auto text-[10px] text-muted-foreground/60 shrink-0 truncate max-w-[110px]">
