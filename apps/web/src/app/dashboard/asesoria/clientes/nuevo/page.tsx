@@ -1,12 +1,11 @@
 ﻿'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { PROVINCES } from '@easyfactura/shared-constants';
 import { validateNif } from '@easyfactura/shared-validators';
 import { AccountType } from '@easyfactura/shared-types';
 import { useAuthStore } from '@/store/auth-store';
@@ -17,21 +16,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   AlertCircle,
   ArrowLeft,
   Briefcase,
   Building2,
-  Globe,
+  CheckCircle2,
   Loader2,
   Mail,
   Network,
+  Send,
   User,
   UserCheck,
   Users,
@@ -45,25 +38,25 @@ const ACCOUNT_TYPE_OPTIONS = [
     value: AccountType.INDIVIDUAL,
     icon: User,
     label: 'Autónomo Individual',
-    description: 'Trabaja por su cuenta sin empleados ni socios',
+    description: 'Trabaja por su cuenta sin empleados',
   },
   {
     value: AccountType.BUSINESS,
     icon: Building2,
     label: 'Empresa / Pyme',
-    description: 'Tiene empleados o es sociedad mercantil',
+    description: 'Tiene empleados o es sociedad',
   },
   {
     value: AccountType.AGENCY,
     icon: Briefcase,
     label: 'Gestoría / Asesoría',
-    description: 'Gestiona la facturación de varios clientes',
+    description: 'Gestiona la facturación de otros',
   },
   {
     value: AccountType.COLLABORATIVE,
     icon: Network,
     label: 'Colaborativo',
-    description: 'Colabora con otros profesionales o autónomos',
+    description: 'Colabora con otros profesionales',
   },
 ] as const;
 
@@ -73,9 +66,8 @@ const schema = z.object({
   accountType: z.nativeEnum(AccountType),
   businessName: z
     .string()
-    .min(2, 'El nombre comercial es obligatorio (mínimo 2 caracteres)')
+    .min(2, 'El nombre es obligatorio (mínimo 2 caracteres)')
     .max(100, 'Máximo 100 caracteres'),
-  legalName: z.string().max(100, 'Máximo 100 caracteres').optional().or(z.literal('')),
   nif: z
     .string()
     .min(1, 'El NIF/CIF es obligatorio')
@@ -83,11 +75,6 @@ const schema = z.object({
       message: 'NIF/CIF no válido',
     }),
   email: z.string().min(1, 'El email es obligatorio').email('Formato de email no válido'),
-  phone: z.string().max(20, 'Máximo 20 caracteres').optional().or(z.literal('')),
-  address: z.string().max(200, 'Máximo 200 caracteres').optional().or(z.literal('')),
-  postalCode: z.string().max(5, 'Código postal inválido').optional().or(z.literal('')),
-  city: z.string().max(100, 'Máximo 100 caracteres').optional().or(z.literal('')),
-  province: z.string().max(100, 'Máximo 100 caracteres').optional().or(z.literal('')),
   notes: z.string().max(1000, 'Máximo 1000 caracteres').optional().or(z.literal('')),
 });
 
@@ -163,9 +150,9 @@ function NifConflictBanner({
             Este NIF ya tiene una cuenta en la aplicación
           </p>
           <p className="mt-1 text-sm text-proforma-700 dark:text-proforma-300">
-            <span className="font-medium">{info.businessName}</span> ya está registrado con el email{' '}
-            <span className="font-mono font-medium">{info.email}</span>. Para añadirlo a tu cartera,
-            envía una invitación y podrán vincular su cuenta.
+            <span className="font-medium">{info.businessName}</span> ya está registrado con el
+            email <span className="font-mono font-medium">{info.email}</span>. Envíale una
+            invitación para vincular su cuenta existente.
           </p>
           <div className="mt-3">
             <Button
@@ -189,6 +176,32 @@ function NifConflictBanner({
   );
 }
 
+// ==================== SUCCESS BANNER ====================
+
+function SuccessBanner({ email, businessName }: { email: string; businessName: string }) {
+  return (
+    <div className="rounded-xl border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30 p-5">
+      <div className="flex items-start gap-3">
+        <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
+        <div className="min-w-0">
+          <p className="text-base font-semibold text-green-900 dark:text-green-200">
+            Cliente añadido correctamente
+          </p>
+          <p className="mt-1.5 text-sm text-green-700 dark:text-green-300 leading-relaxed">
+            Se ha enviado un email de activación a{' '}
+            <span className="font-mono font-medium">{email}</span>. Cuando{' '}
+            <span className="font-medium">{businessName}</span> haga clic en el enlace, podrá
+            crear su contraseña y completar su perfil desde el onboarding.
+          </p>
+          <p className="mt-2 text-xs text-green-600 dark:text-green-400">
+            Ya puedes gestionar su cuenta desde el panel.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ==================== PAGE ====================
 
 export default function NuevoClienteAsesoriaPage() {
@@ -197,33 +210,30 @@ export default function NuevoClienteAsesoriaPage() {
   const createMutation = useCreateDirectClient();
   const inviteMutation = useInviteClient();
 
-  const isAgency = currentTenant?.accountType === AccountType.AGENCY;
+  const [successInfo, setSuccessInfo] = useState<{
+    email: string;
+    businessName: string;
+  } | null>(null);
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      accountType: AccountType.INDIVIDUAL,
-      businessName: '',
-      legalName: '',
-      nif: '',
-      email: '',
-      phone: '',
-      address: '',
-      postalCode: '',
-      city: '',
-      province: '',
-      notes: '',
-    },
-  });
+  const isAgency = currentTenant?.accountType === AccountType.AGENCY;
 
   const {
     register,
     handleSubmit,
     control,
-    setValue,
     watch,
     formState: { errors },
-  } = form;
+    setError,
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      accountType: AccountType.INDIVIDUAL,
+      businessName: '',
+      nif: '',
+      email: '',
+      notes: '',
+    },
+  });
 
   const selectedAccountType = watch('accountType');
   const watchedNif = watch('nif') ?? '';
@@ -235,34 +245,27 @@ export default function NuevoClienteAsesoriaPage() {
 
   const onSubmit = useCallback(
     async (data: FormData) => {
-      // Block submission when conflict detected in real-time
       if (hasNifConflict) return;
+
       try {
         await createMutation.mutateAsync({
           accountType: data.accountType,
           businessName: data.businessName.trim(),
-          legalName: data.legalName?.trim() || undefined,
           nif: data.nif.trim().toUpperCase(),
           email: data.email.trim(),
-          phone: data.phone?.trim() || undefined,
-          address: data.address?.trim() || undefined,
-          postalCode: data.postalCode?.trim() || undefined,
-          city: data.city?.trim() || undefined,
-          province: data.province?.trim() || undefined,
           notes: data.notes?.trim() || undefined,
         });
-        router.push('/dashboard/asesoria/clientes');
+        setSuccessInfo({ email: data.email.trim(), businessName: data.businessName.trim() });
       } catch (err) {
-        // Fallback: surface EMAIL_EXISTS inline if real-time check missed it
         const code = getApiErrorCode(err);
         if (code === 'EMAIL_EXISTS') {
-          form.setError('email', {
+          setError('email', {
             message: 'Este email ya está registrado en otra cuenta. Usa un email diferente.',
           });
         }
       }
     },
-    [createMutation, form, hasNifConflict, router],
+    [createMutation, hasNifConflict, setError],
   );
 
   const handleInvite = useCallback(async () => {
@@ -292,45 +295,63 @@ export default function NuevoClienteAsesoriaPage() {
           <span className="text-sm font-medium">Añadir cliente</span>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/dashboard/asesoria/clientes">
-            <Button variant="outline" size="sm" disabled={createMutation.isPending}>
-              Cancelar
+          {successInfo ? (
+            <Button size="sm" onClick={() => router.push('/dashboard/asesoria/clientes')}>
+              Ver mis clientes
             </Button>
-          </Link>
-          <Button
-            size="sm"
-            onClick={handleSubmit(onSubmit)}
-            disabled={createMutation.isPending || hasNifConflict || isCheckingNif}
-          >
-            {createMutation.isPending ? (
-              <>
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                Añadiendo...
-              </>
-            ) : isCheckingNif ? (
-              <>
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                Comprobando NIF...
-              </>
-            ) : (
-              'Añadir cliente'
-            )}
-          </Button>
+          ) : (
+            <>
+              <Link href="/dashboard/asesoria/clientes">
+                <Button variant="outline" size="sm" disabled={createMutation.isPending}>
+                  Cancelar
+                </Button>
+              </Link>
+              <Button
+                size="sm"
+                onClick={handleSubmit(onSubmit)}
+                disabled={createMutation.isPending || hasNifConflict || isCheckingNif}
+              >
+                {createMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    Añadiendo...
+                  </>
+                ) : isCheckingNif ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    Comprobando NIF...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-1.5 h-3.5 w-3.5" />
+                    Añadir y enviar invitación
+                  </>
+                )}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
       {/* ── Contenido scrollable ── */}
       <div className="flex-1 overflow-y-auto px-6 py-6">
-        {/* NIF conflict banners — shown in real time as the user types */}
-        {nifCheck?.status === 'ALREADY_IN_PORTFOLIO' && nifCheck.email && (
-          <div className="mb-5">
+        {/* Success banner */}
+        {successInfo && (
+          <div className="mb-6 max-w-2xl">
+            <SuccessBanner email={successInfo.email} businessName={successInfo.businessName} />
+          </div>
+        )}
+
+        {/* NIF conflict banners */}
+        {!successInfo && nifCheck?.status === 'ALREADY_IN_PORTFOLIO' && nifCheck.email && (
+          <div className="mb-5 max-w-2xl">
             <AlreadyInPortfolioBanner
               info={{ email: nifCheck.email, businessName: nifCheck.businessName ?? '' }}
             />
           </div>
         )}
-        {nifCheck?.status === 'EXISTS_CAN_INVITE' && nifCheck.email && (
-          <div className="mb-5">
+        {!successInfo && nifCheck?.status === 'EXISTS_CAN_INVITE' && nifCheck.email && (
+          <div className="mb-5 max-w-2xl">
             <NifConflictBanner
               info={{ email: nifCheck.email, businessName: nifCheck.businessName ?? '' }}
               isCheckingNif={isCheckingNif}
@@ -339,59 +360,59 @@ export default function NuevoClienteAsesoriaPage() {
             />
           </div>
         )}
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          <div className="space-y-5">
-            {/* ── Tipo de cliente ── */}
-            <div className="rounded-xl border bg-card p-5">
-              <SectionLabel icon={User}>Tipo de cliente</SectionLabel>
-              <Controller
-                control={control}
-                name="accountType"
-                render={({ field }) => (
-                  <RadioGroup
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
-                  >
-                    {ACCOUNT_TYPE_OPTIONS.map((type) => {
-                      const Icon = type.icon;
-                      const isSelected = field.value === type.value;
-                      return (
-                        <Label
-                          key={type.value}
-                          htmlFor={type.value}
-                          className={`flex cursor-pointer flex-col gap-3 rounded-xl border-2 p-4 transition-all hover:bg-muted/50 ${
-                            isSelected ? 'border-primary bg-primary/5' : 'border-border'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between">
-                            <Icon
-                              className={`h-5 w-5 ${
-                                isSelected ? 'text-primary' : 'text-muted-foreground'
-                              }`}
-                            />
-                            <RadioGroupItem value={type.value} id={type.value} />
-                          </div>
-                          <div>
-                            <div className="text-sm font-semibold">{type.label}</div>
-                            <div className="mt-0.5 text-xs text-muted-foreground">
-                              {type.description}
-                            </div>
-                          </div>
-                        </Label>
-                      );
-                    })}
-                  </RadioGroup>
-                )}
-              />
-              {errors.accountType && <FieldError message={errors.accountType.message} />}
-            </div>
 
-            {/* ── FILA 1: Identificación + Contacto (2 columnas) ── */}
-            <div className="grid grid-cols-2 gap-5">
-              {/* Identificación de la empresa */}
+        {!successInfo && (
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
+            <div className="space-y-5 max-w-2xl">
+              {/* ── Tipo de cliente ── */}
               <div className="rounded-xl border bg-card p-5">
-                <SectionLabel icon={Building2}>Identificación de la empresa</SectionLabel>
+                <SectionLabel icon={User}>Tipo de cliente</SectionLabel>
+                <Controller
+                  control={control}
+                  name="accountType"
+                  render={({ field }) => (
+                    <RadioGroup
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      className="grid gap-3 sm:grid-cols-2"
+                    >
+                      {ACCOUNT_TYPE_OPTIONS.map((type) => {
+                        const Icon = type.icon;
+                        const isSelected = field.value === type.value;
+                        return (
+                          <Label
+                            key={type.value}
+                            htmlFor={type.value}
+                            className={`flex cursor-pointer flex-col gap-3 rounded-xl border-2 p-4 transition-all hover:bg-muted/50 ${
+                              isSelected ? 'border-primary bg-primary/5' : 'border-border'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <Icon
+                                className={`h-5 w-5 ${
+                                  isSelected ? 'text-primary' : 'text-muted-foreground'
+                                }`}
+                              />
+                              <RadioGroupItem value={type.value} id={type.value} />
+                            </div>
+                            <div>
+                              <div className="text-sm font-semibold">{type.label}</div>
+                              <div className="mt-0.5 text-xs text-muted-foreground">
+                                {type.description}
+                              </div>
+                            </div>
+                          </Label>
+                        );
+                      })}
+                    </RadioGroup>
+                  )}
+                />
+                {errors.accountType && <FieldError message={errors.accountType.message} />}
+              </div>
+
+              {/* ── Datos del cliente ── */}
+              <div className="rounded-xl border bg-card p-5">
+                <SectionLabel icon={Building2}>Datos del cliente</SectionLabel>
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="businessName">
@@ -413,22 +434,6 @@ export default function NuevoClienteAsesoriaPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="legalName">
-                      Razón social{' '}
-                      <span className="text-muted-foreground text-xs font-normal">(opcional)</span>
-                    </Label>
-                    <Input
-                      id="legalName"
-                      placeholder="Ej: ACME Soluciones Tecnológicas, S.L."
-                      {...register('legalName')}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Nombre legal completo si difiere del nombre comercial
-                    </p>
-                    <FieldError message={errors.legalName?.message} />
-                  </div>
-
-                  <div className="space-y-2">
                     <Label htmlFor="nif">
                       {selectedAccountType === AccountType.INDIVIDUAL ? 'DNI / NIE' : 'NIF / CIF'}{' '}
                       <span className="text-destructive">*</span>
@@ -447,20 +452,9 @@ export default function NuevoClienteAsesoriaPage() {
                       maxLength={9}
                       autoComplete="off"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      {selectedAccountType === AccountType.INDIVIDUAL
-                        ? 'DNI (8 dígitos + letra) o NIE (X/Y/Z + 7 dígitos + letra)'
-                        : 'CIF de la sociedad (letra + 7 dígitos)'}
-                    </p>
                     <FieldError message={errors.nif?.message} />
                   </div>
-                </div>
-              </div>
 
-              {/* Información de contacto */}
-              <div className="rounded-xl border bg-card p-5">
-                <SectionLabel icon={Briefcase}>Información de contacto</SectionLabel>
-                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">
                       Email <span className="text-destructive">*</span>
@@ -473,129 +467,49 @@ export default function NuevoClienteAsesoriaPage() {
                       {...register('email')}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Se usará para el acceso del cliente a NovaFactura
+                      El cliente recibirá aquí un enlace para activar su cuenta y crear su
+                      contraseña.
                     </p>
                     <FieldError message={errors.email?.message} />
                   </div>
+                </div>
+              </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">
-                      Teléfono{' '}
-                      <span className="text-muted-foreground text-xs font-normal">(opcional)</span>
-                    </Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="666 123 456"
-                      autoComplete="tel"
-                      {...register('phone')}
-                    />
-                    <FieldError message={errors.phone?.message} />
+              {/* ── Notas internas ── */}
+              <div className="rounded-xl border bg-card p-5">
+                <SectionLabel>
+                  Notas internas{' '}
+                  <span className="text-muted-foreground text-xs font-normal normal-case tracking-normal">
+                    (opcional)
+                  </span>
+                </SectionLabel>
+                <Textarea
+                  placeholder="Información adicional sobre este cliente visible solo para tu asesoría..."
+                  rows={3}
+                  {...register('notes')}
+                />
+                <FieldError message={errors.notes?.message} />
+              </div>
+
+              {/* ── Info callout ── */}
+              <div className="rounded-xl border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
+                <div className="flex items-start gap-3">
+                  <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+                      ¿Qué recibirá el cliente?
+                    </p>
+                    <p className="mt-1 text-sm text-blue-700 dark:text-blue-300 leading-relaxed">
+                      Se enviará un email con un enlace seguro para que el cliente active su
+                      cuenta, cree su contraseña y complete su perfil desde el onboarding.
+                      Mientras tanto, ya puedes gestionar su cuenta desde tu panel.
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* ── FILA 2: Dirección fiscal ── */}
-            <div className="rounded-xl border bg-card p-5">
-              <SectionLabel icon={Globe}>Dirección fiscal</SectionLabel>
-              <div className="grid grid-cols-12 gap-4">
-                <div className="col-span-6 space-y-2">
-                  <Label htmlFor="address">
-                    Calle y número{' '}
-                    <span className="text-muted-foreground text-xs font-normal">(opcional)</span>
-                  </Label>
-                  <Input
-                    id="address"
-                    placeholder="Calle Principal, 123, 2°A"
-                    autoComplete="street-address"
-                    {...register('address')}
-                  />
-                  <FieldError message={errors.address?.message} />
-                </div>
-
-                <div className="col-span-2 space-y-2">
-                  <Label htmlFor="postalCode">
-                    C. Postal{' '}
-                    <span className="text-muted-foreground text-xs font-normal">(opcional)</span>
-                  </Label>
-                  <Input
-                    id="postalCode"
-                    placeholder="28001"
-                    maxLength={5}
-                    autoComplete="postal-code"
-                    {...register('postalCode')}
-                  />
-                  <FieldError message={errors.postalCode?.message} />
-                </div>
-
-                <div className="col-span-4 space-y-2">
-                  <Label htmlFor="city">
-                    Ciudad{' '}
-                    <span className="text-muted-foreground text-xs font-normal">(opcional)</span>
-                  </Label>
-                  <Input
-                    id="city"
-                    placeholder="Madrid"
-                    autoComplete="address-level2"
-                    {...register('city')}
-                  />
-                  <FieldError message={errors.city?.message} />
-                </div>
-
-                <div className="col-span-4 space-y-2">
-                  <Label>
-                    Provincia{' '}
-                    <span className="text-muted-foreground text-xs font-normal">(opcional)</span>
-                  </Label>
-                  <Select
-                    onValueChange={(v) => setValue('province', v)}
-                    value={watch('province') ?? ''}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona provincia" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PROVINCES.map((p) => (
-                        <SelectItem key={p.code} value={p.name}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FieldError message={errors.province?.message} />
-                </div>
-
-                <div className="col-span-2 space-y-2">
-                  <Label htmlFor="country">País</Label>
-                  <Input
-                    id="country"
-                    defaultValue="ES"
-                    className="uppercase"
-                    readOnly
-                    tabIndex={-1}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* ── FILA 3: Notas internas ── */}
-            <div className="rounded-xl border bg-card p-5">
-              <SectionLabel>
-                Notas internas{' '}
-                <span className="text-muted-foreground text-xs font-normal normal-case tracking-normal">
-                  (opcional)
-                </span>
-              </SectionLabel>
-              <Textarea
-                placeholder="Información adicional sobre este cliente (no aparece en las facturas)..."
-                rows={3}
-                {...register('notes')}
-              />
-              <FieldError message={errors.notes?.message} />
-            </div>
-          </div>
-        </form>
+          </form>
+        )}
       </div>
     </div>
   );

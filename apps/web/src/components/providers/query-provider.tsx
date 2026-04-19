@@ -14,9 +14,10 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
             staleTime: 5 * 60 * 1000, // 5 minutes
             gcTime: 10 * 60 * 1000, // 10 minutes (before was cacheTime)
             refetchOnWindowFocus: true,
-            retry: (failureCount, error: AxiosError) => {
+            retry: (failureCount, error) => {
               // No retry on 4xx errors
-              if (error?.response?.status >= 400 && error?.response?.status < 500) {
+              const status = (error as AxiosError)?.response?.status;
+              if (status !== undefined && status >= 400 && status < 500) {
                 return false;
               }
               // Max 2 retries for 5xx errors

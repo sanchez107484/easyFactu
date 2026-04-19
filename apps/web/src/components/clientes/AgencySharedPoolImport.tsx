@@ -86,15 +86,15 @@ export function AgencySharedPoolImport({ form }: AgencySharedPoolImportProps) {
   if (!isActingAsClient) return null;
 
   return (
-    <div className="rounded-xl border bg-customer-50/50 dark:bg-customer-950/20 border-customer-100 dark:border-customer-900 p-4">
+    <div className="rounded-xl border bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-100 dark:border-indigo-900 p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-2">
-          <BookUser className="h-4 w-4 text-customer-600 dark:text-customer-400 shrink-0" />
+          <BookUser className="h-4 w-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-customer-900 dark:text-customer-100">
+            <p className="text-sm font-medium text-indigo-900 dark:text-indigo-100">
               Importar del directorio de la asesoría
             </p>
-            <p className="text-xs text-customer-700/70 dark:text-customer-400/70">
+            <p className="text-xs text-indigo-700/70 dark:text-indigo-400/70">
               Rellena el formulario con un cliente ya registrado en tu cartera
             </p>
           </div>
@@ -104,7 +104,7 @@ export function AgencySharedPoolImport({ form }: AgencySharedPoolImportProps) {
             type="button"
             size="sm"
             variant="outline"
-            className="shrink-0 border-customer-200 bg-white hover:bg-customer-50 dark:bg-customer-950/30 dark:border-customer-800"
+            className="shrink-0 border-indigo-200 bg-white hover:bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-800"
             onClick={() => setOpen(true)}
           >
             <Search className="mr-1.5 h-3.5 w-3.5" />

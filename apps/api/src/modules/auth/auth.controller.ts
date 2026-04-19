@@ -4,11 +4,13 @@ import {
   Body,
   Get,
   Patch,
+  Param,
   UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -23,6 +25,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ActivateAccountDto } from './dto/activate-account.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -143,5 +146,30 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'No autenticado' })
   async updateProfile(@CurrentUser('id') userId: string, @Body() dto: UpdateProfileDto) {
     return this.authService.updateProfile(userId, dto);
+  }
+
+  // ─── Account activation (agency-created accounts) ────────────────────────
+
+  // 20 req/min per IP — generous enough for page refreshes, tight enough to deter enumeration
+  @Throttle({ default: { ttl: 60_000, limit: 20 } })
+  @Public()
+  @Get('activate-account/:token')
+  @ApiOperation({ summary: 'Validar token de activación de cuenta' })
+  @ApiResponse({ status: 200, description: 'Token válido, devuelve info de la cuenta' })
+  @ApiResponse({ status: 400, description: 'Token inválido o expirado' })
+  async validateActivationToken(@Param('token') token: string) {
+    return this.authService.validateActivationToken(token);
+  }
+
+  // 5 req/min per IP — bcrypt is CPU-intensive; this also blocks brute-force attempts
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Public()
+  @Post('activate-account')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Activar cuenta creada por una asesoría' })
+  @ApiResponse({ status: 200, description: 'Cuenta activada, devuelve tokens JWT' })
+  @ApiResponse({ status: 400, description: 'Token inválido o expirado' })
+  async activateAccount(@Body() dto: ActivateAccountDto) {
+    return this.authService.activateAccount(dto);
   }
 }

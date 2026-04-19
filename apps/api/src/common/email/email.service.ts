@@ -52,6 +52,24 @@ export class EmailService {
     });
   }
 
+  async sendAccountActivation(opts: {
+    to: string;
+    businessName: string;
+    agencyName: string;
+    activationToken: string;
+    expiresAt: Date;
+  }): Promise<void> {
+    const activationUrl = `${this.configService.get('FRONTEND_URL') ?? 'https://app.novafactura.es'}/activar-cuenta/${opts.activationToken}`;
+
+    const html = this.buildAccountActivationHtml({ ...opts, activationUrl });
+
+    await this.send({
+      to: opts.to,
+      subject: `${opts.agencyName} ha creado tu cuenta en NovaFactura — actívala ahora`,
+      html,
+    });
+  }
+
   async sendDirectClientWelcome(opts: {
     to: string;
     clientName: string;
@@ -180,6 +198,42 @@ export class EmailService {
   }
 
   // ─── HTML templates ────────────────────────────────────────────────────────
+
+  private buildAccountActivationHtml(opts: {
+    businessName: string;
+    agencyName: string;
+    activationUrl: string;
+    expiresAt: Date;
+  }): string {
+    const expiryDate = opts.expiresAt.toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    const content = `
+      <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;">Tu cuenta está lista</h1>
+      <p style="color:#6b7280;font-size:15px;margin:0 0 24px;">
+        Tu asesoría <strong style="color:#1e1e2e;">${opts.agencyName}</strong> ha creado una cuenta en NovaFactura para <strong style="color:#1e1e2e;">${opts.businessName}</strong>.
+      </p>
+      <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 8px;">
+        Solo necesitas crear tu contraseña para empezar. El proceso dura menos de un minuto y después podrás gestionar tu facturación directamente.
+      </p>
+      ${this.buildButton('Activar mi cuenta', opts.activationUrl)}
+      <p style="color:#9ca3af;font-size:13px;margin:0 0 8px;">
+        Este enlace caduca el <strong>${expiryDate}</strong>.
+      </p>
+      <p style="color:#9ca3af;font-size:13px;margin:0;">
+        Si no esperabas este mensaje, puedes ignorarlo. No se realizará ningún cargo ni acción sin tu confirmación.
+      </p>
+      <hr style="border:none;border-top:1px solid #f3f4f6;margin:24px 0;" />
+      <p style="color:#9ca3af;font-size:12px;margin:0;">
+        O copia este enlace en tu navegador:<br />
+        <span style="color:#4f46e5;word-break:break-all;">${opts.activationUrl}</span>
+      </p>`;
+
+    return this.buildBaseLayout(content);
+  }
 
   private buildBaseLayout(content: string): string {
     return `<!DOCTYPE html>

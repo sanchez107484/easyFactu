@@ -246,72 +246,71 @@ export class AgencyService {
     };
   }
 
-  // ─── Check identifier (NIF or email) for real-time pre-validation ────────
-
+  /**
+   * Checks a NIF **or** email and returns whether it is available, already in the
+   * agency's portfolio, or exists in the platform (invite flow required).
+   * Used for real-time validation in the "nuevo cliente" form.
+   */
   async checkIdentifier(
     agencyTenantId: string,
     q: string
   ): Promise<
-    | { status: 'AVAILABLE'; identifierType: 'nif' | 'email' }
-    | {
-        status: 'ALREADY_IN_PORTFOLIO';
-        email: string;
-        businessName: string;
-        nif: string;
-        city: string | null;
-        province: string | null;
-      }
-    | {
-        status: 'EXISTS_CAN_INVITE';
-        email: string;
-        businessName: string;
-        nif: string;
-        city: string | null;
-        province: string | null;
-      }
+    | { status: 'AVAILABLE' }
+    | { status: 'ALREADY_IN_PORTFOLIO'; email: string; businessName: string }
+    | { status: 'EXISTS_CAN_INVITE'; email: string; businessName: string }
+    | { status: 'EMAIL_EXISTS' }
   > {
-    const isEmail = q.includes('@');
-    const where = isEmail ? { email: q.toLowerCase().trim() } : { nif: q.toUpperCase().trim() };
+    const identifier = q.trim();
+    if (!identifier) return { status: 'AVAILABLE' };
 
-    const existing = await this.prisma.tenant.findFirst({
-      where,
-      select: { id: true, email: true, businessName: true, nif: true, city: true, province: true },
-    });
+    const isEmail = identifier.includes('@');
 
-    if (!existing) return { status: 'AVAILABLE', identifierType: isEmail ? 'email' : 'nif' };
+    if (isEmail) {
+      const normalizedEmail = identifier.toLowerCase();
+      const existing = await this.prisma.tenant.findFirst({
+        where: { email: normalizedEmail },
+        select: { id: true, email: true, businessName: true },
+      });
 
-    const relation = await this.prisma.agencyClientRelation.findUnique({
-      where: {
-        agencyTenantId_clientTenantId: {
-          agencyTenantId,
-          clientTenantId: existing.id,
+      if (!existing) {
+        // Also check user table — email may belong to a user without a matching tenant email
+        const existingUser = await this.prisma.user.findUnique({
+          where: { email: normalizedEmail },
+          select: { id: true },
+        });
+        return existingUser ? { status: 'EMAIL_EXISTS' } : { status: 'AVAILABLE' };
+      }
+
+      const relation = await this.prisma.agencyClientRelation.findUnique({
+        where: {
+          agencyTenantId_clientTenantId: {
+            agencyTenantId,
+            clientTenantId: existing.id,
+          },
         },
-      },
-      select: { id: true },
-    });
+        select: { id: true },
+      });
 
-    if (relation) {
+      if (relation) {
+        return {
+          status: 'ALREADY_IN_PORTFOLIO',
+          email: existing.email ?? '',
+          businessName: existing.businessName,
+        };
+      }
+
       return {
-        status: 'ALREADY_IN_PORTFOLIO',
+        status: 'EXISTS_CAN_INVITE',
         email: existing.email ?? '',
         businessName: existing.businessName,
-        nif: existing.nif ?? '',
-        city: existing.city ?? null,
-        province: existing.province ?? null,
       };
     }
 
-    return {
-      status: 'EXISTS_CAN_INVITE',
-      email: existing.email ?? '',
-      businessName: existing.businessName,
-      nif: existing.nif ?? '',
-      city: existing.city ?? null,
-      province: existing.province ?? null,
-    };
+    // NIF path — delegate to existing checkNif
+    return this.checkNif(agencyTenantId, identifier);
   }
 
-  // ─── Create direct client (agency creates tenant on behalf of client) ─────
+  // ─── Create direct client (agency creates tenant + user on behalf of client) ─
 
   async createDirectClient(
     agencyTenantId: string,
@@ -321,30 +320,53 @@ export class AgencyService {
     const normalizedNif = dto.nif.toUpperCase().trim();
     const normalizedEmail = dto.email.toLowerCase().trim();
 
-    // Check NIF uniqueness
-    const existingByNif = await this.prisma.tenant.findFirst({
-      where: { nif: normalizedNif },
-      select: { id: true, email: true, businessName: true },
-    });
+    // Run all pre-flight checks in a single parallel round-trip:
+    // 1) agency tenant validation + name
+    // 2) NIF uniqueness check + existing agency relation
+    // 3) email uniqueness in tenant table
+    // 4) email uniqueness in user table
+    const [agencyTenantRecord, existingByNif, existingTenantByEmail, existingUserByEmail] =
+      await Promise.all([
+        this.prisma.tenant.findUnique({
+          where: { id: agencyTenantId },
+          select: { accountType: true, businessName: true },
+        }),
+        this.prisma.tenant.findFirst({
+          where: { nif: normalizedNif },
+          select: {
+            id: true,
+            email: true,
+            businessName: true,
+            clientRelations: {
+              where: { agencyTenantId },
+              select: { id: true },
+              take: 1,
+            },
+          },
+        }),
+        this.prisma.tenant.findFirst({
+          where: { email: normalizedEmail },
+          select: { id: true },
+        }),
+        this.prisma.user.findUnique({
+          where: { email: normalizedEmail },
+          select: { id: true },
+        }),
+      ]);
+
+    // Guard: only AGENCY tenants can create direct clients
+    if (!agencyTenantRecord) throw new NotFoundException('Tenant no encontrado');
+    if (agencyTenantRecord.accountType !== 'AGENCY') {
+      throw new ForbiddenException('Solo las asesorías pueden acceder a este recurso');
+    }
 
     if (existingByNif) {
-      const existingRelation = await this.prisma.agencyClientRelation.findUnique({
-        where: {
-          agencyTenantId_clientTenantId: {
-            agencyTenantId,
-            clientTenantId: existingByNif.id,
-          },
-        },
-      });
-
-      if (existingRelation) {
+      if (existingByNif.clientRelations.length > 0) {
         throw new ConflictException({
           code: 'ALREADY_IN_PORTFOLIO',
           message: 'Este cliente ya está en tu cartera',
         });
       }
-
-      // NIF exists but not yet linked — must use the invitation flow
       throw new ConflictException({
         code: 'NIF_EXISTS',
         email: existingByNif.email,
@@ -353,41 +375,56 @@ export class AgencyService {
       });
     }
 
-    // Check email uniqueness (different NIF could reuse an email, but we block it)
-    const existingByEmail = await this.prisma.tenant.findFirst({
-      where: { email: normalizedEmail },
-      select: { id: true, nif: true },
-    });
-
-    if (existingByEmail) {
+    if (existingTenantByEmail || existingUserByEmail) {
       throw new ConflictException({
         code: 'EMAIL_EXISTS',
         message:
-          'Este email ya está registrado en otra cuenta. Usa un email diferente o envía una invitación al NIF correspondiente.',
+          'Este email ya está registrado en otra cuenta. Usa un email diferente o envía una invitación.',
       });
     }
 
-    // Fetch agency name before the transaction (needed for the history snapshot)
-    const agencyTenantRecord = await this.prisma.tenant.findUnique({
-      where: { id: agencyTenantId },
-      select: { businessName: true },
-    });
+    // Activation token valid for 72 hours
+    const activationToken = randomBytes(32).toString('hex');
+    const activationExpires = new Date(Date.now() + 72 * 60 * 60 * 1000);
 
-    // Create new tenant + link to agency in a single transaction
+    // Create tenant + user + relation in a single transaction
     const result = await this.prisma.$transaction(async (tx) => {
       const clientTenant = await tx.tenant.create({
         data: {
           businessName: dto.businessName,
-          legalName: dto.legalName ?? null,
           nif: normalizedNif,
           email: normalizedEmail,
           accountType: dto.accountType ?? 'INDIVIDUAL',
-          address: dto.address ?? '',
-          postalCode: dto.postalCode ?? '',
-          city: dto.city ?? '',
-          province: dto.province ?? '',
-          phone: dto.phone,
+          address: '',
+          postalCode: '',
+          city: '',
+          province: '',
+          phone: dto.phone ?? null,
           setupCompleted: false,
+        },
+      });
+
+      // Create the client's own user account (no password yet — activated via token)
+      const clientUser = await tx.user.create({
+        data: {
+          email: normalizedEmail,
+          passwordHash: null,
+          firstName: '',
+          lastName: '',
+          emailVerified: false,
+          accountActivationToken: activationToken,
+          accountActivationExpires: activationExpires,
+          lastActiveTenantId: clientTenant.id,
+        },
+      });
+
+      // The client user is the OWNER of their own tenant
+      await tx.tenantUser.create({
+        data: {
+          tenantId: clientTenant.id,
+          userId: clientUser.id,
+          role: 'OWNER',
+          isOwner: true,
         },
       });
 
@@ -401,20 +438,19 @@ export class AgencyService {
         include: { clientTenant: true },
       });
 
-      // Audit trail: record the start of this asesoría–client relationship
+      // Audit trail
       await tx.agencyRelationHistory.create({
         data: {
           agencyTenantId,
           clientTenantId: clientTenant.id,
-          agencyBusinessName: agencyTenantRecord?.businessName ?? 'Desconocido',
+          agencyBusinessName: agencyTenantRecord.businessName,
           clientBusinessName: clientTenant.businessName,
           clientNif: clientTenant.nif,
           startedAt: new Date(),
         },
       });
 
-      // Grant all agency users (OWNER + ADMIN) access to the client tenant
-      // This is what makes switchTenant work — the JWT strategy validates TenantUser
+      // Grant all agency OWNER + ADMIN users access to the new client tenant
       const agencyUsers = await tx.tenantUser.findMany({
         where: {
           tenantId: agencyTenantId,
@@ -439,12 +475,13 @@ export class AgencyService {
     // Create default invoice series for the new client tenant
     await this.invoiceSeriesService.createDefaultSeries(result.clientTenant.id);
 
-    // Send welcome email (fire-and-forget — don't block on email failure)
-    this.emailService.sendDirectClientWelcome({
-      to: dto.email,
-      clientName: dto.businessName,
-      agencyName: agencyTenantRecord?.businessName ?? 'Tu asesoría',
-      loginUrl: `${this.configService.get('FRONTEND_URL') ?? 'https://app.novafactura.es'}/login`,
+    // Send activation email (fire-and-forget)
+    this.emailService.sendAccountActivation({
+      to: normalizedEmail,
+      businessName: dto.businessName,
+      agencyName: agencyTenantRecord.businessName,
+      activationToken,
+      expiresAt: activationExpires,
     });
 
     return result.relation;

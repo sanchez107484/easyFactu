@@ -1,5 +1,10 @@
 import { apiClient } from '../api-client';
-import type { UpdateUserInput } from '@easyfactura/shared-types';
+import type {
+  UpdateUserInput,
+  ActivateAccountInput,
+  ActivateAccountTokenInfo,
+  AuthResponse,
+} from '@easyfactura/shared-types';
 
 interface ChangePasswordInput {
   currentPassword: string;
@@ -22,4 +27,10 @@ export const authApi = {
   updateProfile: (
     data: Pick<UpdateUserInput, 'firstName' | 'lastName'>,
   ): Promise<UpdateProfileResponse> => apiClient.patch('/auth/me', data).then((res) => res.data),
+
+  validateActivationToken: (token: string): Promise<ActivateAccountTokenInfo> =>
+    apiClient.get(`/auth/activate-account/${token}`).then((res) => res.data),
+
+  activateAccount: (data: ActivateAccountInput): Promise<AuthResponse> =>
+    apiClient.post('/auth/activate-account', data).then((res) => res.data),
 };

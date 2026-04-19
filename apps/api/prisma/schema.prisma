@@ -107,13 +107,15 @@ enum TenantUserRole {
 model User {
   id               String   @id @default(uuid())
   email            String   @unique
-  passwordHash     String   @map("password_hash")
-  firstName        String   @map("first_name")
-  lastName         String   @map("last_name")
+  passwordHash     String?  @map("password_hash")
+  firstName        String   @default("") @map("first_name")
+  lastName         String   @default("") @map("last_name")
   emailVerified    Boolean  @default(false) @map("email_verified")
   emailVerifyToken String?  @map("email_verify_token")
   resetPasswordToken String? @map("reset_password_token")
   resetPasswordExpires DateTime? @map("reset_password_expires")
+  accountActivationToken   String?   @map("account_activation_token")
+  accountActivationExpires DateTime? @map("account_activation_expires")
   refreshToken     String?  @map("refresh_token") @db.Text
   isActive         Boolean  @default(true) @map("is_active")
   lastLoginAt      DateTime? @map("last_login_at")

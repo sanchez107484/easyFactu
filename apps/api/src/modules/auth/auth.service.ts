@@ -16,6 +16,7 @@ import { randomBytes } from 'crypto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { SwitchTenantDto } from './dto/switch-tenant.dto';
+import { ActivateAccountDto } from './dto/activate-account.dto';
 
 @Injectable()
 export class AuthService {
@@ -171,6 +172,13 @@ export class AuthService {
 
     if (user.tenantUsers.length === 0) {
       throw new UnauthorizedException('No tienes acceso a ninguna empresa');
+    }
+
+    // Account created by an agency and not yet activated
+    if (!user.passwordHash) {
+      throw new UnauthorizedException(
+        'Esta cuenta aún no ha sido activada. Revisa tu email para completar el proceso de activación.'
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
@@ -551,6 +559,11 @@ export class AuthService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
+    // Agency-created accounts have no password until they activate their account
+    if (!user.passwordHash) {
+      throw new BadRequestException('Esta cuenta aún no tiene contraseña. Actívala primero desde el enlace recibido por email.');
+    }
+
     const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!isCurrentPasswordValid) {
       throw new UnauthorizedException('La contraseña actual no es correcta');
@@ -564,6 +577,153 @@ export class AuthService {
     });
 
     return { message: 'Contraseña actualizada correctamente' };
+  }
+
+  // ─── Account activation (agency-created accounts) ────────────────────────
+
+  private readonly ACTIVATION_TOKEN_REGEX = /^[a-f0-9]{64}$/;
+
+  async validateActivationToken(token: string) {
+    // Short-circuit: token must be 64-char hex — never hit the DB for garbage input
+    if (!this.ACTIVATION_TOKEN_REGEX.test(token)) {
+      throw new BadRequestException('El enlace de activación no es válido o ha expirado');
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        accountActivationToken: token,
+        accountActivationExpires: { gt: new Date() },
+      },
+      select: {
+        email: true,
+        tenantUsers: {
+          select: {
+            tenant: {
+              select: {
+                id: true,
+                businessName: true,
+                clientRelations: {
+                  select: {
+                    agencyTenant: { select: { businessName: true } },
+                  },
+                  take: 1,
+                },
+              },
+            },
+          },
+          take: 1,
+        },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('El enlace de activación no es válido o ha expirado');
+    }
+
+    const tenantUser = user.tenantUsers[0];
+    const tenant = tenantUser?.tenant;
+    const agencyName =
+      tenant?.clientRelations[0]?.agencyTenant?.businessName ?? null;
+
+    return {
+      email: user.email,
+      businessName: tenant?.businessName ?? '',
+      agencyName,
+    };
+  }
+
+  async activateAccount(dto: ActivateAccountDto) {
+    // Short-circuit: token must be 64-char hex — never hit the DB for garbage input
+    if (!this.ACTIVATION_TOKEN_REGEX.test(dto.token)) {
+      throw new BadRequestException('El enlace de activación no es válido o ha expirado');
+    }
+
+    // Fetch only what we need — no full tenant include
+    const user = await this.prisma.user.findFirst({
+      where: {
+        accountActivationToken: dto.token,
+        accountActivationExpires: { gt: new Date() },
+      },
+      select: {
+        id: true,
+        email: true,
+        lastActiveTenantId: true,
+        tenantUsers: {
+          select: {
+            tenantId: true,
+            role: true,
+            isOwner: true,
+            tenant: {
+              select: {
+                id: true,
+                businessName: true,
+                nif: true,
+                setupCompleted: true,
+                plan: true,
+                accountType: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('El enlace de activación no es válido o ha expirado');
+    }
+
+    const activeTenantId = user.lastActiveTenantId ?? user.tenantUsers[0]?.tenantId;
+    if (!activeTenantId) {
+      throw new BadRequestException('No se encontró empresa asociada a esta cuenta');
+    }
+
+    // Hash password and generate tokens in parallel — no DB needed yet
+    const [passwordHash, tokens] = await Promise.all([
+      bcrypt.hash(dto.password, 12),
+      this.generateTokens(user.id, user.email, activeTenantId),
+    ]);
+
+    // Single DB write: profile + clear activation token + set refresh token
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        emailVerified: true,
+        accountActivationToken: null,
+        accountActivationExpires: null,
+        refreshToken: tokens.refreshToken,
+        lastLoginAt: new Date(),
+      },
+    });
+
+    const activeTenantUser = user.tenantUsers.find((tu) => tu.tenantId === activeTenantId);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        emailVerified: true,
+        lastActiveTenantId: activeTenantId,
+      },
+      tenants: user.tenantUsers.map((tu) => ({
+        tenant: tu.tenant,
+        role: tu.role,
+        isOwner: tu.isOwner,
+      })),
+      currentTenant: {
+        id: activeTenantUser?.tenant.id ?? activeTenantId,
+        businessName: activeTenantUser?.tenant.businessName ?? '',
+        nif: activeTenantUser?.tenant.nif ?? '',
+        setupCompleted: activeTenantUser?.tenant.setupCompleted ?? false,
+        plan: activeTenantUser?.tenant.plan ?? 'FREE',
+        accountType: activeTenantUser?.tenant.accountType ?? 'INDIVIDUAL',
+      },
+      ...tokens,
+    };
   }
 
   private async generateTokens(userId: string, email: string, tenantId: string) {

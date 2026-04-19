@@ -1063,14 +1063,9 @@ export interface AgencyInvitationFull {
 
 export interface CreateDirectClientInput {
   businessName: string;
-  legalName?: string;
   nif: string;
   email: string;
   accountType?: AccountType;
-  address?: string;
-  postalCode?: string;
-  city?: string;
-  province?: string;
   phone?: string;
   notes?: string;
 }
@@ -1078,6 +1073,19 @@ export interface CreateDirectClientInput {
 export interface InviteClientInput {
   inviteeEmail: string;
   inviteeName?: string;
+}
+
+export interface ActivateAccountInput {
+  token: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+}
+
+export interface ActivateAccountTokenInfo {
+  email: string;
+  businessName: string;
+  agencyName: string | null;
 }
 
 export interface QueryAgencyClientsInput {

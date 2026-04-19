@@ -34,6 +34,8 @@ interface AuthState {
   switchTenant: (tenantId: string) => Promise<void>;
   updateCurrentTenant: (tenant: Tenant) => void;
   updateUser: (userData: Partial<Pick<User, 'firstName' | 'lastName'>>) => void;
+  /** Sync store from an AuthResponse already in memory — no extra HTTP round-trip. */
+  setFromAuthResponse: (authData: AuthResponse) => void;
 }
 
 interface RegisterData {
@@ -165,6 +167,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set((state) => ({
       user: state.user ? { ...state.user, ...userData } : null,
     }));
+  },
+
+  setFromAuthResponse: (authData) => {
+    set({
+      user: authData.user,
+      currentTenant: authData.currentTenant,
+      tenants: authData.tenants,
+      isAuthenticated: true,
+      isLoading: false,
+    });
   },
 
   switchTenant: async (tenantId: string) => {
