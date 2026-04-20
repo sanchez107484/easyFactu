@@ -37,10 +37,15 @@ export interface NifCheckResult {
   businessName?: string;
 }
 
-export type IdentifierCheckStatus = 'AVAILABLE' | 'ALREADY_IN_PORTFOLIO' | 'EXISTS_CAN_INVITE';
+export type IdentifierCheckStatus =
+  | 'AVAILABLE'
+  | 'ALREADY_IN_PORTFOLIO'
+  | 'EXISTS_CAN_INVITE'
+  | 'EMAIL_EXISTS';
 
 export type IdentifierCheckResult =
-  | { status: 'AVAILABLE'; identifierType: 'nif' | 'email' }
+  | { status: 'AVAILABLE'; identifierType?: 'nif' | 'email' }
+  | { status: 'EMAIL_EXISTS' }
   | {
       status: 'ALREADY_IN_PORTFOLIO';
       email: string;

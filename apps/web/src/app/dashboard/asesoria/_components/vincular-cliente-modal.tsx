@@ -90,6 +90,7 @@ function UserFoundCard({ businessName, nif, email, city, province }: ResultCardP
 type FlowStep =
   | { type: 'idle' }
   | { type: 'not_found_nif'; nif: string }
+  | { type: 'not_found_email'; email: string }
   | { type: 'invite_email_form'; nif: string; email: string };
 
 interface VincularClienteModalProps {
@@ -121,9 +122,18 @@ export function VincularClienteModal({ isOpen, onClose }: VincularClienteModalPr
 
   // Sync flowStep when check result changes
   useEffect(() => {
-    if (checkResult?.status === 'AVAILABLE' && checkResult.identifierType === 'nif') {
-      setFlowStep({ type: 'not_found_nif', nif: debouncedQuery.trim().toUpperCase() });
-    } else if (checkResult?.status !== 'AVAILABLE') {
+    const trimmed = debouncedQuery.trim();
+    const isNifQuery = !trimmed.includes('@');
+    const isEmailQuery = trimmed.includes('@');
+
+    if (checkResult?.status === 'AVAILABLE' && isNifQuery) {
+      setFlowStep({ type: 'not_found_nif', nif: trimmed.toUpperCase() });
+    } else if (
+      (checkResult?.status === 'AVAILABLE' || checkResult?.status === 'EMAIL_EXISTS') &&
+      isEmailQuery
+    ) {
+      setFlowStep({ type: 'not_found_email', email: trimmed });
+    } else if (checkResult?.status !== 'AVAILABLE' && checkResult?.status !== 'EMAIL_EXISTS') {
       setFlowStep({ type: 'idle' });
     }
   }, [checkResult, debouncedQuery]);
@@ -159,6 +169,14 @@ export function VincularClienteModal({ isOpen, onClose }: VincularClienteModalPr
     (nif: string) => {
       onClose();
       router.push(`/dashboard/asesoria/clientes/nuevo?nif=${encodeURIComponent(nif)}`);
+    },
+    [onClose, router],
+  );
+
+  const handleGoToDirectClientByEmail = useCallback(
+    (email: string) => {
+      onClose();
+      router.push(`/dashboard/asesoria/clientes/nuevo?email=${encodeURIComponent(email)}`);
     },
     [onClose, router],
   );
@@ -224,93 +242,132 @@ export function VincularClienteModal({ isOpen, onClose }: VincularClienteModalPr
         </div>
 
         {/* ── Results area ── */}
-        {checkResult && !isChecking && !nifValidationError && (
-          <div className="space-y-3">
-            {/* User found — can invite */}
-            {checkResult.status === 'EXISTS_CAN_INVITE' && (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  Hemos encontrado este usuario. ¿Es el cliente que quieres vincular?
-                </p>
-                <UserFoundCard
-                  businessName={checkResult.businessName}
-                  nif={checkResult.nif}
-                  email={checkResult.email}
-                  city={checkResult.city}
-                  province={checkResult.province}
-                />
-                <div className="flex gap-2 pt-1">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={onClose}
-                    disabled={isInviting}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button className="flex-1" onClick={handleVincular} disabled={isInviting}>
-                    {isInviting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Vinculando...
-                      </>
-                    ) : (
-                      <>
-                        Sí, vincular
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </>
-            )}
+        {checkResult &&
+          !isChecking &&
+          !nifValidationError &&
+          (checkResult.status === 'EXISTS_CAN_INVITE' ||
+            checkResult.status === 'ALREADY_IN_PORTFOLIO') && (
+            <div className="space-y-3">
+              {/* User found — can invite */}
+              {checkResult.status === 'EXISTS_CAN_INVITE' && (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Hemos encontrado este usuario. ¿Es el cliente que quieres vincular?
+                  </p>
+                  <UserFoundCard
+                    businessName={checkResult.businessName}
+                    nif={checkResult.nif}
+                    email={checkResult.email}
+                    city={checkResult.city}
+                    province={checkResult.province}
+                  />
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={onClose}
+                      disabled={isInviting}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button className="flex-1" onClick={handleVincular} disabled={isInviting}>
+                      {isInviting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Vinculando...
+                        </>
+                      ) : (
+                        <>
+                          Sí, vincular
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </>
+              )}
 
-            {/* Already in portfolio */}
-            {checkResult.status === 'ALREADY_IN_PORTFOLIO' && (
-              <div className="flex items-start gap-3 rounded-xl border border-proforma-200 bg-proforma-50 p-4 dark:border-proforma-800/50 dark:bg-proforma-950/20">
-                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-proforma-600 dark:text-proforma-400" />
-                <div>
-                  <p className="text-sm font-semibold text-proforma-900 dark:text-proforma-200">
-                    Ya está en tu cartera
-                  </p>
-                  <p className="mt-0.5 text-xs text-proforma-700 dark:text-proforma-300">
-                    <strong>{checkResult.businessName}</strong> ({checkResult.nif}) ya forma parte
-                    de tus clientes.
-                  </p>
+              {/* Already in portfolio */}
+              {checkResult.status === 'ALREADY_IN_PORTFOLIO' && (
+                <div className="flex items-start gap-3 rounded-xl border border-proforma-200 bg-proforma-50 p-4 dark:border-proforma-800/50 dark:bg-proforma-950/20">
+                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-proforma-600 dark:text-proforma-400" />
+                  <div>
+                    <p className="text-sm font-semibold text-proforma-900 dark:text-proforma-200">
+                      Ya está en tu cartera
+                    </p>
+                    <p className="mt-0.5 text-xs text-proforma-700 dark:text-proforma-300">
+                      <strong>{checkResult.businessName}</strong> ({checkResult.nif}) ya forma parte
+                      de tus clientes.
+                    </p>
+                  </div>
                 </div>
+              )}
+            </div>
+          )}
+
+        {/* ── Not found by email — two-option flow ── */}
+        {flowStep.type === 'not_found_email' &&
+          !isChecking &&
+          query.trim().toLowerCase() === flowStep.email.toLowerCase() && (
+            <div className="space-y-3">
+              <div className="rounded-xl border border-dashed p-4 text-center">
+                <p className="text-sm font-medium">Ningún usuario registrado con ese email</p>
+                <p className="mt-1 text-xs text-muted-foreground">¿Cómo quieres proceder?</p>
               </div>
-            )}
 
-            {/* Not found — email search */}
-            {checkResult.status === 'AVAILABLE' && checkResult.identifierType === 'email' && (
-              <div className="space-y-3">
-                <div className="rounded-xl border border-dashed p-4 text-center">
-                  <p className="text-sm font-medium">No encontramos ningún usuario con ese email</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Podemos enviarle una invitación para que se registre y se vincule contigo.
-                  </p>
-                </div>
-                <Button
-                  className="w-full"
-                  onClick={() => handleSendInviteByEmail(debouncedQuery.trim())}
-                  disabled={isInviting}
-                >
-                  {isInviting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Enviando invitación...
-                    </>
-                  ) : (
-                    <>
-                      <Mail className="mr-2 h-4 w-4" />
-                      Enviar invitación a {debouncedQuery.trim()}
-                    </>
+              <div className="grid gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleGoToDirectClientByEmail(flowStep.email)}
+                  className={cn(
+                    'flex items-start gap-3 rounded-xl border p-4 text-left transition-colors',
+                    'hover:border-primary/50 hover:bg-muted/40',
                   )}
-                </Button>
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-customer-100 text-customer-600 dark:bg-customer-950 dark:text-customer-400">
+                    <UserPlus className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Crear cliente directamente</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Tú gestionas su cuenta. Ideal si el cliente no usa {brandConfig.app.name}.
+                    </p>
+                  </div>
+                  <ArrowRight className="ml-auto mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/50" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSendInviteByEmail(flowStep.email)}
+                  disabled={isInviting}
+                  className={cn(
+                    'flex items-start gap-3 rounded-xl border p-4 text-left transition-colors',
+                    'hover:border-primary/50 hover:bg-muted/40',
+                    isInviting && 'cursor-not-allowed opacity-60',
+                  )}
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-agency-100 text-agency-600 dark:bg-agency-950 dark:text-agency-400">
+                    {isInviting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Mail className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Enviar invitación por email</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {isInviting
+                        ? 'Enviando invitación...'
+                        : `Se enviará un enlace a ${flowStep.email}`}
+                    </p>
+                  </div>
+                  {!isInviting && (
+                    <ArrowRight className="ml-auto mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/50" />
+                  )}
+                </button>
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
 
         {/* ── Not found by NIF — two-option flow ── */}
         {flowStep.type === 'not_found_nif' &&

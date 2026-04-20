@@ -160,7 +160,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   updateCurrentTenant: (tenant: Tenant) => {
-    set({ currentTenant: tenant });
+    set((state) => ({
+      currentTenant: tenant,
+      tenants: state.tenants.map((t) => (t.tenant.id === tenant.id ? { ...t, tenant } : t)),
+    }));
   },
 
   updateUser: (userData) => {
