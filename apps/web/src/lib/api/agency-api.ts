@@ -18,6 +18,7 @@ import type {
   AgencyExportLogEntry,
   ExportContaPlusInput,
   QuarterlyIvaSummary,
+  ResendActivationInput,
 } from '@easyfactura/shared-types';
 
 export interface InvitationPublicInfo {
@@ -210,5 +211,20 @@ export const agencyApi = {
   /** Client revokes an agency's access to their account. */
   revokeMyAgency: async (agencyTenantId: string): Promise<void> => {
     await apiClient.delete(`/agency/my-agencies/${agencyTenantId}`);
+  },
+
+  /**
+   * Resend the activation link to the client. Optionally updates the email first.
+   * Throws 409 if the client has already verified their email.
+   */
+  resendActivation: async (
+    clientTenantId: string,
+    data: ResendActivationInput,
+  ): Promise<{ email: string }> => {
+    const response = await apiClient.post(
+      `/agency/clients/${clientTenantId}/resend-activation`,
+      data,
+    );
+    return unwrapApiResponse(response);
   },
 };

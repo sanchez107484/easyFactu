@@ -14,6 +14,7 @@ import type {
   ReceivedInvitation,
   MyAgencyRelation,
   AgencyInvitationFull,
+  ResendActivationInput,
 } from '@easyfactura/shared-types';
 
 const AGENCY_KEYS = {
@@ -303,6 +304,28 @@ export function useRevokeMyAgency() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.myAgencies() });
       toast.success('Acceso de la asesoría revocado correctamente');
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
+    },
+  });
+}
+
+export function useResendActivation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      clientTenantId,
+      data,
+    }: {
+      clientTenantId: string;
+      data: ResendActivationInput;
+    }) => agencyApi.resendActivation(clientTenantId, data),
+    onSuccess: (_result, { clientTenantId }) => {
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.client(clientTenantId) });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clients() });
+      toast.success('Enlace de activación enviado correctamente');
     },
     onError: (error) => {
       toast.error(getErrorMessage(error));

@@ -1001,8 +1001,16 @@ export interface AgencyRelationHistory {
   updatedAt: string;
 }
 
+export interface ClientActivationStatus {
+  /** Whether the client has clicked the activation link and set their password. */
+  emailVerified: boolean;
+  /** ISO string of when the pending activation token expires. Null if no token is active. */
+  activationTokenExpires: string | null;
+}
+
 export interface AgencyClientWithDetails extends AgencyClientRelation {
   clientTenant: Tenant;
+  activationStatus: ClientActivationStatus;
   stats?: {
     totalInvoices: number;
     pendingInvoices: number;
@@ -1070,6 +1078,11 @@ export interface CreateDirectClientInput {
   notes?: string;
 }
 
+export interface ResendActivationInput {
+  /** Optional new email if the previous one was incorrect. */
+  email?: string;
+}
+
 export interface InviteClientInput {
   inviteeEmail: string;
   inviteeName?: string;
@@ -1122,6 +1135,7 @@ export interface AgencyClientDetail extends Omit<
     | 'isActive'
     | 'createdAt'
   >;
+  activationStatus: ClientActivationStatus;
   stats: {
     totalInvoices: number;
     pendingInvoices: number;

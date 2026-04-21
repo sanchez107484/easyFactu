@@ -14,6 +14,7 @@ import { ConfigService } from '@nestjs/config';
 import { CreateDirectClientDto } from './dto/create-direct-client.dto';
 import { InviteClientDto } from './dto/invite-client.dto';
 import { QueryAgencyClientsDto } from './dto/query-agency-clients.dto';
+import { ResendActivationDto } from './dto/resend-activation.dto';
 import { randomBytes } from 'crypto';
 import { Prisma } from '@prisma/client';
 
@@ -80,6 +81,18 @@ export class AgencyService {
               isActive: true,
               createdAt: true,
               certificateExpiry: true,
+              tenantUsers: {
+                where: { isOwner: true },
+                select: {
+                  user: {
+                    select: {
+                      emailVerified: true,
+                      accountActivationExpires: true,
+                    },
+                  },
+                },
+                take: 1,
+              },
             },
           },
         },
@@ -120,8 +133,20 @@ export class AgencyService {
 
     const enriched = relations.map((relation) => {
       const stats = statsMap.get(relation.clientTenantId);
+      const ownerUser = relation.clientTenant.tenantUsers?.[0]?.user;
+      const { tenantUsers: _tenantUsers, ...clientTenantWithoutUsers } =
+        relation.clientTenant as typeof relation.clientTenant & { tenantUsers: unknown[] };
+      void _tenantUsers;
+
       return {
         ...relation,
+        clientTenant: clientTenantWithoutUsers,
+        activationStatus: {
+          emailVerified: ownerUser?.emailVerified ?? false,
+          activationTokenExpires: ownerUser?.accountActivationExpires
+            ? (ownerUser.accountActivationExpires as Date).toISOString()
+            : null,
+        },
         stats: {
           totalInvoices: Number(stats?.total_invoices ?? 0),
           pendingInvoices: Number(stats?.pending_invoices ?? 0),
@@ -386,9 +411,9 @@ export class AgencyService {
       });
     }
 
-    // Activation token valid for 72 hours
+    // Activation token valid for 7 days
     const activationToken = randomBytes(32).toString('hex');
-    const activationExpires = new Date(Date.now() + 72 * 60 * 60 * 1000);
+    const activationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     // Create tenant + user + relation in a single transaction
     const result = await this.prisma.$transaction(async (tx) => {
@@ -507,6 +532,105 @@ export class AgencyService {
       },
       include: { clientTenant: true },
     });
+  }
+
+  // ─── Resend / update activation email ────────────────────────────────────
+
+  async resendActivation(agencyTenantId: string, clientTenantId: string, dto: ResendActivationDto) {
+    const relation = await this.prisma.agencyClientRelation.findUnique({
+      where: { agencyTenantId_clientTenantId: { agencyTenantId, clientTenantId } },
+      include: {
+        clientTenant: { select: { id: true, businessName: true, email: true } },
+      },
+    });
+
+    if (!relation) throw new NotFoundException('Cliente no encontrado en tu cartera');
+
+    const ownerTenantUser = await this.prisma.tenantUser.findFirst({
+      where: { tenantId: clientTenantId, isOwner: true },
+      include: {
+        user: { select: { id: true, email: true, emailVerified: true } },
+      },
+    });
+
+    if (!ownerTenantUser?.user) {
+      throw new NotFoundException('Usuario del cliente no encontrado');
+    }
+
+    const user = ownerTenantUser.user;
+
+    if (user.emailVerified) {
+      throw new ConflictException(
+        'El cliente ya ha verificado su email y activado su cuenta. No se puede reenviar el enlace.'
+      );
+    }
+
+    const [agencyTenantRecord] = await Promise.all([
+      this.prisma.tenant.findUnique({
+        where: { id: agencyTenantId },
+        select: { businessName: true },
+      }),
+    ]);
+
+    let targetEmail = relation.clientTenant.email;
+
+    // If a new email is provided, validate and update
+    if (dto.email) {
+      const normalizedEmail = dto.email.toLowerCase().trim();
+      if (normalizedEmail !== user.email.toLowerCase()) {
+        const [existingTenant, existingUser] = await Promise.all([
+          this.prisma.tenant.findFirst({
+            where: { email: normalizedEmail, id: { not: clientTenantId } },
+            select: { id: true },
+          }),
+          this.prisma.user.findFirst({
+            where: { email: normalizedEmail, id: { not: user.id } },
+            select: { id: true },
+          }),
+        ]);
+
+        if (existingTenant || existingUser) {
+          throw new ConflictException(
+            'Este email ya está registrado en otra cuenta. Usa un email diferente.'
+          );
+        }
+
+        await this.prisma.$transaction([
+          this.prisma.tenant.update({
+            where: { id: clientTenantId },
+            data: { email: normalizedEmail },
+          }),
+          this.prisma.user.update({
+            where: { id: user.id },
+            data: { email: normalizedEmail },
+          }),
+        ]);
+
+        targetEmail = normalizedEmail;
+      }
+    }
+
+    // Regenerate token with 7-day expiry
+    const activationToken = randomBytes(32).toString('hex');
+    const activationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        accountActivationToken: activationToken,
+        accountActivationExpires: activationExpires,
+      },
+    });
+
+    this.emailService.sendAccountActivation({
+      to: targetEmail,
+      businessName: relation.clientTenant.businessName,
+      agencyName: agencyTenantRecord?.businessName ?? '',
+      activationToken,
+      expiresAt: activationExpires,
+    });
+
+    return { email: targetEmail };
   }
 
   // ─── Send invitation to existing user ────────────────────────────────────
@@ -1017,6 +1141,18 @@ export class AgencyService {
             setupCompleted: true,
             isActive: true,
             createdAt: true,
+            tenantUsers: {
+              where: { isOwner: true },
+              select: {
+                user: {
+                  select: {
+                    emailVerified: true,
+                    accountActivationExpires: true,
+                  },
+                },
+              },
+              take: 1,
+            },
           },
         },
       },
@@ -1044,7 +1180,7 @@ export class AgencyService {
             WHERE status IN ('CONFIRMED', 'SENT', 'PAID') AND issue_date >= ${startOfMonth}
           ) AS monthly_revenue
         FROM invoices
-        WHERE tenant_id = ${clientTenantId}::uuid
+        WHERE tenant_id = ${clientTenantId}
       `,
       this.prisma.invoice.findMany({
         where: { tenantId: clientTenantId, status: { notIn: ['DRAFT'] } },
@@ -1062,9 +1198,20 @@ export class AgencyService {
     ]);
 
     const stats = invoiceStats[0];
+    const ownerUser = relation.clientTenant.tenantUsers?.[0]?.user;
+    const { tenantUsers: _tu, ...clientTenantWithoutUsers } =
+      relation.clientTenant as typeof relation.clientTenant & { tenantUsers: unknown[] };
+    void _tu;
 
     return {
       ...relation,
+      clientTenant: clientTenantWithoutUsers,
+      activationStatus: {
+        emailVerified: ownerUser?.emailVerified ?? false,
+        activationTokenExpires: ownerUser?.accountActivationExpires
+          ? (ownerUser.accountActivationExpires as Date).toISOString()
+          : null,
+      },
       stats: {
         totalInvoices: Number(stats?.total_invoices ?? 0),
         pendingInvoices: Number(stats?.pending_invoices ?? 0),

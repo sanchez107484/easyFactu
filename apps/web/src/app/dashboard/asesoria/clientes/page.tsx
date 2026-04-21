@@ -57,13 +57,65 @@ import {
   MapPin,
   Activity,
   Loader2,
+  AlertTriangle,
+  ShieldAlert,
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import type { AgencyClientWithDetails, AgencyInvitation } from '@easyfactura/shared-types';
+import type {
+  AgencyClientWithDetails,
+  AgencyInvitation,
+  ClientActivationStatus,
+} from '@easyfactura/shared-types';
 import { useAgencyContext } from '@/hooks/use-agency-context';
 import { useSwitchTenant } from '@/hooks/use-switch-tenant';
 import { VincularClienteModal } from '../_components/vincular-cliente-modal';
+
+function ClientActivationBadge({
+  activationStatus,
+  setupCompleted,
+  createdAt,
+}: {
+  activationStatus: ClientActivationStatus;
+  setupCompleted: boolean;
+  createdAt: string;
+}) {
+  const { emailVerified, activationTokenExpires } = activationStatus;
+
+  if (emailVerified && setupCompleted) return null;
+
+  if (emailVerified && !setupCompleted) {
+    return (
+      <span className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-proforma-600 dark:text-proforma-400">
+        <AlertTriangle className="h-2.5 w-2.5" />
+        Config. pendiente
+      </span>
+    );
+  }
+
+  const now = Date.now();
+  const tokenExpiredOrMissing =
+    !activationTokenExpires || new Date(activationTokenExpires).getTime() < now;
+
+  if (tokenExpiredOrMissing) {
+    return (
+      <span className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-destructive">
+        <ShieldAlert className="h-2.5 w-2.5" />
+        Enlace caducado
+      </span>
+    );
+  }
+
+  const hoursSinceCreation = (now - new Date(createdAt).getTime()) / (1000 * 60 * 60);
+  if (hoursSinceCreation < 24) return null; // Fresh — no need to warn yet
+
+  return (
+    <span className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-proforma-600 dark:text-proforma-400">
+      <Clock className="h-2.5 w-2.5" />
+      Sin activar
+    </span>
+  );
+}
 
 export default function AgencyClientsPage() {
   const router = useRouter();
@@ -280,6 +332,11 @@ export default function AgencyClientsPage() {
                               {client.legalName}
                             </p>
                           )}
+                          <ClientActivationBadge
+                            activationStatus={relation.activationStatus}
+                            setupCompleted={client.setupCompleted}
+                            createdAt={relation.createdAt}
+                          />
                         </div>
                       </Link>
                     </TableCell>

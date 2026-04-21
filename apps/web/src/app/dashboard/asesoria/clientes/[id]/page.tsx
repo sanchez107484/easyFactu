@@ -11,6 +11,7 @@ import {
   useExportContaPlus,
   useClientFiscalAlerts,
   useExportLogs,
+  useResendActivation,
 } from '@/hooks/use-agency';
 import { useSwitchTenant } from '@/hooks/use-switch-tenant';
 import { toast } from 'sonner';
@@ -19,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -71,7 +73,11 @@ import {
 } from 'lucide-react';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
 import { AccountType } from '@easyfactura/shared-types';
-import type { FiscalAlert, AgencyExportLogEntry } from '@easyfactura/shared-types';
+import type {
+  FiscalAlert,
+  AgencyExportLogEntry,
+  ClientActivationStatus,
+} from '@easyfactura/shared-types';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -125,6 +131,168 @@ function FiscalAlertRow({ alert }: { alert: FiscalAlert }) {
   );
 }
 
+type ActivationBannerStatus =
+  | 'ACTIVE'
+  | 'SETUP_PENDING'
+  | 'EMAIL_PENDING_FRESH'
+  | 'EMAIL_PENDING_STALE'
+  | 'TOKEN_EXPIRED';
+
+function computeActivationBannerStatus(
+  activationStatus: ClientActivationStatus,
+  setupCompleted: boolean,
+): ActivationBannerStatus {
+  const { emailVerified, activationTokenExpires } = activationStatus;
+  if (emailVerified && setupCompleted) return 'ACTIVE';
+  if (emailVerified && !setupCompleted) return 'SETUP_PENDING';
+  if (!activationTokenExpires) return 'TOKEN_EXPIRED';
+  const now = Date.now();
+  const expiresMs = new Date(activationTokenExpires).getTime();
+  if (expiresMs < now) return 'TOKEN_EXPIRED';
+  // Fresh = token expires in more than 6 days (generated within the last ~24h)
+  const daysRemaining = (expiresMs - now) / (1000 * 60 * 60 * 24);
+  return daysRemaining > 6 ? 'EMAIL_PENDING_FRESH' : 'EMAIL_PENDING_STALE';
+}
+
+interface ActivationBannerProps {
+  status: ActivationBannerStatus;
+  email: string;
+  onResend: () => void;
+  onOpenEmailModal: () => void;
+  onCompleteSetup: () => void;
+  isResending: boolean;
+}
+
+function ActivationBanner({
+  status,
+  email,
+  onResend,
+  onOpenEmailModal,
+  onCompleteSetup,
+  isResending,
+}: ActivationBannerProps) {
+  if (status === 'ACTIVE') return null;
+
+  if (status === 'SETUP_PENDING') {
+    return (
+      <div className="flex items-start gap-3 rounded-lg border border-proforma-200 bg-proforma-50 p-4 dark:border-proforma-800/50 dark:bg-proforma-950/20">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-proforma-600 dark:text-proforma-400" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-proforma-800 dark:text-proforma-300">
+            El cliente ha activado su cuenta pero los datos fiscales están incompletos
+          </p>
+          <p className="mt-0.5 text-xs text-proforma-600 dark:text-proforma-400">
+            Accede a la cuenta del cliente para completar el onboarding.
+          </p>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          className="shrink-0 border-proforma-300 text-proforma-700 hover:bg-proforma-100 dark:border-proforma-700 dark:text-proforma-300"
+          onClick={onCompleteSetup}
+        >
+          Completar datos
+        </Button>
+      </div>
+    );
+  }
+
+  if (status === 'EMAIL_PENDING_FRESH') {
+    return (
+      <div className="flex items-start gap-3 rounded-lg border border-primary-200 bg-primary-50 p-4 dark:border-primary-800/50 dark:bg-primary-950/20">
+        <Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-primary-800 dark:text-primary-300">
+            Enlace de activación enviado
+          </p>
+          <p className="mt-0.5 text-xs text-primary-600 dark:text-primary-400">
+            Se ha enviado un enlace a <span className="font-mono">{email}</span>. El cliente tiene 7
+            días para activar su cuenta.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'EMAIL_PENDING_STALE') {
+    return (
+      <div className="flex flex-wrap items-start gap-3 rounded-lg border border-proforma-200 bg-proforma-50 p-4 dark:border-proforma-800/50 dark:bg-proforma-950/20">
+        <Clock className="mt-0.5 h-4 w-4 shrink-0 text-proforma-600 dark:text-proforma-400" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-proforma-800 dark:text-proforma-300">
+            El cliente aún no ha activado su cuenta
+          </p>
+          <p className="mt-0.5 text-xs text-proforma-600 dark:text-proforma-400">
+            Se envió el enlace a <span className="font-mono">{email}</span>.
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-proforma-300 text-proforma-700 hover:bg-proforma-100 dark:border-proforma-700 dark:text-proforma-300"
+            onClick={onOpenEmailModal}
+          >
+            Cambiar email
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-proforma-300 text-proforma-700 hover:bg-proforma-100 dark:border-proforma-700 dark:text-proforma-300"
+            onClick={onResend}
+            disabled={isResending}
+          >
+            {isResending ? (
+              <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-1.5 h-3 w-3" />
+            )}
+            Reenviar enlace
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // TOKEN_EXPIRED
+  return (
+    <div className="flex flex-wrap items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 dark:border-destructive/50 dark:bg-destructive/10">
+      <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-destructive">El enlace de activación ha caducado</p>
+        <p className="mt-0.5 text-xs text-destructive/80">
+          El cliente no pudo activar su cuenta a tiempo. Envía un nuevo enlace a{' '}
+          <span className="font-mono">{email}</span>.
+        </p>
+      </div>
+      <div className="flex shrink-0 gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          className="border-destructive/30 text-destructive hover:bg-destructive/10"
+          onClick={onOpenEmailModal}
+        >
+          Cambiar email
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="border-destructive/30 text-destructive hover:bg-destructive/10"
+          onClick={onResend}
+          disabled={isResending}
+        >
+          {isResending ? (
+            <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-1.5 h-3 w-3" />
+          )}
+          Enviar nuevo enlace
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function AgencyClientDetailPage({ params }: PageProps) {
   const { id: clientTenantId } = use(params);
   const router = useRouter();
@@ -137,11 +305,14 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
   const [exportQuarter, setExportQuarter] = useState('');
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState('');
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
 
   const { data, isLoading, error } = useAgencyClient(clientTenantId);
   const { mutate: revokeClient, isPending: isRevoking } = useRevokeClient();
   const { mutate: updateNotes, isPending: isSavingNotes } = useUpdateClientNotes();
   const { mutate: exportContaPlus, isPending: isExporting } = useExportContaPlus();
+  const { mutate: resendActivation, isPending: isResending } = useResendActivation();
   const {
     data: fiscalAlerts,
     isLoading: isLoadingAlerts,
@@ -173,6 +344,23 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
         router.push('/dashboard/asesoria/clientes');
       },
     });
+  };
+
+  const handleResendActivation = () => {
+    resendActivation({ clientTenantId, data: {} });
+  };
+
+  const handleChangeEmailSubmit = () => {
+    if (!newEmail.trim()) return;
+    resendActivation(
+      { clientTenantId, data: { email: newEmail.trim() } },
+      {
+        onSuccess: () => {
+          setEmailModalOpen(false);
+          setNewEmail('');
+        },
+      },
+    );
   };
 
   const handleStartEditNotes = () => {
@@ -230,6 +418,10 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
   const errorAlerts = fiscalAlerts?.filter((a) => a.type === 'error') ?? [];
   const hasAlerts = (fiscalAlerts?.length ?? 0) > 0;
   const alertsLoaded = !isLoadingAlerts && fiscalAlerts !== undefined;
+  const activationBannerStatus = computeActivationBannerStatus(
+    data.activationStatus,
+    client.setupCompleted,
+  );
 
   return (
     <div className="space-y-6">
@@ -281,6 +473,19 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
           </Button>
         </div>
       </div>
+
+      {/* Activation status banner */}
+      <ActivationBanner
+        status={activationBannerStatus}
+        email={client.email ?? ''}
+        onResend={handleResendActivation}
+        onOpenEmailModal={() => {
+          setNewEmail(client.email ?? '');
+          setEmailModalOpen(true);
+        }}
+        onCompleteSetup={handleManage}
+        isResending={isResending}
+      />
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
@@ -335,7 +540,7 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
         </Card>
       </div>
 
-      {/* Fiscal alerts */}
+      {/* Fiscal alerts 
       {(isLoadingAlerts || alertsLoaded) && (
         <Card>
           <CardHeader className="pb-3">
@@ -379,6 +584,8 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
       )}
+
+      */}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Client info */}
@@ -662,6 +869,51 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
                   Descargar
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change email dialog */}
+      <Dialog open={emailModalOpen} onOpenChange={setEmailModalOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Cambiar email del cliente
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              Se actualizará el email y se enviará un nuevo enlace de activación.
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-email">Nuevo email</Label>
+              <Input
+                id="new-email"
+                type="email"
+                placeholder="cliente@ejemplo.com"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleChangeEmailSubmit();
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={isResending}>
+                Cancelar
+              </Button>
+            </DialogClose>
+            <Button onClick={handleChangeEmailSubmit} disabled={isResending || !newEmail.trim()}>
+              {isResending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Mail className="mr-2 h-4 w-4" />
+              )}
+              Enviar enlace
             </Button>
           </DialogFooter>
         </DialogContent>

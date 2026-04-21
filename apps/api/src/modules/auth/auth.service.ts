@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -20,6 +21,8 @@ import { ActivateAccountDto } from './dto/activate-account.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -561,7 +564,9 @@ export class AuthService {
 
     // Agency-created accounts have no password until they activate their account
     if (!user.passwordHash) {
-      throw new BadRequestException('Esta cuenta aún no tiene contraseña. Actívala primero desde el enlace recibido por email.');
+      throw new BadRequestException(
+        'Esta cuenta aún no tiene contraseña. Actívala primero desde el enlace recibido por email.'
+      );
     }
 
     const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
@@ -622,8 +627,7 @@ export class AuthService {
 
     const tenantUser = user.tenantUsers[0];
     const tenant = tenantUser?.tenant;
-    const agencyName =
-      tenant?.clientRelations[0]?.agencyTenant?.businessName ?? null;
+    const agencyName = tenant?.clientRelations[0]?.agencyTenant?.businessName ?? null;
 
     return {
       email: user.email,
@@ -700,6 +704,13 @@ export class AuthService {
 
     const activeTenantUser = user.tenantUsers.find((tu) => tu.tenantId === activeTenantId);
 
+    // Notify agency owners (fire-and-forget) if this account was created by an agency
+    this.notifyAgencyOnClientActivation(
+      activeTenantId,
+      activeTenantUser?.tenant.businessName ?? '',
+      activeTenantUser?.tenant.nif ?? ''
+    );
+
     return {
       user: {
         id: user.id,
@@ -724,6 +735,53 @@ export class AuthService {
       },
       ...tokens,
     };
+  }
+
+  private async notifyAgencyOnClientActivation(
+    clientTenantId: string,
+    clientBusinessName: string,
+    clientNif: string
+  ): Promise<void> {
+    try {
+      const agencyRelations = await this.prisma.agencyClientRelation.findMany({
+        where: { clientTenantId },
+        include: {
+          agencyTenant: {
+            select: {
+              businessName: true,
+              tenantUsers: {
+                where: { role: { in: ['OWNER', 'ADMIN'] } },
+                select: { user: { select: { email: true } } },
+              },
+            },
+          },
+        },
+      });
+
+      const frontendUrl =
+        this.configService.get<string>('FRONTEND_URL') ?? 'https://app.novafactura.es';
+
+      for (const relation of agencyRelations) {
+        const agencyEmails = relation.agencyTenant.tenantUsers
+          .map((tu) => tu.user.email)
+          .filter(Boolean);
+
+        if (agencyEmails.length === 0) continue;
+
+        const dashboardUrl = `${frontendUrl}/dashboard/asesoria/clientes/${clientTenantId}`;
+
+        this.emailService.sendClientActivatedNotification({
+          to: agencyEmails,
+          agencyName: relation.agencyTenant.businessName,
+          clientBusinessName,
+          clientNif,
+          dashboardUrl,
+        });
+      }
+    } catch (err) {
+      // Never let notification failure break the activation flow
+      this.logger.error('Error notifying agency on client activation', err);
+    }
   }
 
   private async generateTokens(userId: string, email: string, tenantId: string) {

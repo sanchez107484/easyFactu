@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
+import { brandConfig } from '@easyfactura/brand-config';
 
 interface SendEmailOptions {
   to: string | string[];
@@ -15,12 +16,17 @@ export class EmailService {
   private readonly resend: Resend | null;
   private readonly defaultFrom: string;
   private readonly isDev: boolean;
+  private readonly appName = brandConfig.app.name;
+  private readonly supportEmail = brandConfig.app.supportEmail;
+  private readonly appUrl: string;
 
   constructor(private configService: ConfigService) {
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
     this.isDev = this.configService.get<string>('NODE_ENV') !== 'production';
     this.defaultFrom =
-      this.configService.get<string>('EMAIL_FROM') ?? 'NovaFactura <noreply@novafactura.es>';
+      this.configService.get<string>('EMAIL_FROM') ??
+      `${brandConfig.app.name} <noreply@${brandConfig.app.domain}>`;
+    this.appUrl = this.configService.get<string>('FRONTEND_URL') ?? brandConfig.app.url;
 
     if (apiKey) {
       this.resend = new Resend(apiKey);
@@ -38,7 +44,7 @@ export class EmailService {
     invitationToken: string;
     expiresAt: Date;
   }): Promise<void> {
-    const invitationUrl = `${this.configService.get('FRONTEND_URL') ?? 'https://app.novafactura.es'}/invitacion/${opts.invitationToken}`;
+    const invitationUrl = `${this.appUrl}/invitacion/${opts.invitationToken}`;
 
     const html = this.buildAgencyInvitationHtml({
       ...opts,
@@ -47,7 +53,7 @@ export class EmailService {
 
     await this.send({
       to: opts.to,
-      subject: `${opts.agencyName} te invita a gestionar tu facturación en NovaFactura`,
+      subject: `${opts.agencyName} te invita a gestionar tu facturación en ${this.appName}`,
       html,
     });
   }
@@ -59,13 +65,13 @@ export class EmailService {
     activationToken: string;
     expiresAt: Date;
   }): Promise<void> {
-    const activationUrl = `${this.configService.get('FRONTEND_URL') ?? 'https://app.novafactura.es'}/activar-cuenta/${opts.activationToken}`;
+    const activationUrl = `${this.appUrl}/activar-cuenta/${opts.activationToken}`;
 
     const html = this.buildAccountActivationHtml({ ...opts, activationUrl });
 
     await this.send({
       to: opts.to,
-      subject: `${opts.agencyName} ha creado tu cuenta en NovaFactura — actívala ahora`,
+      subject: `${opts.agencyName} ha creado tu cuenta en ${this.appName} — actívala ahora`,
       html,
     });
   }
@@ -80,7 +86,7 @@ export class EmailService {
 
     await this.send({
       to: opts.to,
-      subject: `Tu asesoría ${opts.agencyName} ha configurado tu cuenta en NovaFactura`,
+      subject: `Tu asesoría ${opts.agencyName} ha configurado tu cuenta en ${this.appName}`,
       html,
     });
   }
@@ -90,13 +96,13 @@ export class EmailService {
     firstName: string;
     resetToken: string;
   }): Promise<void> {
-    const resetUrl = `${this.configService.get('FRONTEND_URL') ?? 'https://app.novafactura.es'}/nueva-contrasena?token=${opts.resetToken}`;
+    const resetUrl = `${this.appUrl}/nueva-contrasena?token=${opts.resetToken}`;
 
     const html = this.buildPasswordResetHtml({ ...opts, resetUrl });
 
     await this.send({
       to: opts.to,
-      subject: 'Recupera tu contraseña de NovaFactura',
+      subject: 'Recupera tu contraseña de ' + this.appName,
       html,
     });
   }
@@ -106,13 +112,13 @@ export class EmailService {
     firstName: string;
     verifyToken: string;
   }): Promise<void> {
-    const verifyUrl = `${this.configService.get('FRONTEND_URL') ?? 'https://app.novafactura.es'}/verificar-email?token=${opts.verifyToken}`;
+    const verifyUrl = `${this.appUrl}/verificar-email?token=${opts.verifyToken}`;
 
     const html = this.buildEmailVerificationHtml({ ...opts, verifyUrl });
 
     await this.send({
       to: opts.to,
-      subject: 'Verifica tu email en NovaFactura',
+      subject: 'Verifica tu email en ' + this.appName,
       html,
     });
   }
@@ -138,7 +144,7 @@ export class EmailService {
 
     await this.send({
       to: opts.to,
-      subject: `${opts.clientName} ha rechazado tu invitación en NovaFactura`,
+      subject: `${opts.clientName} ha rechazado tu invitación en ${this.appName}`,
       html,
     });
   }
@@ -164,7 +170,35 @@ export class EmailService {
 
     await this.send({
       to: opts.to,
-      subject: `${opts.clientName} ha aceptado tu invitación en NovaFactura`,
+      subject: `${opts.clientName} ha aceptado tu invitación en ${this.appName}`,
+      html,
+    });
+  }
+
+  async sendClientActivatedNotification(opts: {
+    to: string | string[];
+    agencyName: string;
+    clientBusinessName: string;
+    clientNif: string;
+    dashboardUrl: string;
+  }): Promise<void> {
+    const html = this.buildBaseLayout(`
+      <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;">
+        ${opts.clientBusinessName} ha activado su cuenta
+      </h1>
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
+        El cliente <strong>${opts.clientBusinessName}</strong> (NIF: ${opts.clientNif}) ha verificado
+        su email y activado su cuenta en NovaFactura a través de <strong>${opts.agencyName}</strong>.
+      </p>
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 24px;">
+        Ya puedes acceder a su panel de facturación.
+      </p>
+      ${this.buildButton('Ver dashboard del cliente', opts.dashboardUrl)}
+    `);
+
+    await this.send({
+      to: opts.to,
+      subject: `${opts.clientBusinessName} ha activado su cuenta en ${this.appName}`,
       html,
     });
   }
@@ -214,7 +248,7 @@ export class EmailService {
     const content = `
       <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;">Tu cuenta está lista</h1>
       <p style="color:#6b7280;font-size:15px;margin:0 0 24px;">
-        Tu asesoría <strong style="color:#1e1e2e;">${opts.agencyName}</strong> ha creado una cuenta en NovaFactura para <strong style="color:#1e1e2e;">${opts.businessName}</strong>.
+        Tu asesoría <strong style="color:#1e1e2e;">${opts.agencyName}</strong> ha creado una cuenta en ${this.appName} para <strong style="color:#1e1e2e;">${opts.businessName}</strong>.
       </p>
       <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 8px;">
         Solo necesitas crear tu contraseña para empezar. El proceso dura menos de un minuto y después podrás gestionar tu facturación directamente.
@@ -241,7 +275,7 @@ export class EmailService {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NovaFactura</title>
+  <title>${this.appName}</title>
 </head>
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
@@ -251,7 +285,7 @@ export class EmailService {
           <!-- Logo header -->
           <tr>
             <td align="center" style="padding-bottom:24px;">
-              <span style="font-size:22px;font-weight:700;color:#4f46e5;letter-spacing:-0.5px;">Nova<span style="color:#1e1e2e;">Factura</span></span>
+              <span style="font-size:22px;font-weight:700;color:#4f46e5;letter-spacing:-0.5px;">${this.appName}</span>
             </td>
           </tr>
           <!-- Card -->
@@ -264,7 +298,7 @@ export class EmailService {
           <tr>
             <td align="center" style="padding-top:24px;">
               <p style="color:#9ca3af;font-size:12px;margin:0;">
-                NovaFactura · Facturación para autónomos y pymes<br />
+                ${this.appName} · Facturación para autónomos y pymes<br />
                 Si no esperabas este email, puedes ignorarlo de forma segura.
               </p>
             </td>
@@ -305,7 +339,7 @@ export class EmailService {
     const content = `
       <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;">${greeting}</h1>
       <p style="color:#6b7280;font-size:15px;margin:0 0 24px;">
-        <strong style="color:#1e1e2e;">${opts.agencyName}</strong> (${opts.agencyNif}) te invita a que vinculen tu facturación a través de NovaFactura.
+        <strong style="color:#1e1e2e;">${opts.agencyName}</strong> (${opts.agencyNif}) te invita a que vinculen tu facturación a través de ${this.appName}.
       </p>
       <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 8px;">
         Al aceptar, tu asesoría podrá ayudarte a gestionar tus facturas directamente desde la plataforma, sin que pierdas el control de tu cuenta.
@@ -329,16 +363,16 @@ export class EmailService {
     loginUrl: string;
   }): string {
     const content = `
-      <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;">Bienvenido a NovaFactura</h1>
+      <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;">Bienvenido a ${this.appName}</h1>
       <p style="color:#6b7280;font-size:15px;margin:0 0 24px;">
         Tu asesoría <strong style="color:#1e1e2e;">${opts.agencyName}</strong> ha creado y configurado tu espacio de facturación.
       </p>
       <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 8px;">
-        Desde NovaFactura podrás ver y gestionar todas tus facturas. Tu asesoría ya tiene acceso para ayudarte.
+        Desde ${this.appName} podrás ver y gestionar todas tus facturas. Tu asesoría ya tiene acceso para ayudarte.
       </p>
       ${this.buildButton('Acceder a mi cuenta', opts.loginUrl)}
       <p style="color:#9ca3af;font-size:13px;margin:0;">
-        Si tienes dudas, contacta con tu asesoría o escríbenos a soporte@novafactura.es
+        Si tienes dudas, contacta con tu asesoría o escríbenos a ${this.supportEmail}
       </p>`;
 
     return this.buildBaseLayout(content);
@@ -365,7 +399,7 @@ export class EmailService {
     const content = `
       <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;">Verifica tu email</h1>
       <p style="color:#6b7280;font-size:15px;margin:0 0 24px;">
-        Hola, <strong style="color:#1e1e2e;">${opts.firstName}</strong>. Solo un paso más para activar tu cuenta en NovaFactura.
+        Hola, <strong style="color:#1e1e2e;">${opts.firstName}</strong>. Solo un paso más para activar tu cuenta en ${this.appName}.
       </p>
       ${this.buildButton('Verificar mi email', opts.verifyUrl)}
       <p style="color:#9ca3af;font-size:13px;margin:0;">

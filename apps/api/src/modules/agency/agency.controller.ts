@@ -22,6 +22,7 @@ import { CreateDirectClientDto } from './dto/create-direct-client.dto';
 import { InviteClientDto } from './dto/invite-client.dto';
 import { QueryAgencyClientsDto } from './dto/query-agency-clients.dto';
 import { ExportClientDto } from './dto/export-client.dto';
+import { ResendActivationDto } from './dto/resend-activation.dto';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
@@ -128,6 +129,21 @@ export class AgencyController {
     @Body('notes') notes: string
   ) {
     return this.agencyService.updateClientNotes(tenantId, clientTenantId, notes);
+  }
+
+  @Post('clients/:clientTenantId/resend-activation')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Reenviar (o corregir email y reenviar) el enlace de activación de un cliente',
+  })
+  @ApiResponse({ status: 200, description: 'Enlace de activación enviado' })
+  @ApiResponse({ status: 409, description: 'El cliente ya ha verificado su cuenta' })
+  resendActivation(
+    @CurrentTenant() tenantId: string,
+    @Param('clientTenantId', ParseUUIDPipe) clientTenantId: string,
+    @Body() dto: ResendActivationDto
+  ) {
+    return this.agencyService.resendActivation(tenantId, clientTenantId, dto);
   }
 
   // ─── Invitations ────────────────────────────────────────────────────────
