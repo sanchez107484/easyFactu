@@ -359,8 +359,8 @@ export default function NuevoClienteAsesoriaPage() {
               </h1>
               <p className="mt-2 text-sm text-agency-100 leading-relaxed">
                 Estás creando una <strong className="text-white">cuenta nueva</strong> para un
-                cliente tuyo. Recibirá un enlace de activación por email y podrá acceder a la
-                aplicación.
+                cliente tuyo. Puedes gestionar su facturación de inmediato y él recibirá un enlace
+                para acceder cuando quiera.
               </p>
               <button
                 type="button"
@@ -378,9 +378,18 @@ export default function NuevoClienteAsesoriaPage() {
               </p>
               {[
                 { n: '1', text: 'Se crea su cuenta con los datos que introduces.' },
-                { n: '2', text: 'Recibe un email con enlace seguro para activar su acceso.' },
-                { n: '3', text: 'Completa su onboarding y configura sus datos fiscales.' },
-                { n: '4', text: 'Tú gestionas sus facturas, él puede consultarlas.' },
+                {
+                  n: '2',
+                  text: 'Accedes de inmediato a su espacio para completar sus datos y emitir facturas.',
+                },
+                {
+                  n: '3',
+                  text: 'Recibe un email con enlace (7 días) para activar su propio acceso.',
+                },
+                {
+                  n: '4',
+                  text: 'Tú gestionas su facturación, él puede consultarla cuando active su cuenta.',
+                },
               ].map(({ n, text }) => (
                 <div key={n} className="flex items-start gap-2.5">
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold">
