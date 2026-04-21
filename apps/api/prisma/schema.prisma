@@ -58,6 +58,7 @@ model Tenant {
   agencyRelationHistory   AgencyRelationHistory[] @relation("AgencyHistoryRelations")
   clientRelationHistory   AgencyRelationHistory[] @relation("ClientHistoryRelations")
 
+  @@index([email])
   @@map("tenants")
 }
 

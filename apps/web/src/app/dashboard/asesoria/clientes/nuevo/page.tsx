@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { validateNif } from '@easyfactura/shared-validators';
 import { AccountType } from '@easyfactura/shared-types';
 import { useAuthStore } from '@/store/auth-store';
-import { useCreateDirectClient, useInviteClient, useCheckNif } from '@/hooks/use-agency';
+import { useCreateDirectClient, useInviteClient, useCheckIdentifier } from '@/hooks/use-agency';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -239,15 +239,19 @@ export default function NuevoClienteAsesoriaPage() {
 
   const selectedAccountType = watch('accountType');
   const watchedNif = watch('nif') ?? '';
+  const watchedEmail = watch('email') ?? '';
 
-  // Real-time NIF detection
-  const { nifCheck, isCheckingNif } = useCheckNif(watchedNif);
-  const hasNifConflict =
-    nifCheck?.status === 'EXISTS_CAN_INVITE' || nifCheck?.status === 'ALREADY_IN_PORTFOLIO';
+  // Busca en tiempo real tanto por NIF (cuando es válido) como por email
+  const activeIdentifier = watchedNif.trim().length >= 9 ? watchedNif.trim() : watchedEmail.trim();
+  const { data: identifierCheck, isFetching: isCheckingIdentifier } =
+    useCheckIdentifier(activeIdentifier);
+  const hasConflict =
+    identifierCheck?.status === 'EXISTS_CAN_INVITE' ||
+    identifierCheck?.status === 'ALREADY_IN_PORTFOLIO';
 
   const onSubmit = useCallback(
     async (data: FormData) => {
-      if (hasNifConflict) return;
+      if (hasConflict) return;
 
       try {
         await createMutation.mutateAsync({
@@ -267,15 +271,19 @@ export default function NuevoClienteAsesoriaPage() {
         }
       }
     },
-    [createMutation, hasNifConflict, setError],
+    [createMutation, hasConflict, setError],
   );
 
   const handleInvite = useCallback(async () => {
-    const email = nifCheck?.email;
+    const email =
+      identifierCheck?.status === 'EXISTS_CAN_INVITE' ||
+      identifierCheck?.status === 'ALREADY_IN_PORTFOLIO'
+        ? identifierCheck.email
+        : undefined;
     if (!email) return;
     await inviteMutation.mutateAsync({ inviteeEmail: email });
     router.push('/dashboard/asesoria/clientes');
-  }, [inviteMutation, nifCheck, router]);
+  }, [inviteMutation, identifierCheck, router]);
 
   if (!isAgency) {
     router.replace('/dashboard');
@@ -311,7 +319,7 @@ export default function NuevoClienteAsesoriaPage() {
               <Button
                 size="sm"
                 onClick={handleSubmit(onSubmit)}
-                disabled={createMutation.isPending || hasNifConflict || isCheckingNif}
+                disabled={createMutation.isPending || hasConflict || isCheckingIdentifier}
                 className="bg-agency-600 hover:bg-agency-700 text-white"
               >
                 {createMutation.isPending ? (
@@ -319,10 +327,10 @@ export default function NuevoClienteAsesoriaPage() {
                     <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                     Registrando...
                   </>
-                ) : isCheckingNif ? (
+                ) : isCheckingIdentifier ? (
                   <>
                     <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    Comprobando NIF...
+                    Comprobando...
                   </>
                 ) : (
                   <>
@@ -411,19 +419,25 @@ export default function NuevoClienteAsesoriaPage() {
             </div>
           ) : (
             <>
-              {/* Banners de conflicto NIF */}
-              {nifCheck?.status === 'ALREADY_IN_PORTFOLIO' && nifCheck.email && (
+              {/* Banners de conflicto */}
+              {identifierCheck?.status === 'ALREADY_IN_PORTFOLIO' && identifierCheck.email && (
                 <div className="px-6 pt-4 shrink-0">
                   <AlreadyInPortfolioBanner
-                    info={{ email: nifCheck.email, businessName: nifCheck.businessName ?? '' }}
+                    info={{
+                      email: identifierCheck.email,
+                      businessName: identifierCheck.businessName ?? '',
+                    }}
                   />
                 </div>
               )}
-              {nifCheck?.status === 'EXISTS_CAN_INVITE' && nifCheck.email && (
+              {identifierCheck?.status === 'EXISTS_CAN_INVITE' && identifierCheck.email && (
                 <div className="px-6 pt-4 shrink-0">
                   <NifConflictBanner
-                    info={{ email: nifCheck.email, businessName: nifCheck.businessName ?? '' }}
-                    isCheckingNif={isCheckingNif}
+                    info={{
+                      email: identifierCheck.email,
+                      businessName: identifierCheck.businessName ?? '',
+                    }}
+                    isCheckingNif={isCheckingIdentifier}
                     onInvite={handleInvite}
                     isInviting={inviteMutation.isPending}
                   />

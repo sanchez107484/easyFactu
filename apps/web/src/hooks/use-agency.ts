@@ -5,6 +5,7 @@ import type { IdentifierCheckResult } from '@/lib/api/agency-api';
 import { getErrorMessage } from '@/lib/api-client';
 import { triggerBlobDownload } from '@/lib/blob-download';
 import { validateNif } from '@easyfactura/shared-validators';
+import { useDebounce } from '@/hooks/use-debounce';
 import type {
   QueryAgencyClientsInput,
   CreateDirectClientInput,
@@ -131,14 +132,19 @@ export function useCheckNif(nif: string) {
 export function useCheckIdentifier(q: string) {
   const trimmed = q.trim();
   const isEmail = trimmed.includes('@');
-  const isValidEmail = isEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
-  const isPotentialNif = !isEmail && trimmed.length >= 9;
-  const isValidNif = isPotentialNif && validateNif(trimmed.toUpperCase()).isValid;
+
+  // NIF: debounce corto (el NIF tiene longitud fija, se completa de golpe)
+  // Email: debounce largo (el usuario escribe libremente)
+  const debounced = useDebounce(trimmed, isEmail ? 400 : 150);
+
+  const isValidEmail = isEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(debounced);
+  const isValidNif =
+    !isEmail && debounced.length >= 9 && validateNif(debounced.toUpperCase()).isValid;
   const enabled = isValidEmail || isValidNif;
 
   return useQuery<IdentifierCheckResult>({
-    queryKey: [...AGENCY_KEYS.all, 'check-identifier', trimmed] as const,
-    queryFn: () => agencyApi.checkIdentifier(trimmed),
+    queryKey: [...AGENCY_KEYS.all, 'check-identifier', debounced] as const,
+    queryFn: () => agencyApi.checkIdentifier(debounced),
     enabled,
     staleTime: 30 * 1000,
     retry: false,

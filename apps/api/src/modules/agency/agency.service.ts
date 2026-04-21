@@ -214,7 +214,7 @@ export class AgencyService {
   > {
     const normalizedNif = nif.toUpperCase().trim();
 
-    const existing = await this.prisma.tenant.findFirst({
+    const existing = await this.prisma.tenant.findUnique({
       where: { nif: normalizedNif },
       select: { id: true, email: true, businessName: true },
     });
@@ -267,17 +267,20 @@ export class AgencyService {
 
     if (isEmail) {
       const normalizedEmail = identifier.toLowerCase();
-      const existing = await this.prisma.tenant.findFirst({
-        where: { email: normalizedEmail },
-        select: { id: true, email: true, businessName: true },
-      });
 
-      if (!existing) {
-        // Also check user table — email may belong to a user without a matching tenant email
-        const existingUser = await this.prisma.user.findUnique({
+      // Tenant and user lookups are independent — run in parallel
+      const [existingTenant, existingUser] = await Promise.all([
+        this.prisma.tenant.findFirst({
+          where: { email: normalizedEmail },
+          select: { id: true, email: true, businessName: true },
+        }),
+        this.prisma.user.findUnique({
           where: { email: normalizedEmail },
           select: { id: true },
-        });
+        }),
+      ]);
+
+      if (!existingTenant) {
         return existingUser ? { status: 'EMAIL_EXISTS' } : { status: 'AVAILABLE' };
       }
 
@@ -285,7 +288,7 @@ export class AgencyService {
         where: {
           agencyTenantId_clientTenantId: {
             agencyTenantId,
-            clientTenantId: existing.id,
+            clientTenantId: existingTenant.id,
           },
         },
         select: { id: true },
@@ -294,15 +297,15 @@ export class AgencyService {
       if (relation) {
         return {
           status: 'ALREADY_IN_PORTFOLIO',
-          email: existing.email ?? '',
-          businessName: existing.businessName,
+          email: existingTenant.email ?? '',
+          businessName: existingTenant.businessName,
         };
       }
 
       return {
         status: 'EXISTS_CAN_INVITE',
-        email: existing.email ?? '',
-        businessName: existing.businessName,
+        email: existingTenant.email ?? '',
+        businessName: existingTenant.businessName,
       };
     }
 
