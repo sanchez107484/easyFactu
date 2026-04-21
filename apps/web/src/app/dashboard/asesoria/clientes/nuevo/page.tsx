@@ -27,9 +27,11 @@ import {
   Send,
   User,
   UserCheck,
+  UserPlus,
   Users,
 } from 'lucide-react';
 import { SectionLabel } from '@/components/common/section-label';
+import { cn } from '@/lib/utils';
 
 // ==================== ACCOUNT TYPES ====================
 
@@ -150,9 +152,9 @@ function NifConflictBanner({
             Este NIF ya tiene una cuenta en la aplicación
           </p>
           <p className="mt-1 text-sm text-proforma-700 dark:text-proforma-300">
-            <span className="font-medium">{info.businessName}</span> ya está registrado con el
-            email <span className="font-mono font-medium">{info.email}</span>. Envíale una
-            invitación para vincular su cuenta existente.
+            <span className="font-medium">{info.businessName}</span> ya está registrado con el email{' '}
+            <span className="font-mono font-medium">{info.email}</span>. Envíale una invitación para
+            vincular su cuenta existente.
           </p>
           <div className="mt-3">
             <Button
@@ -190,8 +192,8 @@ function SuccessBanner({ email, businessName }: { email: string; businessName: s
           <p className="mt-1.5 text-sm text-green-700 dark:text-green-300 leading-relaxed">
             Se ha enviado un email de activación a{' '}
             <span className="font-mono font-medium">{email}</span>. Cuando{' '}
-            <span className="font-medium">{businessName}</span> haga clic en el enlace, podrá
-            crear su contraseña y completar su perfil desde el onboarding.
+            <span className="font-medium">{businessName}</span> haga clic en el enlace, podrá crear
+            su contraseña y completar su perfil desde el onboarding.
           </p>
           <p className="mt-2 text-xs text-green-600 dark:text-green-400">
             Ya puedes gestionar su cuenta desde el panel.
@@ -281,7 +283,7 @@ export default function NuevoClienteAsesoriaPage() {
   }
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
+    <div className="-m-6 flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 64px)' }}>
       {/* ── Header fijo ── */}
       <div className="flex items-center justify-between px-6 py-3 border-b bg-background shrink-0">
         <div className="flex items-center gap-2">
@@ -292,7 +294,7 @@ export default function NuevoClienteAsesoriaPage() {
           </Link>
           <span className="text-sm text-muted-foreground">Mis clientes</span>
           <span className="text-muted-foreground/40">/</span>
-          <span className="text-sm font-medium">Añadir cliente</span>
+          <span className="text-sm font-medium">Registrar nuevo cliente</span>
         </div>
         <div className="flex items-center gap-2">
           {successInfo ? (
@@ -310,11 +312,12 @@ export default function NuevoClienteAsesoriaPage() {
                 size="sm"
                 onClick={handleSubmit(onSubmit)}
                 disabled={createMutation.isPending || hasNifConflict || isCheckingNif}
+                className="bg-agency-600 hover:bg-agency-700 text-white"
               >
                 {createMutation.isPending ? (
                   <>
                     <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    Añadiendo...
+                    Registrando...
                   </>
                 ) : isCheckingNif ? (
                   <>
@@ -324,7 +327,7 @@ export default function NuevoClienteAsesoriaPage() {
                 ) : (
                   <>
                     <Send className="mr-1.5 h-3.5 w-3.5" />
-                    Añadir y enviar invitación
+                    Registrar y enviar acceso
                   </>
                 )}
               </Button>
@@ -333,88 +336,167 @@ export default function NuevoClienteAsesoriaPage() {
         </div>
       </div>
 
-      {/* ── Contenido scrollable ── */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
-        {/* Success banner */}
-        {successInfo && (
-          <div className="mb-6 max-w-2xl">
-            <SuccessBanner email={successInfo.email} businessName={successInfo.businessName} />
-          </div>
-        )}
-
-        {/* NIF conflict banners */}
-        {!successInfo && nifCheck?.status === 'ALREADY_IN_PORTFOLIO' && nifCheck.email && (
-          <div className="mb-5 max-w-2xl">
-            <AlreadyInPortfolioBanner
-              info={{ email: nifCheck.email, businessName: nifCheck.businessName ?? '' }}
-            />
-          </div>
-        )}
-        {!successInfo && nifCheck?.status === 'EXISTS_CAN_INVITE' && nifCheck.email && (
-          <div className="mb-5 max-w-2xl">
-            <NifConflictBanner
-              info={{ email: nifCheck.email, businessName: nifCheck.businessName ?? '' }}
-              isCheckingNif={isCheckingNif}
-              onInvite={handleInvite}
-              isInviting={inviteMutation.isPending}
-            />
-          </div>
-        )}
-
-        {!successInfo && (
-          <form onSubmit={handleSubmit(onSubmit)} noValidate>
-            <div className="space-y-5 max-w-2xl">
-              {/* ── Tipo de cliente ── */}
-              <div className="rounded-xl border bg-card p-5">
-                <SectionLabel icon={User}>Tipo de cliente</SectionLabel>
-                <Controller
-                  control={control}
-                  name="accountType"
-                  render={({ field }) => (
-                    <RadioGroup
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      className="grid gap-3 sm:grid-cols-2"
-                    >
-                      {ACCOUNT_TYPE_OPTIONS.map((type) => {
-                        const Icon = type.icon;
-                        const isSelected = field.value === type.value;
-                        return (
-                          <Label
-                            key={type.value}
-                            htmlFor={type.value}
-                            className={`flex cursor-pointer flex-col gap-3 rounded-xl border-2 p-4 transition-all hover:bg-muted/50 ${
-                              isSelected ? 'border-primary bg-primary/5' : 'border-border'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between">
-                              <Icon
-                                className={`h-5 w-5 ${
-                                  isSelected ? 'text-primary' : 'text-muted-foreground'
-                                }`}
-                              />
-                              <RadioGroupItem value={type.value} id={type.value} />
-                            </div>
-                            <div>
-                              <div className="text-sm font-semibold">{type.label}</div>
-                              <div className="mt-0.5 text-xs text-muted-foreground">
-                                {type.description}
-                              </div>
-                            </div>
-                          </Label>
-                        );
-                      })}
-                    </RadioGroup>
-                  )}
-                />
-                {errors.accountType && <FieldError message={errors.accountType.message} />}
+      {/* ── Cuerpo: dos paneles sin scroll ── */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* ── Panel izquierdo: contexto informativo ── */}
+        <div className="w-72 shrink-0 flex flex-col overflow-hidden bg-gradient-to-b from-agency-600 to-agency-800 text-white">
+          <div className="flex flex-1 flex-col gap-5 p-6 overflow-hidden">
+            {/* Icono + título + descripción */}
+            <div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20 mb-3">
+                <UserPlus className="h-5 w-5 text-white" />
               </div>
+              <h1 className="text-base font-bold leading-snug">
+                Registrar nuevo cliente en la plataforma
+              </h1>
+              <p className="mt-2 text-sm text-agency-100 leading-relaxed">
+                Estás creando una <strong className="text-white">cuenta nueva</strong> para un
+                cliente tuyo. Recibirá un enlace de activación por email y podrá acceder a la
+                aplicación.
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push('/dashboard/asesoria/clientes')}
+                className="mt-2 text-xs text-agency-300 underline underline-offset-2 hover:text-white"
+              >
+                ¿Ya tiene cuenta? Usa «Vincular cliente» →
+              </button>
+            </div>
 
-              {/* ── Datos del cliente ── */}
-              <div className="rounded-xl border bg-card p-5">
-                <SectionLabel icon={Building2}>Datos del cliente</SectionLabel>
-                <div className="space-y-4">
-                  <div className="space-y-2">
+            {/* Pasos */}
+            <div className="flex flex-col gap-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-agency-300">
+                ¿Qué ocurre al registrar?
+              </p>
+              {[
+                { n: '1', text: 'Se crea su cuenta con los datos que introduces.' },
+                { n: '2', text: 'Recibe un email con enlace seguro para activar su acceso.' },
+                { n: '3', text: 'Completa su onboarding y configura sus datos fiscales.' },
+                { n: '4', text: 'Tú gestionas sus facturas, él puede consultarlas.' },
+              ].map(({ n, text }) => (
+                <div key={n} className="flex items-start gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold">
+                    {n}
+                  </span>
+                  <p className="text-xs text-agency-100 leading-relaxed">{text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Aviso diferencia con clientes a facturar */}
+          <div className="shrink-0 mx-4 mb-4 rounded-xl bg-white/10 border border-white/20 p-4">
+            <p className="text-xs font-semibold text-white">¿No es lo que buscas?</p>
+            <p className="mt-1 text-xs text-agency-200 leading-relaxed">
+              Si solo necesitas facturarle como destinatario de tus facturas, añádelo desde{' '}
+              <strong className="text-white">Clientes para facturar</strong>.
+            </p>
+            <button
+              type="button"
+              onClick={() => router.push('/dashboard/clientes/nuevo')}
+              className="mt-1.5 text-xs text-agency-300 underline underline-offset-2 hover:text-white"
+            >
+              Ir a Clientes para facturar →
+            </button>
+          </div>
+        </div>
+
+        {/* ── Panel derecho: formulario o éxito ── */}
+        <div className="flex flex-1 flex-col overflow-hidden bg-muted/20">
+          {successInfo ? (
+            <div className="flex flex-1 items-center justify-center p-8">
+              <div className="w-full max-w-lg">
+                <SuccessBanner email={successInfo.email} businessName={successInfo.businessName} />
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Banners de conflicto NIF */}
+              {nifCheck?.status === 'ALREADY_IN_PORTFOLIO' && nifCheck.email && (
+                <div className="px-6 pt-4 shrink-0">
+                  <AlreadyInPortfolioBanner
+                    info={{ email: nifCheck.email, businessName: nifCheck.businessName ?? '' }}
+                  />
+                </div>
+              )}
+              {nifCheck?.status === 'EXISTS_CAN_INVITE' && nifCheck.email && (
+                <div className="px-6 pt-4 shrink-0">
+                  <NifConflictBanner
+                    info={{ email: nifCheck.email, businessName: nifCheck.businessName ?? '' }}
+                    isCheckingNif={isCheckingNif}
+                    onInvite={handleInvite}
+                    isInviting={inviteMutation.isPending}
+                  />
+                </div>
+              )}
+
+              {/* Formulario */}
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                noValidate
+                className="flex flex-1 flex-col gap-5 px-6 py-5 overflow-hidden"
+              >
+                {/* Tipo de cuenta — fila horizontal compacta */}
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    Tipo de cuenta
+                  </p>
+                  <Controller
+                    control={control}
+                    name="accountType"
+                    render={({ field }) => (
+                      <RadioGroup
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        className="grid grid-cols-4 gap-2"
+                      >
+                        {ACCOUNT_TYPE_OPTIONS.map((type) => {
+                          const Icon = type.icon;
+                          const isSelected = field.value === type.value;
+                          return (
+                            <Label
+                              key={type.value}
+                              htmlFor={`type-${type.value}`}
+                              className={cn(
+                                'flex cursor-pointer items-center gap-2.5 rounded-lg border-2 px-3 py-2.5 transition-all hover:bg-muted/50',
+                                isSelected
+                                  ? 'border-agency-500 bg-agency-50 dark:bg-agency-950/30'
+                                  : 'border-border bg-card',
+                              )}
+                            >
+                              <RadioGroupItem
+                                value={type.value}
+                                id={`type-${type.value}`}
+                                className="sr-only"
+                              />
+                              <Icon
+                                className={cn(
+                                  'h-4 w-4 shrink-0',
+                                  isSelected
+                                    ? 'text-agency-600 dark:text-agency-400'
+                                    : 'text-muted-foreground',
+                                )}
+                              />
+                              <span
+                                className={cn(
+                                  'text-sm font-medium leading-none',
+                                  isSelected ? 'text-agency-700 dark:text-agency-300' : '',
+                                )}
+                              >
+                                {type.label}
+                              </span>
+                            </Label>
+                          );
+                        })}
+                      </RadioGroup>
+                    )}
+                  />
+                  {errors.accountType && <FieldError message={errors.accountType.message} />}
+                </div>
+
+                {/* Nombre + NIF en dos columnas */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
                     <Label htmlFor="businessName">
                       {selectedAccountType === AccountType.INDIVIDUAL
                         ? 'Nombre y apellidos'
@@ -433,7 +515,7 @@ export default function NuevoClienteAsesoriaPage() {
                     <FieldError message={errors.businessName?.message} />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="nif">
                       {selectedAccountType === AccountType.INDIVIDUAL ? 'DNI / NIE' : 'NIF / CIF'}{' '}
                       <span className="text-destructive">*</span>
@@ -454,62 +536,45 @@ export default function NuevoClienteAsesoriaPage() {
                     />
                     <FieldError message={errors.nif?.message} />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">
-                      Email <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="contacto@empresa.com"
-                      autoComplete="off"
-                      {...register('email')}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      El cliente recibirá aquí un enlace para activar su cuenta y crear su
-                      contraseña.
-                    </p>
-                    <FieldError message={errors.email?.message} />
-                  </div>
                 </div>
-              </div>
 
-              {/* ── Notas internas ── */}
-              <div className="rounded-xl border bg-card p-5">
-                <SectionLabel>
-                  Notas internas{' '}
-                  <span className="text-muted-foreground text-xs font-normal normal-case tracking-normal">
-                    (opcional)
-                  </span>
-                </SectionLabel>
-                <Textarea
-                  placeholder="Información adicional sobre este cliente visible solo para tu asesoría..."
-                  rows={3}
-                  {...register('notes')}
-                />
-                <FieldError message={errors.notes?.message} />
-              </div>
-
-              {/* ── Info callout ── */}
-              <div className="rounded-xl border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
-                <div className="flex items-start gap-3">
-                  <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
-                      ¿Qué recibirá el cliente?
-                    </p>
-                    <p className="mt-1 text-sm text-blue-700 dark:text-blue-300 leading-relaxed">
-                      Se enviará un email con un enlace seguro para que el cliente active su
-                      cuenta, cree su contraseña y complete su perfil desde el onboarding.
-                      Mientras tanto, ya puedes gestionar su cuenta desde tu panel.
-                    </p>
-                  </div>
+                {/* Email */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">
+                    Email de acceso <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="contacto@empresa.com"
+                    autoComplete="off"
+                    {...register('email')}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    El cliente usará este email para iniciar sesión. Aquí recibirá el enlace de
+                    activación.
+                  </p>
+                  <FieldError message={errors.email?.message} />
                 </div>
-              </div>
-            </div>
-          </form>
-        )}
+
+                {/* Notas internas */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="notes">
+                    Notas internas{' '}
+                    <span className="text-muted-foreground text-xs font-normal">(opcional)</span>
+                  </Label>
+                  <Textarea
+                    id="notes"
+                    placeholder="Información adicional sobre este cliente, visible solo para tu asesoría..."
+                    rows={2}
+                    {...register('notes')}
+                  />
+                  <FieldError message={errors.notes?.message} />
+                </div>
+              </form>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
