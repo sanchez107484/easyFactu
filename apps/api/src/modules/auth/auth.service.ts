@@ -167,6 +167,10 @@ export class AuthService {
       throw new UnauthorizedException('No tienes acceso a ninguna empresa');
     }
 
+    if (!user.passwordHash) {
+      throw new UnauthorizedException('Email o contraseña incorrectos');
+    }
+
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
 
     if (!isPasswordValid) {
@@ -486,6 +490,10 @@ export class AuthService {
 
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (!user.passwordHash) {
+      throw new UnauthorizedException('Esta cuenta no tiene contraseña configurada');
     }
 
     const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
