@@ -58,11 +58,20 @@ function RecurringInvoiceBreadcrumbLabel({ id }: { id: string }) {
   return <>{data?.customer?.name ?? '…'}</>;
 }
 
-function DynamicSegmentLabel({ id, parentSegment }: { id: string; parentSegment: string | null }) {
+function DynamicSegmentLabel({
+  id,
+  parentSegment,
+  grandparentSegment,
+}: {
+  id: string;
+  parentSegment: string | null;
+  grandparentSegment: string | null;
+}) {
   if (parentSegment === 'facturas' || parentSegment === 'presupuestos') {
     return <InvoiceBreadcrumbLabel id={id} />;
   }
-  if (parentSegment === 'clientes') {
+  // In the asesoria context, the UUID after 'clientes' is a clientTenantId, not a customer id
+  if (parentSegment === 'clientes' && grandparentSegment !== 'asesoria') {
     return <CustomerBreadcrumbLabel id={id} />;
   }
   if (parentSegment === 'productos') {
@@ -77,12 +86,20 @@ function DynamicSegmentLabel({ id, parentSegment }: { id: string; parentSegment:
 function SegmentLabel({
   segment,
   parentSegment,
+  grandparentSegment,
 }: {
   segment: string;
   parentSegment: string | null;
+  grandparentSegment: string | null;
 }) {
   if (UUID_REGEX.test(segment)) {
-    return <DynamicSegmentLabel id={segment} parentSegment={parentSegment} />;
+    return (
+      <DynamicSegmentLabel
+        id={segment}
+        parentSegment={parentSegment}
+        grandparentSegment={grandparentSegment}
+      />
+    );
   }
   const label = SEGMENT_LABELS[segment];
   return <>{label ?? segment.charAt(0).toUpperCase() + segment.slice(1)}</>;
@@ -101,6 +118,7 @@ export function DashboardHeader() {
   const breadcrumbs = segments.map((segment, index) => ({
     segment,
     parentSegment: index > 0 ? segments[index - 1] : null,
+    grandparentSegment: index > 1 ? segments[index - 2] : null,
     href: '/' + segments.slice(0, index + 1).join('/'),
   }));
 
@@ -114,7 +132,11 @@ export function DashboardHeader() {
             <span
               className={index === breadcrumbs.length - 1 ? 'font-medium' : 'text-muted-foreground'}
             >
-              <SegmentLabel segment={crumb.segment} parentSegment={crumb.parentSegment} />
+              <SegmentLabel
+                segment={crumb.segment}
+                parentSegment={crumb.parentSegment}
+                grandparentSegment={crumb.grandparentSegment}
+              />
             </span>
           </div>
         ))}

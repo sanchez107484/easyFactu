@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -120,23 +120,33 @@ function ClientActivationBadge({
 export default function AgencyClientsPage() {
   const router = useRouter();
   const { switchTenant, isPending: isSwitching } = useSwitchTenant();
-  const { isOnAgencyTenant } = useAgencyContext();
+  const { isOnAgencyTenant, isActingAsClient, returnToAgency } = useAgencyContext();
   const [search, setSearch] = useState('');
   const [managingClientId, setManagingClientId] = useState<string | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<AgencyClientWithDetails | null>(null);
   const [cancelTarget, setCancelTarget] = useState<AgencyInvitation | null>(null);
   const [isVincularModalOpen, setIsVincularModalOpen] = useState(false);
 
-  const { data, isLoading } = useAgencyClients({ search: search || undefined });
-  const { data: invitationsData, isLoading: isLoadingInvitations } = useAgencyPendingInvitations();
+  const { data, isLoading } = useAgencyClients(
+    { search: search || undefined },
+    isOnAgencyTenant,
+  );
+  const { data: invitationsData, isLoading: isLoadingInvitations } =
+    useAgencyPendingInvitations(isOnAgencyTenant);
   const { mutate: revokeClient, isPending: isRevoking } = useRevokeClient();
   const { mutate: cancelInvitation, isPending: isCancelling } = useCancelInvitation();
 
+  const mountedActingAsClient = useRef(isActingAsClient);
+  const mountedOnAgencyTenant = useRef(isOnAgencyTenant);
+
   useEffect(() => {
-    if (!isOnAgencyTenant) {
+    if (mountedActingAsClient.current) {
+      returnToAgency();
+    } else if (!mountedOnAgencyTenant.current) {
       router.replace('/dashboard');
     }
-  }, [isOnAgencyTenant, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!isOnAgencyTenant) return null;
 

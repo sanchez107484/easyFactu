@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, use, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/auth-store';
+import { useAgencyContext } from '@/hooks/use-agency-context';
 import {
   useAgencyClient,
   useRevokeClient,
@@ -72,7 +72,6 @@ import {
   Loader2,
 } from 'lucide-react';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
-import { AccountType } from '@easyfactura/shared-types';
 import type {
   FiscalAlert,
   AgencyExportLogEntry,
@@ -296,8 +295,8 @@ function ActivationBanner({
 export default function AgencyClientDetailPage({ params }: PageProps) {
   const { id: clientTenantId } = use(params);
   const router = useRouter();
-  const currentTenant = useAuthStore((state) => state.currentTenant);
   const { switchTenant, isPending: isSwitchingTenant } = useSwitchTenant();
+  const { isOnAgencyTenant, isActingAsClient, returnToAgency } = useAgencyContext();
 
   const [revokeOpen, setRevokeOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -308,7 +307,7 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [newEmail, setNewEmail] = useState('');
 
-  const { data, isLoading, error } = useAgencyClient(clientTenantId);
+  const { data, isLoading, error } = useAgencyClient(clientTenantId, isOnAgencyTenant);
   const { mutate: revokeClient, isPending: isRevoking } = useRevokeClient();
   const { mutate: updateNotes, isPending: isSavingNotes } = useUpdateClientNotes();
   const { mutate: exportContaPlus, isPending: isExporting } = useExportContaPlus();
@@ -318,13 +317,22 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
     isLoading: isLoadingAlerts,
     refetch: refetchAlerts,
     isFetching: isRefetchingAlerts,
-  } = useClientFiscalAlerts(clientTenantId);
-  const { data: exportLogsData } = useExportLogs(clientTenantId);
+  } = useClientFiscalAlerts(clientTenantId, isOnAgencyTenant);
+  const { data: exportLogsData } = useExportLogs(clientTenantId, 1, isOnAgencyTenant);
 
-  const isAgency = currentTenant?.accountType === AccountType.AGENCY;
+  const mountedActingAsClient = useRef(isActingAsClient);
+  const mountedOnAgencyTenant = useRef(isOnAgencyTenant);
 
-  if (!isAgency) {
-    router.replace('/dashboard');
+  useEffect(() => {
+    if (mountedActingAsClient.current) {
+      returnToAgency();
+    } else if (!mountedOnAgencyTenant.current) {
+      router.replace('/dashboard');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!isOnAgencyTenant) {
     return null;
   }
 

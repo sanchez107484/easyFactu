@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAllInvitations, useCancelInvitation } from '@/hooks/use-agency';
 import { useAgencyContext } from '@/hooks/use-agency-context';
@@ -116,14 +116,22 @@ function formatDate(dateStr: string) {
 
 export default function InvitacionesPage() {
   const router = useRouter();
-  const { isOnAgencyTenant } = useAgencyContext();
-  const { data: invitations = [], isLoading } = useAllInvitations();
+  const { isOnAgencyTenant, isActingAsClient, returnToAgency } = useAgencyContext();
+  const { data: invitations = [], isLoading } = useAllInvitations(isOnAgencyTenant);
   const { mutate: cancelInvitation, isPending: isCancelling } = useCancelInvitation();
   const [cancelTarget, setCancelTarget] = useState<AgencyInvitationFull | null>(null);
 
+  const mountedActingAsClient = useRef(isActingAsClient);
+  const mountedOnAgencyTenant = useRef(isOnAgencyTenant);
+
   useEffect(() => {
-    if (!isOnAgencyTenant) router.replace('/dashboard');
-  }, [isOnAgencyTenant, router]);
+    if (mountedActingAsClient.current) {
+      returnToAgency();
+    } else if (!mountedOnAgencyTenant.current) {
+      router.replace('/dashboard');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!isOnAgencyTenant) return null;
 

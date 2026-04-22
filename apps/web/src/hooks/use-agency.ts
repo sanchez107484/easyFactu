@@ -53,11 +53,12 @@ export function useAgencyClients(query?: QueryAgencyClientsInput, enabled = true
   });
 }
 
-export function useAgencyClient(clientTenantId: string) {
+export function useAgencyClient(clientTenantId: string, enabled = true) {
   return useQuery({
     queryKey: AGENCY_KEYS.client(clientTenantId),
     queryFn: () => agencyApi.getClient(clientTenantId),
     staleTime: 30 * 1000,
+    enabled,
   });
 }
 
@@ -280,11 +281,12 @@ export function useFiscalAlertsSummary(enabled = true) {
   });
 }
 
-export function useAllInvitations() {
+export function useAllInvitations(enabled = true) {
   return useQuery<AgencyInvitationFull[]>({
     queryKey: AGENCY_KEYS.allInvitations(),
     queryFn: agencyApi.getAllInvitations,
     staleTime: 30 * 1000,
+    enabled,
   });
 }
 

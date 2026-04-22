@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,7 +8,7 @@ import { z } from 'zod';
 import Link from 'next/link';
 import { validateNif } from '@easyfactura/shared-validators';
 import { AccountType } from '@easyfactura/shared-types';
-import { useAuthStore } from '@/store/auth-store';
+import { useAgencyContext } from '@/hooks/use-agency-context';
 import { useCreateDirectClient, useInviteClient, useCheckIdentifier } from '@/hooks/use-agency';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -208,16 +208,17 @@ function SuccessBanner({ email, businessName }: { email: string; businessName: s
 
 export default function NuevoClienteAsesoriaPage() {
   const router = useRouter();
-  const currentTenant = useAuthStore((state) => state.currentTenant);
+  const { isOnAgencyTenant, isActingAsClient, returnToAgency } = useAgencyContext();
   const createMutation = useCreateDirectClient();
   const inviteMutation = useInviteClient();
+
+  const mountedActingAsClientRef = useRef(isActingAsClient);
+  const mountedOnAgencyTenantRef = useRef(isOnAgencyTenant);
 
   const [successInfo, setSuccessInfo] = useState<{
     email: string;
     businessName: string;
   } | null>(null);
-
-  const isAgency = currentTenant?.accountType === AccountType.AGENCY;
 
   const {
     register,
@@ -285,8 +286,16 @@ export default function NuevoClienteAsesoriaPage() {
     router.push('/dashboard/asesoria/clientes');
   }, [inviteMutation, identifierCheck, router]);
 
-  if (!isAgency) {
-    router.replace('/dashboard');
+  useEffect(() => {
+    if (mountedActingAsClientRef.current) {
+      returnToAgency();
+    } else if (!mountedOnAgencyTenantRef.current) {
+      router.replace('/dashboard');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!isOnAgencyTenant) {
     return null;
   }
 

@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAgencyContext } from '@/hooks/use-agency-context';
 import { useSwitchTenant } from '@/hooks/use-switch-tenant';
@@ -26,7 +26,7 @@ import { VincularClienteModal } from './_components/vincular-cliente-modal';
 export default function AgencyHubPage() {
   const router = useRouter();
   const { switchTenant, isPending: isSwitching } = useSwitchTenant();
-  const { isOnAgencyTenant } = useAgencyContext();
+  const { isOnAgencyTenant, isActingAsClient, returnToAgency } = useAgencyContext();
   const [managingClientId, setManagingClientId] = useState<string | null>(null);
   const [isVincularModalOpen, setIsVincularModalOpen] = useState(false);
   const { data: stats, isLoading: statsLoading } = useAgencyStats(isOnAgencyTenant);
@@ -36,9 +36,22 @@ export default function AgencyHubPage() {
   );
   const { data: invitations = [] } = useAgencyPendingInvitations(isOnAgencyTenant);
 
+  // Capture state at mount time — not reactive to in-page tenant switches.
+  // If the user arrives here via the back button while acting as a client,
+  // these refs will be true and we return them to the agency panel.
+  // If they clicked "Gestionar" from here, the refs stay false and we let
+  // router.push('/dashboard') in handleSwitchToClient handle navigation.
+  const mountedActingAsClient = useRef(isActingAsClient);
+  const mountedOnAgencyTenant = useRef(isOnAgencyTenant);
+
   useEffect(() => {
-    if (!isOnAgencyTenant) router.replace('/dashboard');
-  }, [isOnAgencyTenant, router]);
+    if (mountedActingAsClient.current) {
+      returnToAgency();
+    } else if (!mountedOnAgencyTenant.current) {
+      router.replace('/dashboard');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Mount-only — deps intentionally empty
 
   if (!isOnAgencyTenant) return null;
 
