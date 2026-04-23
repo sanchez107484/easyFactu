@@ -854,6 +854,7 @@ export default function FacturaDetailPage() {
             activeFieldSection={null}
             onSectionClick={() => {}}
             paymentDetails={paymentDetails}
+            invoiceType={(invoice as any).invoiceType ?? null}
           />
         </div>
       </div>
