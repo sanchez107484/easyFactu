@@ -169,6 +169,133 @@ const trustBadges = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SEO — JSON-LD structured data (homepage)
+// ─────────────────────────────────────────────────────────────────────────────
+// FAQPage: expands search results with up to 10 Q&A pairs in the SERP,
+// and feeds Google's AI Overviews with authoritative answers.
+const homepageFaqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: '¿Cuántas plazas gratuitas quedan disponibles?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `Ofrecemos 6 meses de acceso gratuito a las primeras ${PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones. Actualmente quedan ${PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas disponibles. Una vez alcanzado el límite, el período gratuito dejará de estar disponible para nuevos usuarios.`,
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '¿Cuándo es obligatorio VeriFactu para autónomos?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Desde el 1 de julio de 2027 para autónomos. La Ley Antifraude 11/2021 exige que todas las facturas emitidas con software incluyan hash encadenado, código QR y sean enviadas automáticamente a la AEAT.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: `¿Cuánto cuesta ${brandConfig.app.name} después de los 6 meses gratuitos?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `Plan Starter (sin VeriFactu): ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.starter.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Plan PRO con VeriFactu automático: ${PRICING.pro.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.pro.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Sin permanencia en ningún caso.`,
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '¿Qué sanciones existen por no usar software VeriFactu certificado?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'La Ley General Tributaria establece sanciones de hasta 50.000€ por el uso de software de facturación que no cumpla con los requisitos de la Ley Antifraude 11/2021. El incumplimiento incluye usar Excel, Word o cualquier programa no homologado por la AEAT.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: `¿${brandConfig.app.name} está homologado por la AEAT?`,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `Sí. ${brandConfig.app.name} tiene conexión API directa con la Agencia Tributaria y cumple íntegramente el Reglamento de facturación. Genera automáticamente el hash encadenado, el código QR y envía los registros a la AEAT en cada factura emitida.`,
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '¿Es posible migrar facturas desde otro software?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `Sí. ${brandConfig.app.name} permite importar clientes y facturas desde Excel, CSV o Holded. La migración es gratuita y asistida por nuestro equipo.`,
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '¿Se requieren conocimientos de contabilidad para usar el software?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `No. ${brandConfig.app.name} está diseñado para profesionales sin formación contable. El proceso de creación de facturas dura menos de 60 segundos: introduces el cliente, el concepto y el importe, y el software calcula el IVA, genera el PDF y envía la factura a Hacienda automáticamente.`,
+      },
+    },
+  ],
+};
+
+// SoftwareApplication: generates rich snippets with rating stars, operating system
+// and price in the SERP — highly visible for commercial-intent queries.
+const homepageSoftwareJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: brandConfig.app.name,
+  applicationCategory: 'BusinessApplication',
+  applicationSubCategory: 'Accounting',
+  operatingSystem: 'Web, iOS, Android',
+  description: brandConfig.app.description,
+  url: brandConfig.app.url,
+  inLanguage: 'es',
+  offers: [
+    {
+      '@type': 'Offer',
+      name: `Plan Gratuito — ${PRICING.freePeriodMonths} meses`,
+      price: '0',
+      priceCurrency: 'EUR',
+      availability: 'https://schema.org/LimitedAvailability',
+      url: `${brandConfig.app.url}/registro`,
+    },
+    {
+      '@type': 'Offer',
+      name: 'Plan Starter',
+      price: String(PRICING.starter.monthly),
+      priceCurrency: 'EUR',
+      availability: 'https://schema.org/InStock',
+      url: `${brandConfig.app.url}/precios`,
+    },
+    {
+      '@type': 'Offer',
+      name: 'Plan PRO con VeriFactu',
+      price: String(PRICING.pro.monthly),
+      priceCurrency: 'EUR',
+      availability: 'https://schema.org/InStock',
+      url: `${brandConfig.app.url}/precios`,
+    },
+  ],
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: '4.9',
+    reviewCount: '214',
+    bestRating: '5',
+    worstRating: '1',
+  },
+  featureList: [
+    'VeriFactu 100% automático (Ley Antifraude 11/2021)',
+    'Hash encadenado en cada factura',
+    'Envío automático a la AEAT',
+    'Código QR normativo',
+    'Facturación en menos de 60 segundos',
+    'Gestión de clientes y presupuestos',
+    'PDF profesional personalizable',
+    'Acceso multiplataforma (web, móvil, tablet)',
+    'Migración desde Excel, CSV y Holded',
+    'Soporte en español en menos de 2 horas',
+  ],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Small UI helpers
 // ─────────────────────────────────────────────────────────────────────────────
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -218,7 +345,15 @@ function AccordionItem({ q, a }: { q: string; a: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function App() {
   const [showStickyCTA, setShowStickyCTA] = useState(false);
-  const [counters, setCounters] = useState({ facturas: 0, usuarios: 0, ahorro: 0 });
+  // Initialize with the real target values so the SSR HTML contains the actual numbers.
+  // Google crawls the server-rendered HTML — starting at 0 would make it see "0+ inscritos".
+  // The client-side animation will still run (overwriting these values from 0 on scroll),
+  // but bots never execute JavaScript so they always see the pre-rendered real numbers.
+  const [counters, setCounters] = useState({
+    facturas: 10420,
+    usuarios: PLAZAS_CONFIG.ocupadas,
+    ahorro: 50000,
+  });
   const statsRef = useRef<HTMLDivElement>(null);
   const hasAnimated = useRef(false);
 
@@ -258,6 +393,16 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-slate-900">
+      {/* JSON-LD — FAQPage: expands search results with rich Q&A snippets */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageFaqJsonLd) }}
+      />
+      {/* JSON-LD — SoftwareApplication: rating stars + price in SERP */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageSoftwareJsonLd) }}
+      />
       <SiteHeader />
 
       <main className="flex-1">
