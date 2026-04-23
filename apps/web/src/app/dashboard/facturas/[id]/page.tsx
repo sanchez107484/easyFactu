@@ -342,7 +342,7 @@ export default function FacturaDetailPage() {
                   Emitir rectificativa
                 </DropdownMenuItem>
               )}
-              {!isDraft && (
+              {(!isDraft || isProforma) && (
                 <DropdownMenuItem asChild>
                   <DownloadInvoiceButton
                     invoiceId={id}

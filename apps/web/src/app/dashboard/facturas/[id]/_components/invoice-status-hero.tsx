@@ -188,7 +188,7 @@ export function InvoiceStatusHero({
               Registrar cobro
             </Button>
           )}
-          {!isDraft && (
+          {(!isDraft || isProforma) && (
             <DownloadInvoiceButton
               invoiceId={id}
               fileName={pdfFileName}
