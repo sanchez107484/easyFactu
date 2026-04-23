@@ -47,8 +47,8 @@ export const brandConfig: BrandConfig = {
     shortName: 'NovaFactura',
     description: 'Facturación inteligente para autónomos y PYMEs con VeriFactu integrado',
     tagline: 'Factura sin complicaciones. VeriFactu automático.',
-    url: 'https://novafactura.es',
-    domain: 'novafactura.es',
+    url: 'https://www.novafactura.es',
+    domain: 'www.novafactura.es',
     supportEmail: 'info@novafactura.es',
     legalEntity: 'NovaFactura S.L.',
     // TODO: Actualizar con datos reales antes de lanzar

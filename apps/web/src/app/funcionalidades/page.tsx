@@ -39,8 +39,7 @@ import FooterLanding from '@/components/FooterLanding';
 // ─────────────────────────────────────────────────────────────────────────────
 export const metadata: Metadata = {
   title: `Funcionalidades — Todo lo que incluye el software de facturación | ${brandConfig.app.name}`,
-  description:
-    `Descubre todas las funcionalidades de ${brandConfig.app.name}: facturación VeriFactu automática, gestión de clientes, presupuestos, dashboard, generación de PDF, plantillas personalizables y más. Software de facturación para autónomos y pymes con cumplimiento AEAT incluido.`,
+  description: `Descubre todas las funcionalidades de ${brandConfig.app.name}: facturación VeriFactu automática, gestión de clientes, presupuestos, dashboard, generación de PDF, plantillas personalizables y más. Software de facturación para autónomos y pymes con cumplimiento AEAT incluido.`,
   keywords: [
     // Funcionalidades — alta conversión
     'funcionalidades software facturación autónomos',
@@ -71,8 +70,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: `Funcionalidades de ${brandConfig.app.name} — Software de facturación VeriFactu`,
-    description:
-      `Todas las herramientas que necesitas para facturar correctamente: VeriFactu automático, gestión de clientes, presupuestos, PDF profesionales, dashboard y más. ${PRICING.freePeriodMonths} meses gratis.`,
+    description: `Todas las herramientas que necesitas para facturar correctamente: VeriFactu automático, gestión de clientes, presupuestos, PDF profesionales, dashboard y más. ${PRICING.freePeriodMonths} meses gratis.`,
     url: `${brandConfig.app.url}/funcionalidades`,
     type: 'website',
     siteName: brandConfig.app.name,
@@ -150,6 +148,12 @@ const breadcrumbJsonLd = {
     },
   ],
 };
+
+// FAQPage schema is built lazily from the faqs array defined further below.
+// Declared here so the render function can reference it without hoisting issues.
+// The actual mainEntity array is filled in at module evaluation time (after faqs is defined).
+// NOTE: This is a forward-reference pattern — faqs[] must be defined before this file executes.
+// To avoid the forward-reference we define faqJsonLd just before the component.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data
@@ -369,6 +373,18 @@ const faqs = [
   },
 ];
 
+// FAQPage schema — generates rich Q&A snippets directly in el SERP de Google.
+// Definido aquí (después del array faqs) para evitar forward-references.
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map(({ q, a }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Page Component
 // ─────────────────────────────────────────────────────────────────────────────
@@ -383,6 +399,11 @@ export default function FuncionalidadesPage(): JSX.Element {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      {/* FAQPage — expands search results with Q&A rich snippets */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
 
       <div className="flex min-h-screen flex-col bg-white text-slate-900">
@@ -445,8 +466,8 @@ export default function FuncionalidadesPage(): JSX.Element {
               </h1>
 
               <p className="mx-auto mb-10 max-w-2xl text-lg text-slate-500 sm:text-xl">
-                {brandConfig.app.name} reúne en un solo lugar todas las herramientas que un
-                autónomo o pyme necesita: facturación con{' '}
+                {brandConfig.app.name} reúne en un solo lugar todas las herramientas que un autónomo
+                o pyme necesita: facturación con{' '}
                 <strong className="text-slate-800">VeriFactu automático</strong>, gestión de
                 clientes, presupuestos, catálogo de productos, dashboard y mucho más.
               </p>

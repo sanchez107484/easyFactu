@@ -42,6 +42,18 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
+  async redirects() {
+    return [
+      // Redirect non-www to www to consolidate authority into a single canonical domain.
+      // Without this, both novafactura.es and www.novafactura.es would be indexed separately.
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'novafactura.es' }],
+        destination: 'https://www.novafactura.es/:path*',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

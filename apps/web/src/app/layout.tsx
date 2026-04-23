@@ -34,6 +34,23 @@ const organizationJsonLd = {
   sameAs: [],
 };
 
+// WebSite schema enables Google Sitelinks Searchbox and signals the canonical
+// home URL to the Knowledge Graph. The SearchAction tells Google that the site
+// has an internal search (the app's dashboard) and helps with entity resolution.
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: brandConfig.app.name,
+  url: brandConfig.app.url,
+  description: brandConfig.app.description,
+  inLanguage: 'es',
+  publisher: {
+    '@type': 'Organization',
+    name: brandConfig.app.name,
+    url: brandConfig.app.url,
+  },
+};
+
 // Consent Mode v2: set defaults synchronously before GTM loads.
 // For returning visitors, read localStorage so GA4 fires immediately.
 const CONSENT_INIT_SCRIPT = `
@@ -168,6 +185,11 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        {/* WebSite structured data — enables Sitelinks Searchbox + entity resolution */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
         {/* Consent Mode v2 defaults — must run before GTM */}
         <script dangerouslySetInnerHTML={{ __html: CONSENT_INIT_SCRIPT }} />
