@@ -651,6 +651,8 @@ export class AuthService {
       select: {
         id: true,
         email: true,
+        firstName: true,
+        lastName: true,
         lastActiveTenantId: true,
         tenantUsers: {
           select: {
@@ -692,8 +694,6 @@ export class AuthService {
       where: { id: user.id },
       data: {
         passwordHash,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
         emailVerified: true,
         accountActivationToken: null,
         accountActivationExpires: null,
@@ -715,8 +715,8 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
+        firstName: user.firstName,
+        lastName: user.lastName,
         emailVerified: true,
         lastActiveTenantId: activeTenantId,
       },

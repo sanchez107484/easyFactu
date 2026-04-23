@@ -5,7 +5,6 @@ import { useAuthStore } from '@/store/auth-store';
 import { useAgencyContext } from '@/hooks/use-agency-context';
 import { DashboardUserMenu } from './user-menu';
 import { ThemeToggle } from './theme-toggle';
-import { TenantSelector } from './tenant-selector';
 import { ChevronRight } from 'lucide-react';
 import { useInvoice } from '@/hooks/use-invoices';
 import { useCustomer } from '@/hooks/use-customers';
@@ -144,7 +143,6 @@ export function DashboardHeader() {
 
       {/* Right side */}
       <div className="ml-auto flex items-center gap-4">
-        {!isActingAsClient && <TenantSelector />}
         <ThemeToggle />
         <DashboardUserMenu user={user} />
       </div>

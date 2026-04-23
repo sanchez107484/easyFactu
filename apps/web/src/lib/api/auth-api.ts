@@ -1,4 +1,5 @@
 import { apiClient } from '../api-client';
+import { unwrapApiResponse, ApiResponse } from '../api-response';
 import type {
   UpdateUserInput,
   ActivateAccountInput,
@@ -22,15 +23,22 @@ interface UpdateProfileResponse {
 
 export const authApi = {
   changePassword: (data: ChangePasswordInput): Promise<{ message: string }> =>
-    apiClient.post('/auth/change-password', data).then((res) => res.data),
+    apiClient
+      .post<ApiResponse<{ message: string }>>('/auth/change-password', data)
+      .then(unwrapApiResponse),
 
   updateProfile: (
     data: Pick<UpdateUserInput, 'firstName' | 'lastName'>,
-  ): Promise<UpdateProfileResponse> => apiClient.patch('/auth/me', data).then((res) => res.data),
+  ): Promise<UpdateProfileResponse> =>
+    apiClient.patch<ApiResponse<UpdateProfileResponse>>('/auth/me', data).then(unwrapApiResponse),
 
   validateActivationToken: (token: string): Promise<ActivateAccountTokenInfo> =>
-    apiClient.get(`/auth/activate-account/${token}`).then((res) => res.data),
+    apiClient
+      .get<ApiResponse<ActivateAccountTokenInfo>>(`/auth/activate-account/${token}`)
+      .then(unwrapApiResponse),
 
   activateAccount: (data: ActivateAccountInput): Promise<AuthResponse> =>
-    apiClient.post('/auth/activate-account', data).then((res) => res.data),
+    apiClient
+      .post<ApiResponse<AuthResponse>>('/auth/activate-account', data)
+      .then(unwrapApiResponse),
 };

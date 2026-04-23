@@ -1090,8 +1090,6 @@ export interface InviteClientInput {
 
 export interface ActivateAccountInput {
   token: string;
-  firstName: string;
-  lastName: string;
   password: string;
 }
 

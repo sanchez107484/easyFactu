@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -24,7 +25,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import {
-  User,
   Lock,
   Eye,
   EyeOff,
@@ -41,16 +41,6 @@ import {
 
 const activateSchema = z
   .object({
-    firstName: z
-      .string()
-      .min(2, 'Mínimo 2 caracteres')
-      .max(50, 'Máximo 50 caracteres')
-      .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, 'Solo letras y espacios'),
-    lastName: z
-      .string()
-      .min(2, 'Mínimo 2 caracteres')
-      .max(50, 'Máximo 50 caracteres')
-      .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/, 'Solo letras y espacios'),
     password: z
       .string()
       .min(8, 'Mínimo 8 caracteres')
@@ -100,8 +90,6 @@ export default function ActivarCuentaPage({ params }: { params: Promise<{ token:
   const form = useForm<ActivateFormData>({
     resolver: zodResolver(activateSchema),
     defaultValues: {
-      firstName: '',
-      lastName: '',
       password: '',
       confirmPassword: '',
     },
@@ -114,8 +102,6 @@ export default function ActivarCuentaPage({ params }: { params: Promise<{ token:
     mutationFn: (data: ActivateFormData) =>
       authApi.activateAccount({
         token,
-        firstName: data.firstName,
-        lastName: data.lastName,
         password: data.password,
       }),
     onSuccess: (authData) => {
@@ -160,8 +146,8 @@ export default function ActivarCuentaPage({ params }: { params: Promise<{ token:
           <div>
             <h1 className="text-xl font-bold">Enlace no válido</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Este enlace de activación no existe o ha caducado. Contacta con tu asesoría para
-              que te envíen uno nuevo.
+              Este enlace de activación no existe o ha caducado. Contacta con tu asesoría para que
+              te envíen uno nuevo.
             </p>
           </div>
           <Link href="/login">
@@ -230,48 +216,6 @@ export default function ActivarCuentaPage({ params }: { params: Promise<{ token:
       {/* Form */}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Name row */}
-          <div className="grid grid-cols-2 gap-3">
-            <FormField
-              control={form.control}
-              name="firstName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        placeholder="Juan"
-                        className="pl-9"
-                        autoComplete="given-name"
-                        {...field}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="lastName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Apellidos</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="García"
-                      autoComplete="family-name"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
           {/* Password */}
           <FormField
             control={form.control}
@@ -374,10 +318,14 @@ function ActivationLayout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-indigo-50/40 to-background px-4 py-12 dark:from-indigo-950/20">
       <div className="mb-8">
         <Link href="/">
-          <span className="text-2xl font-bold tracking-tight">
-            <span className="text-indigo-600">{brandConfig.app.name.replace('Factura', '')}</span>
-            <span className="text-foreground">Factura</span>
-          </span>
+          <Image
+            src={brandConfig.logos.main}
+            alt={brandConfig.app.name}
+            width={180}
+            height={50}
+            className="object-contain"
+            style={{ width: 'auto', height: '44px' }}
+          />
         </Link>
       </div>
       <div className="w-full max-w-md rounded-2xl border bg-card p-8 shadow-sm">{children}</div>
