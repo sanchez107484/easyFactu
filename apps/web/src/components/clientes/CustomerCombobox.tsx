@@ -94,7 +94,7 @@ export function CustomerCombobox({
           )}
         >
           <span className="truncate">
-            {selected ? `${selected.name} â€” ${selected.nif}` : 'Selecciona un cliente'}
+            {selected ? `${selected.name} — ${selected.nif}` : 'Selecciona un cliente'}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -106,7 +106,7 @@ export function CustomerCombobox({
       >
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Buscar por nombre o NIFâ€¦"
+            placeholder="Buscar por nombre o NIF…"
             value={search}
             onValueChange={handleSearchChange}
           />
@@ -121,7 +121,7 @@ export function CustomerCombobox({
                 <CommandGroup heading={agencyMode ? 'Tus contactos' : undefined}>
                   {hasNoLocalResults && !showSharedGroup && !showSharedLoading ? (
                     <div className="py-6 text-center text-sm text-muted-foreground">
-                      {trimmedSearch ? 'No se encontrÃ³ ningÃºn cliente.' : 'Sin clientes activos.'}
+                      {trimmedSearch ? 'No se encontró ningún cliente.' : 'Sin clientes activos.'}
                     </div>
                   ) : (
                     filteredLocal.map((c) => (
@@ -133,7 +133,7 @@ export function CustomerCombobox({
                           )}
                         />
                         <span className="truncate">{c.name}</span>
-                        <span className="text-muted-foreground shrink-0">â€” {c.nif}</span>
+                        <span className="text-muted-foreground shrink-0">— {c.nif}</span>
                       </CommandItem>
                     ))
                   )}
@@ -144,13 +144,13 @@ export function CustomerCombobox({
                     {showSharedLoading && (
                       <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground border-t">
                         <Loader2 className="h-3 w-3 animate-spin" />
-                        Buscando en el directorio de la asesorÃ­aâ€¦
+                        Buscando en el directorio de la asesoría…
                       </div>
                     )}
                     {showSharedGroup && (
                       <>
                         <CommandSeparator />
-                        <CommandGroup heading="Del directorio de la asesorÃ­a">
+                        <CommandGroup heading="Del directorio de la asesoría">
                           {sharedCustomers!.map((c) => (
                             <CommandItem
                               key={`shared-${c.id}`}
@@ -160,7 +160,7 @@ export function CustomerCombobox({
                             >
                               <Building2 className="h-3.5 w-3.5 shrink-0 text-customer-500/70" />
                               <span className="truncate">{c.name}</span>
-                              <span className="text-muted-foreground shrink-0">â€” {c.nif}</span>
+                              <span className="text-muted-foreground shrink-0">— {c.nif}</span>
                               <span className="ml-auto text-[10px] text-muted-foreground/60 shrink-0 truncate max-w-[110px]">
                                 {c.sourceTenantName}
                               </span>

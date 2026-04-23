@@ -15,18 +15,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -59,6 +50,7 @@ import {
   Loader2,
   AlertTriangle,
   ShieldAlert,
+  Info,
 } from 'lucide-react';
 import { formatCurrency, cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -70,15 +62,18 @@ import type {
 import { useAgencyContext } from '@/hooks/use-agency-context';
 import { useSwitchTenant } from '@/hooks/use-switch-tenant';
 import { VincularClienteModal } from '../_components/vincular-cliente-modal';
+import { ExpiredLinkModal } from '../_components/expired-link-modal';
 
 function ClientActivationBadge({
   activationStatus,
   setupCompleted,
   createdAt,
+  onExpiredClick,
 }: {
   activationStatus: ClientActivationStatus;
   setupCompleted: boolean;
   createdAt: string;
+  onExpiredClick?: () => void;
 }) {
   const { emailVerified, activationTokenExpires } = activationStatus;
 
@@ -99,10 +94,14 @@ function ClientActivationBadge({
 
   if (tokenExpiredOrMissing) {
     return (
-      <span className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-destructive">
+      <button
+        type="button"
+        onClick={onExpiredClick}
+        className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-destructive underline-offset-2 hover:underline cursor-pointer"
+      >
         <ShieldAlert className="h-2.5 w-2.5" />
         Enlace caducado
-      </span>
+      </button>
     );
   }
 
@@ -117,6 +116,12 @@ function ClientActivationBadge({
   );
 }
 
+function isActivationExpired(activationStatus: ClientActivationStatus): boolean {
+  if (activationStatus.emailVerified) return false;
+  const { activationTokenExpires } = activationStatus;
+  return !activationTokenExpires || new Date(activationTokenExpires).getTime() < Date.now();
+}
+
 export default function AgencyClientsPage() {
   const router = useRouter();
   const { switchTenant, isPending: isSwitching } = useSwitchTenant();
@@ -126,11 +131,12 @@ export default function AgencyClientsPage() {
   const [revokeTarget, setRevokeTarget] = useState<AgencyClientWithDetails | null>(null);
   const [cancelTarget, setCancelTarget] = useState<AgencyInvitation | null>(null);
   const [isVincularModalOpen, setIsVincularModalOpen] = useState(false);
+  const [expiredLinkTarget, setExpiredLinkTarget] = useState<{
+    clientTenantId: string;
+    email: string;
+  } | null>(null);
 
-  const { data, isLoading } = useAgencyClients(
-    { search: search || undefined },
-    isOnAgencyTenant,
-  );
+  const { data, isLoading } = useAgencyClients({ search: search || undefined }, isOnAgencyTenant);
   const { data: invitationsData, isLoading: isLoadingInvitations } =
     useAgencyPendingInvitations(isOnAgencyTenant);
   const { mutate: revokeClient, isPending: isRevoking } = useRevokeClient();
@@ -287,166 +293,193 @@ export default function AgencyClientsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="rounded-xl border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead>NIF / CIF</TableHead>
-                <TableHead className="hidden md:table-cell">Localidad</TableHead>
-                <TableHead className="hidden lg:table-cell text-right">Facturas</TableHead>
-                <TableHead className="hidden lg:table-cell text-right">Pendientes</TableHead>
-                <TableHead className="hidden xl:table-cell text-right">Ingreso mensual</TableHead>
-                <TableHead className="hidden sm:table-cell">Última actividad</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.data.map((relation) => {
-                const client = relation.clientTenant;
-                const stats = relation.stats;
-                const lastActivity = stats?.lastActivity
-                  ? (() => {
-                      const diffDays = Math.floor(
-                        (Date.now() - new Date(stats.lastActivity!).getTime()) /
-                          (1000 * 60 * 60 * 24),
-                      );
-                      if (diffDays === 0) return 'Hoy';
-                      if (diffDays === 1) return 'Ayer';
-                      if (diffDays < 30) return `Hace ${diffDays} días`;
-                      const months = Math.floor(diffDays / 30);
-                      if (months < 12) return `Hace ${months} mes${months > 1 ? 'es' : ''}`;
-                      return new Date(stats.lastActivity!).toLocaleDateString('es-ES', {
-                        month: 'short',
-                        year: 'numeric',
-                      });
-                    })()
-                  : '—';
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b bg-muted/40">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                      Cliente
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                      NIF / CIF
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground hidden md:table-cell">
+                      Localidad
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground hidden lg:table-cell">
+                      Facturas
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground hidden lg:table-cell">
+                      Pendientes
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground hidden xl:table-cell">
+                      Ingreso mensual
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground hidden sm:table-cell">
+                      Última actividad
+                    </th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {data.data.map((relation) => {
+                    const client = relation.clientTenant;
+                    const stats = relation.stats;
+                    const expired = isActivationExpired(relation.activationStatus);
+                    const lastActivity = stats?.lastActivity
+                      ? (() => {
+                          const diffDays = Math.floor(
+                            (Date.now() - new Date(stats.lastActivity!).getTime()) /
+                              (1000 * 60 * 60 * 24),
+                          );
+                          if (diffDays === 0) return 'Hoy';
+                          if (diffDays === 1) return 'Ayer';
+                          if (diffDays < 30) return `Hace ${diffDays} días`;
+                          const months = Math.floor(diffDays / 30);
+                          if (months < 12) return `Hace ${months} mes${months > 1 ? 'es' : ''}`;
+                          return new Date(stats.lastActivity!).toLocaleDateString('es-ES', {
+                            month: 'short',
+                            year: 'numeric',
+                          });
+                        })()
+                      : '—';
 
-                return (
-                  <TableRow key={relation.id} className="group">
-                    <TableCell>
-                      <Link
-                        href={`/dashboard/asesoria/clientes/${relation.clientTenantId}`}
-                        className="flex items-center gap-3 min-w-0"
+                    return (
+                      <tr
+                        key={relation.id}
+                        className={cn(
+                          'transition-colors hover:bg-muted/30',
+                          expired && 'bg-destructive/5 hover:bg-destructive/10',
+                        )}
                       >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-customer-100 text-xs font-bold text-customer-700 dark:bg-customer-950 dark:text-customer-300">
-                          {client.businessName.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate font-semibold text-sm leading-tight hover:underline">
-                            {client.businessName}
-                          </p>
-                          {client.legalName && (
-                            <p className="truncate text-xs text-muted-foreground">
-                              {client.legalName}
-                            </p>
-                          )}
-                          <ClientActivationBadge
-                            activationStatus={relation.activationStatus}
-                            setupCompleted={client.setupCompleted}
-                            createdAt={relation.createdAt}
-                          />
-                        </div>
-                      </Link>
-                    </TableCell>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-customer-100 text-xs font-bold text-customer-700 dark:bg-customer-950 dark:text-customer-300">
+                              {client.businessName.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-sm leading-tight">
+                                {client.businessName}
+                              </p>
+                              {client.legalName && (
+                                <p className="truncate text-xs text-muted-foreground">
+                                  {client.legalName}
+                                </p>
+                              )}
+                              <ClientActivationBadge
+                                activationStatus={relation.activationStatus}
+                                setupCompleted={client.setupCompleted}
+                                createdAt={relation.createdAt}
+                                onExpiredClick={() =>
+                                  setExpiredLinkTarget({
+                                    clientTenantId: relation.clientTenantId,
+                                    email: client.email ?? '',
+                                  })
+                                }
+                              />
+                            </div>
+                          </div>
+                        </td>
 
-                    <TableCell>
-                      <span className="font-mono text-sm">{client.nif}</span>
-                    </TableCell>
+                        <td className="px-4 py-3">
+                          <span className="font-mono text-sm">{client.nif}</span>
+                        </td>
 
-                    <TableCell className="hidden md:table-cell">
-                      {client.city ? (
-                        <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <MapPin className="h-3 w-3 shrink-0" />
-                          {client.city}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-
-                    <TableCell className="hidden lg:table-cell text-right">
-                      <span className="text-sm">{stats?.totalInvoices ?? 0}</span>
-                    </TableCell>
-
-                    <TableCell className="hidden lg:table-cell text-right">
-                      {(stats?.pendingInvoices ?? 0) > 0 ? (
-                        <Badge
-                          variant="outline"
-                          className="border-overdue-200 bg-overdue-50 text-overdue-700 dark:border-overdue-800 dark:bg-overdue-950/30 dark:text-overdue-400"
-                        >
-                          {stats!.pendingInvoices}
-                        </Badge>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">0</span>
-                      )}
-                    </TableCell>
-
-                    <TableCell className="hidden xl:table-cell text-right">
-                      <span className="text-sm font-medium">
-                        {(stats?.monthlyRevenue ?? 0) > 0
-                          ? formatCurrency(stats!.monthlyRevenue)
-                          : '—'}
-                      </span>
-                    </TableCell>
-
-                    <TableCell className="hidden sm:table-cell">
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Activity className="h-3 w-3 shrink-0" />
-                        {lastActivity}
-                      </span>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => handleManage(relation.clientTenantId)}
-                          disabled={managingClientId === relation.clientTenantId || isSwitching}
-                        >
-                          {managingClientId === relation.clientTenantId ? (
-                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          {client.city ? (
+                            <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <MapPin className="h-3 w-3 shrink-0" />
+                              {client.city}
+                            </span>
                           ) : (
-                            <LayoutDashboard className="mr-1 h-3 w-3" />
+                            <span className="text-muted-foreground">—</span>
                           )}
-                          Gestionar
-                        </Button>
+                        </td>
 
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7">
-                              <MoreVertical className="h-3.5 w-3.5" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
+                        <td className="px-4 py-3 text-right hidden lg:table-cell">
+                          <span className="text-sm">{stats?.totalInvoices ?? 0}</span>
+                        </td>
+
+                        <td className="px-4 py-3 text-right hidden lg:table-cell">
+                          {(stats?.pendingInvoices ?? 0) > 0 ? (
+                            <Badge
+                              variant="outline"
+                              className="border-overdue-200 bg-overdue-50 text-overdue-700 dark:border-overdue-800 dark:bg-overdue-950/30 dark:text-overdue-400"
+                            >
+                              {stats!.pendingInvoices}
+                            </Badge>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">0</span>
+                          )}
+                        </td>
+
+                        <td className="px-4 py-3 text-right hidden xl:table-cell">
+                          <span className="text-sm font-medium">
+                            {(stats?.monthlyRevenue ?? 0) > 0
+                              ? formatCurrency(stats!.monthlyRevenue)
+                              : '—'}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-3 hidden sm:table-cell">
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Activity className="h-3 w-3 shrink-0" />
+                            {lastActivity}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Link href={`/dashboard/asesoria/clientes/${relation.clientTenantId}`}>
+                              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
+                                <Info className="mr-1 h-3 w-3" />
+                                Ver info
+                              </Button>
+                            </Link>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs"
                               onClick={() => handleManage(relation.clientTenantId)}
-                              disabled={managingClientId !== null || isSwitching}
+                              disabled={managingClientId === relation.clientTenantId || isSwitching}
                             >
-                              <LayoutDashboard className="mr-2 h-4 w-4" />
-                              Acceder al dashboard
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => setRevokeTarget(relation)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Dar de baja
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                              {managingClientId === relation.clientTenantId ? (
+                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                              ) : (
+                                <LayoutDashboard className="mr-1 h-3 w-3" />
+                              )}
+                              Gestionar
+                            </Button>
+
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7">
+                                  <MoreVertical className="h-3.5 w-3.5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => setRevokeTarget(relation)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Dar de baja
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Pending invitations section */}
@@ -589,6 +622,16 @@ export default function AgencyClientsPage() {
         isOpen={isVincularModalOpen}
         onClose={() => setIsVincularModalOpen(false)}
       />
+
+      {/* Expired link modal */}
+      {expiredLinkTarget && (
+        <ExpiredLinkModal
+          isOpen={!!expiredLinkTarget}
+          onClose={() => setExpiredLinkTarget(null)}
+          clientTenantId={expiredLinkTarget.clientTenantId}
+          clientEmail={expiredLinkTarget.email}
+        />
+      )}
     </div>
   );
 }

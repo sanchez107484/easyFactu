@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { useAgencyContext } from '@/hooks/use-agency-context';
 import { useSwitchTenant } from '@/hooks/use-switch-tenant';
 import { useAgencyStats, useAgencyClients, useAgencyPendingInvitations } from '@/hooks/use-agency';
+import { brandConfig } from '@easyfactura/brand-config';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   UserPlus,
-  Mail,
   ArrowRight,
   Users,
   MousePointerClick,
@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { AgencyKpiStrip } from './_components/agency-kpi-strip';
 import { PendingInvitationsWidget } from './_components/pending-invitations-widget';
 import { VincularClienteModal } from './_components/vincular-cliente-modal';
+import { AnadirClienteModal } from './_components/anadir-cliente-modal';
 
 export default function AgencyHubPage() {
   const router = useRouter();
@@ -29,6 +30,7 @@ export default function AgencyHubPage() {
   const { isOnAgencyTenant, isActingAsClient, returnToAgency } = useAgencyContext();
   const [managingClientId, setManagingClientId] = useState<string | null>(null);
   const [isVincularModalOpen, setIsVincularModalOpen] = useState(false);
+  const [isAnadirModalOpen, setIsAnadirModalOpen] = useState(false);
   const { data: stats, isLoading: statsLoading } = useAgencyStats(isOnAgencyTenant);
   const { data: clientsData, isLoading: clientsLoading } = useAgencyClients(
     { limit: 50 },
@@ -85,6 +87,25 @@ export default function AgencyHubPage() {
 
       {/* ── KPI Strip ── */}
       <AgencyKpiStrip stats={stats} isLoading={statsLoading} />
+
+      {/* ── Acción: añadir cliente ── */}
+      <div className="flex items-center justify-between gap-4 rounded-xl border bg-card p-5">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-customer-100 text-customer-600 dark:bg-customer-950 dark:text-customer-400">
+            <UserPlus className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="font-semibold leading-snug">Añadir cliente de asesoría</p>
+            <p className="mt-0.5 text-sm text-muted-foreground leading-snug">
+              Crea la cuenta tú mismo o vincula a un cliente que ya usa {brandConfig.app.name}.
+            </p>
+          </div>
+        </div>
+        <Button className="shrink-0" size="sm" onClick={() => setIsAnadirModalOpen(true)}>
+          <UserPlus className="mr-2 h-4 w-4" />
+          Añadir cliente
+        </Button>
+      </div>
 
       {/* ── Grid de clientes ── */}
       <div className="rounded-xl border bg-card p-4">
@@ -151,53 +172,6 @@ export default function AgencyHubPage() {
       {/* ── Invitaciones pendientes ── */}
       <PendingInvitationsWidget invitations={invitations} />
 
-      {/* ── Cards de acción: añadir / invitar ── */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="flex flex-col gap-3 rounded-xl border bg-card p-5">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-customer-100 text-customer-600 dark:bg-customer-950 dark:text-customer-400">
-              <UserPlus className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="font-semibold">Añadir cliente directamente</p>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                Crea el perfil fiscal del cliente tú mismo. Ideal si el cliente no tiene acceso a
-                EasyFactura.
-              </p>
-            </div>
-          </div>
-          <Link href="/dashboard/asesoria/clientes/nuevo" className="mt-auto">
-            <Button className="w-full" size="sm">
-              <UserPlus className="mr-2 h-4 w-4" />
-              Añadir cliente
-            </Button>
-          </Link>
-        </div>
-
-        <div className="flex flex-col gap-3 rounded-xl border bg-card p-5">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-agency-100 text-agency-600 dark:bg-agency-950 dark:text-agency-400">
-              <Mail className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="font-semibold">Vincular cliente existente</p>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                Busca al cliente por NIF o email. Si ya usa EasyFactura, se vincula al instante.
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            className="w-full"
-            size="sm"
-            onClick={() => setIsVincularModalOpen(true)}
-          >
-            <Users className="mr-2 h-4 w-4" />
-            Vincular cliente
-          </Button>
-        </div>
-      </div>
-
       {/* ── Guía de inicio rápido ── */}
       <div className="rounded-xl border bg-card p-6">
         <div className="mb-1 text-base font-semibold">Gestiona la facturación de tus clientes</div>
@@ -252,6 +226,11 @@ export default function AgencyHubPage() {
       </div>
 
       {/* Vincular cliente modal */}
+      <AnadirClienteModal
+        isOpen={isAnadirModalOpen}
+        onClose={() => setIsAnadirModalOpen(false)}
+        onVincularClick={() => setIsVincularModalOpen(true)}
+      />
       <VincularClienteModal
         isOpen={isVincularModalOpen}
         onClose={() => setIsVincularModalOpen(false)}
