@@ -253,7 +253,6 @@ interface RecurringTableProps {
 
 function RecurringTable({
   items,
-  hasAgency,
   onPause,
   onResume,
   onDelete,
@@ -265,11 +264,6 @@ function RecurringTable({
         <thead>
           <tr className="border-b bg-muted/50">
             <th className="px-4 py-3 text-left font-medium text-muted-foreground">Cliente</th>
-            {hasAgency && (
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden lg:table-cell whitespace-nowrap">
-                Creada por
-              </th>
-            )}
             <th className="px-4 py-3 text-right font-medium text-muted-foreground">
               Importe aprox.
             </th>
