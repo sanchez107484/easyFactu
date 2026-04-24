@@ -98,7 +98,7 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
   const [showQuickClient, setShowQuickClient] = useState(false);
   const [pendingCustomerId, setPendingCustomerId] = useState<string | null>(null);
 
-  const { data: customersData, isLoading: loadingCustomers } = useCustomers();
+  const { data: customersData, isLoading: loadingCustomers } = useCustomers({ limit: 500 });
   const { data: defaultTemplate } = useDefaultTemplate();
   const { data: tenantData } = useTenant();
   const { data: seriesData } = useInvoiceSeries(currentYear);
@@ -617,6 +617,7 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
 export default function NuevoPresupuestoPage() {
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
+  const preselectedCustomerId = searchParams.get('customerId') ?? '';
 
   const { data: sourceQuote, isLoading: loadingQuote } = useInvoice(editId ?? '', {
     enabled: !!editId,
@@ -681,7 +682,7 @@ export default function NuevoPresupuestoPage() {
         }),
       }
     : {
-        customerId: '',
+        customerId: preselectedCustomerId,
         issueDate: new Date().toISOString().split('T')[0],
         dueDate: defaultValidUntil,
         seriesId: '',

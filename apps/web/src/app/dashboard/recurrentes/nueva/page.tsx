@@ -229,7 +229,10 @@ function RecurringInvoiceForm({
 
   const createMutation = useCreateRecurringInvoice();
   const updateMutation = useUpdateRecurringInvoice();
-  const { data: customersData, isLoading: loadingCustomers } = useCustomers({ active: true });
+  const { data: customersData, isLoading: loadingCustomers } = useCustomers({
+    active: true,
+    limit: 500,
+  });
   const { data: defaultTemplate } = useDefaultTemplate();
   const { data: tenantData } = useTenant();
   const { data: seriesData } = useInvoiceSeries(currentYear);
