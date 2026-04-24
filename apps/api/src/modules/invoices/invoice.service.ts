@@ -39,6 +39,29 @@ export class InvoiceService {
 
   // ==================== PRIVATE HELPERS ====================
 
+  /**
+   * Builds agency info from a createdByUser relation.
+   * createdByUserId is only stored when the creator is NOT the tenant owner,
+   * so if the relation exists it is always an agency user.
+   */
+  private buildAgencyInfo(
+    createdByUser: {
+      firstName: string;
+      lastName: string;
+      tenantUsers: Array<{ tenant: { businessName: string } }>;
+    } | null
+  ): { userName: string; agencyName: string } | null {
+    if (!createdByUser) return null;
+
+    const agencyTenant = createdByUser.tenantUsers[0];
+    if (!agencyTenant) return null;
+
+    return {
+      userName: `${createdByUser.firstName} ${createdByUser.lastName}`.trim(),
+      agencyName: agencyTenant.tenant.businessName,
+    };
+  }
+
   private buildLineCreateData(
     tenantId: string,
     lines: CreateInvoiceLineDto[],
@@ -98,7 +121,7 @@ export class InvoiceService {
 
   // ==================== PUBLIC CRUD ====================
 
-  async create(tenantId: string, dto: CreateInvoiceDto) {
+  async create(tenantId: string, createdByUserId: string | null, dto: CreateInvoiceDto) {
     const isQuote = dto.invoiceType === 'quote';
     const isProforma = dto.invoiceType === 'proforma';
 
@@ -140,6 +163,17 @@ export class InvoiceService {
         resolvedSeriesId = quoteSeries.id;
       }
 
+      // Only store createdByUserId when the creator is NOT the tenant owner.
+      // If the owner creates a document we leave it null (the owner is implicit).
+      let resolvedCreatedByUserId: string | null = null;
+      if (createdByUserId) {
+        const isOwner = await tx.tenantUser.findFirst({
+          where: { userId: createdByUserId, tenantId, isOwner: true },
+          select: { id: true },
+        });
+        resolvedCreatedByUserId = isOwner ? null : createdByUserId;
+      }
+
       return tx.invoice.create({
         data: {
           tenantId,
@@ -164,6 +198,7 @@ export class InvoiceService {
           paymentMethod: (dto.paymentMethod ?? null) as any,
           notes: dto.notes ?? null,
           paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : undefined,
+          createdByUserId: resolvedCreatedByUserId,
           lines: {
             create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
           },
@@ -251,13 +286,31 @@ export class InvoiceService {
             select: { id: true, amount: true, paymentDate: true, paymentMethod: true, notes: true },
             orderBy: { paymentDate: 'desc' },
           },
+          createdByUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              tenantUsers: {
+                where: { isOwner: true },
+                select: {
+                  tenant: { select: { businessName: true } },
+                },
+              },
+            },
+          },
         },
       }),
       this.prisma.invoice.count({ where }),
     ]);
 
+    const mappedData = data.map(({ createdByUser, ...invoice }) => ({
+      ...invoice,
+      createdByAgency: this.buildAgencyInfo(createdByUser),
+    }));
+
     return {
-      data,
+      data: mappedData,
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -367,12 +420,29 @@ export class InvoiceService {
         payments: {
           orderBy: { paymentDate: 'desc' },
         },
+        createdByUser: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            tenantUsers: {
+              where: { isOwner: true },
+              select: {
+                tenant: { select: { businessName: true } },
+              },
+            },
+          },
+        },
       },
     });
     if (!invoice) {
       throw new NotFoundException('Factura no encontrada');
     }
-    return invoice;
+    const { createdByUser, ...invoiceData } = invoice;
+    return {
+      ...invoiceData,
+      createdByAgency: this.buildAgencyInfo(createdByUser),
+    };
   }
 
   async update(tenantId: string, id: string, dto: UpdateInvoiceDto) {

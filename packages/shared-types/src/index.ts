@@ -446,6 +446,13 @@ export interface InvoiceLine {
   updatedAt: string;
 }
 
+export interface InvoiceAgencyCreator {
+  /** Full name of the agency user who created the document. */
+  userName: string;
+  /** Business name of the agency tenant. */
+  agencyName: string;
+}
+
 export interface Invoice {
   id: string;
   tenantId: string;
@@ -504,6 +511,11 @@ export interface Invoice {
   rectificationReason: string | null;
   /** ID of the recurring invoice that generated this invoice (or from which this was converted) */
   recurringInvoiceId?: string | null;
+  /**
+   * Set when the invoice was created by an agency user on behalf of this tenant.
+   * Null if the invoice was created by the tenant owner or a regular member.
+   */
+  createdByAgency?: InvoiceAgencyCreator | null;
   createdAt: string;
   updatedAt: string;
   series?: InvoiceSeries;
@@ -822,6 +834,11 @@ export interface RecurringInvoice {
   lines?: RecurringInvoiceLine[];
   /** Computed by the list endpoint — total per generation including tax minus IRPF. */
   estimatedTotal?: number;
+  /**
+   * Set when the recurring invoice was created by an agency user on behalf of this tenant.
+   * Null if created by the tenant owner or a regular member.
+   */
+  createdByAgency?: InvoiceAgencyCreator | null;
 }
 
 export interface CreateRecurringInvoiceLineInput {

@@ -15,6 +15,7 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  Building2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -250,13 +251,25 @@ interface RecurringTableProps {
   onEdit: (id: string) => void;
 }
 
-function RecurringTable({ items, onPause, onResume, onDelete, onEdit }: RecurringTableProps) {
+function RecurringTable({
+  items,
+  hasAgency,
+  onPause,
+  onResume,
+  onDelete,
+  onEdit,
+}: RecurringTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-muted/50">
             <th className="px-4 py-3 text-left font-medium text-muted-foreground">Cliente</th>
+            {hasAgency && (
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden lg:table-cell whitespace-nowrap">
+                Creada por
+              </th>
+            )}
             <th className="px-4 py-3 text-right font-medium text-muted-foreground">
               Importe aprox.
             </th>
@@ -313,6 +326,17 @@ function RecurringRow({ item, onPause, onResume, onDelete, onEdit }: RecurringRo
         </Link>
         {item.notes && (
           <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xs">{item.notes}</p>
+        )}
+        {item.createdByAgency && (
+          <div className="mt-0.5">
+            <span
+              className="text-[10px] font-medium text-agency-700 bg-agency-100 dark:text-agency-300 dark:bg-agency-900/40 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5"
+              title={`Creada por ${item.createdByAgency.agencyName} · ${item.createdByAgency.userName}`}
+            >
+              <Building2 className="h-2.5 w-2.5" />
+              asesoría
+            </span>
+          </div>
         )}
       </td>
       <td className="px-4 py-3 text-right font-medium tabular-nums">{formatCurrency(amount)}</td>

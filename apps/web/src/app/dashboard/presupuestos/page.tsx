@@ -20,6 +20,7 @@ import {
   CalendarClock,
   X,
   CheckCircle2,
+  Building2,
   XCircle,
   AlertCircle,
   RefreshCw,
@@ -463,6 +464,17 @@ export default function PresupuestosPage() {
                                 </span>
                               )}
                             </Link>
+                            {quote.createdByAgency && (
+                              <div className="mt-0.5">
+                                <span
+                                  className="text-[10px] font-medium text-agency-700 bg-agency-100 dark:text-agency-300 dark:bg-agency-900/40 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5"
+                                  title={`Creado por ${quote.createdByAgency.agencyName} · ${quote.createdByAgency.userName}`}
+                                >
+                                  <Building2 className="h-2.5 w-2.5" />
+                                  asesoría
+                                </span>
+                              </div>
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             <div className="min-w-0">

@@ -11,10 +11,11 @@ import {
   Hash,
   Calendar,
   Layers,
+  Building2,
 } from 'lucide-react';
 import { DownloadInvoiceButton } from '@/components/ui/download-invoice-button';
 import { InvoicePaymentSection } from '@/components/facturas/InvoicePaymentSection';
-import type { Invoice, InvoiceSeries } from '@easyfactura/shared-types';
+import type { Invoice, InvoiceAgencyCreator, InvoiceSeries } from '@easyfactura/shared-types';
 import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge';
 import { cn, formatCurrency, parseNum, formatDateShort } from '@/lib/utils';
 
@@ -31,6 +32,7 @@ interface InvoiceStatusHeroProps {
   pdfFileName: string;
   statusCfg: StatusConfig;
   series: InvoiceSeries | undefined;
+  createdByAgency?: InvoiceAgencyCreator | null;
   confirmPending: boolean;
   convertPending: boolean;
   convertToProformaPending: boolean;
@@ -57,6 +59,7 @@ export function InvoiceStatusHero({
   pdfFileName,
   statusCfg,
   series,
+  createdByAgency,
   confirmPending,
   convertPending,
   convertToProformaPending,
@@ -213,11 +216,14 @@ export function InvoiceStatusHero({
             <span>Vence {formatDateShort(invoice.dueDate)}</span>
           </div>
         )}
-        {series && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Layers className="h-3 w-3" />
-            <span>{series.name}</span>
-          </div>
+        {createdByAgency && (
+          <span
+            className="inline-flex items-center gap-1 text-[10px] font-medium text-agency-700 bg-agency-100 dark:text-agency-300 dark:bg-agency-900/40 rounded px-1.5 py-0.5"
+            title={`${createdByAgency.agencyName} · ${createdByAgency.userName}`}
+          >
+            <Building2 className="h-2.5 w-2.5" />
+            asesoría
+          </span>
         )}
         {!isDraft && (
           <InvoicePaymentSection invoice={invoice} onRegisterPayment={onShowPaymentDialog} />

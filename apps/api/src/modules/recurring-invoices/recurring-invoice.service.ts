@@ -83,6 +83,19 @@ export class RecurringInvoiceService {
         customer: true,
         series: true,
         _count: { select: { generatedInvoices: true } },
+        createdByUser: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            tenantUsers: {
+              where: { isOwner: true },
+              select: {
+                tenant: { select: { businessName: true } },
+              },
+            },
+          },
+        },
       },
     });
     if (!recurring) {
@@ -132,6 +145,24 @@ export class RecurringInvoiceService {
     }));
   }
 
+  private buildAgencyInfo(
+    createdByUser: {
+      firstName: string;
+      lastName: string;
+      tenantUsers: Array<{ tenant: { businessName: string } }>;
+    } | null
+  ): { userName: string; agencyName: string } | null {
+    if (!createdByUser) return null;
+
+    const agencyTenant = createdByUser.tenantUsers[0];
+    if (!agencyTenant) return null;
+
+    return {
+      userName: `${createdByUser.firstName} ${createdByUser.lastName}`.trim(),
+      agencyName: agencyTenant.tenant.businessName,
+    };
+  }
+
   // ==================== CRUD ====================
 
   async findAll(tenantId: string, query: QueryRecurringInvoiceDto) {
@@ -159,6 +190,19 @@ export class RecurringInvoiceService {
           series: { select: { id: true, code: true, prefix: true } },
           _count: { select: { generatedInvoices: true } },
           lines: { select: { quantity: true, unitPrice: true, taxRate: true } },
+          createdByUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              tenantUsers: {
+                where: { isOwner: true },
+                select: {
+                  tenant: { select: { businessName: true } },
+                },
+              },
+            },
+          },
         },
         orderBy: [{ status: 'asc' }, { nextRunDate: 'asc' }],
         skip,
@@ -168,7 +212,7 @@ export class RecurringInvoiceService {
     ]);
 
     // Compute estimated total server-side so the list endpoint does not ship full line objects.
-    const data = rawData.map(({ lines, discountPercent, irpfPercent, ...item }) => {
+    const data = rawData.map(({ lines, discountPercent, irpfPercent, createdByUser, ...item }) => {
       const gross = lines.reduce((sum, l) => sum + Number(l.quantity) * Number(l.unitPrice), 0);
       const discountFactor = discountPercent ? 1 - Number(discountPercent) / 100 : 1;
       const netBase = gross * discountFactor;
@@ -179,7 +223,13 @@ export class RecurringInvoiceService {
       const totalIrpf = irpfPercent ? netBase * (Number(irpfPercent) / 100) : 0;
       const estimatedTotal = Math.round((netBase + totalTax - totalIrpf) * 100) / 100;
 
-      return { ...item, discountPercent, irpfPercent, estimatedTotal };
+      return {
+        ...item,
+        discountPercent,
+        irpfPercent,
+        estimatedTotal,
+        createdByAgency: this.buildAgencyInfo(createdByUser ?? null),
+      };
     });
 
     return {
@@ -189,10 +239,14 @@ export class RecurringInvoiceService {
   }
 
   async findOne(tenantId: string, id: string) {
-    return this.findOneOrFail(tenantId, id);
+    const { createdByUser, ...recurring } = await this.findOneOrFail(tenantId, id);
+    return {
+      ...recurring,
+      createdByAgency: this.buildAgencyInfo(createdByUser ?? null),
+    };
   }
 
-  async create(tenantId: string, dto: CreateRecurringInvoiceDto) {
+  async create(tenantId: string, createdByUserId: string, dto: CreateRecurringInvoiceDto) {
     const customer = await this.prisma.customer.findFirst({
       where: { id: dto.customerId, tenantId, isActive: true },
     });
@@ -213,6 +267,13 @@ export class RecurringInvoiceService {
     const nextRunDate = this.calculateInitialNextRunDate(dto.startDate, dayOfMonth, dto.frequency);
 
     return this.prisma.$transaction(async (tx) => {
+      // Only store createdByUserId when the creator is NOT the tenant owner.
+      const isOwner = await tx.tenantUser.findFirst({
+        where: { userId: createdByUserId, tenantId, isOwner: true },
+        select: { id: true },
+      });
+      const resolvedCreatedByUserId = isOwner ? null : createdByUserId;
+
       const recurring = await tx.recurringInvoice.create({
         data: {
           tenantId,
@@ -230,6 +291,7 @@ export class RecurringInvoiceService {
           paymentMethod: dto.paymentMethod ?? null,
           paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : Prisma.JsonNull,
           notes: dto.notes ?? null,
+          createdByUserId: resolvedCreatedByUserId,
           lines: {
             createMany: {
               data: this.buildLinesCreateData(tenantId, dto.lines),

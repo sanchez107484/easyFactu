@@ -124,8 +124,10 @@ model User {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  tenantUsers      TenantUser[]
-  agencyExportLogs AgencyExportLog[] @relation("AgencyExportLogUser")
+  tenantUsers              TenantUser[]
+  agencyExportLogs         AgencyExportLog[] @relation("AgencyExportLogUser")
+  invoicesCreated          Invoice[]          @relation("InvoiceCreatedBy")
+  recurringInvoicesCreated RecurringInvoice[] @relation("RecurringInvoiceCreatedBy")
 
   @@map("users")
 }
@@ -315,6 +317,7 @@ model Invoice {
   series              InvoiceSeries  @relation(fields: [seriesId], references: [id])
   customer            Customer       @relation(fields: [customerId], references: [id])
   template            InvoiceTemplate? @relation(fields: [templateId], references: [id])
+  createdByUser       User?          @relation("InvoiceCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
   rectifiedInvoice    Invoice?       @relation("RectifiedInvoice", fields: [rectifiedInvoiceId], references: [id])
   rectificativeInvoices Invoice[]    @relation("RectifiedInvoice")
   lines               InvoiceLine[]
@@ -640,12 +643,14 @@ model RecurringInvoice {
   paymentMethod  PaymentMethod?  @map("payment_method")
   paymentDetails Json?           @map("payment_details")
   notes          String?         @db.Text
+  createdByUserId String?        @map("created_by_user_id")
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
 
   tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer       Customer        @relation(fields: [customerId], references: [id])
   series         InvoiceSeries?  @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  createdByUser  User?           @relation("RecurringInvoiceCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
   lines          RecurringInvoiceLine[]
   generatedInvoices Invoice[]
 
@@ -653,6 +658,7 @@ model RecurringInvoice {
   @@index([tenantId, status])
   @@index([tenantId, customerId])
   @@index([nextRunDate, status])
+  @@index([createdByUserId])
   @@map("recurring_invoices")
 }
 

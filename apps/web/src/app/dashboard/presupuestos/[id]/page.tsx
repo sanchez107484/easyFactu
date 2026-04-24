@@ -471,11 +471,14 @@ export default function PresupuestoDetailPage() {
                     <span>Válido hasta {formatDateShort(quoteData.validUntil)}</span>
                   </div>
                 )}
-                {series && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Layers className="h-3 w-3" />
-                    <span>{series.name}</span>
-                  </div>
+                {quote.createdByAgency && (
+                  <span
+                    className="inline-flex items-center gap-1 text-[10px] font-medium text-agency-700 bg-agency-100 dark:text-agency-300 dark:bg-agency-900/40 rounded px-1.5 py-0.5"
+                    title={`${quote.createdByAgency.agencyName} · ${quote.createdByAgency.userName}`}
+                  >
+                    <Building2 className="h-2.5 w-2.5" />
+                    asesoría
+                  </span>
                 )}
               </div>
             </div>

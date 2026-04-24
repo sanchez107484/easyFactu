@@ -28,6 +28,7 @@ import {
   Send,
   Undo2,
   Download,
+  Building2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -527,6 +528,15 @@ export default function FacturasPage() {
                               {isProforma && (
                                 <span className="text-[10px] font-medium text-proforma-700 bg-proforma-100 dark:text-proforma-300 dark:bg-proforma-900/40 rounded px-1.5 py-0.5">
                                   proforma
+                                </span>
+                              )}
+                              {invoice.createdByAgency && (
+                                <span
+                                  className="text-[10px] font-medium text-agency-700 bg-agency-100 dark:text-agency-300 dark:bg-agency-900/40 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5"
+                                  title={`Creada por ${invoice.createdByAgency.agencyName} · ${invoice.createdByAgency.userName}`}
+                                >
+                                  <Building2 className="h-2.5 w-2.5" />
+                                  asesoría
                                 </span>
                               )}
                             </div>

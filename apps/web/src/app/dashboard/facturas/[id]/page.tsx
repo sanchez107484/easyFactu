@@ -426,6 +426,7 @@ export default function FacturaDetailPage() {
               onUnmarkSent={handleUnmarkSent}
               onUnmarkPaid={handleUnmarkPaid}
               onShowPaymentDialog={() => setShowPaymentDialog(true)}
+              createdByAgency={invoice.createdByAgency}
             />
 
             {/* ZONA A.5 — Vinculada a recurrente */}

@@ -385,6 +385,15 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
                   >
                     {statusCfg.label}
                   </span>
+                  {recurring.createdByAgency && (
+                    <span
+                      className="inline-flex items-center gap-1 text-[10px] font-medium text-agency-700 bg-agency-100 dark:text-agency-300 dark:bg-agency-900/40 rounded px-1.5 py-0.5"
+                      title={`${recurring.createdByAgency.agencyName} · ${recurring.createdByAgency.userName}`}
+                    >
+                      <Building2 className="h-2.5 w-2.5" />
+                      asesoría
+                    </span>
+                  )}
                 </div>
                 {!isCompleted ? (
                   <>
