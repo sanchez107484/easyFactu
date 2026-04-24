@@ -251,13 +251,7 @@ interface RecurringTableProps {
   onEdit: (id: string) => void;
 }
 
-function RecurringTable({
-  items,
-  onPause,
-  onResume,
-  onDelete,
-  onEdit,
-}: RecurringTableProps) {
+function RecurringTable({ items, onPause, onResume, onDelete, onEdit }: RecurringTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
