@@ -316,6 +316,15 @@ export default function ClienteDetailPage() {
               Editar
             </Button>
           </Link>
+          <Link href={`/dashboard/presupuestos/nueva?customerId=${id}`}>
+            <Button
+              size="sm"
+              className="border-proforma-300 bg-proforma-500 text-proforma-50 hover:bg-proforma-600 hover:border-proforma-600"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              Nuevo presupuesto
+            </Button>
+          </Link>
           <Link href={`/dashboard/facturas/nueva?customerId=${id}`}>
             <Button size="sm">
               <Plus className="h-3.5 w-3.5 mr-1.5" />
