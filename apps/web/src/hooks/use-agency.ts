@@ -11,6 +11,8 @@ import type {
   CreateDirectClientInput,
   InviteClientInput,
   ExportContaPlusInput,
+  ExportInvoicesInput,
+  ExportMode,
   ReceivedInvitation,
   MyAgencyRelation,
   AgencyInvitationFull,
@@ -33,6 +35,13 @@ const AGENCY_KEYS = {
   fiscalAlertsSummary: () => [...AGENCY_KEYS.all, 'fiscal-alerts-summary'] as const,
   exportLogs: (clientTenantId?: string, page?: number) =>
     [...AGENCY_KEYS.all, 'export-logs', clientTenantId, page] as const,
+  invoicesForExport: (
+    clientTenantId: string,
+    mode: ExportMode,
+    dateFrom?: string,
+    dateTo?: string,
+  ) => [...AGENCY_KEYS.all, 'invoices-for-export', clientTenantId, mode, dateFrom, dateTo] as const,
+  preferredExportFormat: () => [...AGENCY_KEYS.all, 'preferred-export-format'] as const,
 };
 
 export function useAgencyStats(enabled = true) {
@@ -349,5 +358,79 @@ export function useAgencyQuarterlyIva() {
     queryKey: AGENCY_KEYS.quarterlyIva(),
     queryFn: agencyApi.getQuarterlyIvaSummary,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ─── Export hooks (3-mode export system) ──────────────────────────────────────
+
+/**
+ * Fetches the invoices list for the export preview modal.
+ * `enabled` should be false until the modal is open and the user has selected a mode.
+ */
+export function useInvoicesForExport(
+  clientTenantId: string,
+  mode: ExportMode,
+  dateFrom?: string,
+  dateTo?: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: AGENCY_KEYS.invoicesForExport(clientTenantId, mode, dateFrom, dateTo),
+    queryFn: () => agencyApi.getInvoicesForExport(clientTenantId, mode, dateFrom, dateTo),
+    enabled: enabled && !!clientTenantId,
+    staleTime: 30 * 1000, // 30s — export status changes after each export
+  });
+}
+
+/**
+ * Triggers the export, downloads the file, and invalidates the export state.
+ */
+export function useExportInvoices(clientTenantId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: ExportInvoicesInput) => agencyApi.exportInvoices(clientTenantId, data),
+    onSuccess: ({ invoicesCount }) => {
+      // NOTE: blob download is triggered by the component (stored in state for re-download)
+      toast.success(
+        `Exportación completada — ${invoicesCount} factura${invoicesCount !== 1 ? 's' : ''}`,
+      );
+      // Invalidate preview so pending badges update across the UI
+      queryClient.invalidateQueries({
+        queryKey: [...AGENCY_KEYS.all, 'invoices-for-export', clientTenantId],
+      });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.exportLogs() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clients() });
+      // Refresh client detail page (export history + stats)
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.client(clientTenantId) });
+    },
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error));
+    },
+  });
+}
+
+/** Returns the agency's preferred export software. */
+export function useAgencyPreferredFormat() {
+  return useQuery({
+    queryKey: AGENCY_KEYS.preferredExportFormat(),
+    queryFn: agencyApi.getPreferredExportFormat,
+    staleTime: 10 * 60 * 1000, // 10 minutes — rarely changes
+  });
+}
+
+/** Persists the agency's preferred export software. */
+export function useUpdatePreferredFormat() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: agencyApi.updatePreferredExportFormat,
+    onSuccess: () => {
+      toast.success('Preferencia guardada');
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.preferredExportFormat() });
+    },
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error));
+    },
   });
 }

@@ -55,6 +55,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [isChecking, isAuthenticated, router]);
 
+  // Prevent body-level scrolling while on the dashboard
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    return () => {
+      html.style.overflow = '';
+      body.style.overflow = '';
+    };
+  }, []);
+
   if (isChecking) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -85,7 +97,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <ActingAsBanner />
 
         <main className="flex-1 overflow-y-auto bg-muted/40">
-          <div className="p-6 space-y-4">{children}</div>
+          <div className="p-6 h-full">{children}</div>
         </main>
       </div>
     </div>

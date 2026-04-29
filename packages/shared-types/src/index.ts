@@ -1033,6 +1033,7 @@ export interface AgencyClientWithDetails extends AgencyClientRelation {
     pendingInvoices: number;
     monthlyRevenue: number;
     lastActivity: string | null;
+    pendingExportCount: number;
   };
 }
 
@@ -1196,14 +1197,61 @@ export enum ExportFormat {
   EXCEL = 'EXCEL',
 }
 
+export enum ExportMode {
+  PENDING = 'PENDING',
+  PERIOD = 'PERIOD',
+  MANUAL = 'MANUAL',
+}
+
+/** A single invoice as returned by the export preview endpoint. */
+export interface InvoiceForExport {
+  id: string;
+  number: string | null;
+  issueDate: string;
+  total: number;
+  subtotal: number;
+  taxTotal: number;
+  irpfTotal: number | null;
+  status: string;
+  customerName: string;
+  customerNif: string;
+  /** ISO string of the last time this agency exported this invoice. Null = never exported. */
+  lastExportedAt: string | null;
+  lastExportFormat: string | null;
+}
+
+/** Response from GET /agency/clients/:id/invoices-for-export */
+export interface InvoicesForExportResponse {
+  invoices: InvoiceForExport[];
+  pendingCount: number;
+  totalCount: number;
+  clientBusinessName: string;
+  clientNif: string;
+}
+
+/** Body for POST /agency/clients/:id/export */
+export interface ExportInvoicesInput {
+  format: ExportFormat;
+  mode: ExportMode;
+  /** Required when mode = PERIOD. Format: YYYY-MM-DD */
+  dateFrom?: string;
+  /** Required when mode = PERIOD. Format: YYYY-MM-DD */
+  dateTo?: string;
+  /** Required when mode = MANUAL. */
+  invoiceIds?: string[];
+}
+
 export interface AgencyExportLog {
   id: string;
   agencyTenantId: string;
   clientTenantId: string;
   requestedByUserId: string;
   format: ExportFormat;
-  year: number;
+  mode: ExportMode;
+  year: number | null;
   quarter: number | null;
+  dateFrom: string | null;
+  dateTo: string | null;
   invoicesCount: number;
   totalRevenue: number;
   createdAt: string;
@@ -1214,7 +1262,21 @@ export interface ExportContaPlusInput {
   quarter?: number;
 }
 
-// ==================== FISCAL VALIDATION ====================
+export interface AgencyExportLogEntry {
+  id: string;
+  clientTenantId: string;
+  format: ExportFormat;
+  mode: ExportMode;
+  year: number | null;
+  quarter: number | null;
+  dateFrom: string | null;
+  dateTo: string | null;
+  invoicesCount: number;
+  totalRevenue: number;
+  createdAt: string;
+  requestedByUser: { name: string; email: string } | null;
+  clientTenant: { businessName: string } | null;
+}
 
 export interface FiscalAlert {
   type: 'error' | 'warning' | 'info';
@@ -1232,17 +1294,4 @@ export interface FiscalAlertSummaryItem {
   errorCount: number;
   warningCount: number;
   infoCount: number;
-}
-
-export interface AgencyExportLogEntry {
-  id: string;
-  clientTenantId: string;
-  format: ExportFormat;
-  year: number;
-  quarter: number | null;
-  invoicesCount: number;
-  totalRevenue: number;
-  createdAt: string;
-  requestedByUser: { name: string; email: string } | null;
-  clientTenant: { businessName: string } | null;
 }

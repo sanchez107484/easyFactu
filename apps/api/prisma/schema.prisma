@@ -50,6 +50,7 @@ model Tenant {
   payments           Payment[]
 
   // Agency relations
+  preferredExportFormat   ExportFormat?           @map("preferred_export_format")
   agencyRelations         AgencyClientRelation[]  @relation("AgencyRelations")
   clientRelations         AgencyClientRelation[]  @relation("ClientRelations")
   agencyInvitations       AgencyInvitation[]
@@ -57,6 +58,8 @@ model Tenant {
   clientExportLogs        AgencyExportLog[]        @relation("ClientExportLogs")
   agencyRelationHistory   AgencyRelationHistory[] @relation("AgencyHistoryRelations")
   clientRelationHistory   AgencyRelationHistory[] @relation("ClientHistoryRelations")
+  agencyExportEvents      InvoiceExportEvent[]    @relation("AgencyExportEvents")
+  clientExportEvents      InvoiceExportEvent[]    @relation("ClientExportEvents")
 
   @@index([email])
   @@map("tenants")
@@ -125,9 +128,10 @@ model User {
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   tenantUsers              TenantUser[]
-  agencyExportLogs         AgencyExportLog[] @relation("AgencyExportLogUser")
-  invoicesCreated          Invoice[]          @relation("InvoiceCreatedBy")
-  recurringInvoicesCreated RecurringInvoice[] @relation("RecurringInvoiceCreatedBy")
+  agencyExportLogs         AgencyExportLog[]    @relation("AgencyExportLogUser")
+  invoiceExportEvents      InvoiceExportEvent[] @relation("InvoiceExportEventUser")
+  invoicesCreated          Invoice[]            @relation("InvoiceCreatedBy")
+  recurringInvoicesCreated RecurringInvoice[]   @relation("RecurringInvoiceCreatedBy")
 
   @@map("users")
 }
@@ -326,14 +330,17 @@ model Invoice {
   noteLogs            InvoiceNoteLog[]
   recurringInvoice    RecurringInvoice? @relation(fields: [recurringInvoiceId], references: [id], onDelete: SetNull)
 
+  exportEvents        InvoiceExportEvent[]
+
   // Uniqueness on (tenantId, number) is enforced via a raw partial unique index
   // (WHERE number IS NOT NULL) defined in migration 20260304220000_fix_invoice_number_partial_unique.
   // This allows multiple DRAFT invoices (number = null) per tenant while preventing duplicate
-  // confirmed invoice numbers. Do NOT add @@unique here â€” Prisma would create a full unique index.
+  // confirmed invoice numbers. Do NOT add @@unique here — Prisma would create a full unique index.
   @@index([tenantId, number], map: "invoices_tenant_id_number_idx")
   @@index([tenantId])
   @@index([tenantId, issueDate])
   @@index([tenantId, status])
+  @@index([tenantId, status, issueDate])
   @@index([tenantId, customerId])
   @@index([tenantId, seriesId])
   @@index([tenantId, dueDate])
@@ -589,26 +596,60 @@ enum ExportFormat {
   EXCEL
 }
 
+enum ExportMode {
+  PENDING  // Only invoices not yet exported by this agency
+  PERIOD   // All confirmed invoices in a date range
+  MANUAL   // Specific invoice IDs selected by the user
+}
+
 model AgencyExportLog {
   id               String       @id @default(uuid())
   agencyTenantId   String       @map("agency_tenant_id")
   clientTenantId   String       @map("client_tenant_id")
   requestedByUserId String      @map("requested_by_user_id")
   format           ExportFormat
-  year             Int
-  quarter          Int?         // null = full year export
+  mode             ExportMode   @default(PERIOD)
+  year             Int?         // null for PENDING/MANUAL modes without a specific year
+  quarter          Int?         // null = full year (only relevant for PERIOD mode)
+  dateFrom         DateTime?    @map("date_from") @db.Date
+  dateTo           DateTime?    @map("date_to") @db.Date
   invoicesCount    Int          @map("invoices_count")
   totalRevenue     Decimal      @map("total_revenue") @db.Decimal(12, 2)
   createdAt        DateTime     @default(now()) @map("created_at")
 
-  agencyTenant     Tenant       @relation("AgencyExportLogs", fields: [agencyTenantId], references: [id], onDelete: Cascade)
-  clientTenant     Tenant       @relation("ClientExportLogs", fields: [clientTenantId], references: [id], onDelete: Cascade)
-  requestedByUser  User         @relation("AgencyExportLogUser", fields: [requestedByUserId], references: [id])
+  agencyTenant        Tenant              @relation("AgencyExportLogs", fields: [agencyTenantId], references: [id], onDelete: Cascade)
+  clientTenant        Tenant              @relation("ClientExportLogs", fields: [clientTenantId], references: [id], onDelete: Cascade)
+  requestedByUser     User                @relation("AgencyExportLogUser", fields: [requestedByUserId], references: [id])
+  invoiceExportEvents InvoiceExportEvent[]
 
   @@index([agencyTenantId])
   @@index([clientTenantId])
   @@index([agencyTenantId, createdAt])
   @@map("agency_export_logs")
+}
+
+// Tracks every individual invoice exported by an agency.
+// Source of truth for the "Pendientes" export mode.
+model InvoiceExportEvent {
+  id               String       @id @default(uuid())
+  invoiceId        String       @map("invoice_id")
+  agencyTenantId   String       @map("agency_tenant_id")
+  clientTenantId   String       @map("client_tenant_id")
+  exportLogId      String?      @map("export_log_id")
+  format           ExportFormat
+  exportedByUserId String       @map("exported_by_user_id")
+  exportedAt       DateTime     @default(now()) @map("exported_at")
+
+  invoice          Invoice          @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  agencyTenant     Tenant           @relation("AgencyExportEvents", fields: [agencyTenantId], references: [id], onDelete: Cascade)
+  clientTenant     Tenant           @relation("ClientExportEvents", fields: [clientTenantId], references: [id], onDelete: Cascade)
+  exportLog        AgencyExportLog? @relation(fields: [exportLogId], references: [id], onDelete: SetNull)
+  exportedByUser   User             @relation("InvoiceExportEventUser", fields: [exportedByUserId], references: [id])
+
+  @@index([invoiceId, agencyTenantId])
+  @@index([agencyTenantId, clientTenantId])
+  @@index([exportLogId])
+  @@map("invoice_export_events")
 }
 
 // ==================== RECURRING INVOICES ====================

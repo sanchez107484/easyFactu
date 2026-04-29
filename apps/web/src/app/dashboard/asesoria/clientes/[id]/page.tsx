@@ -8,12 +8,12 @@ import {
   useAgencyClient,
   useRevokeClient,
   useUpdateClientNotes,
-  useExportContaPlus,
   useClientFiscalAlerts,
   useExportLogs,
   useResendActivation,
 } from '@/hooks/use-agency';
 import { useSwitchTenant } from '@/hooks/use-switch-tenant';
+import { ExportModal } from '@/app/dashboard/asesoria/_components/export-modal';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,13 +39,6 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { InvoiceStatusBadge } from '@/components/common/invoice-status-badge';
 import {
@@ -81,16 +74,6 @@ import type {
 interface PageProps {
   params: Promise<{ id: string }>;
 }
-
-const CURRENT_YEAR = new Date().getFullYear();
-const YEAR_OPTIONS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2];
-const QUARTER_OPTIONS = [
-  { value: '', label: 'Año completo' },
-  { value: '1', label: '1er trimestre (Ene-Mar)' },
-  { value: '2', label: '2º trimestre (Abr-Jun)' },
-  { value: '3', label: '3er trimestre (Jul-Sep)' },
-  { value: '4', label: '4º trimestre (Oct-Dic)' },
-];
 
 function FiscalAlertRow({ alert }: { alert: FiscalAlert }) {
   const config = {
@@ -300,8 +283,6 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
 
   const [revokeOpen, setRevokeOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
-  const [exportYear, setExportYear] = useState(String(CURRENT_YEAR));
-  const [exportQuarter, setExportQuarter] = useState('');
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState('');
   const [emailModalOpen, setEmailModalOpen] = useState(false);
@@ -310,7 +291,6 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
   const { data, isLoading, error } = useAgencyClient(clientTenantId, isOnAgencyTenant);
   const { mutate: revokeClient, isPending: isRevoking } = useRevokeClient();
   const { mutate: updateNotes, isPending: isSavingNotes } = useUpdateClientNotes();
-  const { mutate: exportContaPlus, isPending: isExporting } = useExportContaPlus();
   const { mutate: resendActivation, isPending: isResending } = useResendActivation();
   const {
     data: fiscalAlerts,
@@ -378,19 +358,6 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
 
   const handleSaveNotes = () => {
     updateNotes({ clientTenantId, notes: notesValue }, { onSuccess: () => setEditingNotes(false) });
-  };
-
-  const handleExport = () => {
-    exportContaPlus(
-      {
-        clientTenantId,
-        params: {
-          year: parseInt(exportYear, 10),
-          quarter: exportQuarter ? parseInt(exportQuarter, 10) : undefined,
-        },
-      },
-      { onSuccess: () => setExportOpen(false) },
-    );
   };
 
   if (isLoading) {
@@ -461,7 +428,7 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button variant="outline" onClick={() => setExportOpen(true)}>
             <Download className="mr-2 h-4 w-4" />
-            Exportar ContaPlus
+            Exportar
           </Button>
           <Button onClick={handleManage} disabled={isSwitchingTenant}>
             {isSwitchingTenant ? (
@@ -782,105 +749,49 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
           </CardHeader>
           <CardContent>
             <div className="divide-y">
-              {exportLogsData.data.slice(0, 5).map((log: AgencyExportLogEntry) => (
-                <div
-                  key={log.id}
-                  className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0"
-                >
-                  <div>
-                    <p className="text-sm font-medium">
-                      {log.format}{' '}
-                      <span className="font-normal text-muted-foreground">
-                        {log.year}
-                        {log.quarter ? ` · T${log.quarter}` : ''}
-                      </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(log.createdAt)}
-                      {log.requestedByUser && ` · ${log.requestedByUser.name}`}
-                    </p>
+              {exportLogsData.data.slice(0, 5).map((log: AgencyExportLogEntry) => {
+                const period = log.dateFrom && log.dateTo
+                  ? `${formatDate(log.dateFrom)} – ${formatDate(log.dateTo)}`
+                  : log.year
+                    ? `${log.year}${log.quarter ? ` · T${log.quarter}` : ''}`
+                    : log.mode === 'PENDING' ? 'Pendientes' : '—';
+
+                return (
+                  <div
+                    key={log.id}
+                    className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">
+                        {log.format}{' '}
+                        <span className="font-normal text-muted-foreground">{period}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(log.createdAt)}
+                        {log.requestedByUser && ` · ${log.requestedByUser.name}`}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm tabular-nums">{log.invoicesCount} facturas</p>
+                      <p className="text-xs text-muted-foreground tabular-nums">
+                        {formatCurrency(log.totalRevenue)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm tabular-nums">{log.invoicesCount} facturas</p>
-                    <p className="text-xs text-muted-foreground tabular-nums">
-                      {formatCurrency(log.totalRevenue)}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Export ContaPlus dialog */}
-      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Download className="h-5 w-5" />
-              Exportar a ContaPlus
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <p className="text-sm text-muted-foreground">
-              Genera un archivo <code className="text-xs">.txt</code> compatible con ContaPlus con
-              las facturas confirmadas del período seleccionado.
-            </p>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="export-year">Año</Label>
-              <Select value={exportYear} onValueChange={setExportYear}>
-                <SelectTrigger id="export-year">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {YEAR_OPTIONS.map((y) => (
-                    <SelectItem key={y} value={String(y)}>
-                      {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="export-quarter">Período</Label>
-              <Select value={exportQuarter} onValueChange={setExportQuarter}>
-                <SelectTrigger id="export-quarter">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {QUARTER_OPTIONS.map((q) => (
-                    <SelectItem key={q.value} value={q.value}>
-                      {q.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline" disabled={isExporting}>
-                Cancelar
-              </Button>
-            </DialogClose>
-            <Button onClick={handleExport} disabled={isExporting}>
-              {isExporting ? (
-                'Generando...'
-              ) : (
-                <>
-                  <Download className="mr-2 h-4 w-4" />
-                  Descargar
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* New 3-mode Export modal */}
+      <ExportModal
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        clientTenantId={clientTenantId}
+        clientName={data?.clientTenant.businessName ?? ''}
+      />
 
       {/* Change email dialog */}
       <Dialog open={emailModalOpen} onOpenChange={setEmailModalOpen}>

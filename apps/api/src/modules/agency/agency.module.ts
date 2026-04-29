@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AgencyController } from './agency.controller';
 import { AgencyService } from './agency.service';
+import { AgencyExportService } from './agency-export.service';
 import { ContaPlusExportService } from './contaplus-export.service';
 import { FiscalValidatorService } from './fiscal-validator.service';
 import { PrismaModule } from '../../prisma/prisma.module';
@@ -11,7 +12,13 @@ import { AgencyAccessGuard } from '../../common/guards/agency-access.guard';
   imports: [PrismaModule, InvoiceSeriesModule],
   // EmailService is provided globally via EmailModule (@Global decorator)
   controllers: [AgencyController],
-  providers: [AgencyService, ContaPlusExportService, FiscalValidatorService, AgencyAccessGuard],
+  providers: [
+    AgencyService,
+    AgencyExportService,
+    ContaPlusExportService,
+    FiscalValidatorService,
+    AgencyAccessGuard,
+  ],
   exports: [AgencyService],
 })
 export class AgencyModule {}

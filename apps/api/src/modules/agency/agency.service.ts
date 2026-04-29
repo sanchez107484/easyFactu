@@ -110,11 +110,12 @@ export class AgencyService {
       pending_invoices: bigint;
       monthly_revenue: string | null;
       last_activity: Date | null;
+      pending_export_count: bigint;
     };
 
     const invoiceStats =
       clientIds.length > 0
-        ? await this.prisma.$queryRaw<InvoiceStatRow[]>`
+        ? await this.prisma.$queryRaw<InvoiceStatRow[]>(Prisma.sql`
             SELECT
               tenant_id::text,
               COUNT(*) FILTER (WHERE status != 'DRAFT') AS total_invoices,
@@ -122,11 +123,19 @@ export class AgencyService {
               SUM(total) FILTER (
                 WHERE status IN ('CONFIRMED', 'SENT', 'PAID') AND issue_date >= ${startOfMonth}
               ) AS monthly_revenue,
-              MAX(issue_date) FILTER (WHERE status != 'DRAFT') AS last_activity
+              MAX(issue_date) FILTER (WHERE status != 'DRAFT') AS last_activity,
+              COUNT(*) FILTER (
+                WHERE status IN ('CONFIRMED', 'SENT', 'PAID')
+                AND NOT EXISTS (
+                  SELECT 1 FROM invoice_export_events e
+                  WHERE e.invoice_id = invoices.id
+                  AND e.agency_tenant_id = ${agencyTenantId}
+                )
+              ) AS pending_export_count
             FROM invoices
-            WHERE tenant_id::text = ANY(${clientIds})
+            WHERE tenant_id = ANY(ARRAY[${Prisma.join(clientIds.map((id) => Prisma.sql`${id}`))}])
             GROUP BY tenant_id
-          `
+          `)
         : [];
 
     const statsMap = new Map(invoiceStats.map((r) => [r.tenant_id, r]));
@@ -152,6 +161,7 @@ export class AgencyService {
           pendingInvoices: Number(stats?.pending_invoices ?? 0),
           monthlyRevenue: Number(stats?.monthly_revenue ?? 0),
           lastActivity: stats?.last_activity ? (stats.last_activity as Date).toISOString() : null,
+          pendingExportCount: Number(stats?.pending_export_count ?? 0),
         },
       };
     });
@@ -200,7 +210,7 @@ export class AgencyService {
       clients_count: bigint;
     };
 
-    const [result] = await this.prisma.$queryRaw<IvaRow[]>`
+    const [result] = await this.prisma.$queryRaw<IvaRow[]>(Prisma.sql`
       SELECT
         SUM(tax_total)  AS total_iva,
         SUM(irpf_total) AS total_irpf,
@@ -208,11 +218,11 @@ export class AgencyService {
         COUNT(*)        AS invoices_count,
         COUNT(DISTINCT tenant_id) AS clients_count
       FROM invoices
-      WHERE tenant_id::text = ANY(${clientIds})
+      WHERE tenant_id = ANY(ARRAY[${Prisma.join(clientIds.map((id) => Prisma.sql`${id}`))}])
         AND status IN ('CONFIRMED', 'SENT', 'PAID')
         AND issue_date >= ${startDate}
         AND issue_date <= ${endDate}
-    `;
+    `);
 
     return {
       quarter,
@@ -1459,15 +1469,19 @@ export class AgencyService {
         _count: { id: true },
       }),
       // Info: customers with > 50 invoices in the last 12 months (potential duplicate NIF)
-      this.prisma.$queryRaw<Array<{ tenant_id: string }>>`
+      this.prisma
+        .$queryRaw<Array<{ tenant_id: string }>>(
+          Prisma.sql`
           SELECT DISTINCT i.tenant_id::text
           FROM invoices i
           JOIN customers c ON c.id = i.customer_id
-          WHERE i.tenant_id::text = ANY(${clientIds})
+          WHERE i.tenant_id = ANY(ARRAY[${Prisma.join(clientIds.map((id) => Prisma.sql`${id}`))}])
             AND i.issue_date >= NOW() - INTERVAL '12 months'
           GROUP BY i.tenant_id, c.nif
           HAVING COUNT(i.id) > 50
-        `.catch(() => [] as Array<{ tenant_id: string }>),
+        `
+        )
+        .catch(() => [] as Array<{ tenant_id: string }>),
     ]);
 
     const pendingVerifactuSet = new Set(pendingVerifactuGroups.map((r) => r.tenantId));

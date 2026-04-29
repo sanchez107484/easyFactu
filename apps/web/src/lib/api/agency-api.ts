@@ -19,6 +19,10 @@ import type {
   ExportContaPlusInput,
   QuarterlyIvaSummary,
   ResendActivationInput,
+  InvoicesForExportResponse,
+  ExportInvoicesInput,
+  ExportMode,
+  ExportFormat,
 } from '@easyfactura/shared-types';
 
 export interface InvitationPublicInfo {
@@ -226,5 +230,56 @@ export const agencyApi = {
       data,
     );
     return unwrapApiResponse(response);
+  },
+
+  // ─── New export API (3-mode export system) ────────────────────────────────
+
+  /**
+   * Returns the list of invoices and their export status for the preview modal.
+   * mode=PENDING → only never-exported by this agency
+   * mode=PERIOD  → all confirmed in the given date range
+   * mode=MANUAL  → all confirmed (caller selects via checkboxes)
+   */
+  getInvoicesForExport: async (
+    clientTenantId: string,
+    mode: ExportMode,
+    dateFrom?: string,
+    dateTo?: string,
+  ): Promise<InvoicesForExportResponse> => {
+    const response = await apiClient.get(`/agency/clients/${clientTenantId}/invoices-for-export`, {
+      params: { mode, dateFrom, dateTo },
+    });
+    return unwrapApiResponse(response);
+  },
+
+  /**
+   * Runs the export, registers InvoiceExportEvents, and returns a downloadable blob.
+   */
+  exportInvoices: async (
+    clientTenantId: string,
+    data: ExportInvoicesInput,
+  ): Promise<{ blob: Blob; filename: string; invoicesCount: number; totalRevenue: number }> => {
+    const response = await apiClient.post(`/agency/clients/${clientTenantId}/export`, data, {
+      responseType: 'blob',
+    });
+
+    const disposition = response.headers['content-disposition'] as string | undefined;
+    const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
+    const filename = filenameMatch?.[1] ?? `export_${clientTenantId}.txt`;
+    const invoicesCount = parseInt(response.headers['x-invoices-count'] ?? '0', 10);
+    const totalRevenue = parseFloat(response.headers['x-total-revenue'] ?? '0');
+
+    return { blob: response.data as Blob, filename, invoicesCount, totalRevenue };
+  },
+
+  /** Returns the agency's preferred export software, or null if not set. */
+  getPreferredExportFormat: async (): Promise<{ format: ExportFormat | null }> => {
+    const response = await apiClient.get('/agency/export/preferred-format');
+    return unwrapApiResponse(response);
+  },
+
+  /** Persists the agency's preferred export software. */
+  updatePreferredExportFormat: async (format: ExportFormat): Promise<void> => {
+    await apiClient.patch('/agency/export/preferred-format', { format });
   },
 };

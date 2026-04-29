@@ -4,8 +4,15 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAgencyContext } from '@/hooks/use-agency-context';
 import { useSwitchTenant } from '@/hooks/use-switch-tenant';
-import { useAgencyStats, useAgencyClients, useAgencyPendingInvitations } from '@/hooks/use-agency';
+import {
+  useAgencyStats,
+  useAgencyClients,
+  useAgencyPendingInvitations,
+  useAgencyPreferredFormat,
+  useUpdatePreferredFormat,
+} from '@/hooks/use-agency';
 import { brandConfig } from '@easyfactura/brand-config';
+import { ExportFormat } from '@easyfactura/shared-types';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -16,6 +23,9 @@ import {
   SwitchCamera,
   ClipboardCheck,
   Loader2,
+  Settings2,
+  CheckCircle2,
+  FileDown,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -37,6 +47,8 @@ export default function AgencyHubPage() {
     isOnAgencyTenant,
   );
   const { data: invitations = [] } = useAgencyPendingInvitations(isOnAgencyTenant);
+  const { data: preferredFormatData } = useAgencyPreferredFormat();
+  const { mutate: updatePreferredFormat, isPending: isUpdatingFormat } = useUpdatePreferredFormat();
 
   // Capture state at mount time — not reactive to in-page tenant switches.
   // If the user arrives here via the back button while acting as a client,
@@ -171,6 +183,84 @@ export default function AgencyHubPage() {
 
       {/* ── Invitaciones pendientes ── */}
       <PendingInvitationsWidget invitations={invitations} />
+
+      {/* ── Exportar facturas ── */}
+      <div className="flex items-center justify-between gap-4 rounded-xl border bg-card p-5">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <FileDown className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="font-semibold leading-snug">Exportar facturas</p>
+            <p className="mt-0.5 text-sm text-muted-foreground leading-snug">
+              Exporta las facturas de tus clientes a ContaPlus, A3CON y otros softwares contables.
+            </p>
+          </div>
+        </div>
+        <Link href="/dashboard/asesoria/exportar" className="shrink-0">
+          <Button size="sm">
+            <FileDown className="mr-2 h-4 w-4" />
+            Ir a exportar
+          </Button>
+        </Link>
+      </div>
+
+      {/* ── Configuración de exportaciones ── */}
+      {isOnAgencyTenant && (
+        <div className="rounded-xl border bg-card p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Settings2 className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-base font-semibold">Software de exportación</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Elige el software contable al que exportas las facturas de tus clientes. Se usará como
+            formato por defecto al exportar, aunque puedes cambiarlo en cada exportación.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              {
+                id: ExportFormat.CONTAPLUS,
+                label: 'ContaPlus',
+                description: 'Grupo Sage — el más extendido en España',
+                available: true,
+              },
+              {
+                id: ExportFormat.A3CON,
+                label: 'a3CON',
+                description: 'Wolters Kluwer — próximamente',
+                available: false,
+              },
+              {
+                id: ExportFormat.EXCEL,
+                label: 'Excel / CSV',
+                description: 'Compatible con cualquier hoja de cálculo — próximamente',
+                available: false,
+              },
+            ].map((option) => {
+              const isSelected = (preferredFormatData?.format ?? 'CONTAPLUS') === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  disabled={!option.available || isUpdatingFormat}
+                  onClick={() => option.available && updatePreferredFormat(option.id)}
+                  className={`relative flex flex-col gap-1 rounded-lg border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${
+                    isSelected
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50 hover:bg-muted/30'
+                  }`}
+                >
+                  {isSelected && (
+                    <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-primary" />
+                  )}
+                  <span className="font-semibold text-sm pr-6">{option.label}</span>
+                  <span className="text-xs text-muted-foreground">{option.description}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Guía de inicio rápido ── */}
       <div className="rounded-xl border bg-card p-6">

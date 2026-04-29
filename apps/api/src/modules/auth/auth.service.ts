@@ -203,15 +203,20 @@ export class AuthService {
       }
       activeTenantId = dto.tenantId;
     } else if (user.lastActiveTenantId) {
-      // Use last active tenant
-      const hasLastActive = user.tenantUsers.some(
-        (tu: { tenantId: string }) => tu.tenantId === user.lastActiveTenantId
+      // Use last active tenant, but only if the user owns it.
+      // An asesor acting as a managed client does not own that client's tenant,
+      // so we must not restore them there on login — use their primary owned tenant.
+      const lastActiveTenantUser = user.tenantUsers.find(
+        (tu) => tu.tenantId === user.lastActiveTenantId
       );
-      const firstTenant = user.tenantUsers[0];
-      if (!firstTenant) {
+      const firstOwnedTenant = user.tenantUsers.find((tu) => tu.isOwner) ?? user.tenantUsers[0];
+      if (!firstOwnedTenant) {
         throw new UnauthorizedException('No tienes acceso a ninguna empresa');
       }
-      activeTenantId = hasLastActive ? user.lastActiveTenantId : firstTenant.tenantId;
+      activeTenantId =
+        lastActiveTenantUser?.isOwner === true
+          ? user.lastActiveTenantId
+          : firstOwnedTenant.tenantId;
     } else {
       // Use first tenant
       const firstTenant = user.tenantUsers[0];
@@ -347,9 +352,12 @@ export class AuthService {
 
     const tokens = await this.generateTokens(user.id, user.email, dto.tenantId);
 
+    // Do NOT update lastActiveTenantId here: the user is acting as a managed client,
+    // not switching to one of their own tenants. Persisting the client's tenantId would
+    // cause the asesor to land on the client's context on their next login.
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { lastActiveTenantId: dto.tenantId, refreshToken: tokens.refreshToken },
+      data: { refreshToken: tokens.refreshToken },
     });
 
     return {

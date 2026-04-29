@@ -24,6 +24,7 @@ import {
   ArrowLeft,
   Loader2,
   Mail,
+  FileDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -87,6 +88,12 @@ const agencyNavItems: NavEntry[] = [
     href: '/dashboard/asesoria/invitaciones',
     icon: Mail,
     description: 'Historial de invitaciones enviadas',
+  },
+  {
+    title: 'Exportar facturas',
+    href: '/dashboard/asesoria/exportar',
+    icon: FileDown,
+    description: 'Exporta a ContaPlus, A3CON y más',
   },
 ];
 

@@ -21,15 +21,19 @@ import { AgencyService } from './agency.service';
 import { CreateDirectClientDto } from './dto/create-direct-client.dto';
 import { InviteClientDto } from './dto/invite-client.dto';
 import { QueryAgencyClientsDto } from './dto/query-agency-clients.dto';
-import { ExportClientDto } from './dto/export-client.dto';
 import { ResendActivationDto } from './dto/resend-activation.dto';
+import {
+  ExportInvoicesDto,
+  QueryInvoicesForExportDto,
+  UpdatePreferredFormatDto,
+} from './dto/export-invoices.dto';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { SkipAgencyGuard } from '../../common/decorators/skip-agency-guard.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AgencyAccessGuard } from '../../common/guards/agency-access.guard';
-import { ContaPlusExportService } from './contaplus-export.service';
+import { AgencyExportService } from './agency-export.service';
 import { FiscalValidatorService } from './fiscal-validator.service';
 
 @ApiTags('agency')
@@ -39,7 +43,7 @@ import { FiscalValidatorService } from './fiscal-validator.service';
 export class AgencyController {
   constructor(
     private readonly agencyService: AgencyService,
-    private readonly contaPlusExportService: ContaPlusExportService,
+    private readonly agencyExportService: AgencyExportService,
     private readonly fiscalValidatorService: FiscalValidatorService
   ) {}
 
@@ -228,33 +232,74 @@ export class AgencyController {
     );
   }
 
-  // ─── ContaPlus export ───────────────────────────────────────────────────
+  // ─── Export: invoices preview + run + preferred format ─────────────────
 
-  @Get('clients/:clientTenantId/export/contaplus')
-  @ApiOperation({ summary: 'Exportar facturas del cliente en formato ContaPlus (.txt)' })
-  @ApiResponse({ status: 200, description: 'Archivo ContaPlus descargable' })
-  @ApiResponse({ status: 400, description: 'No hay facturas en el período seleccionado' })
-  async exportContaPlus(
+  @Get('clients/:clientTenantId/invoices-for-export')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @ApiOperation({ summary: 'Vista previa de facturas para exportar (modal paso 2)' })
+  @ApiResponse({ status: 200, description: 'Facturas con estado de exportación' })
+  getInvoicesForExport(
+    @CurrentTenant() tenantId: string,
+    @Param('clientTenantId', ParseUUIDPipe) clientTenantId: string,
+    @Query() query: QueryInvoicesForExportDto
+  ) {
+    return this.agencyExportService.getInvoicesForExport(
+      tenantId,
+      clientTenantId,
+      query.mode,
+      query.dateFrom,
+      query.dateTo
+    );
+  }
+
+  @Post('clients/:clientTenantId/export')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Ejecutar exportación y descargar el archivo' })
+  @ApiResponse({ status: 200, description: 'Archivo generado y descargado' })
+  async exportInvoices(
     @CurrentTenant() tenantId: string,
     @CurrentUser('id') userId: string,
     @Param('clientTenantId', ParseUUIDPipe) clientTenantId: string,
-    @Query() query: ExportClientDto,
+    @Body() body: ExportInvoicesDto,
     @Res() res: Response
   ) {
-    const { content, filename, invoicesCount, totalRevenue } =
-      await this.contaPlusExportService.generateContaPlusExport(
+    const { fileBuffer, filename, invoicesCount, totalRevenue } =
+      await this.agencyExportService.exportInvoices(
         tenantId,
         clientTenantId,
         userId,
-        query.year,
-        query.quarter
+        body.format,
+        body.mode,
+        body.dateFrom,
+        body.dateTo,
+        body.invoiceIds
       );
 
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Type', 'text/plain; charset=windows-1252');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', String(fileBuffer.length));
     res.setHeader('X-Invoices-Count', String(invoicesCount));
     res.setHeader('X-Total-Revenue', String(totalRevenue));
-    res.send(content);
+    res.send(fileBuffer);
+  }
+
+  @Get('export/preferred-format')
+  @ApiOperation({ summary: 'Formato de exportación preferido de la asesoría' })
+  @ApiResponse({ status: 200, description: 'Formato preferido' })
+  getPreferredExportFormat(@CurrentTenant() tenantId: string) {
+    return this.agencyExportService.getPreferredFormat(tenantId).then((format) => ({ format }));
+  }
+
+  @Patch('export/preferred-format')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Actualizar el formato de exportación preferido de la asesoría' })
+  @ApiResponse({ status: 204, description: 'Formato actualizado' })
+  async updatePreferredExportFormat(
+    @CurrentTenant() tenantId: string,
+    @Body() body: UpdatePreferredFormatDto
+  ) {
+    await this.agencyExportService.updatePreferredFormat(tenantId, body.format);
   }
 
   // ─── Fiscal validator ───────────────────────────────────────────────────

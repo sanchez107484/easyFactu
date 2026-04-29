@@ -312,7 +312,10 @@ export default function AgencyClientsPage() {
                       Facturas
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground hidden lg:table-cell">
-                      Pendientes
+                      Pendientes cobro
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground hidden lg:table-cell">
+                      Por exportar
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground hidden xl:table-cell">
                       Ingreso mensual
@@ -412,6 +415,21 @@ export default function AgencyClientsPage() {
                             </Badge>
                           ) : (
                             <span className="text-sm text-muted-foreground">0</span>
+                          )}
+                        </td>
+
+                        <td className="px-4 py-3 text-right hidden lg:table-cell">
+                          {(stats?.pendingExportCount ?? 0) > 0 ? (
+                            <Badge
+                              variant="outline"
+                              className="border-proforma-200 bg-proforma-50 text-proforma-700 dark:border-proforma-800 dark:bg-proforma-950/30 dark:text-proforma-400"
+                            >
+                              {stats!.pendingExportCount}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-secondary-600 dark:text-secondary-400">
+                              ✓ Al día
+                            </span>
                           )}
                         </td>
 
