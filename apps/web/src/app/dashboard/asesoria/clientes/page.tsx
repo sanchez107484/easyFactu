@@ -3,12 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  useAgencyClients,
-  useRevokeClient,
-  useAgencyPendingInvitations,
-  useCancelInvitation,
-} from '@/hooks/use-agency';
+import { useAgencyClients, useRevokeClient, useAllInvitations } from '@/hooks/use-agency';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,7 +36,6 @@ import {
   UserPlus,
   X,
   Clock,
-  XCircle,
   ArrowRightLeft,
   FileText,
   Send,
@@ -51,18 +45,16 @@ import {
   AlertTriangle,
   ShieldAlert,
   Info,
+  History,
 } from 'lucide-react';
 import { formatCurrency, cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import type {
-  AgencyClientWithDetails,
-  AgencyInvitation,
-  ClientActivationStatus,
-} from '@easyfactura/shared-types';
+import type { AgencyClientWithDetails, ClientActivationStatus } from '@easyfactura/shared-types';
 import { useAgencyContext } from '@/hooks/use-agency-context';
 import { useSwitchTenant } from '@/hooks/use-switch-tenant';
 import { VincularClienteModal } from '../_components/vincular-cliente-modal';
 import { ExpiredLinkModal } from '../_components/expired-link-modal';
+import { HistorialInvitacionesModal } from '../_components/historial-invitaciones-modal';
 
 function ClientActivationBadge({
   activationStatus,
@@ -129,18 +121,16 @@ export default function AgencyClientsPage() {
   const [search, setSearch] = useState('');
   const [managingClientId, setManagingClientId] = useState<string | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<AgencyClientWithDetails | null>(null);
-  const [cancelTarget, setCancelTarget] = useState<AgencyInvitation | null>(null);
   const [isVincularModalOpen, setIsVincularModalOpen] = useState(false);
+  const [isHistorialOpen, setIsHistorialOpen] = useState(false);
   const [expiredLinkTarget, setExpiredLinkTarget] = useState<{
     clientTenantId: string;
     email: string;
   } | null>(null);
 
   const { data, isLoading } = useAgencyClients({ search: search || undefined }, isOnAgencyTenant);
-  const { data: invitationsData, isLoading: isLoadingInvitations } =
-    useAgencyPendingInvitations(isOnAgencyTenant);
+  const { data: allInvitations = [] } = useAllInvitations(isOnAgencyTenant);
   const { mutate: revokeClient, isPending: isRevoking } = useRevokeClient();
-  const { mutate: cancelInvitation, isPending: isCancelling } = useCancelInvitation();
 
   const mountedActingAsClient = useRef(isActingAsClient);
   const mountedOnAgencyTenant = useRef(isOnAgencyTenant);
@@ -174,13 +164,7 @@ export default function AgencyClientsPage() {
     });
   };
 
-  const handleCancelInvitation = (id: string) => {
-    cancelInvitation(id, {
-      onSuccess: () => setCancelTarget(null),
-    });
-  };
-
-  const pendingInvitations = invitationsData ?? [];
+  const pendingInvitations = allInvitations.filter((inv) => inv.status === 'PENDING');
 
   return (
     <div className="space-y-6">
@@ -193,6 +177,14 @@ export default function AgencyClientsPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            className="text-muted-foreground"
+            onClick={() => setIsHistorialOpen(true)}
+          >
+            <History className="mr-2 h-4 w-4" />
+            Invitaciones enviadas
+          </Button>
           <Button variant="outline" onClick={() => setIsVincularModalOpen(true)}>
             <Users className="mr-2 h-4 w-4" />
             Vincular cliente
@@ -205,6 +197,28 @@ export default function AgencyClientsPage() {
           </Link>
         </div>
       </div>
+
+      {/* Pending invitations banner */}
+      {!search && pendingInvitations.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setIsHistorialOpen(true)}
+          className="flex w-full items-center gap-3 rounded-xl border border-agency-200 bg-agency-50 px-4 py-3 text-left transition-colors hover:bg-agency-100 dark:border-agency-800/50 dark:bg-agency-950/20 dark:hover:bg-agency-950/30"
+        >
+          <Mail className="h-4 w-4 shrink-0 text-agency-600 dark:text-agency-400" />
+          <p className="flex-1 text-sm text-agency-900 dark:text-agency-300">
+            <span className="font-semibold">
+              {pendingInvitations.length} invitación{pendingInvitations.length > 1 ? 'es' : ''}{' '}
+              pendiente{pendingInvitations.length > 1 ? 's' : ''}
+            </span>{' '}
+            · Esperando que los clientes acepten
+          </p>
+          <span className="flex items-center gap-1 text-xs font-medium text-agency-700 dark:text-agency-400">
+            <History className="h-3.5 w-3.5" />
+            Ver invitaciones
+          </span>
+        </button>
+      )}
 
       {/* How it works — shown when there are no clients yet */}
       {!isLoading && !data?.data.length && !pendingInvitations.length && (
@@ -500,85 +514,6 @@ export default function AgencyClientsPage() {
         </Card>
       )}
 
-      {/* Pending invitations section */}
-      {!search && (isLoadingInvitations || pendingInvitations.length > 0) && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Invitaciones pendientes
-            </h2>
-            {!isLoadingInvitations && (
-              <Badge variant="secondary" className="text-xs">
-                {pendingInvitations.length}
-              </Badge>
-            )}
-          </div>
-
-          {isLoadingInvitations ? (
-            <div className="grid gap-2">
-              {[...Array(2)].map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full rounded-xl" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid gap-2">
-              {pendingInvitations.map((inv) => {
-                const expiresAt = new Date(inv.expiresAt);
-                const isExpiringSoon = expiresAt.getTime() - Date.now() < 24 * 60 * 60 * 1000;
-
-                return (
-                  <Card key={inv.id} className="border-dashed bg-muted/30">
-                    <CardContent className="flex items-center justify-between gap-4 py-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">
-                            {inv.inviteeName ? (
-                              <>
-                                {inv.inviteeName}{' '}
-                                <span className="text-muted-foreground font-normal">
-                                  ({inv.inviteeEmail})
-                                </span>
-                              </>
-                            ) : (
-                              inv.inviteeEmail
-                            )}
-                          </p>
-                          <p
-                            className={`text-xs ${isExpiringSoon ? 'text-overdue-600 dark:text-overdue-400' : 'text-muted-foreground'}`}
-                          >
-                            Expira el{' '}
-                            {expiresAt.toLocaleDateString('es-ES', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric',
-                            })}
-                            {isExpiringSoon && ' · Expira pronto'}
-                          </p>
-                        </div>
-                      </div>
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="shrink-0 text-muted-foreground hover:text-destructive"
-                        onClick={() => setCancelTarget(inv)}
-                      >
-                        <XCircle className="mr-1.5 h-3.5 w-3.5" />
-                        Cancelar
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Revoke access confirmation */}
       <AlertDialog open={!!revokeTarget} onOpenChange={() => setRevokeTarget(null)}>
         <AlertDialogContent>
@@ -611,30 +546,6 @@ export default function AgencyClientsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Cancel invitation confirmation */}
-      <AlertDialog open={!!cancelTarget} onOpenChange={() => setCancelTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar invitación</AlertDialogTitle>
-            <AlertDialogDescription>
-              ¿Estás seguro de que quieres cancelar la invitación enviada a{' '}
-              <strong>{cancelTarget?.inviteeName || cancelTarget?.inviteeEmail}</strong>? El enlace
-              de invitación dejará de funcionar.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>No cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => cancelTarget && handleCancelInvitation(cancelTarget.id)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={isCancelling}
-            >
-              Cancelar invitación
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Vincular cliente modal */}
       <VincularClienteModal
         isOpen={isVincularModalOpen}
@@ -650,6 +561,11 @@ export default function AgencyClientsPage() {
           clientEmail={expiredLinkTarget.email}
         />
       )}
+      {/* Historial de invitaciones modal */}
+      <HistorialInvitacionesModal
+        isOpen={isHistorialOpen}
+        onClose={() => setIsHistorialOpen(false)}
+      />
     </div>
   );
 }

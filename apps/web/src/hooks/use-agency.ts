@@ -17,6 +17,8 @@ import type {
   MyAgencyRelation,
   AgencyInvitationFull,
   ResendActivationInput,
+  AgencyInvoicesQuery,
+  AgencyImpersonationLogQuery,
 } from '@easyfactura/shared-types';
 
 const AGENCY_KEYS = {
@@ -42,6 +44,10 @@ const AGENCY_KEYS = {
     dateTo?: string,
   ) => [...AGENCY_KEYS.all, 'invoices-for-export', clientTenantId, mode, dateFrom, dateTo] as const,
   preferredExportFormat: () => [...AGENCY_KEYS.all, 'preferred-export-format'] as const,
+  allClientsInvoices: (query: AgencyInvoicesQuery) =>
+    [...AGENCY_KEYS.all, 'all-clients-invoices', query] as const,
+  impersonationLogs: (query: AgencyImpersonationLogQuery) =>
+    [...AGENCY_KEYS.all, 'impersonation-logs', query] as const,
 };
 
 export function useAgencyStats(enabled = true) {
@@ -113,6 +119,7 @@ export function useInviteClient() {
     mutationFn: (data: InviteClientInput) => agencyApi.inviteClient(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.invitations() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.allInvitations() });
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.stats() });
       toast.success('Invitación enviada correctamente');
     },
@@ -242,6 +249,7 @@ export function useCancelInvitation() {
     mutationFn: (id: string) => agencyApi.cancelInvitation(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.invitations() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.allInvitations() });
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.stats() });
       toast.success('Invitación cancelada');
     },
@@ -432,5 +440,32 @@ export function useUpdatePreferredFormat() {
     onError: (error: unknown) => {
       toast.error(getErrorMessage(error));
     },
+  });
+}
+
+/**
+ * Consolidated multi-client invoices view.
+ * Returns paginated invoices, meta and aggregated summary computed over the
+ * full filter (not just the current page).
+ */
+export function useAllClientsInvoices(query: AgencyInvoicesQuery, enabled = true) {
+  return useQuery({
+    queryKey: AGENCY_KEYS.allClientsInvoices(query),
+    queryFn: () => agencyApi.getAllClientsInvoices(query),
+    staleTime: 30 * 1000,
+    enabled,
+  });
+}
+
+/**
+ * Audit trail of agency users impersonating client tenants.
+ * Append-only — entries are never edited or deleted.
+ */
+export function useImpersonationLogs(query: AgencyImpersonationLogQuery, enabled = true) {
+  return useQuery({
+    queryKey: AGENCY_KEYS.impersonationLogs(query),
+    queryFn: () => agencyApi.getImpersonationLogs(query),
+    staleTime: 30 * 1000,
+    enabled,
   });
 }

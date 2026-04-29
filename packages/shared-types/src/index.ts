@@ -1229,6 +1229,106 @@ export interface InvoicesForExportResponse {
   clientNif: string;
 }
 
+// ==================== AGENCY CONSOLIDATED INVOICES (multi-client view) ====================
+
+/** A single row of the agency consolidated invoices table (across all managed clients). */
+export interface AgencyInvoiceListItem {
+  id: string;
+  number: string | null;
+  issueDate: string;
+  dueDate: string | null;
+  status: InvoiceStatus;
+  paymentStatus: PaymentStatus;
+  subtotal: number;
+  taxTotal: number;
+  irpfTotal: number | null;
+  total: number;
+  amountPaid: number;
+  client: {
+    tenantId: string;
+    businessName: string;
+    nif: string;
+  };
+  customer: {
+    name: string;
+    nif: string | null;
+  };
+  verifactuStatus: VerifactuStatus | null;
+}
+
+/** Aggregated totals applied to the current filter (not just the page). */
+export interface AgencyInvoicesSummary {
+  invoicesCount: number;
+  clientsCount: number;
+  totalSubtotal: number;
+  totalIva: number;
+  totalIrpf: number;
+  totalRevenue: number;
+  totalPending: number;
+}
+
+export interface AgencyInvoicesQuery {
+  clientTenantId?: string;
+  status?: InvoiceStatus;
+  paymentStatus?: PaymentStatus;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  page?: number;
+  limit?: number;
+  sortBy?: 'issueDate' | 'total' | 'number' | 'createdAt';
+  sortDir?: 'asc' | 'desc';
+}
+
+export interface AgencyInvoicesResponse {
+  data: AgencyInvoiceListItem[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  summary: AgencyInvoicesSummary;
+}
+
+// ─── Agency impersonation audit log ──────────────────────────────────────────
+
+/** Single audit entry for an agency user accessing a managed client tenant. */
+export interface AgencyImpersonationLogEntry {
+  id: string;
+  clientTenantId: string;
+  /** Snapshot of the client's business name at the time of impersonation. */
+  clientBusinessName: string;
+  actorUserId: string;
+  actorEmail: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  startedAt: string;
+  /** Null while the impersonation session is still active. */
+  endedAt: string | null;
+}
+
+export interface AgencyImpersonationLogQuery {
+  clientTenantId?: string;
+  actorUserId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface AgencyImpersonationLogResponse {
+  data: AgencyImpersonationLogEntry[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 /** Body for POST /agency/clients/:id/export */
 export interface ExportInvoicesInput {
   format: ExportFormat;

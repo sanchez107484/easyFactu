@@ -283,7 +283,20 @@ export class AuthService {
     };
   }
 
-  async switchTenant(userId: string, dto: SwitchTenantDto) {
+  async switchTenant(
+    currentUser: {
+      id: string;
+      email: string;
+      actingAsClient?: boolean;
+      impersonationLogId?: string;
+    },
+    dto: SwitchTenantDto,
+    context: { ipAddress: string | null; userAgent: string | null } = {
+      ipAddress: null,
+      userAgent: null,
+    }
+  ) {
+    const userId = currentUser.id;
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -298,6 +311,12 @@ export class AuthService {
 
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // If the user was impersonating a client, close the previous log row regardless
+    // of which path we end up taking below.
+    if (currentUser.actingAsClient && currentUser.impersonationLogId) {
+      await this.closeImpersonationLog(currentUser.impersonationLogId);
     }
 
     // Primary path: user has a direct TenantUser record for the target tenant
@@ -350,7 +369,25 @@ export class AuthService {
       throw new UnauthorizedException('Empresa desactivada');
     }
 
-    const tokens = await this.generateTokens(user.id, user.email, dto.tenantId);
+    // Append-only audit log entry — created BEFORE the token so the JWT can carry its id
+    const log = await this.prisma.agencyImpersonationLog.create({
+      data: {
+        agencyTenantId: agencyRelation.agencyTenantId,
+        clientTenantId: agencyRelation.clientTenantId,
+        actorUserId: user.id,
+        actorEmail: user.email,
+        clientBusinessName: agencyRelation.clientTenant.businessName,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+      },
+      select: { id: true },
+    });
+
+    const tokens = await this.generateTokens(user.id, user.email, dto.tenantId, {
+      actingAsClient: true,
+      agencyTenantId: agencyRelation.agencyTenantId,
+      impersonationLogId: log.id,
+    });
 
     // Do NOT update lastActiveTenantId here: the user is acting as a managed client,
     // not switching to one of their own tenants. Persisting the client's tenantId would
@@ -373,7 +410,28 @@ export class AuthService {
     };
   }
 
-  async refreshTokens(userId: string, tenantId: string) {
+  /** Marks an impersonation log entry as ended. Idempotent — never throws on missing rows. */
+  private async closeImpersonationLog(logId: string): Promise<void> {
+    try {
+      await this.prisma.agencyImpersonationLog.updateMany({
+        where: { id: logId, endedAt: null },
+        data: { endedAt: new Date() },
+      });
+    } catch (err) {
+      // Log entries are best-effort — never block a tenant switch on an audit failure
+      this.logger.error(`Failed to close impersonation log ${logId}`, err);
+    }
+  }
+
+  async refreshTokens(
+    userId: string,
+    tenantId: string,
+    impersonation?: {
+      actingAsClient?: boolean;
+      agencyTenantId?: string;
+      impersonationLogId?: string;
+    }
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -391,11 +449,27 @@ export class AuthService {
       throw new UnauthorizedException('Token inválido');
     }
 
-    if (user.tenantUsers.length === 0) {
+    // Direct membership OR active agency-relation impersonation grants refresh
+    const hasDirectAccess = user.tenantUsers.length > 0;
+    const hasImpersonationAccess =
+      impersonation?.actingAsClient === true && !!impersonation.agencyTenantId;
+
+    if (!hasDirectAccess && !hasImpersonationAccess) {
       throw new UnauthorizedException('No tienes acceso a esta empresa');
     }
 
-    const tokens = await this.generateTokens(user.id, user.email, tenantId);
+    const tokens = await this.generateTokens(
+      user.id,
+      user.email,
+      tenantId,
+      hasImpersonationAccess && impersonation?.impersonationLogId
+        ? {
+            actingAsClient: true,
+            agencyTenantId: impersonation.agencyTenantId!,
+            impersonationLogId: impersonation.impersonationLogId,
+          }
+        : undefined
+    );
 
     await this.prisma.user.update({
       where: { id: user.id },
@@ -405,7 +479,11 @@ export class AuthService {
     return tokens;
   }
 
-  async logout(userId: string) {
+  async logout(userId: string, impersonationLogId?: string) {
+    if (impersonationLogId) {
+      await this.closeImpersonationLog(impersonationLogId);
+    }
+
     await this.prisma.user.update({
       where: { id: userId },
       data: { refreshToken: null },
@@ -792,8 +870,28 @@ export class AuthService {
     }
   }
 
-  private async generateTokens(userId: string, email: string, tenantId: string) {
-    const payload = { sub: userId, email, tenantId };
+  private async generateTokens(
+    userId: string,
+    email: string,
+    tenantId: string,
+    impersonation?: {
+      actingAsClient: true;
+      agencyTenantId: string;
+      impersonationLogId: string;
+    }
+  ) {
+    const payload = {
+      sub: userId,
+      email,
+      tenantId,
+      ...(impersonation
+        ? {
+            actingAsClient: true,
+            agencyTenantId: impersonation.agencyTenantId,
+            impersonationLogId: impersonation.impersonationLogId,
+          }
+        : {}),
+    };
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {

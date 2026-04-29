@@ -1,0 +1,297 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight, ShieldCheck, X } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
+import { useImpersonationLogs, useAgencyClients } from '@/hooks/use-agency';
+
+import type { AgencyImpersonationLogQuery } from '@easyfactura/shared-types';
+
+const ALL_VALUE = '__all__';
+
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('es-ES', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatDuration(startedAt: string, endedAt: string | null): string {
+  if (!endedAt) return 'Sesión activa';
+  const ms = new Date(endedAt).getTime() - new Date(startedAt).getTime();
+  if (ms < 0) return '—';
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+}
+
+/** Truncate User-Agent strings so they don't blow up the table layout. */
+function shortenUserAgent(ua: string | null): string {
+  if (!ua) return '—';
+  if (ua.length <= 60) return ua;
+  return `${ua.slice(0, 57)}…`;
+}
+
+export default function AgencyAuditoriaPage() {
+  const [clientTenantId, setClientTenantId] = useState<string>(ALL_VALUE);
+  const [actorUserId, setActorUserId] = useState<string>(ALL_VALUE);
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
+  const [page, setPage] = useState<number>(1);
+  const limit = 50;
+
+  // Reset to page 1 whenever any filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [clientTenantId, actorUserId, dateFrom, dateTo]);
+
+  const query = useMemo<AgencyImpersonationLogQuery>(() => {
+    const q: AgencyImpersonationLogQuery = { page, limit };
+    if (clientTenantId !== ALL_VALUE) q.clientTenantId = clientTenantId;
+    if (actorUserId !== ALL_VALUE) q.actorUserId = actorUserId;
+    if (dateFrom) q.dateFrom = dateFrom;
+    if (dateTo) q.dateTo = dateTo;
+    return q;
+  }, [clientTenantId, actorUserId, dateFrom, dateTo, page, limit]);
+
+  const { data, isLoading, isFetching, error, refetch } = useImpersonationLogs(query);
+
+  // Client list for filter (uses existing hook, only the names are needed)
+  const { data: clientsData } = useAgencyClients({ page: 1, limit: 200 });
+  const clientOptions = clientsData?.data ?? [];
+
+  // Build a unique list of actors from the current page (best-effort filter)
+  const actorOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    (data?.data ?? []).forEach((row) => {
+      if (!map.has(row.actorUserId)) map.set(row.actorUserId, row.actorEmail);
+    });
+    return Array.from(map.entries()).map(([id, email]) => ({ id, email }));
+  }, [data]);
+
+  const hasActiveFilters =
+    clientTenantId !== ALL_VALUE || actorUserId !== ALL_VALUE || dateFrom !== '' || dateTo !== '';
+
+  const resetFilters = () => {
+    setClientTenantId(ALL_VALUE);
+    setActorUserId(ALL_VALUE);
+    setDateFrom('');
+    setDateTo('');
+  };
+
+  const totalPages = data?.meta.totalPages ?? 1;
+  const total = data?.meta.total ?? 0;
+
+  return (
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="rounded-lg bg-primary/10 p-2 text-primary">
+            <ShieldCheck className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold leading-tight">Auditoría de accesos</h1>
+            <p className="text-sm text-muted-foreground">
+              Registro de todas las veces que un usuario de la asesoría ha accedido como un cliente.
+              Estos registros son inmutables y se conservan con fines de cumplimiento.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="rounded-xl border bg-card p-4">
+        <div className="grid gap-3 md:grid-cols-4">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Cliente</label>
+            <Select value={clientTenantId} onValueChange={setClientTenantId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_VALUE}>Todos los clientes</SelectItem>
+                {clientOptions.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.businessName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Usuario</label>
+            <Select
+              value={actorUserId}
+              onValueChange={setActorUserId}
+              disabled={actorOptions.length === 0}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_VALUE}>Todos los usuarios</SelectItem>
+                {actorOptions.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Desde</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Hasta</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
+        </div>
+
+        {hasActiveFilters && (
+          <div className="mt-3 flex items-center justify-between border-t pt-3">
+            <p className="text-xs text-muted-foreground">
+              Mostrando {data?.data.length ?? 0} de {total} registros filtrados
+            </p>
+            <Button variant="ghost" size="sm" onClick={resetFilters}>
+              <X className="mr-1 h-3 w-3" />
+              Limpiar filtros
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Table */}
+      <div className="rounded-xl border bg-card">
+        {isLoading ? (
+          <div className="space-y-2 p-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center gap-3 p-12 text-center">
+            <p className="text-sm text-destructive">
+              No se ha podido cargar el registro de auditoría.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              Reintentar
+            </Button>
+          </div>
+        ) : !data || data.data.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 p-12 text-center">
+            <ShieldCheck className="h-10 w-10 text-muted-foreground" />
+            <p className="text-base font-medium">Sin registros</p>
+            <p className="text-sm text-muted-foreground">
+              {hasActiveFilters
+                ? 'No hay accesos que coincidan con los filtros aplicados.'
+                : 'Todavía no se ha registrado ningún acceso a clientes.'}
+            </p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[170px]">Inicio</TableHead>
+                <TableHead>Usuario</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead className="w-[140px]">IP</TableHead>
+                <TableHead>Navegador</TableHead>
+                <TableHead className="w-[120px] text-right">Duración</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.data.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell className="font-mono text-xs tabular-nums">
+                    {formatDateTime(row.startedAt)}
+                  </TableCell>
+                  <TableCell className="text-sm">{row.actorEmail}</TableCell>
+                  <TableCell className="text-sm font-medium">{row.clientBusinessName}</TableCell>
+                  <TableCell className="font-mono text-xs">{row.ipAddress ?? '—'}</TableCell>
+                  <TableCell
+                    className="max-w-[260px] truncate text-xs text-muted-foreground"
+                    title={row.userAgent ?? undefined}
+                  >
+                    {shortenUserAgent(row.userAgent)}
+                  </TableCell>
+                  <TableCell className="text-right text-sm tabular-nums">
+                    {formatDuration(row.startedAt, row.endedAt)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
+
+      {/* Pagination */}
+      {data && data.meta.total > limit && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Página {page} de {totalPages} · {total} registros
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1 || isFetching}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages || isFetching}
+            >
+              Siguiente
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

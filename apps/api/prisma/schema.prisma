@@ -60,6 +60,8 @@ model Tenant {
   clientRelationHistory   AgencyRelationHistory[] @relation("ClientHistoryRelations")
   agencyExportEvents      InvoiceExportEvent[]    @relation("AgencyExportEvents")
   clientExportEvents      InvoiceExportEvent[]    @relation("ClientExportEvents")
+  impersonationLogsAsAgency AgencyImpersonationLog[] @relation("ImpersonationAgencyTenant")
+  impersonationLogsAsClient AgencyImpersonationLog[] @relation("ImpersonationClientTenant")
 
   @@index([email])
   @@map("tenants")
@@ -132,6 +134,7 @@ model User {
   invoiceExportEvents      InvoiceExportEvent[] @relation("InvoiceExportEventUser")
   invoicesCreated          Invoice[]            @relation("InvoiceCreatedBy")
   recurringInvoicesCreated RecurringInvoice[]   @relation("RecurringInvoiceCreatedBy")
+  impersonationLogs        AgencyImpersonationLog[] @relation("ImpersonationActor")
 
   @@map("users")
 }
@@ -536,6 +539,31 @@ model AgencyClientRelation {
   @@index([agencyTenantId])
   @@index([clientTenantId])
   @@map("agency_client_relations")
+}
+
+// Permanent audit trail of every time an agency user impersonates (acts as) a managed client.
+// Critical for compliance and traceability — records are append-only.
+model AgencyImpersonationLog {
+  id              String   @id @default(uuid())
+  agencyTenantId  String   @map("agency_tenant_id")
+  clientTenantId  String   @map("client_tenant_id")
+  actorUserId     String   @map("actor_user_id")
+  actorEmail      String   @map("actor_email")
+  // Snapshot of the client name at the moment of impersonation (immutable for audit)
+  clientBusinessName String @map("client_business_name")
+  ipAddress       String?  @map("ip_address")
+  userAgent       String?  @map("user_agent") @db.Text
+  startedAt       DateTime @default(now()) @map("started_at")
+  endedAt         DateTime? @map("ended_at")
+
+  agencyTenant    Tenant   @relation("ImpersonationAgencyTenant", fields: [agencyTenantId], references: [id], onDelete: Cascade)
+  clientTenant    Tenant   @relation("ImpersonationClientTenant", fields: [clientTenantId], references: [id], onDelete: Cascade)
+  actorUser       User     @relation("ImpersonationActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  @@index([agencyTenantId, startedAt(sort: Desc)])
+  @@index([clientTenantId, startedAt(sort: Desc)])
+  @@index([actorUserId])
+  @@map("agency_impersonation_logs")
 }
 
 model AgencyInvitation {

@@ -5,10 +5,12 @@ import {
   Get,
   Patch,
   Param,
+  Req,
   UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
@@ -59,11 +61,21 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Token refrescado' })
   @ApiResponse({ status: 401, description: 'Refresh token inválido' })
   async refresh(
-    @CurrentUser('id') userId: string,
-    @CurrentUser('tenantId') tenantId: string,
-    @Body() dto: RefreshTokenDto
+    @CurrentUser()
+    user: {
+      id: string;
+      tenantId: string;
+      actingAsClient?: boolean;
+      agencyTenantId?: string;
+      impersonationLogId?: string;
+    },
+    @Body() _dto: RefreshTokenDto
   ) {
-    return this.authService.refreshTokens(userId, tenantId);
+    return this.authService.refreshTokens(user.id, user.tenantId, {
+      actingAsClient: user.actingAsClient,
+      agencyTenantId: user.agencyTenantId,
+      impersonationLogId: user.impersonationLogId,
+    });
   }
 
   @Post('logout')
@@ -72,8 +84,8 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Cerrar sesión' })
   @ApiResponse({ status: 200, description: 'Sesión cerrada' })
-  async logout(@CurrentUser('id') userId: string) {
-    return this.authService.logout(userId);
+  async logout(@CurrentUser() user: { id: string; impersonationLogId?: string }) {
+    return this.authService.logout(user.id, user.impersonationLogId);
   }
 
   @Post('switch-tenant')
@@ -83,8 +95,16 @@ export class AuthController {
   @ApiOperation({ summary: 'Cambiar de empresa activa' })
   @ApiResponse({ status: 200, description: 'Empresa cambiada correctamente' })
   @ApiResponse({ status: 401, description: 'No tienes acceso a esta empresa' })
-  async switchTenant(@CurrentUser('id') userId: string, @Body() dto: SwitchTenantDto) {
-    return this.authService.switchTenant(userId, dto);
+  async switchTenant(
+    @CurrentUser()
+    user: { id: string; email: string; actingAsClient?: boolean; impersonationLogId?: string },
+    @Body() dto: SwitchTenantDto,
+    @Req() req: Request
+  ) {
+    const ipAddress =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
+    const userAgent = req.headers['user-agent'] ?? null;
+    return this.authService.switchTenant(user, dto, { ipAddress, userAgent });
   }
 
   @Public()

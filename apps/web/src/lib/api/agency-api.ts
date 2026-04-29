@@ -23,6 +23,10 @@ import type {
   ExportInvoicesInput,
   ExportMode,
   ExportFormat,
+  AgencyInvoicesQuery,
+  AgencyInvoicesResponse,
+  AgencyImpersonationLogQuery,
+  AgencyImpersonationLogResponse,
 } from '@easyfactura/shared-types';
 
 export interface InvitationPublicInfo {
@@ -197,6 +201,22 @@ export const agencyApi = {
 
   getQuarterlyIvaSummary: async (): Promise<QuarterlyIvaSummary> => {
     const response = await apiClient.get('/agency/stats/quarterly-iva');
+    return unwrapApiResponse(response);
+  },
+
+  /** Consolidated multi-client invoices with filters + aggregated summary. */
+  getAllClientsInvoices: async (
+    query: AgencyInvoicesQuery = {},
+  ): Promise<AgencyInvoicesResponse> => {
+    const response = await apiClient.get('/agency/invoices', { params: query });
+    return unwrapApiResponse(response);
+  },
+
+  /** Audit trail of agency users impersonating client tenants. */
+  getImpersonationLogs: async (
+    query: AgencyImpersonationLogQuery = {},
+  ): Promise<AgencyImpersonationLogResponse> => {
+    const response = await apiClient.get('/agency/impersonation-logs', { params: query });
     return unwrapApiResponse(response);
   },
 

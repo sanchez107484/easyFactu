@@ -23,8 +23,8 @@ import {
   UserCheck,
   ArrowLeft,
   Loader2,
-  Mail,
   FileDown,
+  ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -84,16 +84,22 @@ const agencyNavItems: NavEntry[] = [
     description: 'Autónomos y empresas que gestionas',
   },
   {
-    title: 'Invitaciones',
-    href: '/dashboard/asesoria/invitaciones',
-    icon: Mail,
-    description: 'Historial de invitaciones enviadas',
+    title: 'Facturas de clientes',
+    href: '/dashboard/asesoria/facturas',
+    icon: FileText,
+    description: 'Vista consolidada de todas las facturas',
   },
   {
     title: 'Exportar facturas',
     href: '/dashboard/asesoria/exportar',
     icon: FileDown,
     description: 'Exporta a ContaPlus, A3CON y más',
+  },
+  {
+    title: 'Auditoría',
+    href: '/dashboard/asesoria/auditoria',
+    icon: ShieldCheck,
+    description: 'Registro de accesos a clientes',
   },
 ];
 

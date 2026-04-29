@@ -8,6 +8,12 @@ interface JwtPayload {
   sub: string;
   email: string;
   tenantId: string;
+  /** When true, the JWT was issued for an agency user acting as a managed client. */
+  actingAsClient?: boolean;
+  /** Tenant ID of the agency that initiated the impersonation. Only set when actingAsClient=true. */
+  agencyTenantId?: string;
+  /** ID of the impersonation log row — used to close it on logout/return. */
+  impersonationLogId?: string;
 }
 
 @Injectable()
@@ -56,6 +62,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         isOwner: tenantUser.isOwner,
         firstName: user.firstName,
         lastName: user.lastName,
+        actingAsClient: false,
+        agencyTenantId: undefined,
+        impersonationLogId: undefined,
       };
     }
 
@@ -89,6 +98,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       isOwner: false,
       firstName: user.firstName,
       lastName: user.lastName,
+      actingAsClient: true,
+      agencyTenantId: payload.agencyTenantId ?? agencyRelation.agencyTenantId,
+      impersonationLogId: payload.impersonationLogId,
     };
   }
 }

@@ -21,6 +21,8 @@ import { AgencyService } from './agency.service';
 import { CreateDirectClientDto } from './dto/create-direct-client.dto';
 import { InviteClientDto } from './dto/invite-client.dto';
 import { QueryAgencyClientsDto } from './dto/query-agency-clients.dto';
+import { QueryAgencyInvoicesDto } from './dto/query-agency-invoices.dto';
+import { QueryImpersonationLogsDto } from './dto/query-impersonation-logs.dto';
 import { ResendActivationDto } from './dto/resend-activation.dto';
 import {
   ExportInvoicesDto,
@@ -61,6 +63,35 @@ export class AgencyController {
   @ApiResponse({ status: 200, description: 'Resumen IVA del trimestre en curso' })
   getQuarterlyIvaSummary(@CurrentTenant() tenantId: string) {
     return this.agencyService.getQuarterlyIvaSummary(tenantId);
+  }
+
+  // ─── Consolidated invoices across all clients ──────────────────────────
+
+  @Get('invoices')
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Listado consolidado de facturas de todos los clientes con filtros y resumen agregado',
+  })
+  @ApiResponse({ status: 200, description: 'Facturas paginadas con totales del filtro actual' })
+  findAllClientsInvoices(
+    @CurrentTenant() tenantId: string,
+    @Query() query: QueryAgencyInvoicesDto
+  ) {
+    return this.agencyService.findAllClientsInvoices(tenantId, query);
+  }
+
+  // ─── Impersonation audit log ──────────────────────────────────
+
+  @Get('impersonation-logs')
+  @ApiOperation({
+    summary: 'Auditoría: registro de accesos de los usuarios de la asesoría como cliente',
+  })
+  @ApiResponse({ status: 200, description: 'Listado paginado del log de impersonación' })
+  findImpersonationLogs(
+    @CurrentTenant() tenantId: string,
+    @Query() query: QueryImpersonationLogsDto
+  ) {
+    return this.agencyService.findImpersonationLogs(tenantId, query);
   }
 
   // ─── Client management ─────────────────────────────────────────────────
@@ -156,6 +187,16 @@ export class AgencyController {
   @ApiOperation({ summary: 'Listar invitaciones pendientes de la asesoría' })
   findPendingInvitations(@CurrentTenant() tenantId: string) {
     return this.agencyService.findPendingInvitations(tenantId);
+  }
+
+  /**
+   * Returns ALL invitations sent by the agency across all statuses (for the history modal).
+   * Declared BEFORE GET invitations/:token to avoid NestJS routing conflict.
+   */
+  @Get('invitations/all')
+  @ApiOperation({ summary: 'Historial completo de invitaciones enviadas por la asesoría' })
+  findAllInvitations(@CurrentTenant() tenantId: string) {
+    return this.agencyService.findAllInvitations(tenantId);
   }
 
   /** Returns pending invitations received by the authenticated user (non-agency clients).
@@ -334,15 +375,6 @@ export class AgencyController {
     @Query('limit', new ParseIntPipe({ optional: true })) limit = 20
   ) {
     return this.agencyService.getExportLogs(tenantId, clientTenantId, page, limit);
-  }
-
-  // ─── All invitations (for agency invitations history view) ─────────────
-
-  @Get('invitations/all')
-  @ApiOperation({ summary: 'Todas las invitaciones enviadas por la asesoría (todos los estados)' })
-  @ApiResponse({ status: 200, description: 'Lista de invitaciones' })
-  findAllInvitations(@CurrentTenant() tenantId: string) {
-    return this.agencyService.findAllInvitations(tenantId);
   }
 
   // ─── My agencies (client side) ─────────────────────────────────────────
