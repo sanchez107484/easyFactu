@@ -254,7 +254,7 @@ export default function PresupuestosPage() {
     quoteAcceptanceStatus:
       statusFilter !== 'ALL' ? (statusFilter as QuoteAcceptanceStatus) : undefined,
     page,
-    limit: 20,
+    limit: 10,
     sortBy: sortKey as 'number' | 'issueDate' | 'total' | 'createdAt' | 'customer' | 'validUntil',
     sortOrder: sortDir,
   });
@@ -312,7 +312,7 @@ export default function PresupuestosPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Presupuestos</h1>

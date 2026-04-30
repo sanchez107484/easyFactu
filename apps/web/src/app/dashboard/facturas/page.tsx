@@ -231,7 +231,7 @@ export default function FacturasPage() {
     fromDate: fromDate || undefined,
     toDate: toDate || undefined,
     page,
-    limit: 20,
+    limit: 10,
     sortBy: sortKey as QueryInvoicesInput['sortBy'],
     sortOrder: sortDir,
   });
@@ -299,7 +299,7 @@ export default function FacturasPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-6">
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>

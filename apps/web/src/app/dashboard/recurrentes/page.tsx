@@ -98,7 +98,7 @@ export default function RecurrentesPage() {
 
   const { data, isLoading, error } = useRecurringInvoices({
     page,
-    limit: 20,
+    limit: 10,
     search: debouncedSearch || undefined,
   });
   const pauseMutation = usePauseRecurringInvoice();
@@ -133,7 +133,7 @@ export default function RecurrentesPage() {
   const items = data?.data ?? [];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 pb-8">
       <PageHeader search={search} onSearchChange={setSearch} />
 
       {items.length === 0 ? (

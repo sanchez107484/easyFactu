@@ -141,7 +141,7 @@ export default function ProductosPage() {
     sortBy: sortKey,
     sortOrder: sortDir,
     page,
-    limit: 20,
+    limit: 10,
   });
 
   const deleteMutation = useDeleteProduct();
@@ -189,7 +189,7 @@ export default function ProductosPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Productos y servicios</h1>

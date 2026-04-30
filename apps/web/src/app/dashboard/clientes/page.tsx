@@ -192,7 +192,7 @@ export default function ClientesPage() {
     sortBy: sortKey,
     sortOrder: sortDir,
     page,
-    limit: 20,
+    limit: 10,
   });
   const deleteMutation = useDeleteCustomer();
   const prefetchCustomer = usePrefetchCustomer();
@@ -241,7 +241,7 @@ export default function ClientesPage() {
         isPending={deleteMutation.isPending}
       />
 
-      <div className="space-y-6">
+      <div className="space-y-6 pb-6">
         {/* Agency context banner */}
         {isAgency && (
           <div className="flex items-start gap-3 rounded-xl border border-customer-200 bg-customer-50 px-4 py-3 dark:border-customer-800 dark:bg-customer-950/30">
