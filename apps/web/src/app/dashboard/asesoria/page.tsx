@@ -11,7 +11,7 @@ import {
   useAgencyPreferredFormat,
   useUpdatePreferredFormat,
 } from '@/hooks/use-agency';
-import { brandConfig } from '@easyfactura/brand-config';
+
 import { ExportFormat } from '@easyfactura/shared-types';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,13 +24,13 @@ import {
   ClipboardCheck,
   Loader2,
   Settings2,
-  CheckCircle2,
   FileDown,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { AgencyKpiStrip } from './_components/agency-kpi-strip';
 import { PendingInvitationsWidget } from './_components/pending-invitations-widget';
+import { SoftwareSelectModal } from './exportar/_components/software-select-modal';
 import { VincularClienteModal } from './_components/vincular-cliente-modal';
 import { AnadirClienteModal } from './_components/anadir-cliente-modal';
 
@@ -41,6 +41,7 @@ export default function AgencyHubPage() {
   const [managingClientId, setManagingClientId] = useState<string | null>(null);
   const [isVincularModalOpen, setIsVincularModalOpen] = useState(false);
   const [isAnadirModalOpen, setIsAnadirModalOpen] = useState(false);
+  const [isSoftwareModalOpen, setIsSoftwareModalOpen] = useState(false);
   const { data: stats, isLoading: statsLoading } = useAgencyStats(isOnAgencyTenant);
   const { data: clientsData, isLoading: clientsLoading } = useAgencyClients(
     { limit: 50 },
@@ -100,23 +101,72 @@ export default function AgencyHubPage() {
       {/* ── KPI Strip ── */}
       <AgencyKpiStrip stats={stats} isLoading={statsLoading} />
 
-      {/* ── Acción: añadir cliente ── */}
-      <div className="flex items-center justify-between gap-4 rounded-xl border bg-card p-5">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-customer-100 text-customer-600 dark:bg-customer-950 dark:text-customer-400">
-            <UserPlus className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="font-semibold leading-snug">Añadir cliente de asesoría</p>
-            <p className="mt-0.5 text-sm text-muted-foreground leading-snug">
-              Crea la cuenta tú mismo o vincula a un cliente que ya usa {brandConfig.app.name}.
-            </p>
-          </div>
+      {/* ── Accesos rápidos ── */}
+      <div className="rounded-xl border bg-card p-5">
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Accesos rápidos
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <button
+            type="button"
+            onClick={() => setIsAnadirModalOpen(true)}
+            className="flex items-center gap-3 rounded-lg border p-4 text-left transition-colors hover:border-customer-300 hover:bg-customer-50 dark:hover:border-customer-800 dark:hover:bg-customer-950/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-customer-100 text-customer-600 dark:bg-customer-950 dark:text-customer-400">
+              <UserPlus className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold leading-snug">Añadir cliente</p>
+              <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+                Crea la cuenta tú mismo o vincula un cliente existente.
+              </p>
+            </div>
+          </button>
+
+          <Link
+            href="/dashboard/asesoria/exportar"
+            className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <FileDown className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold leading-snug">Exportar facturas</p>
+              <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+                Exporta las facturas de tus clientes a tu software contable.
+              </p>
+            </div>
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setIsSoftwareModalOpen(true)}
+            className="flex items-center gap-3 rounded-lg border p-4 text-left transition-colors hover:border-muted-foreground/20 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <Settings2 className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold leading-snug">
+                ¿Qué programa de contabilidad usas?
+              </p>
+              <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+                Configura tu software contable por defecto.
+                {preferredFormatData?.format && (
+                  <span className="ml-1 font-medium text-foreground">
+                    (
+                    {preferredFormatData.format === 'CONTAPLUS'
+                      ? 'ContaPlus'
+                      : preferredFormatData.format === 'A3CON'
+                        ? 'a3CON'
+                        : 'Excel / CSV'}
+                    )
+                  </span>
+                )}
+              </p>
+            </div>
+          </button>
         </div>
-        <Button className="shrink-0" size="sm" onClick={() => setIsAnadirModalOpen(true)}>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Añadir cliente
-        </Button>
       </div>
 
       {/* ── Grid de clientes ── */}
@@ -184,84 +234,6 @@ export default function AgencyHubPage() {
       {/* ── Invitaciones pendientes ── */}
       <PendingInvitationsWidget invitations={invitations} />
 
-      {/* ── Exportar facturas ── */}
-      <div className="flex items-center justify-between gap-4 rounded-xl border bg-card p-5">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <FileDown className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="font-semibold leading-snug">Exportar facturas</p>
-            <p className="mt-0.5 text-sm text-muted-foreground leading-snug">
-              Exporta las facturas de tus clientes a ContaPlus, A3CON y otros softwares contables.
-            </p>
-          </div>
-        </div>
-        <Link href="/dashboard/asesoria/exportar" className="shrink-0">
-          <Button size="sm">
-            <FileDown className="mr-2 h-4 w-4" />
-            Ir a exportar
-          </Button>
-        </Link>
-      </div>
-
-      {/* ── Configuración de exportaciones ── */}
-      {isOnAgencyTenant && (
-        <div className="rounded-xl border bg-card p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Settings2 className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-base font-semibold">Software de exportación</h2>
-          </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            Elige el software contable al que exportas las facturas de tus clientes. Se usará como
-            formato por defecto al exportar, aunque puedes cambiarlo en cada exportación.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {[
-              {
-                id: ExportFormat.CONTAPLUS,
-                label: 'ContaPlus',
-                description: 'Grupo Sage — el más extendido en España',
-                available: true,
-              },
-              {
-                id: ExportFormat.A3CON,
-                label: 'a3CON',
-                description: 'Wolters Kluwer — próximamente',
-                available: false,
-              },
-              {
-                id: ExportFormat.EXCEL,
-                label: 'Excel / CSV',
-                description: 'Compatible con cualquier hoja de cálculo — próximamente',
-                available: false,
-              },
-            ].map((option) => {
-              const isSelected = (preferredFormatData?.format ?? 'CONTAPLUS') === option.id;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  disabled={!option.available || isUpdatingFormat}
-                  onClick={() => option.available && updatePreferredFormat(option.id)}
-                  className={`relative flex flex-col gap-1 rounded-lg border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${
-                    isSelected
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50 hover:bg-muted/30'
-                  }`}
-                >
-                  {isSelected && (
-                    <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-primary" />
-                  )}
-                  <span className="font-semibold text-sm pr-6">{option.label}</span>
-                  <span className="text-xs text-muted-foreground">{option.description}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* ── Guía de inicio rápido ── */}
       <div className="rounded-xl border bg-card p-6">
         <div className="mb-1 text-base font-semibold">Gestiona la facturación de tus clientes</div>
@@ -324,6 +296,15 @@ export default function AgencyHubPage() {
       <VincularClienteModal
         isOpen={isVincularModalOpen}
         onClose={() => setIsVincularModalOpen(false)}
+      />
+      <SoftwareSelectModal
+        open={isSoftwareModalOpen}
+        currentFormat={preferredFormatData?.format ?? ExportFormat.CONTAPLUS}
+        onConfirm={(fmt, saveAsDefault) => {
+          if (saveAsDefault) updatePreferredFormat(fmt);
+          setIsSoftwareModalOpen(false);
+        }}
+        onClose={() => setIsSoftwareModalOpen(false)}
       />
     </div>
   );

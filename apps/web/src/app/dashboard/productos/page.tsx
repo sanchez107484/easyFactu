@@ -36,7 +36,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useProducts, useDeleteProduct } from '@/hooks/use-products';
+import { useProducts, useDeleteProduct, usePrefetchProduct } from '@/hooks/use-products';
 import { useSortTable } from '@/hooks/use-sort-table';
 import { SortableHeader } from '@/components/common/sortable-header';
 import { EmptyState } from '@/components/common/empty-state';
@@ -131,7 +131,9 @@ export default function ProductosPage() {
 
   const { sortKey, sortDir, handleSort } = useSortTable('name', 'asc');
 
-  useEffect(() => { setPage(1); }, [search, typeFilter, sortKey, sortDir]);
+  useEffect(() => {
+    setPage(1);
+  }, [search, typeFilter, sortKey, sortDir]);
 
   const { data, isLoading, error, refetch } = useProducts({
     search: search || undefined,
@@ -143,6 +145,7 @@ export default function ProductosPage() {
   });
 
   const deleteMutation = useDeleteProduct();
+  const prefetchProduct = usePrefetchProduct();
 
   const handleDeleteClick = (product: Product) => {
     setDeleteId(product.id);
@@ -343,7 +346,12 @@ export default function ProductosPage() {
                     {products.map((product) => {
                       const pvp = product.unitPrice * (1 + product.taxRate / 100);
                       return (
-                        <tr key={product.id} className="group hover:bg-muted/30 transition-colors">
+                        <tr
+                          key={product.id}
+                          className="group hover:bg-muted/30 transition-colors"
+                          onMouseEnter={() => prefetchProduct(product.id)}
+                          onFocus={() => prefetchProduct(product.id)}
+                        >
                           <td className="px-6 py-3">
                             <div className="min-w-0">
                               <Link
@@ -430,13 +438,24 @@ export default function ProductosPage() {
       {!error && !isLoading && data && data.meta.totalPages > 1 && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>
-            Página {page} de {data.meta.totalPages} &middot; {total} elemento{total !== 1 ? 's' : ''} en total
+            Página {page} de {data.meta.totalPages} &middot; {total} elemento
+            {total !== 1 ? 's' : ''} en total
           </span>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => p - 1)} disabled={page === 1}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p - 1)}
+              disabled={page === 1}
+            >
               Anterior
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page >= data.meta.totalPages}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= data.meta.totalPages}
+            >
               Siguiente
             </Button>
           </div>

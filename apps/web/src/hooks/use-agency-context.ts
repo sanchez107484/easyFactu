@@ -29,8 +29,11 @@ export interface AgencyContext {
   isOnAgencyTenant: boolean;
   /** True when currentTenant is a managed CLIENT tenant (acting as) */
   isActingAsClient: boolean;
-  /** Navigate back to the agency's own panel, invalidating all cached tenant data */
-  returnToAgency: () => Promise<void>;
+  /**
+   * Switch back to the agency tenant and navigate.
+   * @param redirectTo — destination after switch (default: '/dashboard/asesoria')
+   */
+  returnToAgency: (redirectTo?: string) => Promise<void>;
   /** True while the return-to-agency transition is in progress */
   isReturning: boolean;
 }
@@ -59,25 +62,28 @@ export function useAgencyContext(): AgencyContext {
     return { agencyTenant, isAgencyUser, isOnAgencyTenant, isActingAsClient };
   }, [currentTenant, tenants]);
 
-  const returnToAgency = useCallback(async () => {
-    // agencyTenant and isActingAsClient are captured from the outer scope.
-    // isReturningRef prevents concurrent invocations without adding state to deps.
-    if (!agencyTenant || !isActingAsClient || isReturningRef.current) return;
+  const returnToAgency = useCallback(
+    async (redirectTo = '/dashboard/asesoria') => {
+      // agencyTenant and isActingAsClient are captured from the outer scope.
+      // isReturningRef prevents concurrent invocations without adding state to deps.
+      if (!agencyTenant || !isActingAsClient || isReturningRef.current) return;
 
-    isReturningRef.current = true;
-    setIsReturning(true);
+      isReturningRef.current = true;
+      setIsReturning(true);
 
-    try {
-      // switchTenant already clears the query cache (via useSwitchTenant)
-      await switchTenant(agencyTenant.id);
-      router.push('/dashboard/asesoria');
-    } catch {
-      toast.error('No se pudo volver al panel de asesoría. Inténtalo de nuevo.');
-    } finally {
-      isReturningRef.current = false;
-      setIsReturning(false);
-    }
-  }, [agencyTenant, isActingAsClient, switchTenant, router]);
+      try {
+        // switchTenant already clears the query cache (via useSwitchTenant)
+        await switchTenant(agencyTenant.id);
+        router.push(redirectTo);
+      } catch {
+        toast.error('No se pudo volver al panel de asesoría. Inténtalo de nuevo.');
+      } finally {
+        isReturningRef.current = false;
+        setIsReturning(false);
+      }
+    },
+    [agencyTenant, isActingAsClient, switchTenant, router],
+  );
 
   return {
     agencyTenant,

@@ -13,7 +13,6 @@ import {
   useResendActivation,
 } from '@/hooks/use-agency';
 import { useSwitchTenant } from '@/hooks/use-switch-tenant';
-import { ExportModal } from '@/app/dashboard/asesoria/_components/export-modal';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -282,7 +281,6 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
   const { isOnAgencyTenant, isActingAsClient, returnToAgency } = useAgencyContext();
 
   const [revokeOpen, setRevokeOpen] = useState(false);
-  const [exportOpen, setExportOpen] = useState(false);
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState('');
   const [emailModalOpen, setEmailModalOpen] = useState(false);
@@ -426,7 +424,10 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={() => setExportOpen(true)}>
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/dashboard/asesoria/exportar?clientId=${clientTenantId}`)}
+          >
             <Download className="mr-2 h-4 w-4" />
             Exportar
           </Button>
@@ -750,11 +751,14 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
           <CardContent>
             <div className="divide-y">
               {exportLogsData.data.slice(0, 5).map((log: AgencyExportLogEntry) => {
-                const period = log.dateFrom && log.dateTo
-                  ? `${formatDate(log.dateFrom)} – ${formatDate(log.dateTo)}`
-                  : log.year
-                    ? `${log.year}${log.quarter ? ` · T${log.quarter}` : ''}`
-                    : log.mode === 'PENDING' ? 'Pendientes' : '—';
+                const period =
+                  log.dateFrom && log.dateTo
+                    ? `${formatDate(log.dateFrom)} – ${formatDate(log.dateTo)}`
+                    : log.year
+                      ? `${log.year}${log.quarter ? ` · T${log.quarter}` : ''}`
+                      : log.mode === 'PENDING'
+                        ? 'Pendientes'
+                        : '—';
 
                 return (
                   <div
@@ -784,14 +788,6 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
       )}
-
-      {/* New 3-mode Export modal */}
-      <ExportModal
-        open={exportOpen}
-        onOpenChange={setExportOpen}
-        clientTenantId={clientTenantId}
-        clientName={data?.clientTenant.businessName ?? ''}
-      />
 
       {/* Change email dialog */}
       <Dialog open={emailModalOpen} onOpenChange={setEmailModalOpen}>

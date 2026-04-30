@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { invoiceApi, paymentApi, RectifyInvoiceInput } from '@/lib/api/invoice-api';
@@ -31,6 +31,7 @@ export function useInvoices(filters: QueryInvoicesInput = {}) {
     queryKey: invoiceKeys.list(filters),
     queryFn: () => invoiceApi.getAll(filters),
     staleTime: 30_000, // 30s — evita re-fetches en navegación rápida
+    placeholderData: keepPreviousData, // mantiene datos previos al paginar/filtrar
   });
 }
 

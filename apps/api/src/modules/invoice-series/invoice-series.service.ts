@@ -177,9 +177,13 @@ export class InvoiceSeriesService {
 
   /**
    * Creates default invoice series for a new tenant (F and R for current year)
-   * Called automatically during tenant registration
+   * Called automatically during tenant registration. Accepts an optional Prisma
+   * transaction client so the caller can ensure atomicity with the tenant create.
    */
-  async createDefaultSeries(tenantId: string): Promise<void> {
+  async createDefaultSeries(
+    tenantId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma
+  ): Promise<void> {
     const currentYear = new Date().getFullYear();
 
     const defaultSeries = [
@@ -205,7 +209,7 @@ export class InvoiceSeriesService {
       },
     ];
 
-    await this.prisma.invoiceSeries.createMany({
+    await tx.invoiceSeries.createMany({
       data: defaultSeries,
       skipDuplicates: true,
     });

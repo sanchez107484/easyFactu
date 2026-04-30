@@ -10,6 +10,7 @@ import { useInvoice } from '@/hooks/use-invoices';
 import { useCustomer } from '@/hooks/use-customers';
 import { useProduct } from '@/hooks/use-products';
 import { useRecurringInvoice } from '@/hooks/use-recurring-invoices';
+import { useAgencyClient } from '@/hooks/use-agency';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -57,6 +58,11 @@ function RecurringInvoiceBreadcrumbLabel({ id }: { id: string }) {
   return <>{data?.customer?.name ?? '…'}</>;
 }
 
+function AgencyClientBreadcrumbLabel({ id }: { id: string }) {
+  const { data } = useAgencyClient(id);
+  return <>{data?.clientTenant.businessName ?? '…'}</>;
+}
+
 function DynamicSegmentLabel({
   id,
   parentSegment,
@@ -69,8 +75,11 @@ function DynamicSegmentLabel({
   if (parentSegment === 'facturas' || parentSegment === 'presupuestos') {
     return <InvoiceBreadcrumbLabel id={id} />;
   }
-  // In the asesoria context, the UUID after 'clientes' is a clientTenantId, not a customer id
-  if (parentSegment === 'clientes' && grandparentSegment !== 'asesoria') {
+  // In the asesoria context, the UUID after 'clientes' is a clientTenantId
+  if (parentSegment === 'clientes' && grandparentSegment === 'asesoria') {
+    return <AgencyClientBreadcrumbLabel id={id} />;
+  }
+  if (parentSegment === 'clientes') {
     return <CustomerBreadcrumbLabel id={id} />;
   }
   if (parentSegment === 'productos') {

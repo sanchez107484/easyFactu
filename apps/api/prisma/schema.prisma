@@ -64,6 +64,7 @@ model Tenant {
   impersonationLogsAsClient AgencyImpersonationLog[] @relation("ImpersonationClientTenant")
 
   @@index([email])
+  @@index([accountType], map: "tenants_account_type_idx")
   @@map("tenants")
 }
 
@@ -170,6 +171,12 @@ model Customer {
   @@unique([tenantId, nif])
   @@index([tenantId])
   @@index([tenantId, isActive])
+  // GIN trigram indexes — enable ILIKE '%text%' to use index instead of seq scan.
+  // Managed via raw migration SQL (CREATE EXTENSION pg_trgm required).
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "customers_name_trgm_idx")
+  @@index([legalName(ops: raw("gin_trgm_ops"))], type: Gin, map: "customers_legal_name_trgm_idx")
+  @@index([nif(ops: raw("gin_trgm_ops"))], type: Gin, map: "customers_nif_trgm_idx")
+  @@index([email(ops: raw("gin_trgm_ops"))], type: Gin, map: "customers_email_trgm_idx")
   @@map("customers")
 }
 
@@ -203,6 +210,10 @@ model Product {
 
   @@index([tenantId])
   @@index([tenantId, isActive])
+  // GIN trigram indexes — enable ILIKE '%text%' to use index instead of seq scan.
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "products_name_trgm_idx")
+  @@index([reference(ops: raw("gin_trgm_ops"))], type: Gin, map: "products_reference_trgm_idx")
+  @@index([description(ops: raw("gin_trgm_ops"))], type: Gin, map: "products_description_trgm_idx")
   @@map("products")
 }
 
@@ -352,6 +363,8 @@ model Invoice {
   @@index([tenantId, paymentStatus])
   @@index([createdByUserId])
   @@index([recurringInvoiceId])
+  // GIN trigram index — enables ILIKE '%text%' on invoice number without seq scan.
+  @@index([number(ops: raw("gin_trgm_ops"))], type: Gin, map: "invoices_number_trgm_idx")
   @@map("invoices")
 }
 
@@ -467,6 +480,7 @@ model VerifactuLog {
 
   @@index([tenantId])
   @@index([invoiceId])
+  @@index([invoiceId, createdAt(sort: Desc)], map: "verifactu_logs_invoice_created_at_idx")
   @@index([createdAt])
   @@map("verifactu_logs")
 }
@@ -709,6 +723,7 @@ model RecurringInvoice {
   status         RecurringStatus @default(ACTIVE)
   discountPercent Decimal?       @map("discount_percent") @db.Decimal(5, 2)
   irpfPercent    Decimal?        @map("irpf_percent") @db.Decimal(5, 2)
+  estimatedTotal Decimal         @default(0) @map("estimated_total") @db.Decimal(15, 2)
   paymentMethod  PaymentMethod?  @map("payment_method")
   paymentDetails Json?           @map("payment_details")
   notes          String?         @db.Text

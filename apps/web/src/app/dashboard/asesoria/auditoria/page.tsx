@@ -1,17 +1,20 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, ShieldCheck, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, ChevronsUpDown, ShieldCheck, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -81,9 +84,16 @@ export default function AgencyAuditoriaPage() {
 
   const { data, isLoading, isFetching, error, refetch } = useImpersonationLogs(query);
 
-  // Client list for filter (uses existing hook, only the names are needed)
-  const { data: clientsData } = useAgencyClients({ page: 1, limit: 200 });
+  // Client list for filter
+  const { data: clientsData } = useAgencyClients({ page: 1, limit: 500 });
   const clientOptions = clientsData?.data ?? [];
+  const [clientComboOpen, setClientComboOpen] = useState(false);
+  const [actorComboOpen, setActorComboOpen] = useState(false);
+
+  const selectedClientOption =
+    clientTenantId === ALL_VALUE
+      ? null
+      : (clientOptions.find((c) => c.clientTenantId === clientTenantId) ?? null);
 
   // Build a unique list of actors from the current page (best-effort filter)
   const actorOptions = useMemo(() => {
@@ -130,40 +140,141 @@ export default function AgencyAuditoriaPage() {
         <div className="grid gap-3 md:grid-cols-4">
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Cliente</label>
-            <Select value={clientTenantId} onValueChange={setClientTenantId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_VALUE}>Todos los clientes</SelectItem>
-                {clientOptions.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.businessName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={clientComboOpen} onOpenChange={setClientComboOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={clientComboOpen}
+                  className="w-full h-10 px-3 text-sm font-normal justify-between"
+                >
+                  <span className="truncate">
+                    {selectedClientOption
+                      ? (selectedClientOption.clientTenant?.businessName ??
+                        selectedClientOption.clientTenantId)
+                      : 'Todos los clientes'}
+                  </span>
+                  <ChevronsUpDown className="ml-1.5 h-3.5 w-3.5 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[280px] p-0" align="start">
+                <Command
+                  filter={(value, search) =>
+                    value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+                  }
+                >
+                  <CommandInput placeholder="Buscar cliente..." />
+                  <CommandList>
+                    <CommandEmpty>No se encontró ningún cliente.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="todos-los-clientes"
+                        onSelect={() => {
+                          setClientTenantId(ALL_VALUE);
+                          setClientComboOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4 shrink-0',
+                            clientTenantId === ALL_VALUE ? 'opacity-100' : 'opacity-0',
+                          )}
+                        />
+                        Todos los clientes
+                      </CommandItem>
+                      {clientOptions.map((c) => (
+                        <CommandItem
+                          key={c.clientTenantId}
+                          value={c.clientTenant?.businessName ?? c.clientTenantId}
+                          onSelect={() => {
+                            setClientTenantId(c.clientTenantId);
+                            setClientComboOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              'mr-2 h-4 w-4 shrink-0',
+                              clientTenantId === c.clientTenantId ? 'opacity-100' : 'opacity-0',
+                            )}
+                          />
+                          {c.clientTenant?.businessName ?? c.clientTenantId}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Usuario</label>
-            <Select
-              value={actorUserId}
-              onValueChange={setActorUserId}
-              disabled={actorOptions.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_VALUE}>Todos los usuarios</SelectItem>
-                {actorOptions.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={actorComboOpen} onOpenChange={setActorComboOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={actorComboOpen}
+                  disabled={actorOptions.length === 0}
+                  className="w-full h-10 px-3 text-sm font-normal justify-between"
+                >
+                  <span className="truncate">
+                    {actorUserId === ALL_VALUE
+                      ? 'Todos los usuarios'
+                      : (actorOptions.find((u) => u.id === actorUserId)?.email ??
+                        'Todos los usuarios')}
+                  </span>
+                  <ChevronsUpDown className="ml-1.5 h-3.5 w-3.5 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[280px] p-0" align="start">
+                <Command
+                  filter={(value, search) =>
+                    value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+                  }
+                >
+                  <CommandInput placeholder="Buscar usuario..." />
+                  <CommandList>
+                    <CommandEmpty>No se encontró ningún usuario.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="todos-los-usuarios"
+                        onSelect={() => {
+                          setActorUserId(ALL_VALUE);
+                          setActorComboOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4 shrink-0',
+                            actorUserId === ALL_VALUE ? 'opacity-100' : 'opacity-0',
+                          )}
+                        />
+                        Todos los usuarios
+                      </CommandItem>
+                      {actorOptions.map((u) => (
+                        <CommandItem
+                          key={u.id}
+                          value={u.email}
+                          onSelect={() => {
+                            setActorUserId(u.id);
+                            setActorComboOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              'mr-2 h-4 w-4 shrink-0',
+                              actorUserId === u.id ? 'opacity-100' : 'opacity-0',
+                            )}
+                          />
+                          {u.email}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-1">

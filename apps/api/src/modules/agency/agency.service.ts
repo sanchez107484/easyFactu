@@ -509,11 +509,11 @@ export class AgencyService {
         skipDuplicates: true,
       });
 
+      // Default invoice series — atomic with tenant create
+      await this.invoiceSeriesService.createDefaultSeries(clientTenant.id, tx);
+
       return { clientTenant, relation };
     });
-
-    // Create default invoice series for the new client tenant
-    await this.invoiceSeriesService.createDefaultSeries(result.clientTenant.id);
 
     // Send activation email (fire-and-forget)
     this.emailService.sendAccountActivation({

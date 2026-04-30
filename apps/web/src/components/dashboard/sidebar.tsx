@@ -34,6 +34,9 @@ interface NavItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   description?: string;
+  // When false, disables Next.js Link prefetching for routes that are visited rarely
+  // and pull in heavy bundles (e.g. exportador, auditoría).
+  prefetch?: boolean;
 }
 
 interface NavSeparator {
@@ -93,13 +96,15 @@ const agencyNavItems: NavEntry[] = [
     title: 'Exportar facturas',
     href: '/dashboard/asesoria/exportar',
     icon: FileDown,
-    description: 'Exporta a ContaPlus, A3CON y más',
+    description: 'Exporta facturas para tu programa de contabilidad',
+    prefetch: false,
   },
   {
     title: 'Auditoría',
     href: '/dashboard/asesoria/auditoria',
     icon: ShieldCheck,
     description: 'Registro de accesos a clientes',
+    prefetch: false,
   },
 ];
 
@@ -220,6 +225,7 @@ export function DashboardSidebar() {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={item.prefetch}
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                 isActive
@@ -235,6 +241,7 @@ export function DashboardSidebar() {
                   <span className="block leading-tight">{item.title}</span>
                   {item.description && (
                     <span
+                      title={item.description}
                       className={cn(
                         'mt-0.5 block truncate text-xs leading-tight',
                         isActive ? 'text-primary-foreground/70' : 'opacity-55',

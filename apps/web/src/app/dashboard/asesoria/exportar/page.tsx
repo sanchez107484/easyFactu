@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -85,6 +85,7 @@ const DONT_SHOW_GUIDE_KEY = 'export-guide-dismissed';
 
 export default function ExportarFacturasPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isOnAgencyTenant, isActingAsClient } = useAgencyContext();
 
   const mountedRef = useRef(false);
@@ -103,7 +104,9 @@ export default function ExportarFacturasPage() {
     [],
   );
 
-  const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [selectedClientId, setSelectedClientId] = useState<string>(
+    () => searchParams.get('clientId') ?? '',
+  );
   const [clientComboOpen, setClientComboOpen] = useState(false);
   const [downloadedFile, setDownloadedFile] = useState<DownloadedFile | null>(null);
   const [successModalOpen, setSuccessModalOpen] = useState(false);

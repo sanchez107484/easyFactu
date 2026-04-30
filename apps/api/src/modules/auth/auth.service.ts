@@ -18,6 +18,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { SwitchTenantDto } from './dto/switch-tenant.dto';
 import { ActivateAccountDto } from './dto/activate-account.dto';
+import { JwtValidationCacheService } from './jwt-validation-cache.service';
 
 @Injectable()
 export class AuthService {
@@ -28,7 +29,8 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private invoiceSeriesService: InvoiceSeriesService,
-    private emailService: EmailService
+    private emailService: EmailService,
+    private jwtCache: JwtValidationCacheService
   ) {}
 
   async register(dto: RegisterDto) {
@@ -98,11 +100,13 @@ export class AuthService {
         },
       });
 
+      // Create default invoice series (F and R) — atomic with tenant create
+      // so a failure here rolls back the tenant + user instead of leaving an
+      // orphan tenant without series.
+      await this.invoiceSeriesService.createDefaultSeries(tenant.id, tx);
+
       return { user, tenant, tenantUser };
     });
-
-    // Create default invoice series (F and R) outside transaction
-    await this.invoiceSeriesService.createDefaultSeries(result.tenant.id);
 
     // Send verification email (fire-and-forget)
     this.emailService.sendEmailVerification({
@@ -319,6 +323,10 @@ export class AuthService {
       await this.closeImpersonationLog(currentUser.impersonationLogId);
     }
 
+    // The active tenant is changing — drop every cached JWT validation for this user
+    // so the next request resolves the new role/tenant immediately.
+    this.jwtCache.invalidateUser(userId);
+
     // Primary path: user has a direct TenantUser record for the target tenant
     if (user.tenantUsers.length > 0) {
       const tenantUser = user.tenantUsers[0]!;
@@ -327,6 +335,68 @@ export class AuthService {
         throw new UnauthorizedException('Empresa desactivada');
       }
 
+      // Even when a direct TenantUser exists, the switch may still be an agency
+      // impersonation (e.g. the asesor registered on the client tenant directly).
+      // Only check when the user is NOT already acting as a client to avoid
+      // re-logging a log-close → log-open cycle on the same session.
+      const agencyRelationForLog = !currentUser.actingAsClient
+        ? await this.prisma.agencyClientRelation.findFirst({
+            where: {
+              clientTenantId: dto.tenantId,
+              agencyTenant: {
+                isActive: true,
+                tenantUsers: { some: { userId } },
+              },
+            },
+            select: { agencyTenantId: true },
+          })
+        : null;
+
+      if (agencyRelationForLog) {
+        // Treat as impersonation: log atomically then return agency-flavoured tokens
+        const { tokens } = await this.prisma.$transaction(async (tx) => {
+          const log = await tx.agencyImpersonationLog.create({
+            data: {
+              agencyTenantId: agencyRelationForLog.agencyTenantId,
+              clientTenantId: dto.tenantId,
+              actorUserId: user.id,
+              actorEmail: user.email,
+              clientBusinessName: tenantUser.tenant.businessName,
+              ipAddress: context.ipAddress,
+              userAgent: context.userAgent,
+            },
+            select: { id: true },
+          });
+
+          const tokens = await this.generateTokens(user.id, user.email, dto.tenantId, {
+            actingAsClient: true,
+            agencyTenantId: agencyRelationForLog.agencyTenantId,
+            impersonationLogId: log.id,
+          });
+
+          // Do NOT update lastActiveTenantId — same reason as the secondary path
+          await tx.user.update({
+            where: { id: user.id },
+            data: { refreshToken: tokens.refreshToken },
+          });
+
+          return { tokens };
+        });
+
+        return {
+          currentTenant: {
+            id: tenantUser.tenant.id,
+            businessName: tenantUser.tenant.businessName,
+            nif: tenantUser.tenant.nif,
+            setupCompleted: tenantUser.tenant.setupCompleted,
+            plan: tenantUser.tenant.plan,
+            accountType: tenantUser.tenant.accountType,
+          },
+          ...tokens,
+        };
+      }
+
+      // Not an agency impersonation — standard own-tenant switch
       const tokens = await this.generateTokens(user.id, user.email, dto.tenantId);
 
       await this.prisma.user.update({
@@ -369,32 +439,38 @@ export class AuthService {
       throw new UnauthorizedException('Empresa desactivada');
     }
 
-    // Append-only audit log entry — created BEFORE the token so the JWT can carry its id
-    const log = await this.prisma.agencyImpersonationLog.create({
-      data: {
+    // Atomic: create the audit log row, sign the JWT carrying its id, persist the
+    // rotated refresh token. If anything fails, no orphan log row + no leaked token.
+    // generateTokens does no DB I/O (only JWT sign), so it is safe inside the tx.
+    const { tokens } = await this.prisma.$transaction(async (tx) => {
+      const log = await tx.agencyImpersonationLog.create({
+        data: {
+          agencyTenantId: agencyRelation.agencyTenantId,
+          clientTenantId: agencyRelation.clientTenantId,
+          actorUserId: user.id,
+          actorEmail: user.email,
+          clientBusinessName: agencyRelation.clientTenant.businessName,
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+        },
+        select: { id: true },
+      });
+
+      const tokens = await this.generateTokens(user.id, user.email, dto.tenantId, {
+        actingAsClient: true,
         agencyTenantId: agencyRelation.agencyTenantId,
-        clientTenantId: agencyRelation.clientTenantId,
-        actorUserId: user.id,
-        actorEmail: user.email,
-        clientBusinessName: agencyRelation.clientTenant.businessName,
-        ipAddress: context.ipAddress,
-        userAgent: context.userAgent,
-      },
-      select: { id: true },
-    });
+        impersonationLogId: log.id,
+      });
 
-    const tokens = await this.generateTokens(user.id, user.email, dto.tenantId, {
-      actingAsClient: true,
-      agencyTenantId: agencyRelation.agencyTenantId,
-      impersonationLogId: log.id,
-    });
+      // Do NOT update lastActiveTenantId here: the user is acting as a managed client,
+      // not switching to one of their own tenants. Persisting the client's tenantId would
+      // cause the asesor to land on the client's context on their next login.
+      await tx.user.update({
+        where: { id: user.id },
+        data: { refreshToken: tokens.refreshToken },
+      });
 
-    // Do NOT update lastActiveTenantId here: the user is acting as a managed client,
-    // not switching to one of their own tenants. Persisting the client's tenantId would
-    // cause the asesor to land on the client's context on their next login.
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken: tokens.refreshToken },
+      return { tokens };
     });
 
     return {
@@ -489,6 +565,8 @@ export class AuthService {
       data: { refreshToken: null },
     });
 
+    this.jwtCache.invalidateUser(userId);
+
     return { message: 'Sesión cerrada correctamente' };
   }
 
@@ -546,6 +624,8 @@ export class AuthService {
         refreshToken: null, // Invalidate all sessions
       },
     });
+
+    this.jwtCache.invalidateUser(user.id);
 
     return { message: 'Contraseña actualizada correctamente' };
   }
@@ -666,6 +746,8 @@ export class AuthService {
       where: { id: userId },
       data: { passwordHash },
     });
+
+    this.jwtCache.invalidateUser(userId);
 
     return { message: 'Contraseña actualizada correctamente' };
   }

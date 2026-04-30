@@ -44,22 +44,44 @@ export class InvoiceService {
    * createdByUserId is only stored when the creator is NOT the tenant owner,
    * so if the relation exists it is always an agency user.
    */
-  private buildAgencyInfo(
-    createdByUser: {
-      firstName: string;
-      lastName: string;
-      tenantUsers: Array<{ tenant: { businessName: string } }>;
-    } | null
-  ): { userName: string; agencyName: string } | null {
-    if (!createdByUser) return null;
+  /**
+   * Resolves agency info (userName + agencyName) for a list of `createdByUserId`s
+   * in a single round trip — replaces the per-row nested
+   * `createdByUser → tenantUsers → tenant` JOIN previously done in `findAll`.
+   *
+   * Returns a Map keyed by userId. Users without an owner TenantUser are absent
+   * (in practice every agency-created row has one).
+   */
+  private async loadAgencyInfoMap(
+    userIds: string[]
+  ): Promise<Map<string, { userName: string; agencyName: string }>> {
+    const result = new Map<string, { userName: string; agencyName: string }>();
+    if (userIds.length === 0) return result;
 
-    const agencyTenant = createdByUser.tenantUsers[0];
-    if (!agencyTenant) return null;
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        tenantUsers: {
+          where: { isOwner: true },
+          select: { tenant: { select: { businessName: true } } },
+          take: 1,
+        },
+      },
+    });
 
-    return {
-      userName: `${createdByUser.firstName} ${createdByUser.lastName}`.trim(),
-      agencyName: agencyTenant.tenant.businessName,
-    };
+    for (const u of users) {
+      const ownerTenant = u.tenantUsers[0];
+      if (!ownerTenant) continue;
+      result.set(u.id, {
+        userName: `${u.firstName} ${u.lastName}`.trim(),
+        agencyName: ownerTenant.tenant.businessName,
+      });
+    }
+
+    return result;
   }
 
   private buildLineCreateData(
@@ -82,6 +104,103 @@ export class InvoiceService {
       hideQty: line.hideQty ?? false,
       sortOrder: index,
     }));
+  }
+
+  /**
+   * Applies an id-aware diff between the existing invoice lines and the incoming DTO:
+   *   - lines with `id` matching an existing row → UPDATE in place (preserves FKs).
+   *   - lines without `id` → CREATE.
+   *   - existing rows whose id is missing from the incoming list → DELETE.
+   *
+   * Backwards compatible: a client that re-sends every line without ids degrades to the
+   * previous behaviour (delete-all + create-all) automatically.
+   *
+   * Throws BadRequestException if the client sends an id that does not belong to this
+   * invoice — prevents tenant-cross attacks via crafted line ids.
+   */
+  private async applyLineDiff(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    invoiceId: string,
+    lines: CreateInvoiceLineDto[],
+    calculatedLines: { subtotal: number; taxAmount: number; lineTotal: number }[]
+  ): Promise<void> {
+    const existing = await tx.invoiceLine.findMany({
+      where: { invoiceId, tenantId },
+      select: { id: true },
+    });
+    const existingIds = new Set(existing.map((e) => e.id));
+
+    const toUpdate: Array<{ index: number; line: CreateInvoiceLineDto }> = [];
+    const toCreateIndexes: number[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]!;
+      if (line.id) {
+        if (!existingIds.has(line.id)) {
+          throw new BadRequestException('Una de las líneas no pertenece a esta factura');
+        }
+        toUpdate.push({ index: i, line });
+      } else {
+        toCreateIndexes.push(i);
+      }
+    }
+
+    const keepIds = new Set(toUpdate.map((u) => u.line.id!));
+    const toDeleteIds = existing.filter((e) => !keepIds.has(e.id)).map((e) => e.id);
+
+    if (toDeleteIds.length > 0) {
+      await tx.invoiceLine.deleteMany({
+        where: { id: { in: toDeleteIds }, invoiceId, tenantId },
+      });
+    }
+
+    if (toUpdate.length > 0) {
+      await Promise.all(
+        toUpdate.map(({ index, line }) =>
+          tx.invoiceLine.update({
+            where: { id: line.id! },
+            data: {
+              productId: line.productId ?? null,
+              description: line.description,
+              quantity: line.quantity,
+              unitPrice: line.unitPrice,
+              taxRate: line.taxRate,
+              subtotal: calculatedLines[index]!.subtotal,
+              taxAmount: calculatedLines[index]!.taxAmount,
+              lineTotal: calculatedLines[index]!.lineTotal,
+              irpfRate: line.irpfRate ?? null,
+              hideQty: line.hideQty ?? false,
+              sortOrder: index,
+            },
+          })
+        )
+      );
+    }
+
+    if (toCreateIndexes.length > 0) {
+      await tx.invoiceLine.createMany({
+        data: toCreateIndexes.map((index) => {
+          const line = lines[index]!;
+          const calc = calculatedLines[index]!;
+          return {
+            tenantId,
+            invoiceId,
+            productId: line.productId ?? null,
+            description: line.description,
+            quantity: line.quantity,
+            unitPrice: line.unitPrice,
+            taxRate: line.taxRate,
+            subtotal: calc.subtotal,
+            taxAmount: calc.taxAmount,
+            lineTotal: calc.lineTotal,
+            ...(line.irpfRate != null ? { irpfRate: line.irpfRate } : {}),
+            hideQty: line.hideQty ?? false,
+            sortOrder: index,
+          };
+        }),
+      });
+    }
   }
 
   private async resolveSeriesId(tenantId: string, seriesId?: string): Promise<string> {
@@ -279,34 +398,52 @@ export class InvoiceService {
         skip,
         take: limit,
         orderBy,
-        include: {
+        select: {
+          id: true,
+          tenantId: true,
+          number: true,
+          invoiceType: true,
+          status: true,
+          paymentStatus: true,
+          quoteAcceptanceStatus: true,
+          issueDate: true,
+          dueDate: true,
+          validUntil: true,
+          subtotal: true,
+          taxTotal: true,
+          irpfTotal: true,
+          total: true,
+          amountPaid: true,
+          paymentMethod: true,
+          notes: true,
+          hash: true,
+          createdAt: true,
+          updatedAt: true,
+          createdByUserId: true,
           customer: { select: { id: true, name: true, nif: true } },
           series: { select: { id: true, name: true, prefix: true } },
           payments: {
             select: { id: true, amount: true, paymentDate: true, paymentMethod: true, notes: true },
             orderBy: { paymentDate: 'desc' },
           },
-          createdByUser: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              tenantUsers: {
-                where: { isOwner: true },
-                select: {
-                  tenant: { select: { businessName: true } },
-                },
-              },
-            },
-          },
         },
       }),
       this.prisma.invoice.count({ where }),
     ]);
 
-    const mappedData = data.map(({ createdByUser, ...invoice }) => ({
+    // Resolve agency info in a single batch query instead of a per-row nested JOIN.
+    const agencyUserIds = Array.from(
+      new Set(
+        data
+          .map((d) => d.createdByUserId)
+          .filter((id): id is string => id !== null && id !== undefined)
+      )
+    );
+    const agencyMap = await this.loadAgencyInfoMap(agencyUserIds);
+
+    const mappedData = data.map(({ createdByUserId, ...invoice }) => ({
       ...invoice,
-      createdByAgency: this.buildAgencyInfo(createdByUser),
+      createdByAgency: createdByUserId ? (agencyMap.get(createdByUserId) ?? null) : null,
     }));
 
     return {
@@ -376,72 +513,106 @@ export class InvoiceService {
   }
 
   async findOne(tenantId: string, id: string) {
-    const invoice = await this.prisma.invoice.findFirst({
-      where: { id, tenantId },
-      include: {
-        lines: {
-          orderBy: { sortOrder: 'asc' },
-          include: {
-            product: { select: { id: true, name: true, reference: true } },
+    // Split the previous deep-nested include into parallel targeted queries.
+    // Each subquery uses its own index instead of a single big JOIN through
+    // 5 relations (lines+product, customer, series, verifactuLogs, payments,
+    // createdByUser→tenantUsers→tenant).
+    const [invoice, lines, verifactuLogs, payments] = await Promise.all([
+      this.prisma.invoice.findFirst({
+        where: { id, tenantId },
+        select: {
+          id: true,
+          tenantId: true,
+          number: true,
+          invoiceType: true,
+          status: true,
+          paymentStatus: true,
+          quoteAcceptanceStatus: true,
+          issueDate: true,
+          dueDate: true,
+          validUntil: true,
+          subtotal: true,
+          taxTotal: true,
+          irpfTotal: true,
+          total: true,
+          amountPaid: true,
+          paymentMethod: true,
+          paymentDetails: true,
+          notes: true,
+          hash: true,
+          prevHash: true,
+          recurringInvoiceId: true,
+          rectifiedInvoiceId: true,
+          rectificationReason: true,
+          convertedToInvoiceId: true,
+          createdAt: true,
+          updatedAt: true,
+          createdByUserId: true,
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              legalName: true,
+              nif: true,
+              email: true,
+              phone: true,
+              address: true,
+              postalCode: true,
+              city: true,
+              province: true,
+              country: true,
+              type: true,
+              notes: true,
+            },
           },
-        },
-        customer: {
-          select: {
-            id: true,
-            name: true,
-            legalName: true,
-            nif: true,
-            email: true,
-            phone: true,
-            address: true,
-            postalCode: true,
-            city: true,
-            province: true,
-            country: true,
-            type: true,
-            notes: true,
-          },
-        },
-        series: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            prefix: true,
-            type: true,
-            nextNumber: true,
-            digits: true,
-          },
-        },
-        verifactuLogs: {
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-        },
-        payments: {
-          orderBy: { paymentDate: 'desc' },
-        },
-        createdByUser: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            tenantUsers: {
-              where: { isOwner: true },
-              select: {
-                tenant: { select: { businessName: true } },
-              },
+          series: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              prefix: true,
+              type: true,
+              nextNumber: true,
+              digits: true,
             },
           },
         },
-      },
-    });
+      }),
+      this.prisma.invoiceLine.findMany({
+        where: { invoiceId: id, tenantId },
+        orderBy: { sortOrder: 'asc' },
+        include: {
+          product: { select: { id: true, name: true, reference: true } },
+        },
+      }),
+      this.prisma.verifactuLog.findMany({
+        where: { invoiceId: id },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+      this.prisma.payment.findMany({
+        where: { invoiceId: id, tenantId },
+        orderBy: { paymentDate: 'desc' },
+      }),
+    ]);
+
     if (!invoice) {
       throw new NotFoundException('Factura no encontrada');
     }
-    const { createdByUser, ...invoiceData } = invoice;
+
+    // Resolve agency info in parallel as well — cheap query, only runs when the
+    // invoice was created by an agency user.
+    const agencyMap = invoice.createdByUserId
+      ? await this.loadAgencyInfoMap([invoice.createdByUserId])
+      : new Map<string, { userName: string; agencyName: string }>();
+
+    const { createdByUserId, ...invoiceData } = invoice;
     return {
       ...invoiceData,
-      createdByAgency: this.buildAgencyInfo(createdByUser),
+      lines,
+      verifactuLogs,
+      payments,
+      createdByAgency: createdByUserId ? (agencyMap.get(createdByUserId) ?? null) : null,
     };
   }
 
@@ -486,7 +657,7 @@ export class InvoiceService {
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       if (dto.lines) {
-        await tx.invoiceLine.deleteMany({ where: { invoiceId: id } });
+        await this.applyLineDiff(tx, tenantId, id, dto.lines, totals.lines);
       }
 
       const updateData: Prisma.InvoiceUncheckedUpdateInput = {
@@ -524,11 +695,6 @@ export class InvoiceService {
         subtotal: totals.subtotal,
         taxTotal: totals.taxTotal,
         total: totals.total,
-        ...(dto.lines && {
-          lines: {
-            create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
-          },
-        }),
       };
 
       return tx.invoice.update({
@@ -954,28 +1120,31 @@ export class InvoiceService {
     const previousNotes = invoice.notes ?? null;
     const newNotes = dto.notes !== undefined ? (dto.notes ?? null) : previousNotes;
 
-    const updated = await this.prisma.invoice.update({
-      where: { id },
-      data: { notes: newNotes },
-      include: {
-        lines: { orderBy: { sortOrder: 'asc' } },
-        customer: true,
-        series: true,
-        verifactuLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
-      },
-    });
+    // Atomic: update + audit log either both succeed or both fail.
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const updated = await tx.invoice.update({
+        where: { id },
+        data: { notes: newNotes },
+        include: {
+          lines: { orderBy: { sortOrder: 'asc' } },
+          customer: true,
+          series: true,
+          verifactuLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
+        },
+      });
 
-    await this.prisma.invoiceNoteLog.create({
-      data: {
-        tenantId,
-        invoiceId: id,
-        userId,
-        previousNotes,
-        newNotes,
-      },
-    });
+      await tx.invoiceNoteLog.create({
+        data: {
+          tenantId,
+          invoiceId: id,
+          userId,
+          previousNotes,
+          newNotes,
+        },
+      });
 
-    return updated;
+      return updated;
+    });
   }
 
   // ==================== QUOTE CONVERSION ====================
@@ -1168,80 +1337,58 @@ export class InvoiceService {
     const now = new Date();
     const targetYear = year ?? now.getFullYear();
 
-    const ACTIVE_STATUSES = [
-      PrismaInvoiceStatus.CONFIRMED,
-      PrismaInvoiceStatus.SENT,
-      PrismaInvoiceStatus.PAID,
-    ];
-
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     const yearStart = new Date(targetYear, 0, 1);
     const yearEnd = new Date(targetYear + 1, 0, 1);
 
-    const [yearInvoices, pendingResult, totalCustomers, totalProducts] = await Promise.all([
-      this.prisma.invoice.findMany({
-        where: {
-          tenantId,
-          status: { in: ACTIVE_STATUSES },
-          issueDate: { gte: yearStart, lt: yearEnd },
-        },
-        select: { total: true, issueDate: true },
-      }),
-      // Pending collection: total minus amount already paid for non-fully-paid invoices
-      this.prisma.invoice.findMany({
-        where: {
-          tenantId,
-          status: { in: [PrismaInvoiceStatus.CONFIRMED, PrismaInvoiceStatus.SENT] },
-          paymentStatus: { in: [PrismaPaymentStatus.UNPAID, PrismaPaymentStatus.PARTIALLY_PAID] },
-        },
-        select: { total: true, amountPaid: true },
-      }),
+    type MonthlyRow = { month: number; total: string | null };
+    type KpiRow = {
+      this_month_total: string | null;
+      this_month_count: bigint;
+      last_month_total: string | null;
+    };
+    type PendingRow = { pending: string | null };
+
+    // 4 parallel SQL aggregates — replaces full-year findMany + JS aggregation.
+    const [monthlyRows, kpiRows, pendingRows, totalCustomers, totalProducts] = await Promise.all([
+      this.prisma.$queryRaw<MonthlyRow[]>(Prisma.sql`
+        SELECT
+          EXTRACT(MONTH FROM issue_date)::int AS month,
+          SUM(total)::text                    AS total
+        FROM invoices
+        WHERE tenant_id = ${tenantId}
+          AND status IN ('CONFIRMED', 'SENT', 'PAID')
+          AND issue_date >= ${yearStart}
+          AND issue_date <  ${yearEnd}
+        GROUP BY month
+      `),
+      this.prisma.$queryRaw<KpiRow[]>(Prisma.sql`
+        SELECT
+          SUM(total) FILTER (WHERE issue_date >= ${thisMonthStart} AND issue_date < ${nextMonthStart})::text AS this_month_total,
+          COUNT(*)   FILTER (WHERE issue_date >= ${thisMonthStart} AND issue_date < ${nextMonthStart})       AS this_month_count,
+          SUM(total) FILTER (WHERE issue_date >= ${lastMonthStart} AND issue_date < ${thisMonthStart})::text AS last_month_total
+        FROM invoices
+        WHERE tenant_id = ${tenantId}
+          AND status IN ('CONFIRMED', 'SENT', 'PAID')
+          AND issue_date >= ${lastMonthStart}
+          AND issue_date <  ${nextMonthStart}
+      `),
+      this.prisma.$queryRaw<PendingRow[]>(Prisma.sql`
+        SELECT SUM(total - amount_paid)::text AS pending
+        FROM invoices
+        WHERE tenant_id = ${tenantId}
+          AND status IN ('CONFIRMED', 'SENT')
+          AND payment_status IN ('UNPAID', 'PARTIALLY_PAID')
+      `),
       this.prisma.customer.count({ where: { tenantId } }),
       this.prisma.product.count({ where: { tenantId } }),
     ]);
 
-    // Calculate pending collection as sum of (total - amountPaid) for unpaid/partially paid invoices
-    const pendingCollection = pendingResult.reduce(
-      (sum, inv) => sum + (Number(inv.total) - Number(inv.amountPaid)),
-      0
+    const monthlyMap = new Map<number, number>(
+      monthlyRows.map((r) => [r.month - 1, Number(r.total ?? 0)])
     );
-
-    // Build monthly chart from year invoices
-    const monthlyMap: Record<number, number> = {};
-    for (const inv of yearInvoices) {
-      const month = new Date(inv.issueDate).getMonth();
-      monthlyMap[month] = (monthlyMap[month] ?? 0) + Number(inv.total);
-    }
-
-    // For KPIs use year invoices if same year, else fetch just the two relevant months
-    const kpiInvoices =
-      targetYear === now.getFullYear()
-        ? yearInvoices
-        : await this.prisma.invoice.findMany({
-            where: {
-              tenantId,
-              status: { in: ACTIVE_STATUSES },
-              issueDate: { gte: lastMonthStart, lt: nextMonthStart },
-            },
-            select: { total: true, issueDate: true },
-          });
-
-    let billedThisMonth = 0;
-    let billedLastMonth = 0;
-    let invoicesThisMonth = 0;
-
-    for (const inv of kpiInvoices) {
-      const invDate = new Date(inv.issueDate);
-      const amount = Number(inv.total);
-      if (invDate >= thisMonthStart && invDate < nextMonthStart) {
-        billedThisMonth += amount;
-        invoicesThisMonth += 1;
-      } else if (invDate >= lastMonthStart && invDate < thisMonthStart) {
-        billedLastMonth += amount;
-      }
-    }
 
     const MONTH_NAMES = [
       'Ene',
@@ -1257,10 +1404,17 @@ export class InvoiceService {
       'Nov',
       'Dic',
     ] as const;
+
     const monthlyChart = Array.from({ length: 12 }, (_, i) => ({
       month: MONTH_NAMES[i]!,
-      importe: Math.round((monthlyMap[i] ?? 0) * 100) / 100,
+      importe: Math.round((monthlyMap.get(i) ?? 0) * 100) / 100,
     }));
+
+    const kpi = kpiRows[0];
+    const billedThisMonth = Number(kpi?.this_month_total ?? 0);
+    const billedLastMonth = Number(kpi?.last_month_total ?? 0);
+    const invoicesThisMonth = Number(kpi?.this_month_count ?? 0);
+    const pendingCollection = Number(pendingRows[0]?.pending ?? 0);
 
     return {
       billedThisMonth: Math.round(billedThisMonth * 100) / 100,
@@ -1274,88 +1428,90 @@ export class InvoiceService {
   }
 
   async getReports(tenantId: string, fromDate: string, toDate: string) {
-    const ACTIVE_STATUSES = [
-      PrismaInvoiceStatus.CONFIRMED,
-      PrismaInvoiceStatus.SENT,
-      PrismaInvoiceStatus.PAID,
-    ];
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
 
-    const invoices = await this.prisma.invoice.findMany({
-      where: {
-        tenantId,
-        status: { in: ACTIVE_STATUSES },
-        issueDate: { gte: new Date(fromDate), lte: new Date(toDate) },
-      },
-      select: {
-        issueDate: true,
-        subtotal: true,
-        taxTotal: true,
-        irpfTotal: true,
-        total: true,
-        customer: { select: { id: true, name: true } },
-      },
-    });
+    type MonthlyRow = { month: string; revenue: string | null; invoices: bigint };
+    type CustomerRow = {
+      id: string;
+      name: string;
+      invoices: bigint;
+      total: string | null;
+    };
+    type SummaryRow = {
+      total_subtotal: string | null;
+      total_iva: string | null;
+      total_irpf: string | null;
+      invoices_count: bigint;
+    };
 
-    const monthlyMap = new Map<string, { revenue: number; invoices: number }>();
-    const customerMap = new Map<string, { name: string; invoices: number; total: number }>();
-    let totalSubtotal = 0;
-    let totalIva = 0;
-    let totalIrpf = 0;
+    // 3 parallel SQL aggregates — replaces full-range findMany + JS aggregation.
+    const [monthlyRows, customerRows, summaryRows] = await Promise.all([
+      this.prisma.$queryRaw<MonthlyRow[]>(Prisma.sql`
+        SELECT
+          TO_CHAR(issue_date, 'YYYY-MM') AS month,
+          SUM(total)::text               AS revenue,
+          COUNT(*)                       AS invoices
+        FROM invoices
+        WHERE tenant_id = ${tenantId}
+          AND status IN ('CONFIRMED', 'SENT', 'PAID')
+          AND issue_date >= ${from}
+          AND issue_date <= ${to}
+        GROUP BY month
+        ORDER BY month ASC
+      `),
+      this.prisma.$queryRaw<CustomerRow[]>(Prisma.sql`
+        SELECT
+          c.id,
+          c.name,
+          COUNT(i.id) AS invoices,
+          SUM(i.total)::text AS total
+        FROM invoices i
+        JOIN customers c ON c.id = i.customer_id
+        WHERE i.tenant_id = ${tenantId}
+          AND i.status IN ('CONFIRMED', 'SENT', 'PAID')
+          AND i.issue_date >= ${from}
+          AND i.issue_date <= ${to}
+        GROUP BY c.id, c.name
+        ORDER BY SUM(i.total) DESC NULLS LAST
+        LIMIT 10
+      `),
+      this.prisma.$queryRaw<SummaryRow[]>(Prisma.sql`
+        SELECT
+          SUM(subtotal)::text  AS total_subtotal,
+          SUM(tax_total)::text AS total_iva,
+          SUM(irpf_total)::text AS total_irpf,
+          COUNT(*)             AS invoices_count
+        FROM invoices
+        WHERE tenant_id = ${tenantId}
+          AND status IN ('CONFIRMED', 'SENT', 'PAID')
+          AND issue_date >= ${from}
+          AND issue_date <= ${to}
+      `),
+    ]);
 
-    for (const inv of invoices) {
-      const invDate = new Date(inv.issueDate);
-      const monthKey = `${invDate.getFullYear()}-${String(invDate.getMonth() + 1).padStart(2, '0')}`;
-      const amount = Number(inv.total);
+    const monthlyRevenue = monthlyRows.map((r) => ({
+      month: r.month,
+      revenue: Math.round(Number(r.revenue ?? 0) * 100) / 100,
+      invoices: Number(r.invoices),
+    }));
 
-      const monthEntry = monthlyMap.get(monthKey) ?? { revenue: 0, invoices: 0 };
-      monthlyMap.set(monthKey, {
-        revenue: monthEntry.revenue + amount,
-        invoices: monthEntry.invoices + 1,
-      });
+    const topCustomers = customerRows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      invoices: Number(r.invoices),
+      total: Math.round(Number(r.total ?? 0) * 100) / 100,
+    }));
 
-      const customerId = inv.customer.id;
-      const customerEntry = customerMap.get(customerId) ?? {
-        name: inv.customer.name,
-        invoices: 0,
-        total: 0,
-      };
-      customerMap.set(customerId, {
-        name: inv.customer.name,
-        invoices: customerEntry.invoices + 1,
-        total: customerEntry.total + amount,
-      });
-
-      totalSubtotal += Number(inv.subtotal);
-      totalIva += Number(inv.taxTotal);
-      totalIrpf += Number(inv.irpfTotal ?? 0);
-    }
-
-    const monthlyRevenue = Array.from(monthlyMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, data]) => ({
-        month,
-        revenue: Math.round(data.revenue * 100) / 100,
-        invoices: data.invoices,
-      }));
-
-    const topCustomers = Array.from(customerMap.entries())
-      .map(([id, data]) => ({
-        id,
-        name: data.name,
-        invoices: data.invoices,
-        total: Math.round(data.total * 100) / 100,
-      }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 10);
-
+    const summary = summaryRows[0];
     return {
       monthlyRevenue,
       topCustomers,
       taxSummary: {
-        totalSubtotal: Math.round(totalSubtotal * 100) / 100,
-        totalIva: Math.round(totalIva * 100) / 100,
-        totalIrpf: Math.round(totalIrpf * 100) / 100,
-        invoicesCount: invoices.length,
+        totalSubtotal: Math.round(Number(summary?.total_subtotal ?? 0) * 100) / 100,
+        totalIva: Math.round(Number(summary?.total_iva ?? 0) * 100) / 100,
+        totalIrpf: Math.round(Number(summary?.total_irpf ?? 0) * 100) / 100,
+        invoicesCount: Number(summary?.invoices_count ?? 0),
       },
     };
   }

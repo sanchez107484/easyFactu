@@ -5,6 +5,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
+import { JwtValidationCacheService } from './jwt-validation-cache.service';
 import { InvoiceSeriesModule } from '../invoice-series/invoice-series.module';
 
 @Module({
@@ -14,7 +15,7 @@ import { InvoiceSeriesModule } from '../invoice-series/invoice-series.module';
     InvoiceSeriesModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtRefreshStrategy],
-  exports: [AuthService],
+  providers: [AuthService, JwtStrategy, JwtRefreshStrategy, JwtValidationCacheService],
+  exports: [AuthService, JwtValidationCacheService],
 })
 export class AuthModule {}

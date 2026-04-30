@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { customerApi } from '@/lib/api/customer-api';
@@ -26,6 +26,7 @@ export function useCustomers(
     queryFn: () => customerApi.getAll(filters),
     enabled: options?.enabled ?? true,
     staleTime: options?.staleTime ?? 30_000,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -35,6 +36,22 @@ export function useCustomer(id: string) {
     queryFn: () => customerApi.getById(id),
     enabled: Boolean(id),
   });
+}
+
+/**
+ * Returns a prefetcher that warms the customer-detail cache on hover/focus.
+ * Use it in list rows so the detail page renders instantly when clicked.
+ */
+export function usePrefetchCustomer() {
+  const queryClient = useQueryClient();
+  return (id: string) => {
+    if (!id) return;
+    void queryClient.prefetchQuery({
+      queryKey: ['customers', 'detail', id],
+      queryFn: () => customerApi.getById(id),
+      staleTime: 30_000,
+    });
+  };
 }
 
 export function useCreateCustomer() {
@@ -55,10 +72,10 @@ export function useCreateCustomer() {
           };
         },
       );
-      // Mark as stale so the next visit/mount reconciles with the server,
+      // Mark list as stale so the next visit/mount reconciles with the server,
       // but do NOT trigger an immediate background refetch — that would race
       // with the parent form's setValue and could briefly clear the Select value.
-      queryClient.invalidateQueries({ queryKey: ['customers'], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['customers', 'list'], refetchType: 'none' });
       toast.success('Cliente creado correctamente');
     },
     onError: (error: unknown) => {
@@ -89,8 +106,9 @@ export function useDeleteCustomer() {
 
   return useMutation({
     mutationFn: (id: string) => customerApi.remove(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['customers', 'list'] });
+      queryClient.removeQueries({ queryKey: ['customers', 'detail', id] });
       toast.success('Cliente eliminado correctamente');
     },
     onError: (error: unknown) => {
@@ -200,7 +218,7 @@ export function useImportFromPool() {
           };
         },
       );
-      queryClient.invalidateQueries({ queryKey: ['customers'], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['customers', 'list'], refetchType: 'none' });
     },
     onError: (error: unknown) => {
       toast.error(getApiErrorMessage(error));

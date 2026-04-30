@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { agencyApi } from '@/lib/api/agency-api';
 import type { IdentifierCheckResult } from '@/lib/api/agency-api';
@@ -65,6 +65,7 @@ export function useAgencyClients(query?: QueryAgencyClientsInput, enabled = true
     queryFn: () => agencyApi.getClients(query),
     staleTime: 30 * 1000, // 30 seconds
     enabled,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -454,6 +455,7 @@ export function useAllClientsInvoices(query: AgencyInvoicesQuery, enabled = true
     queryFn: () => agencyApi.getAllClientsInvoices(query),
     staleTime: 30 * 1000,
     enabled,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -467,5 +469,6 @@ export function useImpersonationLogs(query: AgencyImpersonationLogQuery, enabled
     queryFn: () => agencyApi.getImpersonationLogs(query),
     staleTime: 30 * 1000,
     enabled,
+    placeholderData: keepPreviousData,
   });
 }

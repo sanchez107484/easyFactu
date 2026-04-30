@@ -46,7 +46,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { CustomerType, Customer, AccountType } from '@easyfactura/shared-types';
-import { useCustomers, useDeleteCustomer } from '@/hooks/use-customers';
+import { useCustomers, useDeleteCustomer, usePrefetchCustomer } from '@/hooks/use-customers';
 import { useSortTable } from '@/hooks/use-sort-table';
 import { SortableHeader } from '@/components/common/sortable-header';
 import { useAuthStore } from '@/store/auth-store';
@@ -195,6 +195,7 @@ export default function ClientesPage() {
     limit: 20,
   });
   const deleteMutation = useDeleteCustomer();
+  const prefetchCustomer = usePrefetchCustomer();
 
   const customers = data?.data ?? [];
   const total = data?.meta?.total ?? 0;
@@ -406,7 +407,12 @@ export default function ClientesPage() {
                   </thead>
                   <tbody className="divide-y">
                     {customers.map((customer) => (
-                      <tr key={customer.id} className="hover:bg-muted/30 transition-colors">
+                      <tr
+                        key={customer.id}
+                        className="hover:bg-muted/30 transition-colors"
+                        onMouseEnter={() => prefetchCustomer(customer.id)}
+                        onFocus={() => prefetchCustomer(customer.id)}
+                      >
                         <td className="p-4">
                           <Link
                             href={`/dashboard/clientes/${customer.id}`}

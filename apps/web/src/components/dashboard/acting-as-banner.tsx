@@ -30,7 +30,7 @@ export function ActingAsBanner() {
       <Button
         variant="ghost"
         size="sm"
-        onClick={returnToAgency}
+        onClick={() => returnToAgency('/dashboard/asesoria/clientes')}
         disabled={isReturning}
         className="shrink-0 border border-customer-400/30 text-white hover:bg-customer-500 hover:text-white disabled:opacity-70"
       >
@@ -39,7 +39,7 @@ export function ActingAsBanner() {
         ) : (
           <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
         )}
-        Volver a mi panel
+        Cambiar de cliente
       </Button>
     </div>
   );

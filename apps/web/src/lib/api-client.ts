@@ -8,6 +8,7 @@ const API_URL = API_BASE.replace(/\/v1$/, '') + '/v1';
 
 export const apiClient = axios.create({
   baseURL: API_URL,
+  timeout: 20_000, // 20s — fail fast en redes lentas / cuelgues serverless
   headers: {
     'Content-Type': 'application/json',
   },
