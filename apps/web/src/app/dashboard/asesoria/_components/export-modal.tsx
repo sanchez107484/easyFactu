@@ -106,8 +106,9 @@ export function ExportModal({ open, onOpenChange, clientTenantId, clientName }: 
 
   // Pre-populate preferred format once loaded
   useEffect(() => {
-    if (preferred?.format) {
-      setConfig((prev) => ({ ...prev, format: preferred.format }));
+    const preferredFormat = preferred?.format;
+    if (preferredFormat) {
+      setConfig((prev) => ({ ...prev, format: preferredFormat }));
     }
   }, [preferred?.format]);
 
