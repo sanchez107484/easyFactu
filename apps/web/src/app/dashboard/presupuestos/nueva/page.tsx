@@ -100,7 +100,10 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
   const [showQuickClient, setShowQuickClient] = useState(false);
   const [pendingCustomerId, setPendingCustomerId] = useState<string | null>(null);
 
-  const { data: customersData, isLoading: loadingCustomers } = useCustomers({ limit: 500, active: true });
+  const { data: customersData, isLoading: loadingCustomers } = useCustomers({
+    limit: 500,
+    active: true,
+  });
   const { data: defaultTemplate } = useDefaultTemplate();
   const { data: tenantData } = useTenant();
   const { data: seriesData } = useInvoiceSeries(currentYear);

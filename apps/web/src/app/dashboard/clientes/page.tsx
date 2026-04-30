@@ -46,7 +46,12 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { CustomerType, Customer, AccountType } from '@easyfactura/shared-types';
-import { useCustomers, useDeleteCustomer, useRestoreCustomer, usePrefetchCustomer } from '@/hooks/use-customers';
+import {
+  useCustomers,
+  useDeleteCustomer,
+  useRestoreCustomer,
+  usePrefetchCustomer,
+} from '@/hooks/use-customers';
 import { useSortTable } from '@/hooks/use-sort-table';
 import { SortableHeader } from '@/components/common/sortable-header';
 import { useAuthStore } from '@/store/auth-store';
@@ -336,7 +341,6 @@ export default function ClientesPage() {
                   <SelectItem value="ALL">Todos</SelectItem>
                 </SelectContent>
               </Select>
-
             </div>
 
             {isFiltered && !isLoading && (

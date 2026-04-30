@@ -140,7 +140,10 @@ function InvoiceForm({
 
   const isProforma = invoiceType === 'proforma';
 
-  const { data: customersData, isLoading: loadingCustomers } = useCustomers({ limit: 500, active: true });
+  const { data: customersData, isLoading: loadingCustomers } = useCustomers({
+    limit: 500,
+    active: true,
+  });
   const { data: defaultTemplate } = useDefaultTemplate();
   const { data: tenantData } = useTenant();
   const { data: seriesData } = useInvoiceSeries(currentYear);
