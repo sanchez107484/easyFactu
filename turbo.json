@@ -4,8 +4,17 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
-      "env": ["SANITY_REVALIDATE_SECRET"]
+      "outputs": [".next/**", "dist/**"],
+      "env": [
+        "SANITY_REVALIDATE_SECRET",
+        "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_SANITY_PROJECT_ID",
+        "NEXT_PUBLIC_SANITY_DATASET",
+        "NEXT_PUBLIC_SANITY_API_VERSION",
+        "NEXT_PUBLIC_GTM_ID",
+        "NEXT_PUBLIC_WEB3FORMS_KEY"
+      ]
     },
     "dev": {
       "cache": false,

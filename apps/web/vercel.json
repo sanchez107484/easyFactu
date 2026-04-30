@@ -1,6 +1,6 @@
 {
   "buildCommand": "cd ../.. && turbo build --filter=@easyfactura/web",
-  "installCommand": "pnpm install",
+  "installCommand": "pnpm install --frozen-lockfile --prefer-offline",
   "functions": {
     "src/app/api/invoices/[id]/pdf/route.ts": {
       "memory": 1024,
