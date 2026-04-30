@@ -171,7 +171,7 @@ export function DashboardSidebar() {
       {isActingAsClient && (
         <div className="shrink-0 border-b border-customer-100 bg-customer-50/60 dark:border-customer-900 dark:bg-customer-950/30">
           <button
-            onClick={returnToAgency}
+            onClick={() => returnToAgency()}
             disabled={isReturning}
             className={cn(
               'flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm',
