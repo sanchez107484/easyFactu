@@ -36,6 +36,9 @@ export const customerApi = {
 
   remove: (id: string): Promise<void> => apiClient.delete(`/customers/${id}`).then(() => undefined),
 
+  restore: (id: string): Promise<Customer> =>
+    apiClient.patch<ApiResponse<Customer>>(`/customers/${id}/restore`).then(unwrapApiResponse),
+
   getSharedPool: (search?: string): Promise<SharedPoolCustomer[]> =>
     apiClient
       .get<ApiResponse<SharedPoolCustomer[]>>('/customers/shared-pool', {

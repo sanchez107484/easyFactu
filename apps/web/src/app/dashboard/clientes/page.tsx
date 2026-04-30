@@ -41,12 +41,12 @@ import {
   Trash2,
   UserPlus,
   Users,
-  X,
   Info,
   ArrowRight,
+  RotateCcw,
 } from 'lucide-react';
 import { CustomerType, Customer, AccountType } from '@easyfactura/shared-types';
-import { useCustomers, useDeleteCustomer, usePrefetchCustomer } from '@/hooks/use-customers';
+import { useCustomers, useDeleteCustomer, useRestoreCustomer, usePrefetchCustomer } from '@/hooks/use-customers';
 import { useSortTable } from '@/hooks/use-sort-table';
 import { SortableHeader } from '@/components/common/sortable-header';
 import { useAuthStore } from '@/store/auth-store';
@@ -195,6 +195,7 @@ export default function ClientesPage() {
     limit: 10,
   });
   const deleteMutation = useDeleteCustomer();
+  const restoreMutation = useRestoreCustomer();
   const prefetchCustomer = usePrefetchCustomer();
 
   const customers = data?.data ?? [];
@@ -207,11 +208,6 @@ export default function ClientesPage() {
     if (!customerToDelete) return;
     await deleteMutation.mutateAsync(customerToDelete.id);
     setCustomerToDelete(null);
-  };
-
-  const clearFilters = () => {
-    setSearchInput('');
-    setTypeFilter('ALL');
   };
 
   if (error) {
@@ -341,12 +337,6 @@ export default function ClientesPage() {
                 </SelectContent>
               </Select>
 
-              {isFiltered && (
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1.5">
-                  <X className="h-3.5 w-3.5" />
-                  Limpiar
-                </Button>
-              )}
             </div>
 
             {isFiltered && !isLoading && (
@@ -471,13 +461,23 @@ export default function ClientesPage() {
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onClick={() => setCustomerToDelete(customer)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Eliminar
-                              </DropdownMenuItem>
+                              {customer.isActive ? (
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => setCustomerToDelete(customer)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Eliminar
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem
+                                  onClick={() => restoreMutation.mutate(customer.id)}
+                                  disabled={restoreMutation.isPending}
+                                >
+                                  <RotateCcw className="mr-2 h-4 w-4" />
+                                  Reactivar
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>

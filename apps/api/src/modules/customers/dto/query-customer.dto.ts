@@ -27,7 +27,12 @@ export class QueryCustomerDto extends PaginationDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(({ value }) => value === true || value === 'true')
+  @Transform(({ obj }) => {
+    const raw = (obj as Record<string, unknown>).active;
+    if (raw === undefined || raw === null) return undefined;
+    if (raw === 'false' || raw === false) return false;
+    return raw === 'true' || raw === true;
+  })
   @IsBoolean()
   active?: boolean;
 

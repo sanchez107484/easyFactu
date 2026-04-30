@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -86,5 +87,12 @@ export class CustomerController {
   @ApiOkResponse({ description: 'Cliente desactivado correctamente' })
   remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.customerService.remove(tenantId, id);
+  }
+
+  @Patch(':id/restore')
+  @ApiOperation({ summary: 'Reactivar cliente (deshacer soft delete)' })
+  @ApiOkResponse({ description: 'Cliente reactivado correctamente' })
+  restore(@CurrentTenant() tenantId: string, @Param('id') id: string) {
+    return this.customerService.restore(tenantId, id);
   }
 }

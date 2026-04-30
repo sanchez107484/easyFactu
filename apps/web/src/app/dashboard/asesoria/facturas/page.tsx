@@ -111,7 +111,7 @@ export default function AgencyInvoicesPage() {
       minAmount: Number.isFinite(min) ? min : undefined,
       maxAmount: Number.isFinite(max) ? max : undefined,
       page,
-      limit: 25,
+      limit: 10,
       sortBy: 'issueDate',
       sortDir: 'desc',
     };
@@ -170,7 +170,7 @@ export default function AgencyInvoicesPage() {
     maxAmount !== '';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Facturas de clientes</h1>
@@ -185,7 +185,7 @@ export default function AgencyInvoicesPage() {
       {/* Filters */}
       <div className="rounded-xl border bg-card p-4">
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          <div className="lg:col-span-2">
+          <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Buscar</label>
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -322,7 +322,7 @@ export default function AgencyInvoicesPage() {
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead>Cobro</TableHead>
-                    <TableHead className="w-[80px]" />
+                    <TableHead className="w-[80px] text-center text-xs">Acceder</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

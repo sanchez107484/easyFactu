@@ -162,6 +162,15 @@ export class CustomerService {
     });
   }
 
+  async restore(tenantId: string, id: string) {
+    await this.findOne(tenantId, id);
+
+    return this.prisma.customer.update({
+      where: { id },
+      data: { isActive: true },
+    });
+  }
+
   // ─── Agency shared pool ─────────────────────────────────────────────────────
 
   /**

@@ -167,7 +167,7 @@ export default function AgencyClientsPage() {
   const pendingInvitations = allInvitations.filter((inv) => inv.status === 'PENDING');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-6">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>

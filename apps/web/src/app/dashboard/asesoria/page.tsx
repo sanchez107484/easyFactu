@@ -83,7 +83,7 @@ export default function AgencyHubPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-6">
       {/* ── Cabecera ── */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Panel de asesoría</h1>

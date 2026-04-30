@@ -66,7 +66,7 @@ export default function AgencyAuditoriaPage() {
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   const [page, setPage] = useState<number>(1);
-  const limit = 50;
+  const limit = 10;
 
   // Reset to page 1 whenever any filter changes
   useEffect(() => {

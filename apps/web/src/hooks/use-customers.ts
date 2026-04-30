@@ -117,6 +117,22 @@ export function useDeleteCustomer() {
   });
 }
 
+export function useRestoreCustomer() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => customerApi.restore(id),
+    onSuccess: (customer) => {
+      queryClient.invalidateQueries({ queryKey: ['customers', 'list'] });
+      queryClient.setQueryData(['customers', 'detail', customer.id], customer);
+      toast.success('Cliente reactivado correctamente');
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
 // ==================== NIF DUPLICATE DETECTION ====================
 
 const NIF_DEBOUNCE_MS = 600;
