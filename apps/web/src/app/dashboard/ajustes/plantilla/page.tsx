@@ -25,6 +25,7 @@ export default function PlantillaPage() {
   const [layout, setLayout] = useState<InvoiceLayout>(DEFAULT_INVOICE_LAYOUT);
   const [savedLayout, setSavedLayout] = useState<InvoiceLayout>(DEFAULT_INVOICE_LAYOUT);
   const [activeTab, setActiveTab] = useState<SettingsTab>('style');
+  const [activePreviewSection, setActivePreviewSection] = useState<string | null>(null);
 
   // Hydrate from server once template arrives
   useEffect(() => {
@@ -68,6 +69,26 @@ export default function PlantillaPage() {
   const handleReset = useCallback(() => {
     setLayout(savedLayout);
   }, [savedLayout]);
+
+  const SECTION_TAB_MAP: Record<string, SettingsTab> = {
+    customerId: 'sender',
+    issueDate: 'style',
+    'lines-section': 'details',
+    discountPercent: 'details',
+    paymentMethod: 'closing',
+    notes: 'closing',
+    footer: 'closing',
+  };
+
+  const handlePreviewSectionClick = useCallback(
+    (fieldId: string) => {
+      setActivePreviewSection(fieldId);
+      const tab = SECTION_TAB_MAP[fieldId];
+      if (tab) setActiveTab(tab);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   if (isLoading) {
     return (
@@ -157,11 +178,8 @@ export default function PlantillaPage() {
               tenant={previewTenant}
               invoice={exampleInvoice}
               paymentDetails={previewPaymentDetails}
-              activeFieldSection={null}
-              onSectionClick={() => {
-                /* noop — fieldIds in LiveInvoicePreview map to invoice-form fields,
-                   not template visual sections, so click-to-edit doesn't apply here */
-              }}
+              activeFieldSection={activePreviewSection}
+              onSectionClick={handlePreviewSectionClick}
             />
           </div>
         </main>
