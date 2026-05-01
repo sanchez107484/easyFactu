@@ -1,14 +1,7 @@
-'use client';
+﻿'use client';
 
 import { useRef, useState } from 'react';
-import {
-  Building2,
-  FileText,
-  Image as ImageIcon,
-  Palette,
-  RotateCcw,
-  Table,
-} from 'lucide-react';
+import { Building2, FileText, Image as ImageIcon, Palette, RotateCcw, Table } from 'lucide-react';
 import { InvoiceLayout } from '@easyfactura/shared-types';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
@@ -21,7 +14,7 @@ import {
   type BaseTemplate,
 } from '../_lib/preview-data';
 
-// ---------------------------- Types ----------------------------
+// ──────────────────────────── Types ────────────────────────────
 
 export type SettingsTab = 'style' | 'sender' | 'details' | 'closing';
 
@@ -35,7 +28,7 @@ interface SettingsTabsProps {
   onTabChange: (tab: SettingsTab) => void;
 }
 
-// ---------------------------- Tab definitions ----------------------------
+// ──────────────────────────── Tab definitions ────────────────────────────
 
 const TABS: { id: SettingsTab; label: string; icon: typeof Palette }[] = [
   { id: 'style', label: 'Estilo', icon: Palette },
@@ -44,7 +37,7 @@ const TABS: { id: SettingsTab; label: string; icon: typeof Palette }[] = [
   { id: 'closing', label: 'Notas\ny pie', icon: FileText },
 ];
 
-// ---------------------------- Small UI primitives ----------------------------
+// ──────────────────────────── Small UI primitives ────────────────────────────
 
 function ToggleRow({
   label,
@@ -96,7 +89,7 @@ function FieldGroup({
   );
 }
 
-// ---------------------------- Main component ----------------------------
+// ──────────────────────────── Main component ────────────────────────────
 
 export function SettingsTabs({
   layout,
@@ -109,7 +102,6 @@ export function SettingsTabs({
 }: SettingsTabsProps) {
   return (
     <div className="flex h-full flex-col">
-      {/* Tab strip */}
       <nav
         role="tablist"
         aria-label="Secciones del editor de plantilla"
@@ -126,7 +118,7 @@ export function SettingsTabs({
               aria-controls={`tab-panel-${tab.id}`}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                'flex flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-semibold leading-tight transition-colors whitespace-pre-line text-center',
+                'flex flex-col items-center gap-1 px-1 py-2.5 text-center text-[11px] font-semibold leading-tight transition-colors whitespace-pre-line',
                 isActive
                   ? 'border-b-2 border-primary text-primary'
                   : 'border-b-2 border-transparent text-muted-foreground hover:text-foreground',
@@ -139,7 +131,6 @@ export function SettingsTabs({
         })}
       </nav>
 
-      {/* Tab content (scrolls independently) */}
       <div
         id={`tab-panel-${activeTab}`}
         role="tabpanel"
@@ -163,7 +154,13 @@ export function SettingsTabs({
   );
 }
 
-// ---------------------------- Tab: Estilo ----------------------------
+// ──────────────────────────── Tab: Estilo ────────────────────────────
+
+const MARGIN_PRESETS = [
+  { label: 'Compacto', mm: 15 },
+  { label: 'Normal', mm: 20 },
+  { label: 'Amplio', mm: 28 },
+] as const;
 
 function StyleTab({
   layout,
@@ -182,7 +179,6 @@ function StyleTab({
     setActiveTplId(tpl.id);
     onApplyTemplate(tpl.layout);
   }
-
   function patchColors(patch: Partial<InvoiceLayout['colors']>) {
     onChange({ colors: { ...layout.colors, ...patch } });
   }
@@ -193,19 +189,13 @@ function StyleTab({
     onChange({ page: { ...layout.page, ...patch } });
   }
 
-  const MARGIN_PRESETS = [
-    { label: 'Compacto', mm: 15, icon: '?' },
-    { label: 'Normal', mm: 20, icon: '?' },
-    { label: 'Amplio', mm: 28, icon: '?' },
-  ] as const;
-
-  const activePreset = MARGIN_PRESETS.find((p) => p.mm === layout.page.marginTop)?.mm ?? null;
+  const activePresetMm = MARGIN_PRESETS.find((p) => p.mm === layout.page.marginTop)?.mm ?? null;
 
   return (
     <>
       <FieldGroup
         title="Empieza con una plantilla"
-        description="Elige un estilo y luego personal�zalo"
+        description="Elige un estilo y luego personalízalo"
       >
         <div className="grid grid-cols-2 gap-3">
           {BASE_TEMPLATES.map((tpl) => (
@@ -280,7 +270,7 @@ function StyleTab({
           <div>
             <div className="text-xs font-medium">Color personalizado</div>
             <div className="text-[10px] text-muted-foreground">
-              Pon exactamente el color de tu marca
+              Usa exactamente el color de tu marca
             </div>
           </div>
         </div>
@@ -317,11 +307,11 @@ function StyleTab({
         </div>
       </FieldGroup>
 
-      <FieldGroup title="Tama�o de letra">
+      <FieldGroup title="Tamano de letra">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span
-              className="font-medium transition-all"
+              className="font-medium"
               style={{ fontSize: `${layout.typography.baseFontSize + 2}px` }}
             >
               Aa
@@ -340,19 +330,18 @@ function StyleTab({
             className="w-full accent-primary"
           />
           <div className="flex justify-between text-[9px] text-muted-foreground">
-            <span>Peque�o</span>
+            <span>Pequeño</span>
             <span>Grande</span>
           </div>
         </div>
       </FieldGroup>
 
-      <FieldGroup
-        title="M�rgenes de p�gina"
-        description="Espacio alrededor del contenido de la factura"
-      >
+      <FieldGroup title="Margenes" description="Espacio alrededor del contenido de la factura">
         <div className="grid grid-cols-3 gap-2">
           {MARGIN_PRESETS.map((preset) => {
-            const isActive = activePreset === preset.mm;
+            const isActive = activePresetMm === preset.mm;
+            const innerPad =
+              preset.mm === 15 ? 'p-[2px]' : preset.mm === 20 ? 'p-[4px]' : 'p-[7px]';
             return (
               <button
                 key={preset.mm}
@@ -372,14 +361,20 @@ function StyleTab({
                     : 'border-muted hover:border-muted-foreground/40',
                 )}
               >
-                <span
+                <div
                   className={cn(
-                    'text-sm font-mono',
-                    isActive ? 'text-primary' : 'text-muted-foreground',
+                    'h-6 w-5 rounded-sm border',
+                    isActive ? 'border-primary' : 'border-muted-foreground/40',
+                    innerPad,
                   )}
                 >
-                  {preset.icon}
-                </span>
+                  <div
+                    className={cn(
+                      'h-full w-full rounded-sm',
+                      isActive ? 'bg-primary/20' : 'bg-muted',
+                    )}
+                  />
+                </div>
                 <span
                   className={cn(
                     'text-[10px] font-semibold',
@@ -398,7 +393,18 @@ function StyleTab({
   );
 }
 
-// ---------------------------- Tab: Emisor y cliente ----------------------------
+// ──────────────────────────── Tab: Emisor y cliente ────────────────────────────
+
+const LOGO_POSITIONS = [
+  { value: 'top-left', label: 'Izquierda' },
+  { value: 'top-center', label: 'Centro' },
+  { value: 'top-right', label: 'Derecha' },
+] as const;
+
+const SENDER_SIDES = [
+  { value: 'left', label: 'Tu a la izquierda' },
+  { value: 'right', label: 'Tu a la derecha' },
+] as const;
 
 function SenderTab({
   layout,
@@ -429,17 +435,19 @@ function SenderTab({
               alt="Tu logo"
               className="h-10 w-auto max-w-[80px] rounded object-contain"
             />
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="text-xs font-medium">Logo actual</div>
-              <div className="text-[10px] text-muted-foreground">C�mbialo en Ajustes ? Empresa</div>
+              <div className="text-[10px] text-muted-foreground">
+                Cambialo en Ajustes &rsaquo; Empresa
+              </div>
             </div>
           </div>
         ) : (
           <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3 text-muted-foreground">
             <ImageIcon className="h-4 w-4 shrink-0" />
             <div className="text-xs">
-              Sin logo � a��delo en{' '}
-              <span className="font-medium text-foreground">Ajustes ? Empresa</span>
+              Sin logo &mdash; añadelo en{' '}
+              <span className="font-medium text-foreground">Ajustes &rsaquo; Empresa</span>
             </div>
           </div>
         )}
@@ -455,15 +463,9 @@ function SenderTab({
         {layout.logo.visible && (
           <>
             <div>
-              <p className="mb-2 text-xs font-medium">Posici�n del logo</p>
+              <p className="mb-2 text-xs font-medium">Posicion del logo</p>
               <div className="grid grid-cols-3 gap-1.5">
-                {(
-                  [
-                    { value: 'top-left', label: 'Izquierda', icon: '?' },
-                    { value: 'top-center', label: 'Centro', icon: '?' },
-                    { value: 'top-right', label: 'Derecha', icon: '?' },
-                  ] as const
-                ).map((pos) => (
+                {LOGO_POSITIONS.map((pos) => (
                   <button
                     key={pos.value}
                     type="button"
@@ -475,7 +477,6 @@ function SenderTab({
                         : 'border-muted text-muted-foreground hover:border-muted-foreground/40',
                     )}
                   >
-                    <span className="text-base">{pos.icon}</span>
                     <span className="text-[10px]">{pos.label}</span>
                   </button>
                 ))}
@@ -484,7 +485,7 @@ function SenderTab({
 
             <div className="space-y-1">
               <div className="flex justify-between">
-                <span className="text-xs font-medium">Tama�o del logo</span>
+                <span className="text-xs font-medium">Tamano del logo</span>
                 <span className="text-xs font-semibold tabular-nums text-primary">
                   {layout.logo.widthMm} mm
                 </span>
@@ -498,7 +499,7 @@ function SenderTab({
                 className="w-full accent-primary"
               />
               <div className="flex justify-between text-[9px] text-muted-foreground">
-                <span>Peque�o</span>
+                <span>Pequeño</span>
                 <span>Grande</span>
               </div>
             </div>
@@ -506,14 +507,9 @@ function SenderTab({
         )}
       </FieldGroup>
 
-      <FieldGroup title="Disposici�n" description="Lado donde aparecen tus datos de empresa">
+      <FieldGroup title="Disposicion" description="Lado donde aparecen tus datos de empresa">
         <div className="grid grid-cols-2 gap-2">
-          {(
-            [
-              { value: 'left', label: 'T� a la izquierda' },
-              { value: 'right', label: 'T� a la derecha' },
-            ] as const
-          ).map((side) => {
+          {SENDER_SIDES.map((side) => {
             const isActive = layout.header.senderSide === side.value;
             const isLeft = side.value === 'left';
             return (
@@ -533,7 +529,9 @@ function SenderTab({
                     className={cn(
                       'h-8 flex-1 rounded',
                       isLeft
-                        ? isActive ? 'bg-primary/30' : 'bg-muted-foreground/20'
+                        ? isActive
+                          ? 'bg-primary/30'
+                          : 'bg-muted-foreground/20'
                         : 'bg-muted-foreground/10',
                     )}
                   />
@@ -541,14 +539,16 @@ function SenderTab({
                     className={cn(
                       'h-8 flex-1 rounded',
                       !isLeft
-                        ? isActive ? 'bg-primary/30' : 'bg-muted-foreground/20'
+                        ? isActive
+                          ? 'bg-primary/30'
+                          : 'bg-muted-foreground/20'
                         : 'bg-muted-foreground/10',
                     )}
                   />
                 </div>
                 <span
                   className={cn(
-                    'text-[10px] font-semibold leading-tight text-center',
+                    'text-center text-[10px] font-semibold leading-tight',
                     isActive ? 'text-primary' : 'text-muted-foreground',
                   )}
                 >
@@ -563,14 +563,14 @@ function SenderTab({
       <FieldGroup title="Datos de contacto visibles">
         <div className="divide-y">
           <ToggleRow
-            label="Tel�fono"
+            label="Telefono"
             description="Visible en la cabecera de la factura"
             checked={layout.header.showPhone}
             onChange={(v) => patchHeader({ showPhone: v })}
           />
           <ToggleRow
             label="Cuenta bancaria (IBAN)"
-            description="Para que el cliente sepa d�nde pagarte"
+            description="Para que el cliente sepa donde pagarte"
             checked={layout.header.showIban}
             onChange={(v) => patchHeader({ showIban: v })}
           />
@@ -582,7 +582,7 @@ function SenderTab({
   );
 }
 
-// ---------------------------- Tab: Tabla y totales ----------------------------
+// ──────────────────────────── Tab: Tabla y totales ────────────────────────────
 
 function DetailsTab({
   layout,
@@ -638,7 +638,7 @@ function DetailsTab({
         <div className="divide-y">
           <ToggleRow
             label="Referencia / SKU"
-            description="Muestra el c�digo de cada art�culo"
+            description="Muestra el codigo de cada articulo"
             checked={layout.itemsTable.showReference}
             onChange={(v) => patchItemsTable({ showReference: v })}
           />
@@ -649,18 +649,18 @@ function DetailsTab({
           />
           <ToggleRow
             label="Precio unitario"
-            description="�til para facturas de un �nico servicio"
+            description="Util para facturas de un unico servicio"
             checked={layout.itemsTable.showUnitPrice ?? true}
             onChange={(v) => patchItemsTable({ showUnitPrice: v })}
           />
           <ToggleRow
-            label="% de IVA por l�nea"
+            label="% de IVA por linea"
             description="El desglose de IVA siempre aparece en totales"
             checked={layout.itemsTable.showTaxColumn ?? true}
             onChange={(v) => patchItemsTable({ showTaxColumn: v })}
           />
           <ToggleRow
-            label="Total por l�nea"
+            label="Total por linea"
             checked={layout.itemsTable.showLineTotal ?? true}
             onChange={(v) => patchItemsTable({ showLineTotal: v })}
           />
@@ -676,7 +676,7 @@ function DetailsTab({
             onChange={(v) => patchTotals({ showTaxBreakdown: v })}
           />
           <ToggleRow
-            label="IRPF (retenci�n)"
+            label="IRPF (retencion)"
             description="Solo si aplica en tus facturas"
             checked={layout.totals.showIrpf}
             onChange={(v) => patchTotals({ showIrpf: v })}
@@ -687,7 +687,7 @@ function DetailsTab({
   );
 }
 
-// ---------------------------- Tab: Notas y pie ----------------------------
+// ──────────────────────────── Tab: Notas y pie ────────────────────────────
 
 function ClosingTab({
   layout,
@@ -710,24 +710,26 @@ function ClosingTab({
     });
   }
 
+  const notesVisible = layout.notes?.show !== false;
+
   return (
     <>
       <FieldGroup title="Notas">
         <div className="divide-y">
           <ToggleRow
-            label="Mostrar secci�n de notas"
-            checked={layout.notes?.show !== false}
+            label="Mostrar seccion de notas"
+            checked={notesVisible}
             onChange={(v) => patchNotes({ show: v })}
           />
-          {layout.notes?.show !== false && (
+          {notesVisible && (
             <ToggleRow
-              label="Mostrar etiqueta 'Notas'"
+              label="Mostrar etiqueta Notas"
               checked={layout.notes?.showLabel !== false}
               onChange={(v) => patchNotes({ showLabel: v })}
             />
           )}
         </div>
-        {layout.notes?.show !== false && (
+        {notesVisible && (
           <div>
             <label htmlFor="default-notes" className="mb-1.5 block text-xs font-medium">
               Texto predeterminado
@@ -741,13 +743,13 @@ function ClosingTab({
               className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             />
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Se usar� en nuevas facturas por defecto
+              Se usara en nuevas facturas por defecto
             </p>
           </div>
         )}
       </FieldGroup>
 
-      <FieldGroup title="Pie de p�gina">
+      <FieldGroup title="Pie de pagina">
         <div>
           <label htmlFor="footer-text" className="mb-1.5 block text-xs font-medium">
             Mensaje al final de la factura
@@ -768,8 +770,8 @@ function ClosingTab({
             onChange={(v) => patchFooter({ showPaymentInfo: v })}
           />
           <ToggleRow
-            label="C�digo QR VeriFactu"
-            description="Permite verificar la factura � recomendado por la AEAT"
+            label="Codigo QR VeriFactu"
+            description="Permite verificar la factura ante la AEAT"
             checked={layout.footer.showVerifactuQr}
             onChange={(v) => patchFooter({ showVerifactuQr: v })}
             badge={
