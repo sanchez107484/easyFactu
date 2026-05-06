@@ -955,6 +955,10 @@ export interface InvoiceStats {
   monthlyChart: Array<{ month: string; importe: number }>;
   totalCustomers: number;
   totalProducts: number;
+  collectedThisMonth: number;
+  overdueCount: number;
+  overdueAmount: number;
+  ticketMedioThisMonth: number;
 }
 
 export interface InvoiceReportMonthly {

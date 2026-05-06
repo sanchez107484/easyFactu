@@ -11,7 +11,6 @@ import {
   FileText,
   Euro,
   Clock,
-  Users,
   Plus,
   ArrowUpRight,
   Package,
@@ -19,9 +18,13 @@ import {
   FilePlus,
   ChevronRight,
   ClipboardList,
-  CalendarDays,
   Zap,
   X,
+  TrendingUp,
+  TrendingDown,
+  CircleCheck,
+  AlertCircle,
+  BarChart2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -32,21 +35,6 @@ import { cn, formatCurrency } from '@/lib/utils';
 import { InvitationCards } from '@/components/common/invitation-alert';
 
 // ==================== HELPERS ====================
-
-const MONTH_LABELS = [
-  'Ene',
-  'Feb',
-  'Mar',
-  'Abr',
-  'May',
-  'Jun',
-  'Jul',
-  'Ago',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dic',
-];
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -64,15 +52,44 @@ interface StatCardProps {
   icon: React.ElementType;
   isLoading: boolean;
   href?: string;
+  trend?: number | null;
+  trendGoodWhenUp?: boolean;
+  alert?: boolean;
 }
 
-function StatCard({ title, value, description, icon: Icon, isLoading, href }: StatCardProps) {
+function StatCard({
+  title,
+  value,
+  description,
+  icon: Icon,
+  isLoading,
+  href,
+  trend,
+  trendGoodWhenUp = true,
+  alert,
+}: StatCardProps) {
+  const trendPositive = trend !== null && trend !== undefined && trend >= 0;
+  const trendIsGood = trendPositive === trendGoodWhenUp;
+
   const content = (
-    <Card className={cn('transition-all', href && 'hover:shadow-md cursor-pointer')}>
+    <Card
+      className={cn(
+        'transition-all',
+        href && 'hover:shadow-md cursor-pointer',
+        alert && 'border-amber-300 dark:border-amber-700 bg-amber-50/30 dark:bg-amber-950/10',
+      )}
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Icon className="h-4 w-4 text-primary" />
+        <div
+          className={cn(
+            'h-8 w-8 rounded-lg flex items-center justify-center',
+            alert ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-primary/10',
+          )}
+        >
+          <Icon
+            className={cn('h-4 w-4', alert ? 'text-amber-600 dark:text-amber-400' : 'text-primary')}
+          />
         </div>
       </CardHeader>
       <CardContent>
@@ -84,7 +101,27 @@ function StatCard({ title, value, description, icon: Icon, isLoading, href }: St
         ) : (
           <>
             <div className="text-2xl font-bold tracking-tight">{value}</div>
-            {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              {description && <p className="text-xs text-muted-foreground">{description}</p>}
+              {trend !== null && trend !== undefined && (
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-0.5 text-[10px] font-semibold rounded-md px-1.5 py-0.5',
+                    trendIsGood
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                      : 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400',
+                  )}
+                >
+                  {trendPositive ? (
+                    <TrendingUp className="h-3 w-3" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3" />
+                  )}
+                  {trendPositive ? '+' : ''}
+                  {trend}%
+                </span>
+              )}
+            </div>
           </>
         )}
       </CardContent>
@@ -201,7 +238,16 @@ export default function DashboardPage() {
   const billedLastMonth = stats?.billedLastMonth ?? 0;
   const pendingCollection = stats?.pendingCollection ?? 0;
   const invoicesThisMonth = stats?.invoicesThisMonth ?? 0;
+  const collectedThisMonth = stats?.collectedThisMonth ?? 0;
+  const overdueCount = stats?.overdueCount ?? 0;
+  const overdueAmount = stats?.overdueAmount ?? 0;
+  const ticketMedioThisMonth = stats?.ticketMedioThisMonth ?? 0;
   const chartData = stats?.monthlyChart ?? [];
+
+  const monthTrend =
+    billedLastMonth > 0
+      ? Math.round(((billedThisMonth - billedLastMonth) / billedLastMonth) * 100)
+      : null;
 
   const isLoadingStats = loadingInvoices;
   const isStillLoading = loadingInvoices || loadingRecent;
@@ -316,12 +362,13 @@ export default function DashboardPage() {
             icon={Euro}
             isLoading={isLoadingStats}
             href="/dashboard/facturas"
+            trend={monthTrend}
           />
           <StatCard
-            title={`Facturado en ${MONTH_LABELS[(now.getMonth() + 11) % 12]}`}
-            value={formatCurrency(billedLastMonth)}
-            description="Mes anterior"
-            icon={CalendarDays}
+            title="Cobrado este mes"
+            value={formatCurrency(collectedThisMonth)}
+            description="Pagos registrados"
+            icon={CircleCheck}
             isLoading={isLoadingStats}
             href="/dashboard/facturas"
           />
@@ -334,20 +381,29 @@ export default function DashboardPage() {
             href="/dashboard/facturas"
           />
           <StatCard
-            title="Clientes"
-            value={String(totalCustomers)}
-            description="En tu cartera"
-            icon={Users}
+            title="Vencidas sin cobrar"
+            value={formatCurrency(overdueAmount)}
+            description={
+              overdueCount > 0
+                ? `${overdueCount} factura${overdueCount !== 1 ? 's' : ''} vencida${overdueCount !== 1 ? 's' : ''}`
+                : 'Sin facturas vencidas'
+            }
+            icon={AlertCircle}
             isLoading={isLoadingStats}
-            href="/dashboard/clientes"
+            href="/dashboard/facturas"
+            alert={overdueCount > 0}
           />
           <StatCard
-            title="Catalogo"
-            value={String(totalProducts)}
-            description="Productos y servicios"
-            icon={Package}
+            title="Ticket medio"
+            value={formatCurrency(ticketMedioThisMonth)}
+            description={
+              invoicesThisMonth > 0
+                ? `Media de ${invoicesThisMonth} factura${invoicesThisMonth !== 1 ? 's' : ''}`
+                : 'Sin facturas este mes'
+            }
+            icon={BarChart2}
             isLoading={isLoadingStats}
-            href="/dashboard/productos"
+            href="/dashboard/facturas"
           />
         </div>
       )}

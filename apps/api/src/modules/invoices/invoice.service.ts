@@ -1343,6 +1343,8 @@ export class InvoiceService {
     const yearStart = new Date(targetYear, 0, 1);
     const yearEnd = new Date(targetYear + 1, 0, 1);
 
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
     type MonthlyRow = { month: number; total: string | null };
     type KpiRow = {
       this_month_total: string | null;
@@ -1350,9 +1352,19 @@ export class InvoiceService {
       last_month_total: string | null;
     };
     type PendingRow = { pending: string | null };
+    type CollectedRow = { collected: string | null };
+    type OverdueRow = { count: bigint; amount: string | null };
 
-    // 4 parallel SQL aggregates — replaces full-year findMany + JS aggregation.
-    const [monthlyRows, kpiRows, pendingRows, totalCustomers, totalProducts] = await Promise.all([
+    // 7 parallel SQL aggregates
+    const [
+      monthlyRows,
+      kpiRows,
+      pendingRows,
+      totalCustomers,
+      totalProducts,
+      collectedRows,
+      overdueRows,
+    ] = await Promise.all([
       this.prisma.$queryRaw<MonthlyRow[]>(Prisma.sql`
         SELECT
           EXTRACT(MONTH FROM issue_date)::int AS month,
@@ -1384,6 +1396,24 @@ export class InvoiceService {
       `),
       this.prisma.customer.count({ where: { tenantId } }),
       this.prisma.product.count({ where: { tenantId } }),
+      this.prisma.$queryRaw<CollectedRow[]>(Prisma.sql`
+        SELECT SUM(amount)::text AS collected
+        FROM payments
+        WHERE tenant_id = ${tenantId}
+          AND payment_date >= ${thisMonthStart}
+          AND payment_date <  ${nextMonthStart}
+      `),
+      this.prisma.$queryRaw<OverdueRow[]>(Prisma.sql`
+        SELECT
+          COUNT(*)::bigint         AS count,
+          SUM(total - amount_paid)::text AS amount
+        FROM invoices
+        WHERE tenant_id = ${tenantId}
+          AND status IN ('CONFIRMED', 'SENT')
+          AND payment_status IN ('UNPAID', 'PARTIALLY_PAID')
+          AND due_date IS NOT NULL
+          AND due_date < ${today}
+      `),
     ]);
 
     const monthlyMap = new Map<number, number>(
@@ -1424,6 +1454,11 @@ export class InvoiceService {
       monthlyChart,
       totalCustomers,
       totalProducts,
+      collectedThisMonth: Math.round(Number(collectedRows[0]?.collected ?? 0) * 100) / 100,
+      overdueCount: Number(overdueRows[0]?.count ?? 0),
+      overdueAmount: Math.round(Number(overdueRows[0]?.amount ?? 0) * 100) / 100,
+      ticketMedioThisMonth:
+        invoicesThisMonth > 0 ? Math.round((billedThisMonth / invoicesThisMonth) * 100) / 100 : 0,
     };
   }
 
