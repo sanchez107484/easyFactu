@@ -9,6 +9,9 @@ interface JwtRefreshPayload {
   sub: string;
   email: string;
   tenantId: string;
+  actingAsClient?: boolean;
+  agencyTenantId?: string;
+  impersonationLogId?: string;
 }
 
 @Injectable()
@@ -45,6 +48,9 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
       id: user.id,
       email: user.email,
       tenantId: payload.tenantId,
+      actingAsClient: payload.actingAsClient ?? false,
+      agencyTenantId: payload.agencyTenantId,
+      impersonationLogId: payload.impersonationLogId,
     };
   }
 }

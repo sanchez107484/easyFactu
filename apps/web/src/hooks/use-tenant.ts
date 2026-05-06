@@ -22,11 +22,13 @@ export function useTenant() {
 
 export function useUpdateTenant() {
   const queryClient = useQueryClient();
+  const updateCurrentTenant = useAuthStore((state) => state.updateCurrentTenant);
 
   return useMutation({
     mutationFn: (data: UpdateTenantInput) => tenantApi.update(data),
     onSuccess: (updatedTenant) => {
       queryClient.setQueryData(tenantKeys.detail(), updatedTenant);
+      updateCurrentTenant(updatedTenant);
       toast.success('Datos de la empresa actualizados');
     },
     onError: (error) => {

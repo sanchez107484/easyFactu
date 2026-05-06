@@ -15,6 +15,7 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  Building2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,7 +98,7 @@ export default function RecurrentesPage() {
 
   const { data, isLoading, error } = useRecurringInvoices({
     page,
-    limit: 20,
+    limit: 10,
     search: debouncedSearch || undefined,
   });
   const pauseMutation = usePauseRecurringInvoice();
@@ -132,7 +133,7 @@ export default function RecurrentesPage() {
   const items = data?.data ?? [];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 pb-8">
       <PageHeader search={search} onSearchChange={setSearch} />
 
       {items.length === 0 ? (
@@ -314,6 +315,17 @@ function RecurringRow({ item, onPause, onResume, onDelete, onEdit }: RecurringRo
         {item.notes && (
           <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xs">{item.notes}</p>
         )}
+        {item.createdByAgency && (
+          <div className="mt-0.5">
+            <span
+              className="text-[10px] font-medium text-agency-700 bg-agency-100 dark:text-agency-300 dark:bg-agency-900/40 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5"
+              title={`Creada por ${item.createdByAgency.agencyName} · ${item.createdByAgency.userName}`}
+            >
+              <Building2 className="h-2.5 w-2.5" />
+              asesoría
+            </span>
+          </div>
+        )}
       </td>
       <td className="px-4 py-3 text-right font-medium tabular-nums">{formatCurrency(amount)}</td>
       <td className="px-4 py-3">
@@ -323,7 +335,7 @@ function RecurringRow({ item, onPause, onResume, onDelete, onEdit }: RecurringRo
         <div className="flex items-center gap-2 flex-wrap">
           {isCompleted ? '—' : formatDate(item.nextRunDate)}
           {isOverdue && (
-            <Badge className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 border-transparent">
+            <Badge className="text-xs bg-proforma-100 text-proforma-800 dark:bg-proforma-900 dark:text-proforma-100 border-transparent">
               Atrasada
             </Badge>
           )}

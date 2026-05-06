@@ -36,11 +36,11 @@ const STATUS_STYLES: Record<string, { dot: string; text: string }> = {
     text: 'text-secondary-600 dark:text-secondary-400',
   },
   [PaymentStatus.PARTIALLY_PAID]: {
-    dot: 'bg-amber-500',
-    text: 'text-amber-600 dark:text-amber-400',
+    dot: 'bg-proforma-500',
+    text: 'text-proforma-600 dark:text-proforma-400',
   },
   [PaymentStatus.UNPAID]: {
-    dot: 'bg-zinc-400',
+    dot: 'bg-neutral-400',
     text: 'text-muted-foreground',
   },
 };

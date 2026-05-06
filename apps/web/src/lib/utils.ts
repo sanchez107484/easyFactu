@@ -49,12 +49,6 @@ export function formatDateShort(dateStr: string | null | undefined): string {
   });
 }
 
-export function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === 'string') return error;
-  return 'Ha ocurrido un error inesperado';
-}
-
 export function resolveUrl(path: string | null | undefined): string | null {
   if (!path) return null;
   if (path.startsWith('http') || path.startsWith('data:')) return path; // ya es URL completa o data URL, no tocar

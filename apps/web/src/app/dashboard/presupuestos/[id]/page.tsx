@@ -72,10 +72,10 @@ const QUOTE_ACCEPTANCE_CONFIG: Record<
 > = {
   [QuoteAcceptanceStatus.PENDING]: {
     label: 'Pendiente',
-    color: 'text-zinc-600 dark:text-zinc-400',
-    bg: 'bg-zinc-50 dark:bg-zinc-900/50',
-    border: 'border-zinc-200 dark:border-zinc-800',
-    dot: 'bg-zinc-400',
+    color: 'text-neutral-600 dark:text-neutral-400',
+    bg: 'bg-neutral-50 dark:bg-neutral-900/50',
+    border: 'border-neutral-200 dark:border-neutral-800',
+    dot: 'bg-neutral-400',
   },
   [QuoteAcceptanceStatus.SENT]: {
     label: 'Enviado al cliente',
@@ -93,10 +93,10 @@ const QUOTE_ACCEPTANCE_CONFIG: Record<
   },
   [QuoteAcceptanceStatus.REJECTED]: {
     label: 'Rechazado',
-    color: 'text-destructive dark:text-red-400',
-    bg: 'bg-red-50 dark:bg-red-950/40',
-    border: 'border-red-200 dark:border-red-800',
-    dot: 'bg-red-500',
+    color: 'text-destructive dark:text-rectificativa-400',
+    bg: 'bg-rectificativa-50 dark:bg-rectificativa-950/40',
+    border: 'border-rectificativa-200 dark:border-rectificativa-800',
+    dot: 'bg-rectificativa-500',
   },
   [QuoteAcceptanceStatus.CONVERTED]: {
     label: 'Convertido',
@@ -471,11 +471,14 @@ export default function PresupuestoDetailPage() {
                     <span>Válido hasta {formatDateShort(quoteData.validUntil)}</span>
                   </div>
                 )}
-                {series && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Layers className="h-3 w-3" />
-                    <span>{series.name}</span>
-                  </div>
+                {quote.createdByAgency && (
+                  <span
+                    className="inline-flex items-center gap-1 text-[10px] font-medium text-agency-700 bg-agency-100 dark:text-agency-300 dark:bg-agency-900/40 rounded px-1.5 py-0.5"
+                    title={`${quote.createdByAgency.agencyName} · ${quote.createdByAgency.userName}`}
+                  >
+                    <Building2 className="h-2.5 w-2.5" />
+                    asesoría
+                  </span>
                 )}
               </div>
             </div>

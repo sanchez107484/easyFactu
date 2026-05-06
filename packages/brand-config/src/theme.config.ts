@@ -70,6 +70,12 @@ export interface ThemeConfig {
     customer: ThemeColorScale;
     /** Color semántico para la entidad Producto / Servicio */
     product: ThemeColorScale;
+    /** Color semántico para el módulo de Asesoría e invitaciones */
+    agency: ThemeColorScale;
+    /** Color semántico para estados vencidos o próximos a vencer */
+    overdue: ThemeColorScale;
+    /** Color semántico para estados neutros / inactivos */
+    neutral: ThemeColorScale;
   };
   /** Variables CSS HSL para componentes shadcn/ui (sin wrapper hsl()) */
   cssVars: {
@@ -187,6 +193,51 @@ export const themeConfig: ThemeConfig = {
       800: '#065F46',
       900: '#064E3B',
       950: '#022C22',
+    },
+
+    // Violeta — módulo de asesoría: invitaciones, acciones de agencia
+    agency: {
+      50: '#F5F3FF',
+      100: '#EDE9FE',
+      200: '#DDD6FE',
+      300: '#C4B5FD',
+      400: '#A78BFA',
+      500: '#8B5CF6',
+      600: '#7C3AED',
+      700: '#6D28D9',
+      800: '#5B21B6',
+      900: '#4C1D95',
+      950: '#2E1065',
+    },
+
+    // Naranja — estados vencidos o próximos a vencer
+    overdue: {
+      50: '#FFF7ED',
+      100: '#FFEDD5',
+      200: '#FED7AA',
+      300: '#FDBA74',
+      400: '#FB923C',
+      500: '#F97316',
+      600: '#EA580C',
+      700: '#C2410C',
+      800: '#9A3412',
+      900: '#7C2D12',
+      950: '#431407',
+    },
+
+    // Zinc — estados neutros e inactivos (sin acción requerida)
+    neutral: {
+      50: '#FAFAFA',
+      100: '#F4F4F5',
+      200: '#E4E4E7',
+      300: '#D4D4D8',
+      400: '#A1A1AA',
+      500: '#71717A',
+      600: '#52525B',
+      700: '#3F3F46',
+      800: '#27272A',
+      900: '#18181B',
+      950: '#09090B',
     },
   },
 

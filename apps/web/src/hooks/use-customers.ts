@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { customerApi } from '@/lib/api/customer-api';
@@ -8,6 +8,7 @@ import { getApiErrorMessage } from '@/lib/api-error';
 import { seriesApi } from '@/lib/api/series-api';
 import {
   Customer,
+  SharedPoolCustomer,
   PaginatedResponse,
   QueryCustomersInput,
   CreateCustomerInput,
@@ -25,6 +26,7 @@ export function useCustomers(
     queryFn: () => customerApi.getAll(filters),
     enabled: options?.enabled ?? true,
     staleTime: options?.staleTime ?? 30_000,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -34,6 +36,22 @@ export function useCustomer(id: string) {
     queryFn: () => customerApi.getById(id),
     enabled: Boolean(id),
   });
+}
+
+/**
+ * Returns a prefetcher that warms the customer-detail cache on hover/focus.
+ * Use it in list rows so the detail page renders instantly when clicked.
+ */
+export function usePrefetchCustomer() {
+  const queryClient = useQueryClient();
+  return (id: string) => {
+    if (!id) return;
+    void queryClient.prefetchQuery({
+      queryKey: ['customers', 'detail', id],
+      queryFn: () => customerApi.getById(id),
+      staleTime: 30_000,
+    });
+  };
 }
 
 export function useCreateCustomer() {
@@ -54,10 +72,10 @@ export function useCreateCustomer() {
           };
         },
       );
-      // Mark as stale so the next visit/mount reconciles with the server,
+      // Mark list as stale so the next visit/mount reconciles with the server,
       // but do NOT trigger an immediate background refetch — that would race
       // with the parent form's setValue and could briefly clear the Select value.
-      queryClient.invalidateQueries({ queryKey: ['customers'], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['customers', 'list'], refetchType: 'none' });
       toast.success('Cliente creado correctamente');
     },
     onError: (error: unknown) => {
@@ -88,9 +106,26 @@ export function useDeleteCustomer() {
 
   return useMutation({
     mutationFn: (id: string) => customerApi.remove(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['customers', 'list'] });
+      queryClient.removeQueries({ queryKey: ['customers', 'detail', id] });
       toast.success('Cliente eliminado correctamente');
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useRestoreCustomer() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => customerApi.restore(id),
+    onSuccess: (customer) => {
+      queryClient.invalidateQueries({ queryKey: ['customers', 'list'] });
+      queryClient.setQueryData(['customers', 'detail', customer.id], customer);
+      toast.success('Cliente reactivado correctamente');
     },
     onError: (error: unknown) => {
       toast.error(getApiErrorMessage(error));
@@ -153,5 +188,56 @@ export function useInvoiceSeries(year?: number) {
   return useQuery({
     queryKey: ['invoice-series', 'list', currentYear],
     queryFn: () => seriesApi.getAll(currentYear),
+  });
+}
+
+// ==================== AGENCY SHARED POOL ====================
+
+const SHARED_POOL_MIN_LENGTH = 2;
+
+/**
+ * Searches customers across sibling tenants in the same agency network.
+ * Only fires when the search term is at least 2 characters long.
+ * Returns an empty array when no agency relation exists — never throws.
+ */
+export function useSharedCustomerPool(search: string) {
+  const trimmed = search.trim();
+  return useQuery({
+    queryKey: ['customers', 'shared-pool', trimmed],
+    queryFn: () => customerApi.getSharedPool(trimmed),
+    enabled: trimmed.length >= SHARED_POOL_MIN_LENGTH,
+    staleTime: 30_000,
+    placeholderData: [] as SharedPoolCustomer[],
+  });
+}
+
+/**
+ * Copies a customer from the agency shared pool into the current tenant.
+ * If the customer (by NIF) already exists locally, returns the existing one.
+ * On success, updates the local customers cache so selects react immediately.
+ */
+export function useImportFromPool() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (nif: string) => customerApi.importFromPool(nif),
+    onSuccess: (importedCustomer) => {
+      queryClient.setQueriesData<PaginatedResponse<Customer>>(
+        { queryKey: ['customers', 'list'] },
+        (old) => {
+          if (!old) return old;
+          if (old.data.some((c) => c.id === importedCustomer.id)) return old;
+          return {
+            ...old,
+            data: [importedCustomer, ...old.data],
+            meta: { ...old.meta, total: old.meta.total + 1 },
+          };
+        },
+      );
+      queryClient.invalidateQueries({ queryKey: ['customers', 'list'], refetchType: 'none' });
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error));
+    },
   });
 }

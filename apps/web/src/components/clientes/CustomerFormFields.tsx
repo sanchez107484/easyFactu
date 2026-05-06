@@ -157,7 +157,7 @@ export function CustomerFormFields({
       {/* ── FILA 1: Tipo de cliente ── */}
       <div className="rounded-xl border bg-card p-5">
         <SectionLabel icon={User}>Tipo de cliente</SectionLabel>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="flex flex-wrap gap-2">
           {TYPE_OPTIONS.map((option) => {
             const isSelected = selectedType === option.value;
             return (
@@ -165,37 +165,28 @@ export function CustomerFormFields({
                 key={option.value}
                 type="button"
                 onClick={() => onTypeSelect(option.value)}
+                title={option.description}
                 className={cn(
-                  'relative flex items-start gap-3 p-4 rounded-lg border-2 text-left transition-all',
+                  'flex items-center gap-2 rounded-lg border-2 px-3.5 py-2 text-sm font-medium transition-all',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   isSelected
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border bg-background hover:border-primary/40 hover:bg-muted/30',
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'border-border bg-background text-foreground hover:border-primary/40 hover:bg-muted/30',
                 )}
               >
-                <div
-                  className={cn(
-                    'p-2 rounded-md shrink-0 mt-0.5',
-                    isSelected
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground',
-                  )}
+                <span
+                  className={cn('shrink-0', isSelected ? 'text-primary' : 'text-muted-foreground')}
                 >
                   {option.icon}
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="font-semibold text-sm">{option.label}</p>
-                    {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
-                    {option.description}
-                  </p>
-                </div>
+                </span>
+                {option.label}
+                {isSelected && <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
               </button>
             );
           })}
         </div>
+        {/* Descripción del tipo seleccionado */}
+        <p className="mt-2.5 text-xs text-muted-foreground">{currentTypeOption.description}</p>
       </div>
 
       {/* ── FILA 2: Identificación + Contacto ── */}

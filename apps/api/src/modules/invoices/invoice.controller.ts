@@ -59,8 +59,12 @@ export class InvoiceController {
   @Post()
   @ApiOperation({ summary: 'Crear factura en borrador' })
   @ApiCreatedResponse({ description: 'Factura creada correctamente' })
-  create(@CurrentTenant() tenantId: string, @Body() dto: CreateInvoiceDto) {
-    return this.invoiceService.create(tenantId, dto);
+  create(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: CreateInvoiceDto
+  ) {
+    return this.invoiceService.create(tenantId, userId, dto);
   }
 
   @Get()

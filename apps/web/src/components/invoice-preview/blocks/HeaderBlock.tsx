@@ -30,7 +30,7 @@ function CustomerInfo({ invoice }: { invoice: Invoice }) {
   if (!customer) return null;
   return (
     <div className="flex flex-col gap-0.5 text-[10px]">
-      <span className="text-[9px] uppercase tracking-wide text-gray-500 font-medium mb-0.5">
+      <span className="text-[9px] uppercase tracking-wide text-neutral-500 font-medium mb-0.5">
         Facturar a
       </span>
       <span className="font-bold text-sm">{customer.name}</span>

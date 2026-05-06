@@ -1,5 +1,18 @@
-import { Controller, Post, Body, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Patch,
+  Param,
+  Req,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import type { Request } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -13,6 +26,8 @@ import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ActivateAccountDto } from './dto/activate-account.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -46,11 +61,21 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Token refrescado' })
   @ApiResponse({ status: 401, description: 'Refresh token inválido' })
   async refresh(
-    @CurrentUser('id') userId: string,
-    @CurrentUser('tenantId') tenantId: string,
-    @Body() dto: RefreshTokenDto
+    @CurrentUser()
+    user: {
+      id: string;
+      tenantId: string;
+      actingAsClient?: boolean;
+      agencyTenantId?: string;
+      impersonationLogId?: string;
+    },
+    @Body() _dto: RefreshTokenDto
   ) {
-    return this.authService.refreshTokens(userId, tenantId);
+    return this.authService.refreshTokens(user.id, user.tenantId, {
+      actingAsClient: user.actingAsClient,
+      agencyTenantId: user.agencyTenantId,
+      impersonationLogId: user.impersonationLogId,
+    });
   }
 
   @Post('logout')
@@ -59,8 +84,8 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Cerrar sesión' })
   @ApiResponse({ status: 200, description: 'Sesión cerrada' })
-  async logout(@CurrentUser('id') userId: string) {
-    return this.authService.logout(userId);
+  async logout(@CurrentUser() user: { id: string; impersonationLogId?: string }) {
+    return this.authService.logout(user.id, user.impersonationLogId);
   }
 
   @Post('switch-tenant')
@@ -70,8 +95,16 @@ export class AuthController {
   @ApiOperation({ summary: 'Cambiar de empresa activa' })
   @ApiResponse({ status: 200, description: 'Empresa cambiada correctamente' })
   @ApiResponse({ status: 401, description: 'No tienes acceso a esta empresa' })
-  async switchTenant(@CurrentUser('id') userId: string, @Body() dto: SwitchTenantDto) {
-    return this.authService.switchTenant(userId, dto);
+  async switchTenant(
+    @CurrentUser()
+    user: { id: string; email: string; actingAsClient?: boolean; impersonationLogId?: string },
+    @Body() dto: SwitchTenantDto,
+    @Req() req: Request
+  ) {
+    const ipAddress =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
+    const userAgent = req.headers['user-agent'] ?? null;
+    return this.authService.switchTenant(user, dto, { ipAddress, userAgent });
   }
 
   @Public()
@@ -122,5 +155,41 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'No autenticado' })
   async getMe(@CurrentUser('id') userId: string) {
     return this.authService.getMe(userId);
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Actualizar perfil del usuario autenticado' })
+  @ApiResponse({ status: 200, description: 'Perfil actualizado' })
+  @ApiResponse({ status: 401, description: 'No autenticado' })
+  async updateProfile(@CurrentUser('id') userId: string, @Body() dto: UpdateProfileDto) {
+    return this.authService.updateProfile(userId, dto);
+  }
+
+  // ─── Account activation (agency-created accounts) ────────────────────────
+
+  // 20 req/min per IP — generous enough for page refreshes, tight enough to deter enumeration
+  @Throttle({ default: { ttl: 60_000, limit: 20 } })
+  @Public()
+  @Get('activate-account/:token')
+  @ApiOperation({ summary: 'Validar token de activación de cuenta' })
+  @ApiResponse({ status: 200, description: 'Token válido, devuelve info de la cuenta' })
+  @ApiResponse({ status: 400, description: 'Token inválido o expirado' })
+  async validateActivationToken(@Param('token') token: string) {
+    return this.authService.validateActivationToken(token);
+  }
+
+  // 5 req/min per IP — bcrypt is CPU-intensive; this also blocks brute-force attempts
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Public()
+  @Post('activate-account')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Activar cuenta creada por una asesoría' })
+  @ApiResponse({ status: 200, description: 'Cuenta activada, devuelve tokens JWT' })
+  @ApiResponse({ status: 400, description: 'Token inválido o expirado' })
+  async activateAccount(@Body() dto: ActivateAccountDto) {
+    return this.authService.activateAccount(dto);
   }
 }

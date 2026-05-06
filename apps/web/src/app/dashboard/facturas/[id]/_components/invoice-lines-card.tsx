@@ -1,0 +1,109 @@
+import { Separator } from '@/components/ui/separator';
+import { FileText } from 'lucide-react';
+import { SectionLabel } from '@/components/common/section-label';
+import { DataRow } from '@/components/common/data-row';
+import type { Invoice, InvoiceTemplate } from '@easyfactura/shared-types';
+import { formatCurrency, parseNum } from '@/lib/utils';
+
+interface InvoiceLinesCardProps {
+  invoice: Invoice;
+  template: InvoiceTemplate | null | undefined;
+}
+
+export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
+  const taxRates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
+  const taxLabel = taxRates.length === 1 ? `IVA (${taxRates[0]}%)` : 'IVA';
+
+  const showQtyColumn = (invoice.lines ?? []).some((l) => !l.hideQty);
+  const showUnitPrice = template?.layout.itemsTable.showUnitPrice ?? true;
+  const showTaxColumn = template?.layout.itemsTable.showTaxColumn ?? true;
+  const showLineTotal = template?.layout.itemsTable.showLineTotal ?? true;
+
+  return (
+    <div className="rounded-xl border bg-card p-5">
+      <SectionLabel icon={FileText}>Líneas de factura</SectionLabel>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b">
+            <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
+              Descripción
+            </th>
+            {showQtyColumn && (
+              <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
+                Cant.
+              </th>
+            )}
+            {showUnitPrice && (
+              <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
+                Precio
+              </th>
+            )}
+            {showTaxColumn && (
+              <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
+                IVA
+              </th>
+            )}
+            {showLineTotal && (
+              <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
+                Subtotal
+              </th>
+            )}
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {(invoice.lines ?? []).map((line) => (
+            <tr key={line.id}>
+              <td className="py-2.5 pr-4">{line.description}</td>
+              {showQtyColumn && (
+                <td className="py-2.5 text-right tabular-nums">
+                  {line.hideQty ? '' : parseNum(line.quantity)}
+                </td>
+              )}
+              {showUnitPrice && (
+                <td className="py-2.5 text-right tabular-nums">{formatCurrency(line.unitPrice)}</td>
+              )}
+              {showTaxColumn && (
+                <td className="py-2.5 text-right tabular-nums text-muted-foreground">
+                  {parseNum(line.taxRate)}%
+                </td>
+              )}
+              {showLineTotal && (
+                <td className="py-2.5 text-right tabular-nums font-medium">
+                  {formatCurrency(line.subtotal)}
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div className="mt-4 pt-4 border-t ml-auto w-64 space-y-1.5">
+        <DataRow label="Base imponible" value={formatCurrency(invoice.subtotal)} />
+        {parseNum(invoice.discountPercent) > 0 && (
+          <div className="flex justify-between items-baseline py-1">
+            <span className="text-sm text-secondary-600">
+              Descuento ({invoice.discountPercent}%)
+            </span>
+            <span className="text-sm text-secondary-600">
+              −{formatCurrency(invoice.discountAmount ?? 0)}
+            </span>
+          </div>
+        )}
+        <DataRow label={taxLabel} value={formatCurrency(invoice.taxTotal)} />
+        {parseNum(invoice.irpfPercent) > 0 && (
+          <div className="flex justify-between items-baseline py-1">
+            <span className="text-sm text-rectificativa-600">IRPF ({invoice.irpfPercent}%)</span>
+            <span className="text-sm text-rectificativa-600">
+              −{formatCurrency(invoice.irpfTotal ?? 0)}
+            </span>
+          </div>
+        )}
+        <Separator />
+        <div className="flex justify-between items-baseline py-1">
+          <span className="font-semibold">Total</span>
+          <span className="font-bold text-lg tabular-nums">{formatCurrency(invoice.total)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}

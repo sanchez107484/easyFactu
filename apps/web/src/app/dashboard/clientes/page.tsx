@@ -41,12 +41,20 @@ import {
   Trash2,
   UserPlus,
   Users,
-  X,
+  Info,
+  ArrowRight,
+  RotateCcw,
 } from 'lucide-react';
-import { CustomerType, Customer } from '@easyfactura/shared-types';
-import { useCustomers, useDeleteCustomer } from '@/hooks/use-customers';
+import { CustomerType, Customer, AccountType } from '@easyfactura/shared-types';
+import {
+  useCustomers,
+  useDeleteCustomer,
+  useRestoreCustomer,
+  usePrefetchCustomer,
+} from '@/hooks/use-customers';
 import { useSortTable } from '@/hooks/use-sort-table';
 import { SortableHeader } from '@/components/common/sortable-header';
+import { useAuthStore } from '@/store/auth-store';
 
 // ==================== CONSTANTS ====================
 
@@ -175,6 +183,8 @@ export default function ClientesPage() {
   const [page, setPage] = useState(1);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const { sortKey, sortDir, handleSort } = useSortTable('name', 'asc');
+  const currentTenant = useAuthStore((state) => state.currentTenant);
+  const isAgency = currentTenant?.accountType === AccountType.AGENCY;
 
   useEffect(() => {
     setPage(1);
@@ -187,9 +197,11 @@ export default function ClientesPage() {
     sortBy: sortKey,
     sortOrder: sortDir,
     page,
-    limit: 20,
+    limit: 10,
   });
   const deleteMutation = useDeleteCustomer();
+  const restoreMutation = useRestoreCustomer();
+  const prefetchCustomer = usePrefetchCustomer();
 
   const customers = data?.data ?? [];
   const total = data?.meta?.total ?? 0;
@@ -203,15 +215,12 @@ export default function ClientesPage() {
     setCustomerToDelete(null);
   };
 
-  const clearFilters = () => {
-    setSearchInput('');
-    setTypeFilter('ALL');
-  };
-
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {isAgency ? 'Mis contactos' : 'Clientes'}
+        </h1>
         <Card>
           <CardContent className="p-8 text-center">
             <p className="text-destructive font-medium">Error al cargar los clientes.</p>
@@ -233,14 +242,43 @@ export default function ClientesPage() {
         isPending={deleteMutation.isPending}
       />
 
-      <div className="space-y-6">
+      <div className="space-y-6 pb-6">
+        {/* Agency context banner */}
+        {isAgency && (
+          <div className="flex items-start gap-3 rounded-xl border border-customer-200 bg-customer-50 px-4 py-3 dark:border-customer-800 dark:bg-customer-950/30">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-customer-500" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-customer-800 dark:text-customer-300">
+                Estos contactos son los destinatarios de{' '}
+                <strong>tus propias facturas como gestoría</strong>.
+              </p>
+              <p className="mt-0.5 text-xs text-customer-600 dark:text-customer-400">
+                Por ejemplo: si tu gestoría factura a un cliente por sus honorarios, ese cliente va
+                aquí. No confundir con los autónomos y empresas que <em>gestionas</em> en nombre de
+                terceros.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/asesoria/clientes"
+              className="flex shrink-0 items-center gap-1 text-xs font-medium text-customer-600 hover:text-customer-800 dark:text-customer-400 dark:hover:text-customer-200"
+            >
+              Ver mis clientes
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {isAgency ? 'Mis contactos' : 'Clientes'}
+            </h1>
             <div className="text-sm text-muted-foreground mt-1">
               {isLoading ? (
                 <Skeleton className="h-4 w-32" />
+              ) : isAgency ? (
+                `${total} contacto${total !== 1 ? 's' : ''} para tus facturas`
               ) : (
                 `${total} cliente${total !== 1 ? 's' : ''} en total`
               )}
@@ -303,13 +341,6 @@ export default function ClientesPage() {
                   <SelectItem value="ALL">Todos</SelectItem>
                 </SelectContent>
               </Select>
-
-              {isFiltered && (
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1.5">
-                  <X className="h-3.5 w-3.5" />
-                  Limpiar
-                </Button>
-              )}
             </div>
 
             {isFiltered && !isLoading && (
@@ -370,7 +401,12 @@ export default function ClientesPage() {
                   </thead>
                   <tbody className="divide-y">
                     {customers.map((customer) => (
-                      <tr key={customer.id} className="hover:bg-muted/30 transition-colors">
+                      <tr
+                        key={customer.id}
+                        className="hover:bg-muted/30 transition-colors"
+                        onMouseEnter={() => prefetchCustomer(customer.id)}
+                        onFocus={() => prefetchCustomer(customer.id)}
+                      >
                         <td className="p-4">
                           <Link
                             href={`/dashboard/clientes/${customer.id}`}
@@ -429,13 +465,23 @@ export default function ClientesPage() {
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onClick={() => setCustomerToDelete(customer)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Eliminar
-                              </DropdownMenuItem>
+                              {customer.isActive ? (
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => setCustomerToDelete(customer)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Eliminar
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem
+                                  onClick={() => restoreMutation.mutate(customer.id)}
+                                  disabled={restoreMutation.isPending}
+                                >
+                                  <RotateCcw className="mr-2 h-4 w-4" />
+                                  Reactivar
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>

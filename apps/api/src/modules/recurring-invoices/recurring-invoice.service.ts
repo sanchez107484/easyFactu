@@ -91,6 +91,43 @@ export class RecurringInvoiceService {
     return recurring;
   }
 
+  /**
+   * Resolves agency info (userName + agencyName) for a list of `createdByUserId`s
+   * in a single round trip — replaces the per-row nested
+   * `createdByUser → tenantUsers → tenant` JOIN previously done in `findAll`.
+   */
+  private async loadAgencyInfoMap(
+    userIds: string[]
+  ): Promise<Map<string, { userName: string; agencyName: string }>> {
+    const result = new Map<string, { userName: string; agencyName: string }>();
+    if (userIds.length === 0) return result;
+
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        tenantUsers: {
+          where: { isOwner: true },
+          select: { tenant: { select: { businessName: true } } },
+          take: 1,
+        },
+      },
+    });
+
+    for (const u of users) {
+      const ownerTenant = u.tenantUsers[0];
+      if (!ownerTenant) continue;
+      result.set(u.id, {
+        userName: `${u.firstName} ${u.lastName}`.trim(),
+        agencyName: ownerTenant.tenant.businessName,
+      });
+    }
+
+    return result;
+  }
+
   private calculateInitialNextRunDate(
     startDate: string,
     dayOfMonth: number,
@@ -132,6 +169,116 @@ export class RecurringInvoiceService {
     }));
   }
 
+  /**
+   * Computes the estimated total of a recurring invoice from its lines and tenant-level
+   * discount/IRPF percentages. Persisted in `RecurringInvoice.estimatedTotal` so the listing
+   * endpoint can avoid loading every `RecurringInvoiceLine` row just to render the total.
+   */
+  private computeEstimatedTotal(
+    lines: ReadonlyArray<{
+      quantity: number | string | Prisma.Decimal;
+      unitPrice: number | string | Prisma.Decimal;
+      taxRate: number | string | Prisma.Decimal;
+    }>,
+    discountPercent: number | string | Prisma.Decimal | null | undefined,
+    irpfPercent: number | string | Prisma.Decimal | null | undefined
+  ): number {
+    const discountFactor = discountPercent ? 1 - Number(discountPercent) / 100 : 1;
+    const gross = lines.reduce((sum, l) => sum + Number(l.quantity) * Number(l.unitPrice), 0);
+    const netBase = gross * discountFactor;
+    const totalTax = lines.reduce((sum, l) => {
+      const lineNet = Number(l.quantity) * Number(l.unitPrice) * discountFactor;
+      return sum + lineNet * (Number(l.taxRate) / 100);
+    }, 0);
+    const totalIrpf = irpfPercent ? netBase * (Number(irpfPercent) / 100) : 0;
+    return Math.round((netBase + totalTax - totalIrpf) * 100) / 100;
+  }
+
+  /**
+   * Applies an id-aware diff between existing recurring invoice lines and the incoming
+   * DTO: lines with matching `id` are UPDATED, lines without `id` are CREATED, and
+   * existing rows whose id is missing from the input are DELETED.
+   *
+   * Backwards compatible: a client that re-sends every line without ids degrades to the
+   * previous behaviour (delete-all + create-all).
+   */
+  private async applyLineDiff(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    recurringInvoiceId: string,
+    lines: CreateRecurringInvoiceDto['lines']
+  ): Promise<void> {
+    const existing = await tx.recurringInvoiceLine.findMany({
+      where: { recurringInvoiceId, tenantId },
+      select: { id: true },
+    });
+    const existingIds = new Set(existing.map((e) => e.id));
+
+    const toUpdate: Array<{ index: number; line: CreateRecurringInvoiceDto['lines'][number] }> = [];
+    const toCreateIndexes: number[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]!;
+      if (line.id) {
+        if (!existingIds.has(line.id)) {
+          throw new BadRequestException('Una de las líneas no pertenece a esta factura recurrente');
+        }
+        toUpdate.push({ index: i, line });
+      } else {
+        toCreateIndexes.push(i);
+      }
+    }
+
+    const keepIds = new Set(toUpdate.map((u) => u.line.id!));
+    const toDeleteIds = existing.filter((e) => !keepIds.has(e.id)).map((e) => e.id);
+
+    if (toDeleteIds.length > 0) {
+      await tx.recurringInvoiceLine.deleteMany({
+        where: { id: { in: toDeleteIds }, recurringInvoiceId, tenantId },
+      });
+    }
+
+    if (toUpdate.length > 0) {
+      await Promise.all(
+        toUpdate.map(({ index, line }) =>
+          tx.recurringInvoiceLine.update({
+            where: { id: line.id! },
+            data: {
+              productId: line.productId ?? null,
+              description: line.description,
+              quantity: line.quantity,
+              unitPrice: line.unitPrice,
+              taxRate: line.taxRate,
+              irpfRate: line.irpfRate ?? null,
+              hideQty: line.hideQty ?? false,
+              sortOrder: index,
+            },
+          })
+        )
+      );
+    }
+
+    if (toCreateIndexes.length > 0) {
+      await tx.recurringInvoiceLine.createMany({
+        data: toCreateIndexes.map((index) => {
+          const line = lines[index]!;
+          return {
+            tenantId,
+            recurringInvoiceId,
+            productId: line.productId ?? null,
+            description: line.description,
+            quantity: line.quantity,
+            unitPrice: line.unitPrice,
+            taxRate: line.taxRate,
+            irpfRate: line.irpfRate ?? null,
+            hideQty: line.hideQty ?? false,
+            sortOrder: index,
+          };
+        }),
+      });
+    }
+  }
+
   // ==================== CRUD ====================
 
   async findAll(tenantId: string, query: QueryRecurringInvoiceDto) {
@@ -158,7 +305,6 @@ export class RecurringInvoiceService {
           customer: { select: { id: true, name: true, nif: true } },
           series: { select: { id: true, code: true, prefix: true } },
           _count: { select: { generatedInvoices: true } },
-          lines: { select: { quantity: true, unitPrice: true, taxRate: true } },
         },
         orderBy: [{ status: 'asc' }, { nextRunDate: 'asc' }],
         skip,
@@ -167,20 +313,22 @@ export class RecurringInvoiceService {
       this.prisma.recurringInvoice.count({ where }),
     ]);
 
-    // Compute estimated total server-side so the list endpoint does not ship full line objects.
-    const data = rawData.map(({ lines, discountPercent, irpfPercent, ...item }) => {
-      const gross = lines.reduce((sum, l) => sum + Number(l.quantity) * Number(l.unitPrice), 0);
-      const discountFactor = discountPercent ? 1 - Number(discountPercent) / 100 : 1;
-      const netBase = gross * discountFactor;
-      const totalTax = lines.reduce((sum, l) => {
-        const lineNet = Number(l.quantity) * Number(l.unitPrice) * discountFactor;
-        return sum + lineNet * (Number(l.taxRate) / 100);
-      }, 0);
-      const totalIrpf = irpfPercent ? netBase * (Number(irpfPercent) / 100) : 0;
-      const estimatedTotal = Math.round((netBase + totalTax - totalIrpf) * 100) / 100;
+    // Resolve agency info in a single batch query instead of a per-row nested JOIN.
+    const agencyUserIds = Array.from(
+      new Set(
+        rawData
+          .map((d) => d.createdByUserId)
+          .filter((id): id is string => id !== null && id !== undefined)
+      )
+    );
+    const agencyMap = await this.loadAgencyInfoMap(agencyUserIds);
 
-      return { ...item, discountPercent, irpfPercent, estimatedTotal };
-    });
+    // estimatedTotal is denormalized on the row — no need to load lines here.
+    const data = rawData.map(({ estimatedTotal, createdByUserId, ...item }) => ({
+      ...item,
+      estimatedTotal: Number(estimatedTotal),
+      createdByAgency: createdByUserId ? (agencyMap.get(createdByUserId) ?? null) : null,
+    }));
 
     return {
       data,
@@ -189,10 +337,19 @@ export class RecurringInvoiceService {
   }
 
   async findOne(tenantId: string, id: string) {
-    return this.findOneOrFail(tenantId, id);
+    const recurring = await this.findOneOrFail(tenantId, id);
+    const { createdByUserId, ...rest } = recurring;
+    const agencyMap = createdByUserId
+      ? await this.loadAgencyInfoMap([createdByUserId])
+      : new Map<string, { userName: string; agencyName: string }>();
+    return {
+      ...rest,
+      createdByUserId,
+      createdByAgency: createdByUserId ? (agencyMap.get(createdByUserId) ?? null) : null,
+    };
   }
 
-  async create(tenantId: string, dto: CreateRecurringInvoiceDto) {
+  async create(tenantId: string, createdByUserId: string, dto: CreateRecurringInvoiceDto) {
     const customer = await this.prisma.customer.findFirst({
       where: { id: dto.customerId, tenantId, isActive: true },
     });
@@ -213,6 +370,13 @@ export class RecurringInvoiceService {
     const nextRunDate = this.calculateInitialNextRunDate(dto.startDate, dayOfMonth, dto.frequency);
 
     return this.prisma.$transaction(async (tx) => {
+      // Only store createdByUserId when the creator is NOT the tenant owner.
+      const isOwner = await tx.tenantUser.findFirst({
+        where: { userId: createdByUserId, tenantId, isOwner: true },
+        select: { id: true },
+      });
+      const resolvedCreatedByUserId = isOwner ? null : createdByUserId;
+
       const recurring = await tx.recurringInvoice.create({
         data: {
           tenantId,
@@ -227,9 +391,15 @@ export class RecurringInvoiceService {
           status: PrismaRecurringStatus.ACTIVE,
           discountPercent: dto.discountPercent ?? null,
           irpfPercent: dto.irpfPercent ?? null,
+          estimatedTotal: this.computeEstimatedTotal(
+            dto.lines,
+            dto.discountPercent ?? null,
+            dto.irpfPercent ?? null
+          ),
           paymentMethod: dto.paymentMethod ?? null,
           paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : Prisma.JsonNull,
           notes: dto.notes ?? null,
+          createdByUserId: resolvedCreatedByUserId,
           lines: {
             createMany: {
               data: this.buildLinesCreateData(tenantId, dto.lines),
@@ -273,11 +443,20 @@ export class RecurringInvoiceService {
       ? RecurringInvoiceService.computeNextRunDate(new Date(), newFrequency, newDayOfMonth)
       : undefined;
 
+    // Recompute denormalized estimatedTotal whenever lines or any percentage change.
+    const totalsAffected =
+      dto.lines !== undefined || dto.discountPercent !== undefined || dto.irpfPercent !== undefined;
+    const recomputedEstimatedTotal = totalsAffected
+      ? this.computeEstimatedTotal(
+          dto.lines ?? existing.lines,
+          dto.discountPercent !== undefined ? dto.discountPercent : existing.discountPercent,
+          dto.irpfPercent !== undefined ? dto.irpfPercent : existing.irpfPercent
+        )
+      : undefined;
+
     return this.prisma.$transaction(async (tx) => {
       if (dto.lines) {
-        await tx.recurringInvoiceLine.deleteMany({
-          where: { recurringInvoiceId: id },
-        });
+        await this.applyLineDiff(tx, tenantId, id, dto.lines);
       }
 
       return tx.recurringInvoice.update({
@@ -292,20 +471,14 @@ export class RecurringInvoiceService {
           ...(dto.autoConfirm !== undefined ? { autoConfirm: dto.autoConfirm } : {}),
           ...(dto.discountPercent !== undefined ? { discountPercent: dto.discountPercent } : {}),
           ...(dto.irpfPercent !== undefined ? { irpfPercent: dto.irpfPercent } : {}),
+          ...(recomputedEstimatedTotal !== undefined
+            ? { estimatedTotal: recomputedEstimatedTotal }
+            : {}),
           ...(dto.paymentMethod !== undefined ? { paymentMethod: dto.paymentMethod } : {}),
           ...(dto.paymentDetails !== undefined
             ? { paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : Prisma.JsonNull }
             : {}),
           ...(dto.notes !== undefined ? { notes: dto.notes } : {}),
-          ...(dto.lines
-            ? {
-                lines: {
-                  createMany: {
-                    data: this.buildLinesCreateData(tenantId, dto.lines),
-                  },
-                },
-              }
-            : {}),
         },
         include: {
           lines: { orderBy: { sortOrder: 'asc' } },

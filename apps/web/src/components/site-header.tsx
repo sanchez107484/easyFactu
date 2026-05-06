@@ -12,6 +12,7 @@ import { Menu, X, Sparkles } from 'lucide-react';
 const navLinks = [
   { href: '/funcionalidades', label: 'Funcionalidades' },
   { href: '/precios', label: 'Precios' },
+  { href: '/asesoria', label: 'Asesorías', highlight: true },
   { href: '/blog', label: 'Blog' },
   { href: '/contacto', label: 'Contacto' },
 ];
@@ -22,7 +23,7 @@ export default function SiteHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+    <header className="sticky top-0 z-50 border-b border-neutral-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         {/* Logo */}
         <Link href="/" className="flex-shrink-0" onClick={() => setMobileOpen(false)}>
@@ -44,9 +45,13 @@ export default function SiteHeader() {
               key={link.href}
               href={link.href}
               className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                pathname === link.href
-                  ? 'bg-blue-50 text-blue-600'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                link.highlight
+                  ? pathname === link.href
+                    ? 'bg-customer-100 text-customer-700'
+                    : 'text-customer-600 hover:bg-customer-50 hover:text-customer-700'
+                  : pathname === link.href
+                    ? 'bg-primary-50 text-primary-600'
+                    : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
               }`}
             >
               {link.label}
@@ -63,7 +68,7 @@ export default function SiteHeader() {
           ) : (
             <>
               <Link href="/login">
-                <Button variant="ghost" size="sm" className="text-slate-600">
+                <Button variant="ghost" size="sm" className="text-neutral-600">
                   Iniciar sesión
                 </Button>
               </Link>
@@ -79,7 +84,7 @@ export default function SiteHeader() {
 
         {/* Mobile toggle */}
         <button
-          className="flex items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-50 md:hidden"
+          className="flex items-center justify-center rounded-lg p-2 text-neutral-600 hover:bg-neutral-50 md:hidden"
           onClick={() => setMobileOpen((o) => !o)}
           aria-label="Abrir menú"
           aria-expanded={mobileOpen}
@@ -90,16 +95,20 @@ export default function SiteHeader() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="border-t border-slate-100 bg-white px-4 pb-4 pt-2 md:hidden">
+        <div className="border-t border-neutral-100 bg-white px-4 pb-4 pt-2 md:hidden">
           <nav className="flex flex-col gap-1">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  pathname === link.href
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-slate-700 hover:bg-slate-50'
+                  link.highlight
+                    ? pathname === link.href
+                      ? 'bg-customer-100 text-customer-700'
+                      : 'text-customer-600 hover:bg-customer-50'
+                    : pathname === link.href
+                      ? 'bg-primary-50 text-primary-600'
+                      : 'text-neutral-700 hover:bg-neutral-50'
                 }`}
                 onClick={() => setMobileOpen(false)}
               >
@@ -107,7 +116,7 @@ export default function SiteHeader() {
               </Link>
             ))}
           </nav>
-          <div className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3">
+          <div className="mt-3 flex flex-col gap-2 border-t border-neutral-100 pt-3">
             {isAuthenticated ? (
               <Link href="/dashboard" onClick={() => setMobileOpen(false)}>
                 <Button className="w-full" size="sm">

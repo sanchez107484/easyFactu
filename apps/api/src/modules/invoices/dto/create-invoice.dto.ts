@@ -25,6 +25,14 @@ import { PaymentMethod } from '@easyfactura/shared-types';
 import { VALID_TAX_RATES } from '@easyfactura/shared-constants';
 
 export class CreateInvoiceLineDto {
+  @ApiPropertyOptional({
+    description:
+      'ID de la línea existente (solo en updates). Si se incluye, la línea se actualizará en lugar de crearse de cero. Líneas sin id se crean nuevas, y las omitidas se borran.',
+  })
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
   @ApiPropertyOptional({ description: 'ID del producto existente (opcional)' })
   @IsOptional()
   @IsUUID()

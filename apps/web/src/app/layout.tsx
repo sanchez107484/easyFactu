@@ -1,5 +1,6 @@
 // app/layout.tsx
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import Script from 'next/script';
 import { ThemeProvider } from '@/components/providers/theme-provider';
@@ -8,6 +9,7 @@ import { Toaster } from 'sonner';
 import { brandConfig, themeConfig } from '@easyfactura/brand-config';
 import Analytics from '@/components/analytics/Analytics';
 import CookieBanner from '@/components/analytics/CookieBanner';
+import { NavigationProgress } from '@/components/navigation-progress';
 import './globals.css';
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID ?? 'GTM-T8W799T4';
@@ -213,6 +215,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <QueryProvider>
+            <Suspense fallback={null}>
+              <NavigationProgress />
+            </Suspense>
             {children}
             <Analytics />
             <CookieBanner />

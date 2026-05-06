@@ -22,6 +22,10 @@ import { PaymentDetailsDto } from '../../invoices/dto/create-invoice.dto';
 export class CreateRecurringInvoiceLineDto {
   @IsOptional()
   @IsUUID()
+  id?: string;
+
+  @IsOptional()
+  @IsUUID()
   productId?: string;
 
   @IsString()

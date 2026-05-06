@@ -84,7 +84,6 @@ export function PaymentDetailsBlock({
               <p
                 style={{
                   fontSize: '11px',
-                  fontFamily: 'Courier New, Courier, monospace',
                   letterSpacing: '0.05em',
                   color: '#111827',
                   fontWeight: 600,
@@ -107,7 +106,6 @@ export function PaymentDetailsBlock({
                 style={{
                   fontSize: '9px',
                   color: '#6b7280',
-                  fontFamily: 'Courier New, Courier, monospace',
                 }}
               >
                 BIC/SWIFT: {paymentDetails.bic}
@@ -122,7 +120,6 @@ export function PaymentDetailsBlock({
               <p
                 style={{
                   fontSize: '11px',
-                  fontFamily: 'Courier New, Courier, monospace',
                   letterSpacing: '0.05em',
                   color: '#111827',
                   fontWeight: 600,

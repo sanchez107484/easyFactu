@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { recurringInvoiceApi } from '@/lib/api/recurring-invoice-api';
 import {
@@ -32,6 +32,7 @@ export function useRecurringInvoices(filters: QueryRecurringInvoicesInput = {}) 
     queryKey: recurringInvoiceKeys.list(filters),
     queryFn: () => recurringInvoiceApi.getAll(filters),
     staleTime: 30_000,
+    placeholderData: keepPreviousData,
   });
 }
 

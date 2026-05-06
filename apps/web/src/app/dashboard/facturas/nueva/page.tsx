@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
+import type { FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
@@ -15,29 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  ArrowLeft,
-  Plus,
-  AlertCircle,
-  Save,
-  CheckCircle,
-  Copy,
-  Pencil,
-  ChevronDown,
-  FileText,
-  FileCheck,
-  FileClock,
-  LayoutTemplate,
-  RefreshCw,
-} from 'lucide-react';
-import { InvoiceLineItem } from '@/components/facturas/InvoiceLineItem';
+import { Plus, Copy, Pencil } from 'lucide-react';
 import { extendedLineSchema, EMPTY_LINE, ExtendedLineData } from '@/lib/invoice-line-types';
 import {
   useCreateInvoice,
@@ -45,7 +24,7 @@ import {
   useConfirmInvoice,
   useInvoice,
 } from '@/hooks/use-invoices';
-import { useCustomers } from '@/hooks/use-customers';
+import { InvoiceLineItem } from '@/components/facturas/InvoiceLineItem';
 import { useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useInvoiceSeries } from '@/hooks/use-invoice-series';
 import { useTenant } from '@/hooks/use-tenant';
@@ -54,16 +33,16 @@ import { useAuthStore } from '@/store/auth-store';
 import {
   PaymentMethod,
   Customer,
+  SharedPoolCustomer,
   InvoiceTemplate,
   SeriesType,
   Tenant,
   InvoiceDefaults,
   Frequency,
 } from '@easyfactura/shared-types';
-import { cn, resolveUrl } from '@/lib/utils';
-import { PAYMENT_METHOD_LABELS, FREQUENCY_OPTIONS } from '@easyfactura/shared-constants';
+import { useCustomers, useSharedCustomerPool, useImportFromPool } from '@/hooks/use-customers';
+import { resolveUrl } from '@/lib/utils';
 import { buildPreviewInvoice, buildCreateInput, calculateDueDate } from '@/lib/invoice-helpers';
-import { formatSeriesPreview } from '@easyfactura/shared-validators';
 import { InvoiceTypeModal, InvoiceTypeOption } from '@/components/facturas/InvoiceTypeModal';
 import {
   ConfirmInvoiceDialog,
@@ -72,58 +51,12 @@ import {
 import { LiveInvoicePreview } from '@/components/facturas/LiveInvoicePreview';
 import type { PaymentDetails } from '@/components/facturas/LiveInvoicePreview';
 import { QuickCreateCustomerModal } from '@/components/clientes/QuickCreateCustomerModal';
-import { CustomerCombobox } from '@/components/clientes/CustomerCombobox';
-import { DueDatePicker } from '@/components/facturas/DueDatePicker';
 import { useCreateRecurringInvoice } from '@/hooks/use-recurring-invoices';
-import {
-  PaymentDetailsFields,
-  PaymentDetailsValues,
-} from '@/components/facturas/PaymentDetailsFields';
 import { SaveAsDefaultBanner } from '@/components/facturas/SaveAsDefaultBanner';
 import { useInvoiceFormKeyDown } from '@/hooks/use-invoice-form-key-down';
-
-// ==================== CONSTANTS ====================
-
-const INVOICE_TYPE_CONFIG: Record<
-  Exclude<InvoiceTypeOption, 'template'>,
-  {
-    label: string;
-    description: string;
-    color: string;
-    bg: string;
-    border: string;
-    hoverBorder: string;
-    icon: React.ReactNode;
-  }
-> = {
-  standard: {
-    label: 'Factura ordinaria',
-    description: 'Oficial con número fiscal',
-    color: 'text-invoice-700 dark:text-invoice-400',
-    bg: 'bg-invoice-50 dark:bg-invoice-950/40',
-    border: 'border-invoice-200 dark:border-invoice-700',
-    hoverBorder: 'hover:border-invoice-400 dark:hover:border-invoice-500',
-    icon: <FileCheck className="h-4 w-4" />,
-  },
-  proforma: {
-    label: 'Factura proforma',
-    description: 'Sin número hasta su conversión',
-    color: 'text-proforma-700 dark:text-proforma-400',
-    bg: 'bg-proforma-50 dark:bg-proforma-950/40',
-    border: 'border-proforma-200 dark:border-proforma-700',
-    hoverBorder: 'hover:border-proforma-400 dark:hover:border-proforma-500',
-    icon: <FileClock className="h-4 w-4" />,
-  },
-  simplified: {
-    label: 'Factura simplificada',
-    description: 'Para operaciones de menor importe',
-    color: 'text-invoice-700 dark:text-invoice-400',
-    bg: 'bg-invoice-50 dark:bg-invoice-950/40',
-    border: 'border-invoice-200 dark:border-invoice-700',
-    hoverBorder: 'hover:border-invoice-400 dark:hover:border-invoice-500',
-    icon: <FileText className="h-4 w-4" />,
-  },
-};
+import { useDebounce } from '@/hooks/use-debounce';
+import { InvoiceFormHeader } from './_components/invoice-form-header';
+import { InvoiceGeneralDataCard } from './_components/invoice-general-data-card';
 
 // ==================== SCHEMA ====================
 
@@ -155,52 +88,6 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
-
-// ==================== INVOICE TYPE BADGE ====================
-
-interface InvoiceTypeBadgeProps {
-  invoiceType: InvoiceTypeOption;
-  selectedTemplate: InvoiceTemplate | null;
-  onClick: () => void;
-}
-
-function InvoiceTypeBadge({ invoiceType, selectedTemplate, onClick }: InvoiceTypeBadgeProps) {
-  const isTemplate = invoiceType === 'template';
-  const config = isTemplate
-    ? null
-    : INVOICE_TYPE_CONFIG[invoiceType as Exclude<InvoiceTypeOption, 'template'>];
-
-  const colorClass = isTemplate ? 'text-purple-700 dark:text-purple-400' : config!.color;
-  const bgClass = isTemplate ? 'bg-purple-50 dark:bg-purple-950/40' : config!.bg;
-  const borderClass = isTemplate
-    ? 'border-purple-200 dark:border-purple-700 hover:border-purple-400'
-    : `${config!.border} ${config!.hoverBorder}`;
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`
-        group flex items-center gap-2.5 rounded-lg border px-3 py-1.5
-        transition-all duration-150 hover:shadow-sm active:scale-[0.98] cursor-pointer
-        ${colorClass} ${bgClass} ${borderClass}
-      `}
-    >
-      <span className="shrink-0">
-        {isTemplate ? <LayoutTemplate className="h-4 w-4" /> : config!.icon}
-      </span>
-      <div className="text-left min-w-0">
-        <div className="text-xs font-semibold leading-tight whitespace-nowrap">
-          {isTemplate && selectedTemplate ? `Plantilla: ${selectedTemplate.name}` : config?.label}
-        </div>
-        <div className="text-[10px] opacity-60 leading-tight hidden sm:block whitespace-nowrap">
-          {isTemplate ? 'Plantilla personalizada' : config?.description}
-        </div>
-      </div>
-      <ChevronDown className="h-3 w-3 opacity-40 group-hover:opacity-70 transition-opacity shrink-0 ml-0.5" />
-    </button>
-  );
-}
 
 // ==================== INNER FORM COMPONENT ====================
 
@@ -253,7 +140,10 @@ function InvoiceForm({
 
   const isProforma = invoiceType === 'proforma';
 
-  const { data: customersData, isLoading: loadingCustomers } = useCustomers({ limit: 500 });
+  const { data: customersData, isLoading: loadingCustomers } = useCustomers({
+    limit: 500,
+    active: true,
+  });
   const { data: defaultTemplate } = useDefaultTemplate();
   const { data: tenantData } = useTenant();
   const { data: seriesData } = useInvoiceSeries(currentYear);
@@ -261,6 +151,22 @@ function InvoiceForm({
   const updateMutation = useUpdateInvoice();
   const confirmMutation = useConfirmInvoice();
   const createRecurringMutation = useCreateRecurringInvoice();
+
+  // ── Agency shared pool ───────────────────────────────────────────────────
+  const [customerSearch, setCustomerSearch] = useState('');
+  const debouncedCustomerSearch = useDebounce(customerSearch, 400);
+  const { data: sharedPool, isLoading: loadingShared } =
+    useSharedCustomerPool(debouncedCustomerSearch);
+  const importFromPoolMutation = useImportFromPool();
+
+  const handleSelectSharedCustomer = useCallback(
+    async (customer: SharedPoolCustomer) => {
+      const imported = await importFromPoolMutation.mutateAsync(customer.nif);
+      setPendingCustomerId(imported.id);
+    },
+    [importFromPoolMutation],
+  );
+  // ─────────────────────────────────────────────────────────────────────────
 
   const customers: Customer[] = customersData?.data ?? [];
   const effectiveTemplate: InvoiceTemplate | null = selectedTemplate ?? defaultTemplate ?? null;
@@ -385,7 +291,7 @@ function InvoiceForm({
     }
   };
 
-  const onInvalid = (errors: any) => {
+  const onInvalid = (errors: FieldErrors<FormData>) => {
     const missingFields: string[] = [];
     if (errors.customerId) missingFields.push('Cliente');
     if (errors.paymentMethod) missingFields.push('Método de pago');
@@ -587,71 +493,21 @@ function InvoiceForm({
 
       <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
         {/* ── Header ── */}
-        <div className="flex items-center justify-between px-6 py-3 border-b bg-background shrink-0">
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard/facturas">
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight leading-tight">
-                {editDraftId
-                  ? isProforma
-                    ? 'Editar proforma'
-                    : 'Editar borrador'
-                  : 'Nueva factura'}
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                {editDraftId
-                  ? 'Modifica y guarda o confirma como definitiva.'
-                  : 'Guardada como borrador hasta que la confirmes.'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Badge de tipo — llamativo y clicable */}
-            <InvoiceTypeBadge
-              invoiceType={invoiceType}
-              selectedTemplate={selectedTemplate}
-              onClick={() => setShowTypeModal(true)}
-            />
-
-            {/* Repetir toggle — sólo en facturas no proforma */}
-            {!isProforma && (
-              <button
-                type="button"
-                onClick={() => setIsRecurring((v) => !v)}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all duration-150',
-                  isRecurring
-                    ? 'border-primary/40 bg-primary/5 text-primary hover:bg-primary/10'
-                    : 'border-dashed border-muted-foreground/30 text-muted-foreground hover:border-muted-foreground/60 hover:text-foreground',
-                )}
-              >
-                <RefreshCw className="h-3 w-3" />
-                {isRecurring
-                  ? (FREQUENCY_OPTIONS.find((o) => o.value === recurringFrequency)?.label ??
-                    'Recurrente')
-                  : 'Hacer recurrente'}
-              </button>
-            )}
-
-            <div className="w-px h-6 bg-border mx-1 shrink-0" />
-
-            <Button variant="outline" size="sm" onClick={triggerSubmit} disabled={isSubmitting}>
-              <Save className="mr-1.5 h-3.5 w-3.5" />
-              {createMutation.isPending || updateMutation.isPending
-                ? 'Guardando...'
-                : 'Guardar borrador'}
-            </Button>
-            <Button size="sm" onClick={handleConfirmClick} disabled={isSubmitting}>
-              <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
-              {isProforma ? 'Guardar proforma' : 'Confirmar factura'}
-            </Button>
-          </div>
-        </div>
+        <InvoiceFormHeader
+          editDraftId={editDraftId}
+          isProforma={isProforma}
+          invoiceType={invoiceType}
+          selectedTemplate={selectedTemplate}
+          isRecurring={isRecurring}
+          recurringFrequency={recurringFrequency}
+          isSubmitting={isSubmitting}
+          createMutationPending={createMutation.isPending}
+          updateMutationPending={updateMutation.isPending}
+          onTypeClick={() => setShowTypeModal(true)}
+          onToggleRecurring={() => setIsRecurring((v) => !v)}
+          onSaveDraft={triggerSubmit}
+          onConfirmClick={handleConfirmClick}
+        />
 
         {/* ── Split panel ── */}
         <div className="flex flex-1 overflow-hidden">
@@ -696,206 +552,26 @@ function InvoiceForm({
               <button type="submit" id="form-submit-trigger" className="hidden" />
 
               {/* ── Datos generales ── */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Datos generales</CardTitle>
-                  {!invoiceDefaults && !isDuplicate && !editDraftId && (
-                    <p className="text-xs text-muted-foreground">
-                      ¿Siempre usas los mismos datos?{' '}
-                      <Link
-                        href="/dashboard/ajustes/facturacion"
-                        className="text-primary underline underline-offset-2"
-                      >
-                        Configura tus preferencias
-                      </Link>{' '}
-                      para ahorrar tiempo.
-                    </p>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Cliente */}
-                  <section
-                    id="field-customerId"
-                    className="space-y-2"
-                    onFocus={() => setActiveSection('customerId')}
-                  >
-                    <Label>
-                      Cliente <span className="text-destructive">*</span>
-                    </Label>
-                    {loadingCustomers ? (
-                      <Skeleton className="h-10 w-full" />
-                    ) : (
-                      <CustomerCombobox
-                        customers={customers}
-                        value={watchedValues.customerId || ''}
-                        onChange={(v) => form.setValue('customerId', v, { shouldValidate: true })}
-                        hasError={!!form.formState.errors.customerId}
-                      />
-                    )}
-                    {form.formState.errors.customerId && (
-                      <p className="text-sm text-destructive">
-                        {form.formState.errors.customerId.message}
-                      </p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setShowQuickClient(true)}
-                      className="text-sm text-primary hover:underline bg-transparent border-0 p-0 cursor-pointer"
-                    >
-                      + Crear nuevo cliente
-                    </button>
-                  </section>
-
-                  {/* Fechas */}
-                  <section
-                    id="field-issueDate"
-                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-                    onFocus={() => setActiveSection('issueDate')}
-                  >
-                    <div className="space-y-2">
-                      <Label htmlFor="issueDate">
-                        Fecha emisión <span className="text-destructive">*</span>
-                      </Label>
-                      <Input id="issueDate" type="date" {...form.register('issueDate')} />
-                      {form.formState.errors.issueDate && (
-                        <p className="text-sm text-destructive">
-                          {form.formState.errors.issueDate.message}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Fecha vencimiento</Label>
-                      <DueDatePicker
-                        issueDate={watchedValues.issueDate}
-                        value={watchedValues.dueDate}
-                        onChange={(date) => form.setValue('dueDate', date, { shouldDirty: true })}
-                      />
-                    </div>
-                  </section>
-
-                  {/* Serie de facturación */}
-                  {!isProforma && (
-                    <section
-                      id="field-seriesId"
-                      className="space-y-2"
-                      onFocus={() => setActiveSection('seriesId')}
-                    >
-                      <Label>
-                        Serie de facturación <span className="text-destructive">*</span>
-                      </Label>
-                      <Select
-                        value={effectiveSeriesId}
-                        onValueChange={(v) => form.setValue('seriesId', v, { shouldDirty: true })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona una serie" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableSeries.map((s) => (
-                            <SelectItem key={s.id} value={s.id}>
-                              {s.name}
-                              {' — '}
-                              <span className="font-mono text-xs">
-                                {formatSeriesPreview(s.prefix, s.year, s.nextNumber)}
-                              </span>
-                              {s.isDefault && (
-                                <span className="ml-1 text-[10px] text-primary">(por defecto)</span>
-                              )}
-                            </SelectItem>
-                          ))}
-                          {availableSeries.length === 0 && (
-                            <div className="p-3 text-sm text-muted-foreground flex gap-2 items-start">
-                              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                              No hay series activas.{' '}
-                              <Link
-                                href="/dashboard/ajustes/facturacion"
-                                className="underline text-primary"
-                              >
-                                Crea una en ajustes
-                              </Link>
-                            </div>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </section>
-                  )}
-
-                  {/* Método de pago */}
-                  <section
-                    id="field-paymentMethod"
-                    className="space-y-3"
-                    onFocus={() => setActiveSection('paymentMethod')}
-                  >
-                    <Label>
-                      Método de pago <span className="text-destructive">*</span>
-                    </Label>
-                    <Select
-                      value={activePaymentMethod || ''}
-                      onValueChange={(v) => {
-                        form.setValue('paymentMethod', v as PaymentMethod, {
-                          shouldValidate: true,
-                        });
-                        if (v !== defaultValues.paymentMethod) {
-                          form.setValue('paymentDetails', {});
-                        }
-                        if (v === PaymentMethod.BANK_TRANSFER) {
-                          const tenant = tenantData ?? currentTenant;
-                          if (tenant?.iban && !form.getValues('paymentDetails.iban')) {
-                            form.setValue('paymentDetails.iban', tenant.iban, {
-                              shouldDirty: true,
-                            });
-                          }
-                          if (
-                            tenant?.bankAccountHolder &&
-                            !form.getValues('paymentDetails.accountHolder')
-                          ) {
-                            form.setValue(
-                              'paymentDetails.accountHolder',
-                              tenant.bankAccountHolder,
-                              { shouldDirty: true },
-                            );
-                          }
-                        }
-                      }}
-                    >
-                      <SelectTrigger
-                        className={form.formState.errors.paymentMethod ? 'border-destructive' : ''}
-                      >
-                        <SelectValue placeholder="Selecciona un método" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {form.formState.errors.paymentMethod && (
-                      <p className="text-sm text-destructive">
-                        {form.formState.errors.paymentMethod.message}
-                      </p>
-                    )}
-                    {activePaymentMethod && (
-                      <PaymentDetailsFields
-                        paymentMethod={activePaymentMethod}
-                        values={(watchedValues.paymentDetails ?? {}) as PaymentDetailsValues}
-                        onChange={(key, value) =>
-                          form.setValue(
-                            `paymentDetails.${key}` as `paymentDetails.${keyof PaymentDetailsValues}`,
-                            value,
-                            { shouldDirty: true },
-                          )
-                        }
-                        tenantIban={(tenantData ?? currentTenant)?.iban ?? undefined}
-                        tenantAccountHolder={
-                          (tenantData ?? currentTenant)?.bankAccountHolder ?? undefined
-                        }
-                      />
-                    )}
-                  </section>
-                </CardContent>
-              </Card>
+              <InvoiceGeneralDataCard
+                form={form}
+                customers={customers}
+                loadingCustomers={loadingCustomers}
+                sharedPool={sharedPool}
+                loadingShared={loadingShared}
+                availableSeries={availableSeries}
+                effectiveSeriesId={effectiveSeriesId}
+                isProforma={isProforma}
+                tenantData={tenantData}
+                currentTenant={currentTenant}
+                invoiceDefaults={invoiceDefaults}
+                isDuplicate={isDuplicate}
+                editDraftId={editDraftId}
+                defaultPaymentMethod={defaultValues.paymentMethod}
+                onActiveSection={setActiveSection}
+                onCreateCustomer={() => setShowQuickClient(true)}
+                onSearchChange={setCustomerSearch}
+                onSelectSharedCustomer={handleSelectSharedCustomer}
+              />
 
               {/* ── Banner: guardar como predeterminado ── */}
               <SaveAsDefaultBanner
@@ -1092,7 +768,7 @@ export default function NuevaFacturaPage() {
           : undefined,
         irpfPercent: sourceInvoice.irpfPercent ? Number(sourceInvoice.irpfPercent) : undefined,
         paymentMethod: (sourceInvoice.paymentMethod as PaymentMethod) ?? undefined,
-        paymentDetails: (sourceInvoice as any).paymentDetails ?? {},
+        paymentDetails: (sourceInvoice.paymentDetails as Record<string, string | undefined>) ?? {},
         notes: sourceInvoice.notes || undefined,
         lines: (sourceInvoice.lines ?? []).map((l) => ({
           description: l.description ?? '',
@@ -1129,7 +805,7 @@ export default function NuevaFacturaPage() {
       editDraftId={editId ?? undefined}
       initialInvoiceType={
         editId
-          ? (((sourceInvoice as any)?.invoiceType as InvoiceTypeOption) ?? undefined)
+          ? ((sourceInvoice?.invoiceType as InvoiceTypeOption) ?? undefined)
           : initialTypeFromParam
       }
       invoiceDefaults={invoiceDefaults ?? null}

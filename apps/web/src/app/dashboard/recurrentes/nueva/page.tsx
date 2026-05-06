@@ -39,12 +39,13 @@ import {
   useUpdateRecurringInvoice,
   useRecurringInvoice,
 } from '@/hooks/use-recurring-invoices';
-import { useCustomers } from '@/hooks/use-customers';
+import { useCustomers, useSharedCustomerPool, useImportFromPool } from '@/hooks/use-customers';
 import { useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useTenant } from '@/hooks/use-tenant';
 import { useInvoiceSeries } from '@/hooks/use-invoice-series';
 import { useInvoiceDefaults } from '@/hooks/use-invoice-defaults';
 import { useInvoiceFormKeyDown } from '@/hooks/use-invoice-form-key-down';
+import { useDebounce } from '@/hooks/use-debounce';
 import { useAuthStore } from '@/store/auth-store';
 import {
   Frequency,
@@ -53,6 +54,7 @@ import {
   Tenant,
   InvoiceDefaults,
   Customer,
+  SharedPoolCustomer,
 } from '@easyfactura/shared-types';
 import { FREQUENCY_OPTIONS, PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import { cn, resolveUrl } from '@/lib/utils';
@@ -237,6 +239,22 @@ function RecurringInvoiceForm({
   const { data: tenantData } = useTenant();
   const { data: seriesData } = useInvoiceSeries(currentYear);
   const handleFormKeyDown = useInvoiceFormKeyDown();
+
+  // ── Agency shared pool ───────────────────────────────────────────────────
+  const [customerSearch, setCustomerSearch] = useState('');
+  const debouncedCustomerSearch = useDebounce(customerSearch, 400);
+  const { data: sharedPool, isLoading: loadingShared } =
+    useSharedCustomerPool(debouncedCustomerSearch);
+  const importFromPoolMutation = useImportFromPool();
+
+  const handleSelectSharedCustomer = useCallback(
+    async (customer: SharedPoolCustomer) => {
+      const imported = await importFromPoolMutation.mutateAsync(customer.nif);
+      setPendingCustomerId(imported.id);
+    },
+    [importFromPoolMutation],
+  );
+  // ─────────────────────────────────────────────────────────────────────────
 
   const customers: Customer[] = customersData?.data ?? [];
   const availableSeries = useMemo(
@@ -664,6 +682,10 @@ function RecurringInvoiceForm({
                         value={watchedValues.customerId || ''}
                         onChange={(v) => form.setValue('customerId', v, { shouldValidate: true })}
                         hasError={!!errors.customerId}
+                        sharedCustomers={sharedPool}
+                        isLoadingShared={loadingShared}
+                        onSearchChange={setCustomerSearch}
+                        onSelectShared={handleSelectSharedCustomer}
                       />
                     )}
                     {errors.customerId && (

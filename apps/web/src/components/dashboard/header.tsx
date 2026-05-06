@@ -2,14 +2,15 @@
 
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
+import { useAgencyContext } from '@/hooks/use-agency-context';
 import { DashboardUserMenu } from './user-menu';
 import { ThemeToggle } from './theme-toggle';
-import { TenantSelector } from './tenant-selector';
 import { ChevronRight } from 'lucide-react';
 import { useInvoice } from '@/hooks/use-invoices';
 import { useCustomer } from '@/hooks/use-customers';
 import { useProduct } from '@/hooks/use-products';
 import { useRecurringInvoice } from '@/hooks/use-recurring-invoices';
+import { useAgencyClient } from '@/hooks/use-agency';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -57,9 +58,26 @@ function RecurringInvoiceBreadcrumbLabel({ id }: { id: string }) {
   return <>{data?.customer?.name ?? '…'}</>;
 }
 
-function DynamicSegmentLabel({ id, parentSegment }: { id: string; parentSegment: string | null }) {
+function AgencyClientBreadcrumbLabel({ id }: { id: string }) {
+  const { data } = useAgencyClient(id);
+  return <>{data?.clientTenant.businessName ?? '…'}</>;
+}
+
+function DynamicSegmentLabel({
+  id,
+  parentSegment,
+  grandparentSegment,
+}: {
+  id: string;
+  parentSegment: string | null;
+  grandparentSegment: string | null;
+}) {
   if (parentSegment === 'facturas' || parentSegment === 'presupuestos') {
     return <InvoiceBreadcrumbLabel id={id} />;
+  }
+  // In the asesoria context, the UUID after 'clientes' is a clientTenantId
+  if (parentSegment === 'clientes' && grandparentSegment === 'asesoria') {
+    return <AgencyClientBreadcrumbLabel id={id} />;
   }
   if (parentSegment === 'clientes') {
     return <CustomerBreadcrumbLabel id={id} />;
@@ -76,12 +94,20 @@ function DynamicSegmentLabel({ id, parentSegment }: { id: string; parentSegment:
 function SegmentLabel({
   segment,
   parentSegment,
+  grandparentSegment,
 }: {
   segment: string;
   parentSegment: string | null;
+  grandparentSegment: string | null;
 }) {
   if (UUID_REGEX.test(segment)) {
-    return <DynamicSegmentLabel id={segment} parentSegment={parentSegment} />;
+    return (
+      <DynamicSegmentLabel
+        id={segment}
+        parentSegment={parentSegment}
+        grandparentSegment={grandparentSegment}
+      />
+    );
   }
   const label = SEGMENT_LABELS[segment];
   return <>{label ?? segment.charAt(0).toUpperCase() + segment.slice(1)}</>;
@@ -94,11 +120,13 @@ function resolveSegmentLabel(segment: string): string {
 export function DashboardHeader() {
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
+  const { isActingAsClient } = useAgencyContext();
 
   const segments = pathname.split('/').filter(Boolean);
   const breadcrumbs = segments.map((segment, index) => ({
     segment,
     parentSegment: index > 0 ? segments[index - 1] : null,
+    grandparentSegment: index > 1 ? segments[index - 2] : null,
     href: '/' + segments.slice(0, index + 1).join('/'),
   }));
 
@@ -112,7 +140,11 @@ export function DashboardHeader() {
             <span
               className={index === breadcrumbs.length - 1 ? 'font-medium' : 'text-muted-foreground'}
             >
-              <SegmentLabel segment={crumb.segment} parentSegment={crumb.parentSegment} />
+              <SegmentLabel
+                segment={crumb.segment}
+                parentSegment={crumb.parentSegment}
+                grandparentSegment={crumb.grandparentSegment}
+              />
             </span>
           </div>
         ))}
@@ -120,7 +152,6 @@ export function DashboardHeader() {
 
       {/* Right side */}
       <div className="ml-auto flex items-center gap-4">
-        <TenantSelector />
         <ThemeToggle />
         <DashboardUserMenu user={user} />
       </div>

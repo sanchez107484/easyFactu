@@ -186,14 +186,14 @@ export function RegisterPaymentDialog({
             className={cn(
               'flex items-center gap-2 rounded-lg border px-3 py-2.5 text-left transition-all',
               paymentType === PaymentType.PARTIAL
-                ? 'border-amber-500 bg-amber-500/5 ring-1 ring-amber-500'
+                ? 'border-proforma-500 bg-proforma-500/5 ring-1 ring-proforma-500'
                 : 'border-border hover:border-muted-foreground/40',
             )}
           >
             <SplitSquareHorizontal
               className={cn(
                 'h-4 w-4 shrink-0',
-                paymentType === PaymentType.PARTIAL ? 'text-amber-500' : 'text-muted-foreground',
+                paymentType === PaymentType.PARTIAL ? 'text-proforma-500' : 'text-muted-foreground',
               )}
             />
             <div>
@@ -201,7 +201,7 @@ export function RegisterPaymentDialog({
                 className={cn(
                   'text-sm font-medium',
                   paymentType === PaymentType.PARTIAL
-                    ? 'text-amber-600 dark:text-amber-400'
+                    ? 'text-proforma-600 dark:text-proforma-400'
                     : 'text-foreground',
                 )}
               >
@@ -248,9 +248,7 @@ export function RegisterPaymentDialog({
                   {...form.register('amount', { valueAsNumber: true })}
                 />
                 {form.formState.errors.amount && (
-                  <p className="text-xs text-destructive">
-                    {form.formState.errors.amount.message}
-                  </p>
+                  <p className="text-xs text-destructive">{form.formState.errors.amount.message}</p>
                 )}
               </div>
 

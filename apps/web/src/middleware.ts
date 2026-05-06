@@ -10,6 +10,7 @@ const publicRoutes = [
   '/verificar-email',
   '/recuperar-password',
   '/nueva-password',
+  '/activar-cuenta',
   // Marketing
   '/precios',
   '/funcionalidades',

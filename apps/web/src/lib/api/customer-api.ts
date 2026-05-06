@@ -2,6 +2,7 @@ import { apiClient } from '../api-client';
 import { unwrapApiResponse, ApiResponse } from '../api-response';
 import {
   Customer,
+  SharedPoolCustomer,
   PaginatedResponse,
   QueryCustomersInput,
   CreateCustomerInput,
@@ -34,4 +35,19 @@ export const customerApi = {
     apiClient.put<ApiResponse<Customer>>(`/customers/${id}`, data).then(unwrapApiResponse),
 
   remove: (id: string): Promise<void> => apiClient.delete(`/customers/${id}`).then(() => undefined),
+
+  restore: (id: string): Promise<Customer> =>
+    apiClient.patch<ApiResponse<Customer>>(`/customers/${id}/restore`).then(unwrapApiResponse),
+
+  getSharedPool: (search?: string): Promise<SharedPoolCustomer[]> =>
+    apiClient
+      .get<ApiResponse<SharedPoolCustomer[]>>('/customers/shared-pool', {
+        params: search ? { search } : undefined,
+      })
+      .then(unwrapApiResponse),
+
+  importFromPool: (nif: string): Promise<Customer> =>
+    apiClient
+      .post<ApiResponse<Customer>>('/customers/import-from-pool', { nif })
+      .then(unwrapApiResponse),
 };

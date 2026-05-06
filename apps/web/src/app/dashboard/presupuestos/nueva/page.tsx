@@ -24,7 +24,7 @@ import { ArrowLeft, Plus, AlertCircle, Save, Pencil, ClipboardList, X } from 'lu
 import { InvoiceLineItem } from '@/components/facturas/InvoiceLineItem';
 import { extendedLineSchema, EMPTY_LINE, ExtendedLineData } from '@/lib/invoice-line-types';
 import { useCreateInvoice, useUpdateInvoice, useInvoice } from '@/hooks/use-invoices';
-import { useCustomers } from '@/hooks/use-customers';
+import { useCustomers, useSharedCustomerPool, useImportFromPool } from '@/hooks/use-customers';
 import { useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useInvoiceSeries } from '@/hooks/use-invoice-series';
 import { useInvoiceDefaults } from '@/hooks/use-invoice-defaults';
@@ -33,6 +33,7 @@ import { useAuthStore } from '@/store/auth-store';
 import {
   PaymentMethod,
   Customer,
+  SharedPoolCustomer,
   InvoiceTemplate,
   SeriesType,
   Tenant,
@@ -51,6 +52,7 @@ import {
   PaymentDetailsValues,
 } from '@/components/facturas/PaymentDetailsFields';
 import { useInvoiceFormKeyDown } from '@/hooks/use-invoice-form-key-down';
+import { useDebounce } from '@/hooks/use-debounce';
 
 // ==================== SCHEMA ====================
 
@@ -98,12 +100,31 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
   const [showQuickClient, setShowQuickClient] = useState(false);
   const [pendingCustomerId, setPendingCustomerId] = useState<string | null>(null);
 
-  const { data: customersData, isLoading: loadingCustomers } = useCustomers({ limit: 500 });
+  const { data: customersData, isLoading: loadingCustomers } = useCustomers({
+    limit: 500,
+    active: true,
+  });
   const { data: defaultTemplate } = useDefaultTemplate();
   const { data: tenantData } = useTenant();
   const { data: seriesData } = useInvoiceSeries(currentYear);
   const createMutation = useCreateInvoice();
   const updateMutation = useUpdateInvoice();
+
+  // ── Agency shared pool ───────────────────────────────────────────────────
+  const [customerSearch, setCustomerSearch] = useState('');
+  const debouncedCustomerSearch = useDebounce(customerSearch, 400);
+  const { data: sharedPool, isLoading: loadingShared } =
+    useSharedCustomerPool(debouncedCustomerSearch);
+  const importFromPoolMutation = useImportFromPool();
+
+  const handleSelectSharedCustomer = useCallback(
+    async (customer: SharedPoolCustomer) => {
+      const imported = await importFromPoolMutation.mutateAsync(customer.nif);
+      setPendingCustomerId(imported.id);
+    },
+    [importFromPoolMutation],
+  );
+  // ─────────────────────────────────────────────────────────────────────────
 
   const customers: Customer[] = customersData?.data ?? [];
   const effectiveTemplate: InvoiceTemplate | null = defaultTemplate ?? null;
@@ -307,6 +328,10 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
                         value={watchedValues.customerId || ''}
                         onChange={(v) => form.setValue('customerId', v, { shouldValidate: true })}
                         hasError={!!form.formState.errors.customerId}
+                        sharedCustomers={sharedPool}
+                        isLoadingShared={loadingShared}
+                        onSearchChange={setCustomerSearch}
+                        onSelectShared={handleSelectSharedCustomer}
                       />
                     )}
                     {form.formState.errors.customerId && (

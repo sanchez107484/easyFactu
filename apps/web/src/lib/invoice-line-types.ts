@@ -9,17 +9,17 @@ export const LINE_MODE_META: Record<LineMode, { label: string; color: string }> 
   custom: {
     label: 'Libre',
     color:
-      'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+      'bg-neutral-100 text-neutral-600 border-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700',
   },
   service: {
     label: 'Servicio',
     color:
-      'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+      'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-950 dark:text-primary-300 dark:border-primary-800',
   },
   product: {
     label: 'Producto',
     color:
-      'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800',
+      'bg-overdue-50 text-overdue-700 border-overdue-200 dark:bg-overdue-950 dark:text-overdue-300 dark:border-overdue-800',
   },
 };
 

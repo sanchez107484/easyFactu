@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useCreateCustomer, useCustomerByNif } from '@/hooks/use-customers';
 import { CustomerFormFields } from '@/components/clientes/CustomerFormFields';
+import { AgencySharedPoolImport } from '@/components/clientes/AgencySharedPoolImport';
 
 // ==================== TYPES & CONSTANTS ====================
 
@@ -121,6 +122,9 @@ export default function NuevoClientePage() {
       {/* ── Contenido scrollable ── */}
       <div className="flex-1 overflow-y-auto px-6 py-6">
         <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
+          <div className="mb-5">
+            <AgencySharedPoolImport form={form} />
+          </div>
           <CustomerFormFields
             form={form}
             existingCustomer={existingCustomer}

@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, CustomerType as PrismaCustomerType } from '@prisma/client';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
@@ -31,6 +36,7 @@ export class CustomerService {
     return this.prisma.customer.create({
       data: {
         ...dto,
+        type: dto.type as unknown as PrismaCustomerType,
         nif,
         tenantId,
       },
@@ -53,7 +59,7 @@ export class CustomerService {
     }
 
     if (type) {
-      where.type = type;
+      where.type = type as unknown as PrismaCustomerType;
     }
 
     if (active !== undefined) {
@@ -134,8 +140,9 @@ export class CustomerService {
       }
     }
 
-    const data = {
+    const data: Prisma.CustomerUpdateInput = {
       ...dto,
+      type: dto.type as unknown as PrismaCustomerType,
       legalName: dto.legalName !== undefined ? dto.legalName.trim() || null : undefined,
     };
 
@@ -152,6 +159,141 @@ export class CustomerService {
     return this.prisma.customer.update({
       where: { id },
       data: { isActive: false },
+    });
+  }
+
+  async restore(tenantId: string, id: string) {
+    await this.findOne(tenantId, id);
+
+    return this.prisma.customer.update({
+      where: { id },
+      data: { isActive: true },
+    });
+  }
+
+  // ─── Agency shared pool ─────────────────────────────────────────────────────
+
+  /**
+   * Returns customers from sibling tenants that share the same managing agency.
+   * Only works if the calling tenant is an active client of an agency.
+   * Returns an empty array (not an error) if no agency relation exists.
+   */
+  async findAgencySharedPool(tenantId: string, search?: string) {
+    const relation = await this.prisma.agencyClientRelation.findFirst({
+      where: { clientTenantId: tenantId },
+      select: { agencyTenantId: true },
+    });
+
+    if (!relation) return [];
+
+    const siblings = await this.prisma.agencyClientRelation.findMany({
+      where: {
+        agencyTenantId: relation.agencyTenantId,
+        clientTenantId: { not: tenantId },
+      },
+      select: {
+        clientTenantId: true,
+        clientTenant: { select: { businessName: true } },
+      },
+    });
+
+    if (siblings.length === 0) return [];
+
+    const siblingIds = siblings.map((s) => s.clientTenantId);
+    const tenantNameMap = new Map(
+      siblings.map((s) => [s.clientTenantId, s.clientTenant.businessName])
+    );
+
+    const where: Prisma.CustomerWhereInput = {
+      tenantId: { in: siblingIds },
+      isActive: true,
+    };
+
+    if (search?.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { nif: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    const customers = await this.prisma.customer.findMany({
+      where,
+      orderBy: { name: 'asc' },
+      take: 20,
+    });
+
+    return customers.map((c) => ({
+      ...c,
+      sourceTenantId: c.tenantId,
+      sourceTenantName: tenantNameMap.get(c.tenantId) ?? '',
+    }));
+  }
+
+  /**
+   * Copies a customer from any sibling tenant (same agency) into the current tenant.
+   * If a customer with the same NIF already exists in the current tenant, returns it.
+   * The source is identified by NIF — safe canonical identifier across tenants.
+   */
+  async importFromAgencyPool(tenantId: string, nif: string) {
+    const relation = await this.prisma.agencyClientRelation.findFirst({
+      where: { clientTenantId: tenantId },
+      select: { agencyTenantId: true },
+    });
+
+    if (!relation) {
+      throw new ForbiddenException('Este tenant no pertenece a ninguna asesoría');
+    }
+
+    const normalizedNif = nif.toUpperCase().trim();
+
+    // Return existing customer if already present in this tenant
+    const existing = await this.prisma.customer.findFirst({
+      where: { tenantId, nif: { equals: normalizedNif, mode: 'insensitive' }, isActive: true },
+    });
+    if (existing) return existing;
+
+    const siblings = await this.prisma.agencyClientRelation.findMany({
+      where: {
+        agencyTenantId: relation.agencyTenantId,
+        clientTenantId: { not: tenantId },
+      },
+      select: { clientTenantId: true },
+    });
+
+    const siblingIds = siblings.map((s) => s.clientTenantId);
+
+    const source = await this.prisma.customer.findFirst({
+      where: {
+        tenantId: { in: siblingIds },
+        nif: { equals: normalizedNif, mode: 'insensitive' },
+        isActive: true,
+      },
+    });
+
+    if (!source) {
+      throw new NotFoundException(
+        `No se encontró ningún cliente con NIF ${normalizedNif} en el directorio`
+      );
+    }
+
+    return this.prisma.customer.create({
+      data: {
+        tenantId,
+        type: source.type,
+        name: source.name,
+        legalName: source.legalName,
+        nif: source.nif,
+        email: source.email,
+        phone: source.phone,
+        address: source.address,
+        postalCode: source.postalCode,
+        city: source.city,
+        province: source.province,
+        country: source.country,
+        notes: source.notes,
+        isActive: true,
+      },
     });
   }
 }

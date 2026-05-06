@@ -87,6 +87,19 @@ export enum PaymentMethod {
   BIZUM = 'BIZUM',
 }
 
+export enum AgencyInvitationStatus {
+  PENDING = 'PENDING',
+  ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED',
+  EXPIRED = 'EXPIRED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum RelationTerminator {
+  AGENCY = 'AGENCY',
+  CLIENT = 'CLIENT',
+}
+
 // ==================== BASE TYPES ====================
 
 export interface PaginatedResponse<T> {
@@ -321,6 +334,15 @@ export interface QueryCustomersInput {
   sortOrder?: 'asc' | 'desc';
 }
 
+/**
+ * A customer from a sibling tenant in the same agency network.
+ * Includes metadata identifying the source tenant for display purposes.
+ */
+export interface SharedPoolCustomer extends Customer {
+  sourceTenantId: string;
+  sourceTenantName: string;
+}
+
 // ==================== PRODUCT ====================
 
 export interface Product {
@@ -424,6 +446,13 @@ export interface InvoiceLine {
   updatedAt: string;
 }
 
+export interface InvoiceAgencyCreator {
+  /** Full name of the agency user who created the document. */
+  userName: string;
+  /** Business name of the agency tenant. */
+  agencyName: string;
+}
+
 export interface Invoice {
   id: string;
   tenantId: string;
@@ -482,6 +511,11 @@ export interface Invoice {
   rectificationReason: string | null;
   /** ID of the recurring invoice that generated this invoice (or from which this was converted) */
   recurringInvoiceId?: string | null;
+  /**
+   * Set when the invoice was created by an agency user on behalf of this tenant.
+   * Null if the invoice was created by the tenant owner or a regular member.
+   */
+  createdByAgency?: InvoiceAgencyCreator | null;
   createdAt: string;
   updatedAt: string;
   series?: InvoiceSeries;
@@ -800,6 +834,11 @@ export interface RecurringInvoice {
   lines?: RecurringInvoiceLine[];
   /** Computed by the list endpoint — total per generation including tax minus IRPF. */
   estimatedTotal?: number;
+  /**
+   * Set when the recurring invoice was created by an agency user on behalf of this tenant.
+   * Null if created by the tenant owner or a regular member.
+   */
+  createdByAgency?: InvoiceAgencyCreator | null;
 }
 
 export interface CreateRecurringInvoiceLineInput {
@@ -945,4 +984,414 @@ export interface InvoiceReportData {
 export interface QueryReportsInput {
   fromDate: string;
   toDate: string;
+}
+
+// ==================== AGENCY ====================
+
+export interface AgencyClientRelation {
+  id: string;
+  agencyTenantId: string;
+  clientTenantId: string;
+  addedByUserId: string;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  clientTenant?: Tenant;
+  agencyTenant?: Tenant;
+}
+
+/** Permanent audit record of every asesoría–client relationship period. Never deleted. */
+export interface AgencyRelationHistory {
+  id: string;
+  agencyTenantId: string;
+  clientTenantId: string;
+  /** Snapshot of the agency name at the moment the relationship started. */
+  agencyBusinessName: string;
+  /** Snapshot of the client name at the moment the relationship started. */
+  clientBusinessName: string;
+  clientNif: string;
+  startedAt: string;
+  endedAt: string | null;
+  terminatedBy: RelationTerminator | null;
+  terminatedByUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClientActivationStatus {
+  /** Whether the client has clicked the activation link and set their password. */
+  emailVerified: boolean;
+  /** ISO string of when the pending activation token expires. Null if no token is active. */
+  activationTokenExpires: string | null;
+}
+
+export interface AgencyClientWithDetails extends AgencyClientRelation {
+  clientTenant: Tenant;
+  activationStatus: ClientActivationStatus;
+  stats?: {
+    totalInvoices: number;
+    pendingInvoices: number;
+    monthlyRevenue: number;
+    lastActivity: string | null;
+    pendingExportCount: number;
+  };
+}
+
+export interface AgencyInvitation {
+  id: string;
+  agencyTenantId: string;
+  inviteeEmail: string;
+  inviteeName: string | null;
+  token: string;
+  status: AgencyInvitationStatus;
+  expiresAt: string;
+  rejectedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Invitation received by a non-agency user (includes agency public details). */
+export interface ReceivedInvitation {
+  id: string;
+  token: string;
+  inviteeName: string | null;
+  agencyName: string;
+  agencyNif: string;
+  agencyCity: string | null;
+  status: AgencyInvitationStatus;
+  expiresAt: string;
+  createdAt: string;
+}
+
+/** An agency relation as seen by the client (the managed party). */
+export interface MyAgencyRelation {
+  id: string;
+  agencyTenantId: string;
+  agencyName: string;
+  agencyNif: string;
+  agencyEmail: string | null;
+  agencyPhone: string | null;
+  agencyCity: string | null;
+  linkedAt: string;
+}
+
+/** Full invitation record returned to the agency in the invitations history view. */
+export interface AgencyInvitationFull {
+  id: string;
+  inviteeEmail: string;
+  inviteeName: string | null;
+  status: AgencyInvitationStatus;
+  expiresAt: string;
+  rejectedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDirectClientInput {
+  businessName: string;
+  nif: string;
+  email: string;
+  accountType?: AccountType;
+  phone?: string;
+  notes?: string;
+}
+
+export interface ResendActivationInput {
+  /** Optional new email if the previous one was incorrect. */
+  email?: string;
+}
+
+export interface InviteClientInput {
+  inviteeEmail: string;
+  inviteeName?: string;
+}
+
+export interface ActivateAccountInput {
+  token: string;
+  password: string;
+}
+
+export interface ActivateAccountTokenInfo {
+  email: string;
+  businessName: string;
+  agencyName: string | null;
+}
+
+export interface QueryAgencyClientsInput {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
+export interface AgencyClientRecentInvoice {
+  id: string;
+  number: string | null;
+  issueDate: string;
+  total: number;
+  status: InvoiceStatus;
+  customer: { name: string } | null;
+}
+
+export interface AgencyClientDetail extends Omit<
+  AgencyClientRelation,
+  'clientTenant' | 'agencyTenant'
+> {
+  clientTenant: Pick<
+    Tenant,
+    | 'id'
+    | 'businessName'
+    | 'nif'
+    | 'email'
+    | 'phone'
+    | 'address'
+    | 'city'
+    | 'province'
+    | 'postalCode'
+    | 'setupCompleted'
+    | 'isActive'
+    | 'createdAt'
+  >;
+  activationStatus: ClientActivationStatus;
+  stats: {
+    totalInvoices: number;
+    pendingInvoices: number;
+    monthlyRevenue: number;
+  };
+  recentInvoices: AgencyClientRecentInvoice[];
+}
+
+// ==================== AGENCY STATS ====================
+
+export interface AgencyDashboardAlert {
+  type: 'error' | 'warning' | 'info';
+  message: string;
+  count: number;
+}
+
+export interface AgencyStats {
+  totalClients: number;
+  activeClients: number;
+  pendingInvitations: number;
+  clientsNeedingAttention: number;
+  monthlyRevenue: number;
+  alerts: AgencyDashboardAlert[];
+}
+
+export interface QuarterlyIvaSummary {
+  quarter: number;
+  year: number;
+  startDate: string;
+  endDate: string;
+  totalIva: number;
+  totalIrpf: number;
+  totalRevenue: number;
+  invoicesCount: number;
+  clientsWithData: number;
+}
+
+// ==================== AGENCY EXPORT ====================
+
+export enum ExportFormat {
+  CONTAPLUS = 'CONTAPLUS',
+  A3CON = 'A3CON',
+  EXCEL = 'EXCEL',
+}
+
+export enum ExportMode {
+  PENDING = 'PENDING',
+  PERIOD = 'PERIOD',
+  MANUAL = 'MANUAL',
+}
+
+/** A single invoice as returned by the export preview endpoint. */
+export interface InvoiceForExport {
+  id: string;
+  number: string | null;
+  issueDate: string;
+  total: number;
+  subtotal: number;
+  taxTotal: number;
+  irpfTotal: number | null;
+  status: string;
+  customerName: string;
+  customerNif: string;
+  /** ISO string of the last time this agency exported this invoice. Null = never exported. */
+  lastExportedAt: string | null;
+  lastExportFormat: string | null;
+}
+
+/** Response from GET /agency/clients/:id/invoices-for-export */
+export interface InvoicesForExportResponse {
+  invoices: InvoiceForExport[];
+  pendingCount: number;
+  totalCount: number;
+  clientBusinessName: string;
+  clientNif: string;
+}
+
+// ==================== AGENCY CONSOLIDATED INVOICES (multi-client view) ====================
+
+/** A single row of the agency consolidated invoices table (across all managed clients). */
+export interface AgencyInvoiceListItem {
+  id: string;
+  number: string | null;
+  issueDate: string;
+  dueDate: string | null;
+  status: InvoiceStatus;
+  paymentStatus: PaymentStatus;
+  subtotal: number;
+  taxTotal: number;
+  irpfTotal: number | null;
+  total: number;
+  amountPaid: number;
+  client: {
+    tenantId: string;
+    businessName: string;
+    nif: string;
+  };
+  customer: {
+    name: string;
+    nif: string | null;
+  };
+  verifactuStatus: VerifactuStatus | null;
+}
+
+/** Aggregated totals applied to the current filter (not just the page). */
+export interface AgencyInvoicesSummary {
+  invoicesCount: number;
+  clientsCount: number;
+  totalSubtotal: number;
+  totalIva: number;
+  totalIrpf: number;
+  totalRevenue: number;
+  totalPending: number;
+}
+
+export interface AgencyInvoicesQuery {
+  clientTenantId?: string;
+  status?: InvoiceStatus;
+  paymentStatus?: PaymentStatus;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  page?: number;
+  limit?: number;
+  sortBy?: 'issueDate' | 'total' | 'number' | 'createdAt';
+  sortDir?: 'asc' | 'desc';
+}
+
+export interface AgencyInvoicesResponse {
+  data: AgencyInvoiceListItem[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  summary: AgencyInvoicesSummary;
+}
+
+// ─── Agency impersonation audit log ──────────────────────────────────────────
+
+/** Single audit entry for an agency user accessing a managed client tenant. */
+export interface AgencyImpersonationLogEntry {
+  id: string;
+  clientTenantId: string;
+  /** Snapshot of the client's business name at the time of impersonation. */
+  clientBusinessName: string;
+  actorUserId: string;
+  actorEmail: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  startedAt: string;
+  /** Null while the impersonation session is still active. */
+  endedAt: string | null;
+}
+
+export interface AgencyImpersonationLogQuery {
+  clientTenantId?: string;
+  actorUserId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface AgencyImpersonationLogResponse {
+  data: AgencyImpersonationLogEntry[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+/** Body for POST /agency/clients/:id/export */
+export interface ExportInvoicesInput {
+  format: ExportFormat;
+  mode: ExportMode;
+  /** Required when mode = PERIOD. Format: YYYY-MM-DD */
+  dateFrom?: string;
+  /** Required when mode = PERIOD. Format: YYYY-MM-DD */
+  dateTo?: string;
+  /** Required when mode = MANUAL. */
+  invoiceIds?: string[];
+}
+
+export interface AgencyExportLog {
+  id: string;
+  agencyTenantId: string;
+  clientTenantId: string;
+  requestedByUserId: string;
+  format: ExportFormat;
+  mode: ExportMode;
+  year: number | null;
+  quarter: number | null;
+  dateFrom: string | null;
+  dateTo: string | null;
+  invoicesCount: number;
+  totalRevenue: number;
+  createdAt: string;
+}
+
+export interface ExportContaPlusInput {
+  year: number;
+  quarter?: number;
+}
+
+export interface AgencyExportLogEntry {
+  id: string;
+  clientTenantId: string;
+  format: ExportFormat;
+  mode: ExportMode;
+  year: number | null;
+  quarter: number | null;
+  dateFrom: string | null;
+  dateTo: string | null;
+  invoicesCount: number;
+  totalRevenue: number;
+  createdAt: string;
+  requestedByUser: { name: string; email: string } | null;
+  clientTenant: { businessName: string } | null;
+}
+
+export interface FiscalAlert {
+  type: 'error' | 'warning' | 'info';
+  code: string;
+  title: string;
+  description: string;
+  invoiceId?: string;
+  invoiceNumber?: string;
+}
+
+export interface FiscalAlertSummaryItem {
+  clientTenantId: string;
+  clientName: string;
+  nif: string;
+  errorCount: number;
+  warningCount: number;
+  infoCount: number;
 }

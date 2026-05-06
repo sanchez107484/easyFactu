@@ -15,6 +15,7 @@ import {
   CheckCircle,
   AlertCircle,
   SlidersHorizontal,
+  UserCircle,
 } from 'lucide-react';
 import { useTenant } from '@/hooks/use-tenant';
 import { useAuthStore } from '@/store/auth-store';
@@ -28,6 +29,12 @@ const PLAN_LABELS: Record<Plan, string> = {
 };
 
 const SETTINGS_SECTIONS = [
+  {
+    href: '/dashboard/ajustes/cuenta',
+    icon: UserCircle,
+    title: 'Cuenta',
+    description: 'Nombre, apellidos y contraseña',
+  },
   {
     href: '/dashboard/ajustes/empresa',
     icon: Building2,
@@ -49,16 +56,17 @@ const SETTINGS_SECTIONS = [
   {
     href: '/dashboard/ajustes/plantilla',
     icon: LayoutTemplate,
-    title: 'Plantilla',
+    title: 'Plantilla PDF',
     description: 'Diseño y apariencia de tus facturas PDF',
   },
-  /*
-  {
+
+  /*{
     href: '/dashboard/ajustes/seguridad',
     icon: Shield,
     title: 'Seguridad',
-    description: 'Contraseña y autenticación',
+    description: 'Autenticación en dos pasos y sesiones',
   },
+  
    {
     href: '/dashboard/ajustes/usuarios',
     icon: Users,
@@ -196,15 +204,3 @@ export default function AjustesPage() {
     </div>
   );
 }
-
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { toast } from 'sonner';
-import { Save } from 'lucide-react';

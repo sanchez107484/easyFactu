@@ -1,0 +1,571 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAgencyClients, useRevokeClient, useAllInvitations } from '@/hooks/use-agency';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Users,
+  Plus,
+  Search,
+  LayoutDashboard,
+  MoreVertical,
+  Trash2,
+  Mail,
+  UserPlus,
+  X,
+  Clock,
+  ArrowRightLeft,
+  FileText,
+  Send,
+  MapPin,
+  Activity,
+  Loader2,
+  AlertTriangle,
+  ShieldAlert,
+  Info,
+  History,
+} from 'lucide-react';
+import { formatCurrency, cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import type { AgencyClientWithDetails, ClientActivationStatus } from '@easyfactura/shared-types';
+import { useAgencyContext } from '@/hooks/use-agency-context';
+import { useSwitchTenant } from '@/hooks/use-switch-tenant';
+import { VincularClienteModal } from '../_components/vincular-cliente-modal';
+import { ExpiredLinkModal } from '../_components/expired-link-modal';
+import { HistorialInvitacionesModal } from '../_components/historial-invitaciones-modal';
+
+function ClientActivationBadge({
+  activationStatus,
+  setupCompleted,
+  createdAt,
+  onExpiredClick,
+}: {
+  activationStatus: ClientActivationStatus;
+  setupCompleted: boolean;
+  createdAt: string;
+  onExpiredClick?: () => void;
+}) {
+  const { emailVerified, activationTokenExpires } = activationStatus;
+
+  if (emailVerified && setupCompleted) return null;
+
+  if (emailVerified && !setupCompleted) {
+    return (
+      <span className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-proforma-600 dark:text-proforma-400">
+        <AlertTriangle className="h-2.5 w-2.5" />
+        Config. pendiente
+      </span>
+    );
+  }
+
+  const now = Date.now();
+  const tokenExpiredOrMissing =
+    !activationTokenExpires || new Date(activationTokenExpires).getTime() < now;
+
+  if (tokenExpiredOrMissing) {
+    return (
+      <button
+        type="button"
+        onClick={onExpiredClick}
+        className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-destructive underline-offset-2 hover:underline cursor-pointer"
+      >
+        <ShieldAlert className="h-2.5 w-2.5" />
+        Enlace caducado
+      </button>
+    );
+  }
+
+  const hoursSinceCreation = (now - new Date(createdAt).getTime()) / (1000 * 60 * 60);
+  if (hoursSinceCreation < 24) return null; // Fresh — no need to warn yet
+
+  return (
+    <span className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-proforma-600 dark:text-proforma-400">
+      <Clock className="h-2.5 w-2.5" />
+      Sin activar
+    </span>
+  );
+}
+
+function isActivationExpired(activationStatus: ClientActivationStatus): boolean {
+  if (activationStatus.emailVerified) return false;
+  const { activationTokenExpires } = activationStatus;
+  return !activationTokenExpires || new Date(activationTokenExpires).getTime() < Date.now();
+}
+
+export default function AgencyClientsPage() {
+  const router = useRouter();
+  const { switchTenant, isPending: isSwitching } = useSwitchTenant();
+  const { isOnAgencyTenant, isActingAsClient, returnToAgency } = useAgencyContext();
+  const [search, setSearch] = useState('');
+  const [managingClientId, setManagingClientId] = useState<string | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<AgencyClientWithDetails | null>(null);
+  const [isVincularModalOpen, setIsVincularModalOpen] = useState(false);
+  const [isHistorialOpen, setIsHistorialOpen] = useState(false);
+  const [expiredLinkTarget, setExpiredLinkTarget] = useState<{
+    clientTenantId: string;
+    email: string;
+  } | null>(null);
+
+  const { data, isLoading } = useAgencyClients({ search: search || undefined }, isOnAgencyTenant);
+  const { data: allInvitations = [] } = useAllInvitations(isOnAgencyTenant);
+  const { mutate: revokeClient, isPending: isRevoking } = useRevokeClient();
+
+  const mountedActingAsClient = useRef(isActingAsClient);
+  const mountedOnAgencyTenant = useRef(isOnAgencyTenant);
+
+  useEffect(() => {
+    if (mountedActingAsClient.current) {
+      returnToAgency();
+    } else if (!mountedOnAgencyTenant.current) {
+      router.replace('/dashboard');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!isOnAgencyTenant) return null;
+
+  const handleManage = async (clientTenantId: string) => {
+    if (managingClientId) return;
+    setManagingClientId(clientTenantId);
+    try {
+      await switchTenant(clientTenantId);
+      router.push('/dashboard');
+    } catch {
+      toast.error('No se pudo acceder al cliente. Inténtalo de nuevo.');
+      setManagingClientId(null);
+    }
+  };
+
+  const handleRevoke = (clientTenantId: string) => {
+    revokeClient(clientTenantId, {
+      onSuccess: () => setRevokeTarget(null),
+    });
+  };
+
+  const pendingInvitations = allInvitations.filter((inv) => inv.status === 'PENDING');
+
+  return (
+    <div className="space-y-6 pb-6">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Mis clientes</h1>
+          <p className="mt-1 text-muted-foreground">
+            Los autónomos y empresas de tu cartera que gestionas en su nombre
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            className="text-muted-foreground"
+            onClick={() => setIsHistorialOpen(true)}
+          >
+            <History className="mr-2 h-4 w-4" />
+            Invitaciones enviadas
+          </Button>
+          <Button variant="outline" onClick={() => setIsVincularModalOpen(true)}>
+            <Users className="mr-2 h-4 w-4" />
+            Vincular cliente
+          </Button>
+          <Link href="/dashboard/asesoria/clientes/nuevo">
+            <Button>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Añadir cliente
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* Pending invitations banner */}
+      {!search && pendingInvitations.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setIsHistorialOpen(true)}
+          className="flex w-full items-center gap-3 rounded-xl border border-agency-200 bg-agency-50 px-4 py-3 text-left transition-colors hover:bg-agency-100 dark:border-agency-800/50 dark:bg-agency-950/20 dark:hover:bg-agency-950/30"
+        >
+          <Mail className="h-4 w-4 shrink-0 text-agency-600 dark:text-agency-400" />
+          <p className="flex-1 text-sm text-agency-900 dark:text-agency-300">
+            <span className="font-semibold">
+              {pendingInvitations.length} invitación{pendingInvitations.length > 1 ? 'es' : ''}{' '}
+              pendiente{pendingInvitations.length > 1 ? 's' : ''}
+            </span>{' '}
+            · Esperando que los clientes acepten
+          </p>
+          <span className="flex items-center gap-1 text-xs font-medium text-agency-700 dark:text-agency-400">
+            <History className="h-3.5 w-3.5" />
+            Ver invitaciones
+          </span>
+        </button>
+      )}
+
+      {/* How it works — shown when there are no clients yet */}
+      {!isLoading && !data?.data.length && !pendingInvitations.length && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border bg-card p-4">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-customer-50 dark:bg-customer-950/40">
+              <ArrowRightLeft className="h-5 w-5 text-customer-600 dark:text-customer-400" />
+            </div>
+            <p className="font-semibold text-sm">Cambia entre cuentas al instante</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Con un clic accedes a la cuenta de cada cliente y gestionas sus facturas como si
+              fueras él. Sin cerrar sesión, sin contraseñas.
+            </p>
+          </div>
+          <div className="rounded-xl border bg-card p-4">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-customer-50 dark:bg-customer-950/40">
+              <FileText className="h-5 w-5 text-customer-600 dark:text-customer-400" />
+            </div>
+            <p className="font-semibold text-sm">VeriFactu por cada NIF</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Cada cliente tiene su propio sistema de facturación con VeriFactu activado. Tú solo te
+              preocupas de crear las facturas.
+            </p>
+          </div>
+          <div className="rounded-xl border bg-card p-4">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-customer-50 dark:bg-customer-950/40">
+              <Send className="h-5 w-5 text-customer-600 dark:text-customer-400" />
+            </div>
+            <p className="font-semibold text-sm">Dos formas de añadir clientes</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              <strong>Añadir:</strong> creas tú la cuenta del cliente directamente.{' '}
+              <strong>Invitar:</strong> el cliente que ya usa NovaFactura acepta la vinculación.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por nombre, NIF o email..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+        {search && (
+          <button
+            onClick={() => setSearch('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Active clients list */}
+      {isLoading ? (
+        <div className="grid gap-3">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : !data?.data.length ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+              <Users className="h-7 w-7 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="font-medium">
+                {search ? 'Sin resultados para tu búsqueda' : 'No tienes clientes aún'}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {search ? 'Prueba con otro término' : 'Añade tu primer cliente para empezar'}
+              </p>
+            </div>
+            {!search && (
+              <Link href="/dashboard/asesoria/clientes/nuevo">
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Añadir cliente
+                </Button>
+              </Link>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b bg-muted/40">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                      Cliente
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+                      NIF / CIF
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground hidden md:table-cell">
+                      Localidad
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground hidden lg:table-cell">
+                      Facturas
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground hidden lg:table-cell">
+                      Pendientes cobro
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground hidden lg:table-cell">
+                      Por exportar
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground hidden xl:table-cell">
+                      Ingreso mensual
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground hidden sm:table-cell">
+                      Última actividad
+                    </th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {data.data.map((relation) => {
+                    const client = relation.clientTenant;
+                    const stats = relation.stats;
+                    const expired = isActivationExpired(relation.activationStatus);
+                    const lastActivity = stats?.lastActivity
+                      ? (() => {
+                          const diffDays = Math.floor(
+                            (Date.now() - new Date(stats.lastActivity!).getTime()) /
+                              (1000 * 60 * 60 * 24),
+                          );
+                          if (diffDays === 0) return 'Hoy';
+                          if (diffDays === 1) return 'Ayer';
+                          if (diffDays < 30) return `Hace ${diffDays} días`;
+                          const months = Math.floor(diffDays / 30);
+                          if (months < 12) return `Hace ${months} mes${months > 1 ? 'es' : ''}`;
+                          return new Date(stats.lastActivity!).toLocaleDateString('es-ES', {
+                            month: 'short',
+                            year: 'numeric',
+                          });
+                        })()
+                      : '—';
+
+                    return (
+                      <tr
+                        key={relation.id}
+                        className={cn(
+                          'transition-colors hover:bg-muted/30',
+                          expired && 'bg-destructive/5 hover:bg-destructive/10',
+                        )}
+                      >
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-customer-100 text-xs font-bold text-customer-700 dark:bg-customer-950 dark:text-customer-300">
+                              {client.businessName.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-sm leading-tight">
+                                {client.businessName}
+                              </p>
+                              {client.legalName && (
+                                <p className="truncate text-xs text-muted-foreground">
+                                  {client.legalName}
+                                </p>
+                              )}
+                              <ClientActivationBadge
+                                activationStatus={relation.activationStatus}
+                                setupCompleted={client.setupCompleted}
+                                createdAt={relation.createdAt}
+                                onExpiredClick={() =>
+                                  setExpiredLinkTarget({
+                                    clientTenantId: relation.clientTenantId,
+                                    email: client.email ?? '',
+                                  })
+                                }
+                              />
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-3">
+                          <span className="font-mono text-sm">{client.nif}</span>
+                        </td>
+
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          {client.city ? (
+                            <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <MapPin className="h-3 w-3 shrink-0" />
+                              {client.city}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+
+                        <td className="px-4 py-3 text-right hidden lg:table-cell">
+                          <span className="text-sm">{stats?.totalInvoices ?? 0}</span>
+                        </td>
+
+                        <td className="px-4 py-3 text-right hidden lg:table-cell">
+                          {(stats?.pendingInvoices ?? 0) > 0 ? (
+                            <Badge
+                              variant="outline"
+                              className="border-overdue-200 bg-overdue-50 text-overdue-700 dark:border-overdue-800 dark:bg-overdue-950/30 dark:text-overdue-400"
+                            >
+                              {stats!.pendingInvoices}
+                            </Badge>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">0</span>
+                          )}
+                        </td>
+
+                        <td className="px-4 py-3 text-right hidden lg:table-cell">
+                          {(stats?.pendingExportCount ?? 0) > 0 ? (
+                            <Badge
+                              variant="outline"
+                              className="border-proforma-200 bg-proforma-50 text-proforma-700 dark:border-proforma-800 dark:bg-proforma-950/30 dark:text-proforma-400"
+                            >
+                              {stats!.pendingExportCount}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-secondary-600 dark:text-secondary-400">
+                              ✓ Al día
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-4 py-3 text-right hidden xl:table-cell">
+                          <span className="text-sm font-medium">
+                            {(stats?.monthlyRevenue ?? 0) > 0
+                              ? formatCurrency(stats!.monthlyRevenue)
+                              : '—'}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-3 hidden sm:table-cell">
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Activity className="h-3 w-3 shrink-0" />
+                            {lastActivity}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Link href={`/dashboard/asesoria/clientes/${relation.clientTenantId}`}>
+                              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs">
+                                <Info className="mr-1 h-3 w-3" />
+                                Ver info
+                              </Button>
+                            </Link>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => handleManage(relation.clientTenantId)}
+                              disabled={managingClientId === relation.clientTenantId || isSwitching}
+                            >
+                              {managingClientId === relation.clientTenantId ? (
+                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                              ) : (
+                                <LayoutDashboard className="mr-1 h-3 w-3" />
+                              )}
+                              Gestionar
+                            </Button>
+
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7">
+                                  <MoreVertical className="h-3.5 w-3.5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => setRevokeTarget(relation)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Dar de baja
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Revoke access confirmation */}
+      <AlertDialog open={!!revokeTarget} onOpenChange={() => setRevokeTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Dar de baja al cliente</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  Vas a dar de baja a{' '}
+                  <strong className="text-foreground">
+                    {revokeTarget?.clientTenant?.businessName}
+                  </strong>{' '}
+                  de tu cartera de clientes.
+                </p>
+                <p>Perderás el acceso a su dashboard y facturación. Sus datos no se eliminarán.</p>
+                <p className="font-medium text-destructive">Esta acción no se puede deshacer.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => revokeTarget && handleRevoke(revokeTarget.clientTenantId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isRevoking}
+            >
+              {isRevoking ? 'Procesando...' : 'Confirmar baja'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Vincular cliente modal */}
+      <VincularClienteModal
+        isOpen={isVincularModalOpen}
+        onClose={() => setIsVincularModalOpen(false)}
+      />
+
+      {/* Expired link modal */}
+      {expiredLinkTarget && (
+        <ExpiredLinkModal
+          isOpen={!!expiredLinkTarget}
+          onClose={() => setExpiredLinkTarget(null)}
+          clientTenantId={expiredLinkTarget.clientTenantId}
+          clientEmail={expiredLinkTarget.email}
+        />
+      )}
+      {/* Historial de invitaciones modal */}
+      <HistorialInvitacionesModal
+        isOpen={isHistorialOpen}
+        onClose={() => setIsHistorialOpen(false)}
+      />
+    </div>
+  );
+}

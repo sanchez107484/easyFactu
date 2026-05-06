@@ -67,18 +67,20 @@ export function InvoicePreview({ invoice, template, tenant }: InvoicePreviewProp
 
       <div className="flex gap-8 mb-4">
         <div>
-          <p className="text-[9px] text-gray-500 uppercase tracking-wide mb-0.5">Número</p>
+          <p className="text-[9px] text-neutral-500 uppercase tracking-wide mb-0.5">Número</p>
           <p className="font-semibold text-[11px]">{invoice.number}</p>
         </div>
         <div>
-          <p className="text-[9px] text-gray-500 uppercase tracking-wide mb-0.5">
+          <p className="text-[9px] text-neutral-500 uppercase tracking-wide mb-0.5">
             Fecha de emisión
           </p>
           <p className="font-semibold text-[11px]">{formatDate(invoice.issueDate)}</p>
         </div>
         {invoice.dueDate && (
           <div>
-            <p className="text-[9px] text-gray-500 uppercase tracking-wide mb-0.5">Vencimiento</p>
+            <p className="text-[9px] text-neutral-500 uppercase tracking-wide mb-0.5">
+              Vencimiento
+            </p>
             <p className="font-semibold text-[11px]">{formatDate(invoice.dueDate)}</p>
           </div>
         )}
@@ -95,8 +97,8 @@ export function InvoicePreview({ invoice, template, tenant }: InvoicePreviewProp
       {/* Notes */}
       {invoice.notes && (
         <div className="mt-4">
-          <p className="text-[9px] uppercase tracking-wide text-gray-500 mb-1">Notas</p>
-          <p className="text-[10px] text-gray-600">{invoice.notes}</p>
+          <p className="text-[9px] uppercase tracking-wide text-neutral-500 mb-1">Notas</p>
+          <p className="text-[10px] text-neutral-600">{invoice.notes}</p>
         </div>
       )}
 

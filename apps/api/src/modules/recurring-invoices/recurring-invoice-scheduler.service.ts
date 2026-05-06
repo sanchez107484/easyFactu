@@ -129,7 +129,7 @@ export class RecurringInvoiceSchedulerService {
       })),
     };
 
-    const invoice = await this.invoiceService.create(recurring.tenantId, dto);
+    const invoice = await this.invoiceService.create(recurring.tenantId, null, dto);
 
     // Link generated invoice to its recurring template
     await this.invoiceService.linkToRecurringInvoice(invoice.id, recurring.id);

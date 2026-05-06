@@ -1,0 +1,343 @@
+﻿C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\ajustes\asesorias\page.tsx:33:<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-950">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\ajustes\facturacion\page.tsx:165:<div className="flex gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\nuevo\page.tsx:129:<div className="rounded-xl border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\nuevo\page.tsx:158:<div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-4">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\nuevo\page.tsx:176:className="bg-amber-600 hover:bg-amber-700 text-white"
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:101:'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/50 dark:bg-amber-950/20 dark:text-amber-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:107:'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800/50 dark:bg-blue-950/20 dark:text-blue-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:296:<div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-950/30">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:312:<div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-950/30">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:330:<div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-50 dark:bg-green-950/30">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:372:<div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800/50 dark:bg-green-950/20">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:431:className="mt-2 border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400"
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\page.tsx:145:<div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\page.tsx:155:<div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\page.tsx:165:<div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/40">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\page.tsx:271:<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\page.tsx:310:className="border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-400"
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\invitaciones\page.tsx:36:'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\invitaciones\page.tsx:41:'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/30 dark:text-green-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\invitaciones\page.tsx:46:'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\invitaciones\page.tsx:51:'border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\invitaciones\page.tsx:56:'border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\agency-kpi-strip.tsx:23:bg: 'bg-indigo-100 dark:bg-indigo-950',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\agency-kpi-strip.tsx:30:bg: 'bg-emerald-100 dark:bg-emerald-950',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\agency-kpi-strip.tsx:37:bg: needsAttention > 0 ? 'bg-amber-100 dark:bg-amber-950' : 'bg-muted',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\agency-kpi-strip.tsx:45:bg: pendingInvitations > 0 ? 'bg-violet-100 dark:bg-violet-950' : 'bg-muted',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\client-card.tsx:136:<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\client-card.tsx:153:<span className="flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\client-card.tsx:165:<span className="flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\client-card.tsx:171:<span className="rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\client-card.tsx:182:<span className="flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\clients-needing-attention.tsx:46:hasErrors ? 'bg-destructive/10' : 'bg-amber-100 dark:bg-amber-950/40',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\fiscal-calendar-widget.tsx:157:? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\fiscal-calendar-widget.tsx:173:? 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400'
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\fiscal-calendar-widget.tsx:174:: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\pending-invitations-widget.tsx:25:<div className="space-y-3 rounded-xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-800/50 dark:bg-violet-950/20">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\page.tsx:144:<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\page.tsx:194:<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\page.tsx:215:<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\page.tsx:275:<span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white dark:bg-indigo-500">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\clientes\page.tsx:246:<div className="flex items-start gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950/30">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\facturas\nueva\_components\invoice-form-header.tsx:79:const bgClass = isTemplate ? 'bg-purple-50 dark:bg-purple-950/40' : config!.bg;
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\facturas\page.tsx:176:className="h-7 text-xs px-3 whitespace-nowrap border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\facturas\page.tsx:504:'bg-red-50/50 hover:bg-red-50 dark:bg-red-950/10 dark:hover:bg-red-950/20',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\facturas\page.tsx:562:<span className="ml-1 rounded-full bg-red-100 dark:bg-red-900/50 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-[10px] font-semibold px-1.5 py-0.5">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\onboarding\page.tsx:674:<div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\[id]\page.tsx:76:bg: 'bg-zinc-50 dark:bg-zinc-900/50',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\[id]\page.tsx:78:dot: 'bg-zinc-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\[id]\page.tsx:97:bg: 'bg-red-50 dark:bg-red-950/40',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\[id]\page.tsx:99:dot: 'bg-red-500',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\page.tsx:66:bg: 'bg-zinc-50 dark:bg-zinc-900/50',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\page.tsx:68:dot: 'bg-zinc-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\page.tsx:87:bg: 'bg-red-50 dark:bg-red-950/40',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\page.tsx:89:dot: 'bg-red-500',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\page.tsx:452:'bg-orange-50/50 hover:bg-orange-50 dark:bg-orange-950/10 dark:hover:bg-orange-950/20',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\page.tsx:495:<span className="ml-1 rounded-full bg-orange-100 dark:bg-orange-900/50 border border-orange-200 dark:border-orange-800 text-orange-600 dark:text-orange-400 text-[10px] font-semibold px-1.5 py-0.5">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\recurrentes\[id]\page.tsx:79:dot: 'bg-emerald-500',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\recurrentes\[id]\page.tsx:81:bg: 'bg-emerald-50 dark:bg-emerald-950/30',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\recurrentes\[id]\page.tsx:86:dot: 'bg-amber-500',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\recurrentes\[id]\page.tsx:88:bg: 'bg-amber-50 dark:bg-amber-950/30',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\recurrentes\[id]\page.tsx:93:dot: 'bg-slate-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\recurrentes\[id]\page.tsx:95:bg: 'bg-slate-50 dark:bg-slate-900/30',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\recurrentes\page.tsx:326:<Badge className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 border-transparent">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\ajustes\asesorias\page.tsx:34:<Building2 className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\ajustes\facturacion\page.tsx:165:<div className="flex gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\nuevo\page.tsx:131:<Users className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\nuevo\page.tsx:133:<p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\nuevo\page.tsx:136:<p className="mt-1 text-sm text-blue-700 dark:text-blue-300">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\nuevo\page.tsx:160:<UserCheck className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\nuevo\page.tsx:162:<p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\nuevo\page.tsx:165:<p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:101:'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/50 dark:bg-amber-950/20 dark:text-amber-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:102:iconClass: 'text-amber-600 dark:text-amber-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:107:'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800/50 dark:bg-blue-950/20 dark:text-blue-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:108:iconClass: 'text-blue-600 dark:text-blue-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:297:<FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:313:<Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:331:<TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:373:<CheckCircle2 className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:374:<p className="text-sm font-medium text-green-800 dark:text-green-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:431:className="mt-2 border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400"
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\page.tsx:146:<ArrowRightLeft className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\page.tsx:156:<FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\page.tsx:166:<Send className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\page.tsx:271:<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\page.tsx:310:className="border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-400"
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\page.tsx:433:className={`text-xs ${isExpiringSoon ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\invitaciones\page.tsx:36:'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\invitaciones\page.tsx:41:'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/30 dark:text-green-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\invitaciones\page.tsx:46:'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\invitaciones\page.tsx:51:'border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\invitaciones\page.tsx:56:'border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\agency-kpi-strip.tsx:22:color: 'text-indigo-600 dark:text-indigo-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\agency-kpi-strip.tsx:29:color: 'text-emerald-600 dark:text-emerald-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\agency-kpi-strip.tsx:36:color: needsAttention > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\agency-kpi-strip.tsx:44:pendingInvitations > 0 ? 'text-violet-600 dark:text-violet-400' : 'text-muted-foreground',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\client-card.tsx:136:<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\client-card.tsx:153:<span className="flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\client-card.tsx:165:<span className="flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\client-card.tsx:171:<span className="rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\client-card.tsx:182:<span className="flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\client-card.tsx:210:<ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-indigo-500" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\clients-needing-attention.tsx:52:<AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\fiscal-calendar-widget.tsx:157:? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\fiscal-calendar-widget.tsx:173:? 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400'
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\fiscal-calendar-widget.tsx:174:: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\pending-invitations-widget.tsx:28:<Mail className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\pending-invitations-widget.tsx:29:<p className="text-sm font-semibold text-violet-900 dark:text-violet-300">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\pending-invitations-widget.tsx:38:className="h-7 text-xs text-violet-700 hover:text-violet-900 dark:text-violet-400"
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\pending-invitations-widget.tsx:49:<Clock className="h-3 w-3 shrink-0 text-violet-500" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\pending-invitations-widget.tsx:50:<p className="min-w-0 flex-1 truncate text-xs text-violet-800 dark:text-violet-300">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\pending-invitations-widget.tsx:53:<span className="shrink-0 text-[10px] text-violet-600 dark:text-violet-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\pending-invitations-widget.tsx:59:<p className="text-xs text-violet-600 dark:text-violet-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\page.tsx:144:<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\page.tsx:154:<Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-indigo-500" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\page.tsx:156:<ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-indigo-500" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\page.tsx:194:<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\page.tsx:215:<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\page.tsx:274:<Icon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\clientes\page.tsx:247:<Info className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\clientes\page.tsx:249:<p className="text-sm font-medium text-indigo-800 dark:text-indigo-300">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\clientes\page.tsx:253:<p className="mt-0.5 text-xs text-indigo-600 dark:text-indigo-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\clientes\page.tsx:261:className="flex shrink-0 items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-200"
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\facturas\nueva\_components\invoice-form-header.tsx:78:const colorClass = isTemplate ? 'text-purple-700 dark:text-purple-400' : config!.color;
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\facturas\page.tsx:176:className="h-7 text-xs px-3 whitespace-nowrap border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\facturas\page.tsx:555:? 'text-red-600 dark:text-red-400 font-medium'
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\facturas\page.tsx:562:<span className="ml-1 rounded-full bg-red-100 dark:bg-red-900/50 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-[10px] font-semibold px-1.5 py-0.5">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\facturas\page.tsx:768:<AlertTriangle className="h-5 w-5 text-amber-500" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\onboarding\page.tsx:675:<PartyPopper className="h-10 w-10 text-green-600" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\onboarding\page.tsx:692:<CheckCircle2 className="h-5 w-5 text-green-600" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\onboarding\page.tsx:696:<CheckCircle2 className="h-5 w-5 text-green-600" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\onboarding\page.tsx:700:<CheckCircle2 className="h-5 w-5 text-green-600" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\onboarding\page.tsx:704:<CheckCircle2 className="h-5 w-5 text-green-600" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\onboarding\page.tsx:709:<CheckCircle2 className="h-5 w-5 text-green-600" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\[id]\page.tsx:75:color: 'text-zinc-600 dark:text-zinc-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\[id]\page.tsx:96:color: 'text-destructive dark:text-red-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\page.tsx:65:color: 'text-zinc-600 dark:text-zinc-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\page.tsx:86:color: 'text-destructive dark:text-red-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\page.tsx:488:? 'text-orange-600 dark:text-orange-400 font-medium'
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\page.tsx:495:<span className="ml-1 rounded-full bg-orange-100 dark:bg-orange-900/50 border border-orange-200 dark:border-orange-800 text-orange-600 dark:text-orange-400 text-[10px] font-semibold px-1.5 py-0.5">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\recurrentes\[id]\page.tsx:80:color: 'text-emerald-700 dark:text-emerald-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\recurrentes\[id]\page.tsx:87:color: 'text-amber-700 dark:text-amber-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\recurrentes\[id]\page.tsx:94:color: 'text-slate-600 dark:text-slate-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\recurrentes\[id]\page.tsx:396:<div className="flex items-center gap-1.5 mt-2 text-amber-600 dark:text-amber-400 text-xs font-medium">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\recurrentes\page.tsx:326:<Badge className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100 border-transparent">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\verifactu\page.tsx:104:color: 'text-red-500',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\verifactu\page.tsx:110:color: 'text-red-500',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\verifactu\page.tsx:176:<XCircle className="h-4 w-4 text-red-500" />
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\ajustes\facturacion\page.tsx:165:<div className="flex gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-3 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\nuevo\page.tsx:129:<div className="rounded-xl border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-4">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\nuevo\page.tsx:158:<div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-4">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:101:'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/50 dark:bg-amber-950/20 dark:text-amber-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:107:'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800/50 dark:bg-blue-950/20 dark:text-blue-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:372:<div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800/50 dark:bg-green-950/20">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\[id]\page.tsx:431:className="mt-2 border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400"
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\clientes\page.tsx:310:className="border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-400"
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\invitaciones\page.tsx:36:'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\invitaciones\page.tsx:41:'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/30 dark:text-green-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\invitaciones\page.tsx:46:'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\invitaciones\page.tsx:51:'border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\invitaciones\page.tsx:56:'border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\client-card.tsx:119:? 'border-amber-200 hover:border-amber-300 dark:border-amber-800/50 dark:hover:border-amber-700'
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\client-card.tsx:120:: 'hover:border-indigo-300 dark:hover:border-indigo-700',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\_components\pending-invitations-widget.tsx:25:<div className="space-y-3 rounded-xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-800/50 dark:bg-violet-950/20">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\asesoria\page.tsx:273:<div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-indigo-200 bg-card dark:border-indigo-800">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\clientes\page.tsx:246:<div className="flex items-start gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 dark:border-indigo-800 dark:bg-indigo-950/30">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\facturas\nueva\_components\invoice-form-header.tsx:81:? 'border-purple-200 dark:border-purple-700 hover:border-purple-400'
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\facturas\page.tsx:176:className="h-7 text-xs px-3 whitespace-nowrap border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\facturas\page.tsx:562:<span className="ml-1 rounded-full bg-red-100 dark:bg-red-900/50 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-[10px] font-semibold px-1.5 py-0.5">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\[id]\page.tsx:77:border: 'border-zinc-200 dark:border-zinc-800',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\[id]\page.tsx:98:border: 'border-red-200 dark:border-red-800',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\page.tsx:67:border: 'border-zinc-200 dark:border-zinc-800',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\page.tsx:88:border: 'border-red-200 dark:border-red-800',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\presupuestos\page.tsx:495:<span className="ml-1 rounded-full bg-orange-100 dark:bg-orange-900/50 border border-orange-200 dark:border-orange-800 text-orange-600 dark:text-orange-400 text-[10px] font-semibold px-1.5 py-0.5">
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\recurrentes\[id]\page.tsx:82:border: 'border-emerald-200 dark:border-emerald-900',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\recurrentes\[id]\page.tsx:89:border: 'border-amber-200 dark:border-amber-900',
+C:\xampp\htdocs\easyFactura\apps\web\src\app\dashboard\recurrentes\[id]\page.tsx:96:border: 'border-slate-200 dark:border-slate-800',
+
+=== COMPONENTS ===
+C:\xampp\htdocs\easyFactura\apps\web\src\components\auth\password-strength.tsx:35:if (strength === 1) return 'bg-red-500';
+C:\xampp\htdocs\easyFactura\apps\web\src\components\auth\password-strength.tsx:36:if (strength === 2) return 'bg-yellow-500';
+C:\xampp\htdocs\easyFactura\apps\web\src\components\auth\password-strength.tsx:37:if (strength === 3) return 'bg-green-500';
+C:\xampp\htdocs\easyFactura\apps\web\src\components\clientes\AgencySharedPoolImport.tsx:89:<div className="rounded-xl border bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-100 dark:border-indigo-900 p-4">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\clientes\AgencySharedPoolImport.tsx:107:className="shrink-0 border-indigo-200 bg-white hover:bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-800"
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:136:<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-950">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:154:<div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-3 text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:174:className="flex-1 bg-violet-600 hover:bg-violet-700 text-white"
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:183:<div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20 p-4 space-y-3">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:210:? 'flex-1 bg-violet-600 hover:bg-violet-700 text-white'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:243:<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-500 opacity-75" />
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:244:<span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-violet-600" />
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:259:className="shrink-0 bg-violet-600 hover:bg-violet-700 text-white h-7 px-3 text-xs"
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:269:className="shrink-0 rounded p-1 text-violet-400 hover:text-violet-700 hover:bg-violet-100 dark:hover:bg-violet-900 transition-colors"
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:325:<div className="rounded-xl border border-violet-200 bg-violet-50/50 dark:border-violet-800/50 dark:bg-violet-950/20 p-4 space-y-3">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:328:<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-500 opacity-75" />
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:329:<span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-violet-600" />
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:354:className="shrink-0 h-7 text-xs border-violet-300 text-violet-700 hover:bg-violet-50"
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invoice-status-badge.tsx:11:bg: 'bg-zinc-50 dark:bg-zinc-900/50',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invoice-status-badge.tsx:13:dot: 'bg-zinc-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\payment-status-badge.tsx:11:bg: 'bg-zinc-50 dark:bg-zinc-900/50',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\payment-status-badge.tsx:13:dot: 'bg-zinc-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\payment-status-badge.tsx:18:bg: 'bg-amber-50 dark:bg-amber-950/40',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\payment-status-badge.tsx:20:dot: 'bg-amber-500',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\dashboard\acting-as-banner.tsx:23:<div className="sticky top-0 z-50 flex items-center justify-between gap-4 border-b border-indigo-200 bg-indigo-600 px-4 py-2.5 text-white dark:border-indigo-700 dark:bg-indigo-700">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\dashboard\acting-as-banner.tsx:35:className="shrink-0 border border-indigo-400/30 text-white hover:bg-indigo-500 hover:text-white disabled:opacity-70"
+C:\xampp\htdocs\easyFactura\apps\web\src\components\dashboard\sidebar.tsx:155:<div className="shrink-0 border-b border-indigo-100 bg-indigo-50/60 dark:border-indigo-900 dark:bg-indigo-950/30">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\dashboard\sidebar.tsx:161:'text-indigo-700 transition-colors hover:bg-indigo-100/80 dark:text-indigo-300 dark:hover:bg-indigo-900/50',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\facturas\InvoicePaymentSection.tsx:39:dot: 'bg-amber-500',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\facturas\InvoicePaymentSection.tsx:43:dot: 'bg-zinc-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\facturas\LiveInvoicePreview.tsx:208:<div ref={containerRef} className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-4">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\facturas\RegisterPaymentDialog.tsx:189:? 'border-amber-500 bg-amber-500/5 ring-1 ring-amber-500'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\blocks\FooterBlock.tsx:37:<div className="w-10 h-10 bg-gray-100 border border-dashed border-gray-300 rounded flex items-center justify-center">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\blocks\ItemsTableBlock.tsx:70:<tr key={line.id} className="hover:bg-gray-50/50">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-series\prefix-year-warning-dialog.tsx:81:<div className="rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-series\prefix-year-warning-dialog.tsx:95:<div className="rounded-md border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\recurrentes\generate-now-dialog.tsx:30:<div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/40 mx-auto mb-3">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\recurrentes\generate-now-dialog.tsx:36:<div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 p-3 flex gap-2.5">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\recurrentes\generate-now-dialog.tsx:57:className="bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-500"
+C:\xampp\htdocs\easyFactura\apps\web\src\components\recurrentes\recurring-badges.tsx:29:'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 border-transparent',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\recurrentes\recurring-badges.tsx:34:'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100 border-transparent',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\recurrentes\recurring-badges.tsx:38:className: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 border-transparent',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site\SiteFooter.tsx:6:<footer className="w-full border-t bg-slate-50">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\ui\badge.tsx:18:'border-transparent bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\ui\input.tsx:12:'flex h-9 w-full rounded-md border border-input bg-white dark:bg-zinc-900 px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:50:? 'bg-indigo-100 text-indigo-700'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:51:: 'text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:53:? 'bg-blue-50 text-blue-600'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:54:: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:87:className="flex items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-50 md:hidden"
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:107:? 'bg-indigo-100 text-indigo-700'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:108:: 'text-indigo-600 hover:bg-indigo-50'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:110:? 'bg-blue-50 text-blue-600'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:111:: 'text-slate-700 hover:bg-slate-50'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\auth\auth-side-panel.tsx:122:<Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+C:\xampp\htdocs\easyFactura\apps\web\src\components\auth\password-strength.tsx:52:? 'text-green-600'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\auth\password-strength.tsx:54:? 'text-yellow-600'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\auth\password-strength.tsx:55:: 'text-red-600'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\auth\password-strength.tsx:81:passed ? 'text-green-600' : 'text-muted-foreground'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\clientes\AgencySharedPoolImport.tsx:92:<BookUser className="h-4 w-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+C:\xampp\htdocs\easyFactura\apps\web\src\components\clientes\AgencySharedPoolImport.tsx:94:<p className="text-sm font-medium text-indigo-900 dark:text-indigo-100">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\clientes\AgencySharedPoolImport.tsx:97:<p className="text-xs text-indigo-700/70 dark:text-indigo-400/70">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\clientes\CustomerCombobox.tsx:161:<Building2 className="h-3.5 w-3.5 shrink-0 text-indigo-500/70" />
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:125:<Mail className="h-5 w-5 text-violet-600" />
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:137:<Building2 className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:149:<Badge variant="outline" className="shrink-0 text-xs text-amber-600 border-amber-300">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:154:<div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-3 text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:184:<p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:189:<p className="text-xs text-amber-700 dark:text-amber-300">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:247:<Mail className="h-4 w-4 shrink-0 text-violet-600 dark:text-violet-400" aria-hidden="true" />
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:249:<p className="flex-1 text-sm text-violet-900 dark:text-violet-200 min-w-0">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:253:<span className="ml-1 text-violet-600 dark:text-violet-400">(+{total - 1} más)</span>
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:269:className="shrink-0 rounded p-1 text-violet-400 hover:text-violet-700 hover:bg-violet-100 dark:hover:bg-violet-900 transition-colors"
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:331:<p className="text-sm font-semibold text-violet-900 dark:text-violet-200">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:345:<Building2 className="h-4 w-4 shrink-0 text-violet-500" aria-hidden="true" />
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:354:className="shrink-0 h-7 text-xs border-violet-300 text-violet-700 hover:bg-violet-50"
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invoice-status-badge.tsx:10:color: 'text-zinc-600 dark:text-zinc-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\payment-status-badge.tsx:10:color: 'text-zinc-600 dark:text-zinc-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\payment-status-badge.tsx:17:color: 'text-amber-600 dark:text-amber-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\dashboard\acting-as-banner.tsx:25:<Eye className="h-4 w-4 shrink-0 text-indigo-200" />
+C:\xampp\htdocs\easyFactura\apps\web\src\components\dashboard\acting-as-banner.tsx:26:<span className="text-sm text-indigo-100">Actuando en nombre de</span>
+C:\xampp\htdocs\easyFactura\apps\web\src\components\dashboard\acting-as-banner.tsx:28:<span className="hidden text-xs text-indigo-300 sm:block">({currentTenant?.nif})</span>
+C:\xampp\htdocs\easyFactura\apps\web\src\components\dashboard\sidebar.tsx:161:'text-indigo-700 transition-colors hover:bg-indigo-100/80 dark:text-indigo-300 dark:hover:bg-indigo-900/50',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\dashboard\sidebar.tsx:177:<p className="truncate px-3 pb-2 text-xs text-indigo-500 dark:text-indigo-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\facturas\InvoicePaymentSection.tsx:40:text: 'text-amber-600 dark:text-amber-400',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\facturas\LiveInvoicePreview.tsx:265:<p className="text-[9px] text-gray-500 uppercase tracking-wide mb-0.5">Número</p>
+C:\xampp\htdocs\easyFactura\apps\web\src\components\facturas\LiveInvoicePreview.tsx:269:<p className="text-[9px] text-gray-500 uppercase tracking-wide mb-0.5">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\facturas\LiveInvoicePreview.tsx:276:<p className="text-[9px] text-gray-500 uppercase tracking-wide mb-0.5">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\facturas\RegisterPaymentDialog.tsx:196:paymentType === PaymentType.PARTIAL ? 'text-amber-500' : 'text-muted-foreground',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\facturas\RegisterPaymentDialog.tsx:204:? 'text-amber-600 dark:text-amber-400'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\blocks\FooterBlock.tsx:21:<p className="text-[9px] text-gray-500">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\blocks\FooterBlock.tsx:27:{text && <p className="text-[9px] text-gray-500 mt-0.5">{text}</p>}
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\blocks\FooterBlock.tsx:30:<p className="text-[9px] text-gray-400 mt-1">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\blocks\FooterBlock.tsx:38:<span className="text-[8px] text-gray-400 text-center leading-tight">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\blocks\HeaderBlock.tsx:33:<span className="text-[9px] uppercase tracking-wide text-gray-500 font-medium mb-0.5">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\blocks\ItemsTableBlock.tsx:91:<td colSpan={colSpanBase} className="text-center text-gray-400 py-4 text-[10px]">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\blocks\TotalsBlock.tsx:20:className={`text-[10px] ${bold ? 'font-semibold' : 'text-gray-500'}`}
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\InvoicePreview.tsx:70:<p className="text-[9px] text-gray-500 uppercase tracking-wide mb-0.5">Número</p>
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\InvoicePreview.tsx:74:<p className="text-[9px] text-gray-500 uppercase tracking-wide mb-0.5">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\InvoicePreview.tsx:81:<p className="text-[9px] text-gray-500 uppercase tracking-wide mb-0.5">Vencimiento</p>
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\InvoicePreview.tsx:98:<p className="text-[9px] uppercase tracking-wide text-gray-500 mb-1">Notas</p>
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\InvoicePreview.tsx:99:<p className="text-[10px] text-gray-600">{invoice.notes}</p>
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-series\prefix-year-warning-dialog.tsx:66:<AlertTriangle className="h-5 w-5 text-yellow-500" />
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-series\prefix-year-warning-dialog.tsx:82:<div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-red-700 dark:text-red-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-series\prefix-year-warning-dialog.tsx:86:<p className="font-mono text-base font-bold text-red-800 dark:text-red-300">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-series\prefix-year-warning-dialog.tsx:89:<p className="mt-1 font-mono text-xs text-red-600 dark:text-red-400 opacity-70">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-series\prefix-year-warning-dialog.tsx:96:<div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-green-700 dark:text-green-400">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-series\prefix-year-warning-dialog.tsx:100:<p className="font-mono text-base font-bold text-green-800 dark:text-green-300">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-series\prefix-year-warning-dialog.tsx:103:<p className="mt-1 font-mono text-xs text-green-600 dark:text-green-400 opacity-70">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\legal\LegalPageWrapper.tsx:20:<p className="mb-3 text-xs font-semibold uppercase tracking-widest text-blue-600">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\legal\LegalPageWrapper.tsx:23:<h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\legal\LegalPageWrapper.tsx:26:{subtitle && <p className="mt-3 text-base text-slate-500">{subtitle}</p>}
+C:\xampp\htdocs\easyFactura\apps\web\src\components\legal\LegalPageWrapper.tsx:27:<p className="mt-4 text-sm text-slate-400">Última actualización: {lastUpdated}</p>
+C:\xampp\htdocs\easyFactura\apps\web\src\components\legal\LegalSection.tsx:10:<h2 className="mb-4 text-lg font-semibold text-slate-900">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\legal\LegalSection.tsx:11:<span className="mr-2 text-blue-600">{number}</span>
+C:\xampp\htdocs\easyFactura\apps\web\src\components\legal\LegalSection.tsx:14:<div className="space-y-3 text-sm leading-7 text-slate-600">{children}</div>
+C:\xampp\htdocs\easyFactura\apps\web\src\components\recurrentes\generate-now-dialog.tsx:31:<Bot className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+C:\xampp\htdocs\easyFactura\apps\web\src\components\recurrentes\generate-now-dialog.tsx:37:<TriangleAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+C:\xampp\htdocs\easyFactura\apps\web\src\components\recurrentes\generate-now-dialog.tsx:38:<p className="text-amber-800 dark:text-amber-300 leading-snug">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\recurrentes\recurring-badges.tsx:29:'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 border-transparent',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\recurrentes\recurring-badges.tsx:34:'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100 border-transparent',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\recurrentes\recurring-badges.tsx:38:className: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 border-transparent',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site\SiteFooter.tsx:7:<div className="mx-auto max-w-6xl px-6 py-8 text-sm text-gray-600">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site\SiteFooter.tsx:14:<Link href="/politica-privacidad" className="hover:text-gray-900">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site\SiteFooter.tsx:17:<Link href="/terminos-uso" className="hover:text-gray-900">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site\SiteFooter.tsx:20:<Link href="/aviso-legal" className="hover:text-gray-900">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\ui\badge.tsx:18:'border-transparent bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:50:? 'bg-indigo-100 text-indigo-700'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:51:: 'text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:53:? 'bg-blue-50 text-blue-600'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:54:: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:71:<Button variant="ghost" size="sm" className="text-slate-600">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:87:className="flex items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-slate-50 md:hidden"
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:107:? 'bg-indigo-100 text-indigo-700'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:108:: 'text-indigo-600 hover:bg-indigo-50'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:110:? 'bg-blue-50 text-blue-600'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:111:: 'text-slate-700 hover:bg-slate-50'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\auth\auth-side-panel.tsx:122:<Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+C:\xampp\htdocs\easyFactura\apps\web\src\components\clientes\AgencySharedPoolImport.tsx:89:<div className="rounded-xl border bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-100 dark:border-indigo-900 p-4">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\clientes\AgencySharedPoolImport.tsx:107:className="shrink-0 border-indigo-200 bg-white hover:bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-800"
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:149:<Badge variant="outline" className="shrink-0 text-xs text-amber-600 border-amber-300">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:154:<div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-3 text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:183:<div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20 p-4 space-y-3">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:239:className="relative flex items-center gap-3 rounded-xl border border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50 px-4 py-3 dark:border-violet-800/50 dark:from-violet-950/30 dark:to-purple-950/20"
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:325:<div className="rounded-xl border border-violet-200 bg-violet-50/50 dark:border-violet-800/50 dark:bg-violet-950/20 p-4 space-y-3">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invitation-alert.tsx:354:className="shrink-0 h-7 text-xs border-violet-300 text-violet-700 hover:bg-violet-50"
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\invoice-status-badge.tsx:12:border: 'border-zinc-200 dark:border-zinc-800',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\payment-status-badge.tsx:12:border: 'border-zinc-200 dark:border-zinc-800',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\common\payment-status-badge.tsx:19:border: 'border-amber-200 dark:border-amber-800',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\dashboard\acting-as-banner.tsx:23:<div className="sticky top-0 z-50 flex items-center justify-between gap-4 border-b border-indigo-200 bg-indigo-600 px-4 py-2.5 text-white dark:border-indigo-700 dark:bg-indigo-700">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\dashboard\acting-as-banner.tsx:35:className="shrink-0 border border-indigo-400/30 text-white hover:bg-indigo-500 hover:text-white disabled:opacity-70"
+C:\xampp\htdocs\easyFactura\apps\web\src\components\dashboard\sidebar.tsx:112:isActingAsClient && 'border-indigo-200 dark:border-indigo-800',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\dashboard\sidebar.tsx:155:<div className="shrink-0 border-b border-indigo-100 bg-indigo-50/60 dark:border-indigo-900 dark:bg-indigo-950/30">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\facturas\RegisterPaymentDialog.tsx:189:? 'border-amber-500 bg-amber-500/5 ring-1 ring-amber-500'
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\blocks\FooterBlock.tsx:37:<div className="w-10 h-10 bg-gray-100 border border-dashed border-gray-300 rounded flex items-center justify-center">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\blocks\ItemsTableBlock.tsx:35:isGrid && 'border border-gray-200',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-preview\blocks\ItemsTableBlock.tsx:41:isGrid && 'border border-gray-200',
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-series\prefix-year-warning-dialog.tsx:81:<div className="rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\invoice-series\prefix-year-warning-dialog.tsx:95:<div className="rounded-md border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\legal\LegalPageWrapper.tsx:19:<div className="mb-10 border-b border-slate-200 pb-8">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\recurrentes\generate-now-dialog.tsx:36:<div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 p-3 flex gap-2.5">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:26:<header className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:98:<div className="border-t border-slate-100 bg-white px-4 pb-4 pt-2 md:hidden">
+C:\xampp\htdocs\easyFactura\apps\web\src\components\site-header.tsx:119:<div className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3">

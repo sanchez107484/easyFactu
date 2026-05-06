@@ -21,6 +21,7 @@ import { UpdateRecurringInvoiceDto } from './dto/update-recurring-invoice.dto';
 import { QueryRecurringInvoiceDto } from './dto/query-recurring-invoice.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Recurring Invoices')
 @ApiBearerAuth()
@@ -52,8 +53,12 @@ export class RecurringInvoiceController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new recurring invoice' })
-  create(@CurrentTenant() tenantId: string, @Body() dto: CreateRecurringInvoiceDto) {
-    return this.recurringInvoiceService.create(tenantId, dto);
+  create(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: CreateRecurringInvoiceDto
+  ) {
+    return this.recurringInvoiceService.create(tenantId, userId, dto);
   }
 
   @Put(':id')

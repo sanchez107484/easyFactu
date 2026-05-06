@@ -21,6 +21,7 @@ import {
   BadgeCheck,
   TrendingUp,
   Headphones,
+  Building2,
 } from 'lucide-react';
 import { brandConfig, PLAZAS_CONFIG, PRICING } from '@easyfactura/brand-config';
 import SiteHeader from '@/components/site-header';
@@ -560,6 +561,40 @@ export default function App() {
                   <p className="mt-1 text-sm text-slate-500">{label}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════════
+            AGENCY BANNER
+            ══════════════════════════════════════════════════════════════ */}
+        <section className="bg-gradient-to-r from-indigo-600 to-indigo-800 py-10">
+          <div className="mx-auto max-w-5xl px-4">
+            <div className="flex flex-col items-center justify-between gap-6 text-center md:flex-row md:text-left">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 rounded-xl bg-white/10 p-3">
+                  <Building2 className="h-7 w-7 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-indigo-300">
+                    Para asesorías y gestorías
+                  </p>
+                  <h3 className="mt-1 text-xl font-bold text-white sm:text-2xl">
+                    ¿Gestionas la facturación de varios clientes?
+                  </h3>
+                  <p className="mt-1 text-sm text-indigo-200">
+                    Panel centralizado para operar como cada uno de tus autónomos. VeriFactu
+                    automático bajo cada NIF. Completamente gratis para asesorías.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/asesoria"
+                className="inline-flex flex-shrink-0 items-center gap-2 rounded-xl bg-white px-6 py-3 text-base font-bold text-indigo-700 shadow-lg transition-all hover:bg-indigo-50 hover:shadow-xl"
+              >
+                Ver solución para asesorías
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
           </div>
         </section>

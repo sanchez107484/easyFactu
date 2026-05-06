@@ -13,6 +13,8 @@ import { InvoiceSeriesModule } from './modules/invoice-series/invoice-series.mod
 import { VerifactuModule } from './modules/verifactu/verifactu.module';
 import { InvoiceTemplateModule } from './modules/invoice-templates/invoice-template.module';
 import { InvoiceDefaultsModule } from './modules/invoice-defaults/invoice-defaults.module';
+import { AgencyModule } from './modules/agency/agency.module';
+import { EmailModule } from './common/email/email.module';
 import { RecurringInvoiceModule } from './modules/recurring-invoices/recurring-invoice.module';
 import { PaymentModule } from './modules/payments/payment.module';
 
@@ -48,6 +50,8 @@ import { PaymentModule } from './modules/payments/payment.module';
     VerifactuModule,
     InvoiceTemplateModule,
     InvoiceDefaultsModule,
+    AgencyModule,
+    EmailModule,
     RecurringInvoiceModule,
     PaymentModule,
   ],

@@ -13,6 +13,7 @@ import {
 import PDFDocument from 'pdfkit';
 import { readFileSync } from 'fs';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { PdfStorageService } from './pdf-storage.service';
 import { formatCurrency } from '../../../common/utils/format';
 
