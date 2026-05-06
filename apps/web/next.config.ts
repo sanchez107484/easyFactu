@@ -26,6 +26,11 @@ const nextConfig: NextConfig = {
   // These are used only in API routes at runtime, never in client-side code.
   serverExternalPackages: ['playwright', 'playwright-core', '@sparticuz/chromium'],
   images: {
+    // Route all next/image calls through our custom Sanity loader so that
+    // Sanity CDN images are transformed by Sanity's own free CDN instead of
+    // going through Vercel's paid /_next/image optimizer (which returns 402
+    // once the monthly free quota is exceeded).
+    loaderFile: './src/lib/sanity-image-loader.ts',
     remotePatterns: [
       {
         protocol: 'http',
