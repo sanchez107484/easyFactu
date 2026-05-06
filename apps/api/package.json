@@ -6,7 +6,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "postinstall": "prisma generate --schema=./prisma/schema.prisma && node scripts/sync-prisma-client.js",
-    "build": "pnpm exec nest build",
+    "build": "nest build",
     "vercel:build": "turbo run build --filter=@easyfactura/backend",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -58,10 +58,11 @@
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
     "resend": "^6.11.0",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "@nestjs/cli": "^10.4.9",
+    "typescript": "^5.7.2"
   },
   "devDependencies": {
-    "@nestjs/cli": "^10.4.9",
     "@nestjs/schematics": "^10.2.3",
     "@nestjs/testing": "^10.4.15",
     "@types/bcrypt": "^5.0.2",
@@ -89,8 +90,7 @@
     "ts-jest": "^29.2.5",
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.7.2"
+    "tsconfig-paths": "^4.2.0"
   },
   "jest": {
     "moduleFileExtensions": [
