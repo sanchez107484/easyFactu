@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -81,6 +81,41 @@ const MODE_DESCRIPTIONS: Record<ExportMode, string> = {
 
 const DONT_SHOW_GUIDE_KEY = 'export-guide-dismissed';
 
+// ─── Module-level constants (computed once at load, not re-evaluated per render) ─
+
+const TODAY = format(new Date(), 'yyyy-MM-dd');
+const FIRST_OF_MONTH = format(
+  new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+  'yyyy-MM-dd',
+);
+
+const QUICK_PERIODS = (() => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const currentQ = Math.floor(m / 3);
+  const quarter = (q: number, yr: number) => ({
+    dateFrom: format(new Date(yr, q * 3, 1), 'yyyy-MM-dd'),
+    dateTo: format(new Date(yr, q * 3 + 3, 0), 'yyyy-MM-dd'),
+  });
+  return [
+    {
+      label: 'Mes actual',
+      dateFrom: format(new Date(y, m, 1), 'yyyy-MM-dd'),
+      dateTo: format(new Date(y, m + 1, 0), 'yyyy-MM-dd'),
+    },
+    {
+      label: 'Mes anterior',
+      dateFrom: format(new Date(y, m - 1, 1), 'yyyy-MM-dd'),
+      dateTo: format(new Date(y, m, 0), 'yyyy-MM-dd'),
+    },
+    { label: `T${currentQ + 1} ${y}`, ...quarter(currentQ, y) },
+    currentQ > 0
+      ? { label: `T${currentQ} ${y}`, ...quarter(currentQ - 1, y) }
+      : { label: `T4 ${y - 1}`, ...quarter(3, y - 1) },
+  ];
+})();
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ExportarFacturasPage() {
@@ -88,21 +123,11 @@ export default function ExportarFacturasPage() {
   const searchParams = useSearchParams();
   const { isOnAgencyTenant, isActingAsClient } = useAgencyContext();
 
-  const mountedRef = useRef(false);
   useEffect(() => {
-    mountedRef.current = true;
-  }, []);
-  useEffect(() => {
-    if (mountedRef.current && !isOnAgencyTenant && !isActingAsClient) {
+    if (!isOnAgencyTenant && !isActingAsClient) {
       router.replace('/dashboard/asesoria');
     }
   }, [isOnAgencyTenant, isActingAsClient, router]);
-
-  const today = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
-  const firstOfMonth = useMemo(
-    () => format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'),
-    [],
-  );
 
   const [selectedClientId, setSelectedClientId] = useState<string>(
     () => searchParams.get('clientId') ?? '',
@@ -112,13 +137,13 @@ export default function ExportarFacturasPage() {
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [softwareModalOpen, setSoftwareModalOpen] = useState(false);
-  const [preferredLoaded, setPreferredLoaded] = useState(false);
+  const preferredLoadedRef = useRef(false);
 
   const [config, setConfig] = useState<ExportConfig>({
     format: 'CONTAPLUS' as ExportFormat,
     mode: 'PENDING' as ExportMode,
-    dateFrom: firstOfMonth,
-    dateTo: today,
+    dateFrom: '',
+    dateTo: '',
     selectedIds: new Set(),
   });
 
@@ -129,12 +154,11 @@ export default function ExportarFacturasPage() {
   const { mutate: updatePreferredFormat } = useUpdatePreferredFormat();
 
   useEffect(() => {
-    if (preferredLoading || preferredLoaded) return;
-    setPreferredLoaded(true);
+    if (preferredLoading || preferredLoadedRef.current) return;
+    preferredLoadedRef.current = true;
     if (preferred?.format) {
       patch({ format: preferred.format });
     } else {
-      // No default set — prompt the user to pick one
       setSoftwareModalOpen(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -224,36 +248,23 @@ export default function ExportarFacturasPage() {
     });
   };
 
-  const quickPeriods = useMemo(() => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth();
-    const currentQ = Math.floor(m / 3);
-    const quarter = (q: number, yr: number) => ({
-      dateFrom: format(new Date(yr, q * 3, 1), 'yyyy-MM-dd'),
-      dateTo: format(new Date(yr, q * 3 + 3, 0), 'yyyy-MM-dd'),
-    });
-    return [
-      {
-        label: 'Mes actual',
-        dateFrom: format(new Date(y, m, 1), 'yyyy-MM-dd'),
-        dateTo: format(new Date(y, m + 1, 0), 'yyyy-MM-dd'),
-      },
-      {
-        label: 'Mes anterior',
-        dateFrom: format(new Date(y, m - 1, 1), 'yyyy-MM-dd'),
-        dateTo: format(new Date(y, m, 0), 'yyyy-MM-dd'),
-      },
-      { label: `T${currentQ + 1} ${y}`, ...quarter(currentQ, y) },
-      currentQ > 0
-        ? { label: `T${currentQ} ${y}`, ...quarter(currentQ - 1, y) }
-        : { label: `T4 ${y - 1}`, ...quarter(3, y - 1) },
-    ];
-  }, []);
-
+  const isPeriodMode = config.mode === 'PERIOD';
   const isNoDate = !config.dateFrom && !config.dateTo;
-  const periodMissingDates = config.mode === 'PERIOD' && (!config.dateFrom || !config.dateTo);
+  const periodMissingDates = isPeriodMode && (!config.dateFrom || !config.dateTo);
   const softwareInfo = SOFTWARE_INFO[config.format];
+
+  const dateStepTitle = isPeriodMode ? 'Período de fechas' : 'Filtrar por fechas (opcional)';
+  const dateStepDescription = isPeriodMode
+    ? 'Requerido: elige el rango de fechas del período.'
+    : 'Acota la lista por fecha. Usa "Sin fechas" para ver todas.';
+
+  const exportButtonHint = !selectedClientId
+    ? 'Selecciona un cliente para continuar'
+    : periodMissingDates
+      ? 'Elige un rango de fechas para exportar'
+      : exportableCount === 0
+        ? 'Marca al menos una factura'
+        : `${exportableCount} seleccionada${exportableCount !== 1 ? 's' : ''} · máx. 200`;
 
   return (
     <div className="flex flex-col h-full">
@@ -416,7 +427,18 @@ export default function ExportarFacturasPage() {
                     <button
                       key={m}
                       type="button"
-                      onClick={() => patch({ mode: m })}
+                      onClick={() => {
+                        const updates: Partial<ExportConfig> = { mode: m };
+                        if (
+                          (m === 'PERIOD' || m === 'MANUAL') &&
+                          !config.dateFrom &&
+                          !config.dateTo
+                        ) {
+                          updates.dateFrom = FIRST_OF_MONTH;
+                          updates.dateTo = TODAY;
+                        }
+                        patch(updates);
+                      }}
                       className={cn(
                         'w-full text-left rounded-lg border-2 p-3 transition-all',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
@@ -451,60 +473,31 @@ export default function ExportarFacturasPage() {
               </SidebarSection>
 
               {/* ── Step 3: date filter ── */}
-              <SidebarSection
-                step="3"
-                title={
-                  config.mode === 'PERIOD' ? 'Período de fechas' : 'Filtrar por fechas (opcional)'
-                }
-                description={
-                  config.mode === 'PERIOD'
-                    ? 'Requerido: elige el rango de fechas del período.'
-                    : 'Acota la lista por fecha. Usa "Sin fechas" para ver todas.'
-                }
-              >
+              <SidebarSection step="3" title={dateStepTitle} description={dateStepDescription}>
                 <div className="space-y-3">
                   {/* Quick chips */}
                   <div className="flex flex-wrap gap-1.5">
-                    {quickPeriods.map((p) => {
-                      const active = config.dateFrom === p.dateFrom && config.dateTo === p.dateTo;
-                      return (
-                        <button
-                          key={p.label}
-                          type="button"
-                          onClick={() => patch({ dateFrom: p.dateFrom, dateTo: p.dateTo })}
-                          className={cn(
-                            'inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border-2 transition-all',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                            active
-                              ? 'border-primary bg-primary text-primary-foreground font-semibold shadow-sm'
-                              : 'border-border bg-background text-foreground hover:border-primary/50 hover:bg-primary/5',
-                          )}
-                        >
-                          <Calendar className="h-3 w-3" />
-                          {p.label}
-                        </button>
-                      );
-                    })}
-                    {config.mode !== 'PERIOD' && (
-                      <button
-                        type="button"
+                    {QUICK_PERIODS.map((p) => (
+                      <QuickChip
+                        key={p.label}
+                        label={p.label}
+                        icon={<Calendar className="h-3 w-3" />}
+                        active={config.dateFrom === p.dateFrom && config.dateTo === p.dateTo}
+                        onClick={() => patch({ dateFrom: p.dateFrom, dateTo: p.dateTo })}
+                      />
+                    ))}
+                    {!isPeriodMode && (
+                      <QuickChip
+                        label="Sin fechas"
+                        icon={<XCircle className="h-3 w-3" />}
+                        active={isNoDate}
                         onClick={() => patch({ dateFrom: '', dateTo: '' })}
-                        className={cn(
-                          'inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border-2 transition-all',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                          isNoDate
-                            ? 'border-primary bg-primary text-primary-foreground font-semibold shadow-sm'
-                            : 'border-border bg-background text-foreground hover:border-primary/50 hover:bg-primary/5',
-                        )}
-                      >
-                        <XCircle className="h-3 w-3" />
-                        Sin fechas
-                      </button>
+                      />
                     )}
                   </div>
 
                   {/* Manual date pickers — hidden when "Sin fechas" is active (non-PERIOD) */}
-                  {(config.mode === 'PERIOD' || !isNoDate) && (
+                  {(isPeriodMode || !isNoDate) && (
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
                         <Label htmlFor="dateFrom" className="text-xs text-muted-foreground">
@@ -515,7 +508,7 @@ export default function ExportarFacturasPage() {
                           type="date"
                           value={config.dateFrom}
                           onChange={(e) => patch({ dateFrom: e.target.value })}
-                          max={config.dateTo || today}
+                          max={config.dateTo || TODAY}
                           className="h-9"
                         />
                       </div>
@@ -529,7 +522,7 @@ export default function ExportarFacturasPage() {
                           value={config.dateTo}
                           onChange={(e) => patch({ dateTo: e.target.value })}
                           min={config.dateFrom}
-                          max={today}
+                          max={TODAY}
                           className="h-9"
                         />
                       </div>
@@ -570,13 +563,7 @@ export default function ExportarFacturasPage() {
               )}
             </Button>
             <p className="text-xs text-center text-muted-foreground min-h-[1.25rem]">
-              {!selectedClientId
-                ? 'Selecciona un cliente para continuar'
-                : periodMissingDates
-                  ? 'Elige un rango de fechas para exportar'
-                  : exportableCount === 0
-                    ? 'Marca al menos una factura'
-                    : `${exportableCount} seleccionada${exportableCount !== 1 ? 's' : ''} · máx. 200`}
+              {exportButtonHint}
             </p>
           </div>
         </aside>
@@ -630,6 +617,34 @@ export default function ExportarFacturasPage() {
         onClose={() => setInfoModalOpen(false)}
       />
     </div>
+  );
+}
+
+// ─── QuickChip ────────────────────────────────────────────────────────────────
+
+interface QuickChipProps {
+  label: string;
+  icon: React.ReactNode;
+  active: boolean;
+  onClick: () => void;
+}
+
+function QuickChip({ label, icon, active, onClick }: QuickChipProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border-2 transition-all',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        active
+          ? 'border-primary bg-primary text-primary-foreground font-semibold shadow-sm'
+          : 'border-border bg-background text-foreground hover:border-primary/50 hover:bg-primary/5',
+      )}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
 

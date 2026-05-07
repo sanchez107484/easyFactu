@@ -246,14 +246,28 @@ export class AgencyService {
     nif: string
   ): Promise<
     | { status: 'AVAILABLE' }
-    | { status: 'ALREADY_IN_PORTFOLIO'; email: string; businessName: string }
-    | { status: 'EXISTS_CAN_INVITE'; email: string; businessName: string }
+    | {
+        status: 'ALREADY_IN_PORTFOLIO';
+        email: string;
+        businessName: string;
+        nif: string;
+        city: string | null;
+        province: string | null;
+      }
+    | {
+        status: 'EXISTS_CAN_INVITE';
+        email: string;
+        businessName: string;
+        nif: string;
+        city: string | null;
+        province: string | null;
+      }
   > {
     const normalizedNif = nif.toUpperCase().trim();
 
     const existing = await this.prisma.tenant.findUnique({
       where: { nif: normalizedNif },
-      select: { id: true, email: true, businessName: true },
+      select: { id: true, email: true, businessName: true, nif: true, city: true, province: true },
     });
 
     if (!existing) return { status: 'AVAILABLE' };
@@ -273,6 +287,9 @@ export class AgencyService {
         status: 'ALREADY_IN_PORTFOLIO',
         email: existing.email ?? '',
         businessName: existing.businessName,
+        nif: existing.nif,
+        city: existing.city,
+        province: existing.province,
       };
     }
 
@@ -280,6 +297,9 @@ export class AgencyService {
       status: 'EXISTS_CAN_INVITE',
       email: existing.email ?? '',
       businessName: existing.businessName,
+      nif: existing.nif,
+      city: existing.city,
+      province: existing.province,
     };
   }
 
@@ -293,8 +313,22 @@ export class AgencyService {
     q: string
   ): Promise<
     | { status: 'AVAILABLE' }
-    | { status: 'ALREADY_IN_PORTFOLIO'; email: string; businessName: string }
-    | { status: 'EXISTS_CAN_INVITE'; email: string; businessName: string }
+    | {
+        status: 'ALREADY_IN_PORTFOLIO';
+        email: string;
+        businessName: string;
+        nif: string;
+        city: string | null;
+        province: string | null;
+      }
+    | {
+        status: 'EXISTS_CAN_INVITE';
+        email: string;
+        businessName: string;
+        nif: string;
+        city: string | null;
+        province: string | null;
+      }
     | { status: 'EMAIL_EXISTS' }
   > {
     const identifier = q.trim();
@@ -309,7 +343,14 @@ export class AgencyService {
       const [existingTenant, existingUser] = await Promise.all([
         this.prisma.tenant.findFirst({
           where: { email: normalizedEmail },
-          select: { id: true, email: true, businessName: true },
+          select: {
+            id: true,
+            email: true,
+            businessName: true,
+            nif: true,
+            city: true,
+            province: true,
+          },
         }),
         this.prisma.user.findUnique({
           where: { email: normalizedEmail },
@@ -336,6 +377,9 @@ export class AgencyService {
           status: 'ALREADY_IN_PORTFOLIO',
           email: existingTenant.email ?? '',
           businessName: existingTenant.businessName,
+          nif: existingTenant.nif,
+          city: existingTenant.city,
+          province: existingTenant.province,
         };
       }
 
@@ -343,6 +387,9 @@ export class AgencyService {
         status: 'EXISTS_CAN_INVITE',
         email: existingTenant.email ?? '',
         businessName: existingTenant.businessName,
+        nif: existingTenant.nif,
+        city: existingTenant.city,
+        province: existingTenant.province,
       };
     }
 
@@ -778,10 +825,14 @@ export class AgencyService {
     if (!invitation) throw new NotFoundException('Invitación no encontrada');
 
     if (invitation.status !== 'PENDING') {
+      const statusMessages: Record<string, string> = {
+        ACCEPTED: 'Esta invitación ya fue aceptada',
+        EXPIRED: 'Esta invitación ha expirado',
+        REJECTED: 'Esta invitación fue rechazada por el destinatario',
+        CANCELLED: 'Esta invitación fue cancelada por la asesoría',
+      };
       throw new BadRequestException(
-        invitation.status === 'ACCEPTED'
-          ? 'Esta invitación ya fue aceptada'
-          : 'Esta invitación fue cancelada'
+        statusMessages[invitation.status] ?? 'Esta invitación ya no está disponible'
       );
     }
 

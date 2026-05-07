@@ -953,12 +953,14 @@ export interface InvoiceStats {
   pendingCollection: number;
   invoicesThisMonth: number;
   monthlyChart: Array<{ month: string; importe: number }>;
+  monthlyChartPrevYear: Array<{ month: string; importe: number }>;
   totalCustomers: number;
   totalProducts: number;
   collectedThisMonth: number;
   overdueCount: number;
   overdueAmount: number;
   ticketMedioThisMonth: number;
+  vatThisQuarter: number;
 }
 
 export interface InvoiceReportMonthly {

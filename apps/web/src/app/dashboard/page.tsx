@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import { useState } from 'react';
 import { useAuthStore } from '@/store/auth-store';
 import { useOnboardingStore } from '@/hooks/use-onboarding';
 import { useTenant } from '@/hooks/use-tenant';
@@ -23,11 +24,23 @@ import {
   TrendingUp,
   TrendingDown,
   CircleCheck,
-  AlertCircle,
+  CalendarDays,
+  Receipt,
   BarChart2,
 } from 'lucide-react';
 import Link from 'next/link';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  ReferenceLine,
+} from 'recharts';
 import { useInvoices, useInvoiceStats } from '@/hooks/use-invoices';
 import { InvoiceStatus } from '@easyfactura/shared-types';
 import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge';
@@ -79,7 +92,7 @@ function StatCard({
         alert && 'border-amber-300 dark:border-amber-700 bg-amber-50/30 dark:bg-amber-950/10',
       )}
     >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-5 pt-5 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         <div
           className={cn(
@@ -92,7 +105,7 @@ function StatCard({
           />
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-5 pb-5">
         {isLoading ? (
           <>
             <Skeleton className="h-7 w-28 mb-1" />
@@ -212,6 +225,254 @@ function SetupBanner({ completedSteps, onDismiss }: SetupBannerProps) {
   );
 }
 
+// ==================== BILLING CHART CARD ====================
+
+type ChartView = 'mensual' | 'acumulado' | 'trimestral' | 'comparativa';
+
+const CHART_VIEWS: { value: ChartView; label: string }[] = [
+  { value: 'mensual', label: 'Mensual' },
+  { value: 'acumulado', label: 'Acumulado' },
+  { value: 'trimestral', label: 'Trimestral' },
+  { value: 'comparativa', label: 'vs Año anterior' },
+];
+
+const Y_TICK_FORMATTER = (v: number) =>
+  v === 0 ? '0' : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v);
+
+const TOOLTIP_STYLE = {
+  borderRadius: '8px',
+  fontSize: '12px',
+  border: '1px solid hsl(var(--border))',
+  backgroundColor: 'hsl(var(--background))',
+};
+
+const STATUS_DOT: Record<string, string> = {
+  DRAFT: 'bg-muted-foreground/40',
+  PROFORMA: 'bg-amber-400',
+  CONFIRMED: 'bg-sky-500',
+  SENT: 'bg-violet-500',
+  PAID: 'bg-emerald-500',
+  CANCELLED: 'bg-red-400',
+  QUOTE: 'bg-orange-400',
+};
+
+interface BillingChartCardProps {
+  year: number;
+  chartData: Array<{ month: string; importe: number }>;
+  chartDataPrevYear: Array<{ month: string; importe: number }>;
+  isLoading: boolean;
+}
+
+function BillingChartCard({
+  year,
+  chartData,
+  chartDataPrevYear,
+  isLoading,
+}: BillingChartCardProps) {
+  const [view, setView] = useState<ChartView>('mensual');
+
+  const cumulativeData = chartData.reduce<Array<{ month: string; importe: number }>>(
+    (acc, d, i) => {
+      const prev = acc[i - 1]?.importe ?? 0;
+      acc.push({ month: d.month, importe: Math.round((prev + d.importe) * 100) / 100 });
+      return acc;
+    },
+    [],
+  );
+
+  const quarterlyData = [
+    { label: 'T1', importe: chartData.slice(0, 3).reduce((s, d) => s + d.importe, 0) },
+    { label: 'T2', importe: chartData.slice(3, 6).reduce((s, d) => s + d.importe, 0) },
+    { label: 'T3', importe: chartData.slice(6, 9).reduce((s, d) => s + d.importe, 0) },
+    { label: 'T4', importe: chartData.slice(9, 12).reduce((s, d) => s + d.importe, 0) },
+  ];
+
+  const filledMonths = chartData.filter((d) => d.importe > 0);
+  const monthlyAvg =
+    filledMonths.length > 0
+      ? Math.round(filledMonths.reduce((s, d) => s + d.importe, 0) / filledMonths.length)
+      : 0;
+
+  // Merge current + prev year for comparativa view
+  const comparativaData = chartData.map((d, i) => ({
+    month: d.month,
+    esteAnio: d.importe,
+    anioAnterior: chartDataPrevYear[i]?.importe ?? 0,
+  }));
+
+  const hasPrevYearData = chartDataPrevYear.some((d) => d.importe > 0);
+
+  return (
+    <Card className="lg:col-span-3 flex flex-col">
+      <CardHeader className="px-5 pt-5 pb-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <CardTitle className="text-base">Facturación {year}</CardTitle>
+          <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
+            {CHART_VIEWS.map((v) => (
+              <button
+                key={v.value}
+                type="button"
+                onClick={() => setView(v.value)}
+                className={cn(
+                  'px-3 py-1 text-xs font-medium rounded-md transition-all',
+                  view === v.value
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="px-5 pb-4 pt-4 flex-1 min-h-0">
+        {isLoading ? (
+          <div className="flex items-end gap-1 h-full pb-2">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <Skeleton
+                key={i}
+                className="flex-1 rounded-sm"
+                style={{ height: `${30 + Math.random() * 60}%` }}
+              />
+            ))}
+          </div>
+        ) : view === 'acumulado' ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={cumulativeData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gradAcumulado" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.18} />
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+              <XAxis dataKey="month" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={Y_TICK_FORMATTER}
+              />
+              <Tooltip
+                formatter={(value: number) => [formatCurrency(value), 'Acumulado YTD']}
+                contentStyle={TOOLTIP_STYLE}
+                cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '4 2' }}
+              />
+              <Area
+                type="monotone"
+                dataKey="importe"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+                fill="url(#gradAcumulado)"
+                dot={false}
+                activeDot={{ r: 4, strokeWidth: 0, fill: 'hsl(var(--primary))' }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : view === 'comparativa' ? (
+          hasPrevYearData ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={comparativaData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                <YAxis
+                  tick={{ fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={Y_TICK_FORMATTER}
+                />
+                <Tooltip
+                  formatter={(value: number, name: string) => [
+                    formatCurrency(value),
+                    name === 'esteAnio' ? String(year) : String(year - 1),
+                  ]}
+                  contentStyle={TOOLTIP_STYLE}
+                  cursor={{ fill: 'hsl(var(--muted))' }}
+                />
+                <Bar
+                  dataKey="anioAnterior"
+                  fill="hsl(var(--muted-foreground))"
+                  fillOpacity={0.3}
+                  radius={[3, 3, 0, 0]}
+                  maxBarSize={20}
+                />
+                <Bar
+                  dataKey="esteAnio"
+                  fill="hsl(var(--primary))"
+                  radius={[3, 3, 0, 0]}
+                  maxBarSize={20}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center gap-2">
+              <BarChart2 className="h-8 w-8 text-muted-foreground/30" />
+              <p className="text-sm text-muted-foreground">Sin datos del año anterior</p>
+              <p className="text-xs text-muted-foreground/60">
+                {year - 1} no tiene facturas registradas
+              </p>
+            </div>
+          )
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={view === 'trimestral' ? quarterlyData : chartData}
+              margin={{
+                top: 4,
+                right: view === 'mensual' && monthlyAvg > 0 ? 8 : 4,
+                left: -20,
+                bottom: 0,
+              }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+              <XAxis
+                dataKey={view === 'trimestral' ? 'label' : 'month'}
+                tick={{ fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={Y_TICK_FORMATTER}
+              />
+              <Tooltip
+                formatter={(value: number) => [formatCurrency(value), 'Facturado']}
+                contentStyle={TOOLTIP_STYLE}
+                cursor={{ fill: 'hsl(var(--muted))' }}
+              />
+              <Bar
+                dataKey="importe"
+                fill="hsl(var(--primary))"
+                radius={[4, 4, 0, 0]}
+                maxBarSize={view === 'trimestral' ? 80 : 40}
+              />
+              {view === 'mensual' && monthlyAvg > 0 && (
+                <ReferenceLine
+                  y={monthlyAvg}
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeDasharray="4 3"
+                  strokeWidth={1.5}
+                  strokeOpacity={0.6}
+                  label={{
+                    value: `Ø ${Y_TICK_FORMATTER(monthlyAvg)}`,
+                    position: 'insideTopRight',
+                    fontSize: 10,
+                    fill: 'hsl(var(--muted-foreground))',
+                    dy: -6,
+                  }}
+                />
+              )}
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ==================== PAGE ====================
 
 export default function DashboardPage() {
@@ -239,10 +500,33 @@ export default function DashboardPage() {
   const pendingCollection = stats?.pendingCollection ?? 0;
   const invoicesThisMonth = stats?.invoicesThisMonth ?? 0;
   const collectedThisMonth = stats?.collectedThisMonth ?? 0;
-  const overdueCount = stats?.overdueCount ?? 0;
-  const overdueAmount = stats?.overdueAmount ?? 0;
-  const ticketMedioThisMonth = stats?.ticketMedioThisMonth ?? 0;
+  const vatThisQuarter = stats?.vatThisQuarter ?? 0;
   const chartData = stats?.monthlyChart ?? [];
+  const chartDataPrevYear = stats?.monthlyChartPrevYear ?? [];
+
+  const currentQuarter = Math.floor(now.getMonth() / 3) + 1;
+  const vatDescription = `T${currentQuarter} ${now.getFullYear()} · Modelo 303`;
+
+  // YTD: sum monthly chart up to (and including) the current month
+  const billedThisYear = chartData
+    .slice(0, now.getMonth() + 1)
+    .reduce((sum, d) => sum + d.importe, 0);
+
+  const YTD_MONTHS = [
+    'Ene',
+    'Feb',
+    'Mar',
+    'Abr',
+    'May',
+    'Jun',
+    'Jul',
+    'Ago',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dic',
+  ] as const;
+  const ytdDescription = `Ene – ${YTD_MONTHS[now.getMonth()]} ${now.getFullYear()}`;
 
   const monthTrend =
     billedLastMonth > 0
@@ -381,27 +665,18 @@ export default function DashboardPage() {
             href="/dashboard/facturas"
           />
           <StatCard
-            title="Vencidas sin cobrar"
-            value={formatCurrency(overdueAmount)}
-            description={
-              overdueCount > 0
-                ? `${overdueCount} factura${overdueCount !== 1 ? 's' : ''} vencida${overdueCount !== 1 ? 's' : ''}`
-                : 'Sin facturas vencidas'
-            }
-            icon={AlertCircle}
+            title="Acumulado anual"
+            value={formatCurrency(billedThisYear)}
+            description={ytdDescription}
+            icon={CalendarDays}
             isLoading={isLoadingStats}
             href="/dashboard/facturas"
-            alert={overdueCount > 0}
           />
           <StatCard
-            title="Ticket medio"
-            value={formatCurrency(ticketMedioThisMonth)}
-            description={
-              invoicesThisMonth > 0
-                ? `Media de ${invoicesThisMonth} factura${invoicesThisMonth !== 1 ? 's' : ''}`
-                : 'Sin facturas este mes'
-            }
-            icon={BarChart2}
+            title="IVA devengado (trimestre)"
+            value={formatCurrency(vatThisQuarter)}
+            description={vatDescription}
+            icon={Receipt}
             isLoading={isLoadingStats}
             href="/dashboard/facturas"
           />
@@ -412,73 +687,16 @@ export default function DashboardPage() {
       {(isStillLoading || hasAnyData) && (
         <div className="grid gap-6 lg:grid-cols-5">
           {/* Grafica mensual */}
-          <Card className="lg:col-span-3">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Facturacion {now.getFullYear()}</CardTitle>
-                <span className="text-xs text-muted-foreground hidden sm:block">
-                  Confirmadas, enviadas y cobradas
-                </span>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoadingStats ? (
-                <div className="flex items-end gap-1 h-[220px] pb-6">
-                  {Array.from({ length: 12 }).map((_, i) => (
-                    <Skeleton
-                      key={i}
-                      className="flex-1 rounded-sm"
-                      style={{ height: `${30 + Math.random() * 60}%` }}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                      stroke="hsl(var(--border))"
-                    />
-                    <XAxis
-                      dataKey="month"
-                      tick={{ fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(v: number) =>
-                        v === 0 ? '0' : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)
-                      }
-                    />
-                    <Tooltip
-                      formatter={(value: number) => [formatCurrency(value), 'Facturado']}
-                      contentStyle={{
-                        borderRadius: '8px',
-                        fontSize: '12px',
-                        border: '1px solid hsl(var(--border))',
-                        backgroundColor: 'hsl(var(--background))',
-                      }}
-                      cursor={{ fill: 'hsl(var(--muted))' }}
-                    />
-                    <Bar
-                      dataKey="importe"
-                      fill="hsl(var(--primary))"
-                      radius={[4, 4, 0, 0]}
-                      maxBarSize={40}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
+          <BillingChartCard
+            year={now.getFullYear()}
+            chartData={chartData}
+            chartDataPrevYear={chartDataPrevYear}
+            isLoading={isLoadingStats}
+          />
 
           {/* Ultimas facturas */}
           <Card className="lg:col-span-2">
-            <CardHeader className="pb-2">
+            <CardHeader className="px-5 pt-5 pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Ultimas facturas</CardTitle>
                 <Link href="/dashboard/facturas">
@@ -489,11 +707,11 @@ export default function DashboardPage() {
                 </Link>
               </div>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="pb-3">
               {loadingRecent ? (
                 <div className="space-y-px">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-3 px-4 py-3">
+                    <div key={i} className="flex items-center gap-3 px-5 py-3.5">
                       <div className="flex-1 space-y-1.5">
                         <Skeleton className="h-3.5 w-20" />
                         <Skeleton className="h-3 w-28" />
@@ -503,7 +721,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : recentInvoices.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+                <div className="flex flex-col items-center justify-center py-12 text-center px-5">
                   <FileText className="h-10 w-10 text-muted-foreground/30 mb-3" />
                   <p className="text-sm font-medium">Sin facturas aun</p>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -522,17 +740,22 @@ export default function DashboardPage() {
                     const statusCfg = INVOICE_STATUS_CONFIG[invoice.status as InvoiceStatus];
                     return (
                       <Link key={invoice.id} href={`/dashboard/facturas/${invoice.id}`}>
-                        <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors border-b last:border-b-0 group">
+                        <div className="flex items-center gap-3.5 px-5 py-3.5 hover:bg-muted/40 transition-colors border-b last:border-b-0">
+                          <div
+                            className={cn(
+                              'h-2 w-2 rounded-full shrink-0 mt-px',
+                              STATUS_DOT[invoice.status] ?? 'bg-muted-foreground/40',
+                            )}
+                          />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold font-mono">
-                                {invoice.number ??
-                                  (invoice.invoiceType === 'proforma' ? 'Proforma' : 'Borrador')}
+                              <span className="text-sm font-medium truncate">
+                                {invoice.customer?.name ?? '—'}
                               </span>
                               <Badge
                                 variant="outline"
                                 className={cn(
-                                  'text-[10px] px-1.5 py-0 h-4 font-normal',
+                                  'text-[10px] px-1.5 py-0 h-4 font-normal shrink-0',
                                   statusCfg?.color,
                                   statusCfg?.bg,
                                   statusCfg?.border,
@@ -541,8 +764,9 @@ export default function DashboardPage() {
                                 {statusCfg?.label ?? invoice.status}
                               </Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground truncate mt-0.5">
-                              {invoice.customer?.name ?? '—'}
+                            <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                              {invoice.number ??
+                                (invoice.invoiceType === 'proforma' ? 'Proforma' : 'Borrador')}
                             </p>
                           </div>
                           <div className="text-right shrink-0">
@@ -556,7 +780,6 @@ export default function DashboardPage() {
                               })}
                             </p>
                           </div>
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 group-hover:text-muted-foreground transition-colors" />
                         </div>
                       </Link>
                     );

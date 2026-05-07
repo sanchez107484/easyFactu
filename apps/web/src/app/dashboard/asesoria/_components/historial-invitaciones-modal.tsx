@@ -85,6 +85,9 @@ function getSecondaryDate(inv: AgencyInvitationFull): string {
   if (inv.status === AgencyInvitationStatus.CANCELLED) {
     return `Cancelada el ${formatDate(inv.updatedAt)}`;
   }
+  if (inv.status === AgencyInvitationStatus.EXPIRED) {
+    return `Caducó el ${formatDate(inv.expiresAt)}`;
+  }
   return `Expira el ${formatDate(inv.expiresAt)}`;
 }
 
