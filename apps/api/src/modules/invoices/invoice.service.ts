@@ -1340,8 +1340,14 @@ export class InvoiceService {
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const thisQuarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+    const nextQuarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3 + 3, 1);
     const yearStart = new Date(targetYear, 0, 1);
     const yearEnd = new Date(targetYear + 1, 0, 1);
+    const prevYearStart = new Date(targetYear - 1, 0, 1);
+    const prevYearEnd = new Date(targetYear, 0, 1);
+
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     type MonthlyRow = { month: number; total: string | null };
     type KpiRow = {
@@ -1350,9 +1356,22 @@ export class InvoiceService {
       last_month_total: string | null;
     };
     type PendingRow = { pending: string | null };
+    type CollectedRow = { collected: string | null };
+    type OverdueRow = { count: bigint; amount: string | null };
+    type VatRow = { vat: string | null };
 
-    // 4 parallel SQL aggregates — replaces full-year findMany + JS aggregation.
-    const [monthlyRows, kpiRows, pendingRows, totalCustomers, totalProducts] = await Promise.all([
+    // 9 parallel SQL aggregates
+    const [
+      monthlyRows,
+      prevYearMonthlyRows,
+      kpiRows,
+      pendingRows,
+      totalCustomers,
+      totalProducts,
+      collectedRows,
+      overdueRows,
+      vatRows,
+    ] = await Promise.all([
       this.prisma.$queryRaw<MonthlyRow[]>(Prisma.sql`
         SELECT
           EXTRACT(MONTH FROM issue_date)::int AS month,
@@ -1362,6 +1381,17 @@ export class InvoiceService {
           AND status IN ('CONFIRMED', 'SENT', 'PAID')
           AND issue_date >= ${yearStart}
           AND issue_date <  ${yearEnd}
+        GROUP BY month
+      `),
+      this.prisma.$queryRaw<MonthlyRow[]>(Prisma.sql`
+        SELECT
+          EXTRACT(MONTH FROM issue_date)::int AS month,
+          SUM(total)::text                    AS total
+        FROM invoices
+        WHERE tenant_id = ${tenantId}
+          AND status IN ('CONFIRMED', 'SENT', 'PAID')
+          AND issue_date >= ${prevYearStart}
+          AND issue_date <  ${prevYearEnd}
         GROUP BY month
       `),
       this.prisma.$queryRaw<KpiRow[]>(Prisma.sql`
@@ -1384,10 +1414,40 @@ export class InvoiceService {
       `),
       this.prisma.customer.count({ where: { tenantId } }),
       this.prisma.product.count({ where: { tenantId } }),
+      this.prisma.$queryRaw<CollectedRow[]>(Prisma.sql`
+        SELECT SUM(amount)::text AS collected
+        FROM payments
+        WHERE tenant_id = ${tenantId}
+          AND payment_date >= ${thisMonthStart}
+          AND payment_date <  ${nextMonthStart}
+      `),
+      this.prisma.$queryRaw<OverdueRow[]>(Prisma.sql`
+        SELECT
+          COUNT(*)::bigint         AS count,
+          SUM(total - amount_paid)::text AS amount
+        FROM invoices
+        WHERE tenant_id = ${tenantId}
+          AND status IN ('CONFIRMED', 'SENT')
+          AND payment_status IN ('UNPAID', 'PARTIALLY_PAID')
+          AND due_date IS NOT NULL
+          AND due_date < ${today}
+      `),
+      this.prisma.$queryRaw<VatRow[]>(Prisma.sql`
+        SELECT SUM(tax_total)::text AS vat
+        FROM invoices
+        WHERE tenant_id = ${tenantId}
+          AND status IN ('CONFIRMED', 'SENT', 'PAID')
+          AND issue_date >= ${thisQuarterStart}
+          AND issue_date <  ${nextQuarterStart}
+      `),
     ]);
 
     const monthlyMap = new Map<number, number>(
       monthlyRows.map((r) => [r.month - 1, Number(r.total ?? 0)])
+    );
+
+    const prevYearMonthlyMap = new Map<number, number>(
+      prevYearMonthlyRows.map((r) => [r.month - 1, Number(r.total ?? 0)])
     );
 
     const MONTH_NAMES = [
@@ -1410,6 +1470,11 @@ export class InvoiceService {
       importe: Math.round((monthlyMap.get(i) ?? 0) * 100) / 100,
     }));
 
+    const monthlyChartPrevYear = Array.from({ length: 12 }, (_, i) => ({
+      month: MONTH_NAMES[i]!,
+      importe: Math.round((prevYearMonthlyMap.get(i) ?? 0) * 100) / 100,
+    }));
+
     const kpi = kpiRows[0];
     const billedThisMonth = Number(kpi?.this_month_total ?? 0);
     const billedLastMonth = Number(kpi?.last_month_total ?? 0);
@@ -1422,8 +1487,15 @@ export class InvoiceService {
       pendingCollection: Math.round(pendingCollection * 100) / 100,
       invoicesThisMonth,
       monthlyChart,
+      monthlyChartPrevYear,
       totalCustomers,
       totalProducts,
+      collectedThisMonth: Math.round(Number(collectedRows[0]?.collected ?? 0) * 100) / 100,
+      overdueCount: Number(overdueRows[0]?.count ?? 0),
+      overdueAmount: Math.round(Number(overdueRows[0]?.amount ?? 0) * 100) / 100,
+      ticketMedioThisMonth:
+        invoicesThisMonth > 0 ? Math.round((billedThisMonth / invoicesThisMonth) * 100) / 100 : 0,
+      vatThisQuarter: Math.round(Number(vatRows[0]?.vat ?? 0) * 100) / 100,
     };
   }
 

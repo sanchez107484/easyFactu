@@ -81,10 +81,12 @@ function ClientActivationBadge({
   }
 
   const now = Date.now();
-  const tokenExpiredOrMissing =
-    !activationTokenExpires || new Date(activationTokenExpires).getTime() < now;
 
-  if (tokenExpiredOrMissing) {
+  // activationTokenExpires is null for clients who joined via invitation (existing account).
+  // Only show "Enlace caducado" when there WAS an activation token that has actually expired.
+  const tokenExpired = !!activationTokenExpires && new Date(activationTokenExpires).getTime() < now;
+
+  if (tokenExpired) {
     return (
       <button
         type="button"
@@ -96,6 +98,9 @@ function ClientActivationBadge({
       </button>
     );
   }
+
+  // No activation token at all → invited client (already had an account). No badge needed.
+  if (!activationTokenExpires) return null;
 
   const hoursSinceCreation = (now - new Date(createdAt).getTime()) / (1000 * 60 * 60);
   if (hoursSinceCreation < 24) return null; // Fresh — no need to warn yet
@@ -111,7 +116,8 @@ function ClientActivationBadge({
 function isActivationExpired(activationStatus: ClientActivationStatus): boolean {
   if (activationStatus.emailVerified) return false;
   const { activationTokenExpires } = activationStatus;
-  return !activationTokenExpires || new Date(activationTokenExpires).getTime() < Date.now();
+  // null means no activation flow (invited client) — not expired
+  return !!activationTokenExpires && new Date(activationTokenExpires).getTime() < Date.now();
 }
 
 export default function AgencyClientsPage() {
