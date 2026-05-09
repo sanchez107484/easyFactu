@@ -188,6 +188,30 @@ enum CustomerType {
   INTRACOMMUNITY
 }
 
+// ==================== CUSTOMER DIRECTORY ====================
+// Global table shared across all tenants.
+// Only stores public fiscal data (no email, phone, IBAN, or private fields).
+// Only populated for legal entities (COMPANY, PUBLIC_ENTITY, INTRACOMMUNITY).
+// Natural persons (INDIVIDUAL, SELF_EMPLOYED) are never stored here for GDPR reasons.
+
+model CustomerDirectory {
+  id         String       @id @default(uuid())
+  nif        String       @unique
+  type       CustomerType
+  name       String
+  legalName  String?      @map("legal_name")
+  address    String?
+  postalCode String?      @map("postal_code")
+  city       String?
+  province   String?
+  country    String       @default("ES")
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+
+  @@index([nif])
+  @@map("customer_directory")
+}
+
 // ==================== PRODUCTS ====================
 
 model Product {

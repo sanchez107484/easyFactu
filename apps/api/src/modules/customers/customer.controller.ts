@@ -49,6 +49,14 @@ export class CustomerController {
   }
 
   // NOTE: Static routes must be declared before /:id to avoid param capture
+  @Get('lookup')
+  @ApiOperation({ summary: 'Buscar NIF en el directorio fiscal global (sugerencia de autorellenar)' })
+  @ApiOkResponse({ description: 'Datos fiscales del directorio o null si no existe' })
+  lookupDirectory(@Query('nif') nif: string) {
+    if (!nif || nif.trim().length < 7) return null;
+    return this.customerService.lookupDirectory(nif);
+  }
+
   @Get('shared-pool')
   @ApiOperation({ summary: 'Buscar clientes en el directorio compartido de la asesoría' })
   @ApiOkResponse({ description: 'Clientes de otros tenants de la misma asesoría' })

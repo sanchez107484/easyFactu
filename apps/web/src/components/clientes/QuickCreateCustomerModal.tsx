@@ -3,7 +3,7 @@
 import { useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CustomerType, CreateCustomerInput, Customer } from '@easyfactura/shared-types';
+import { CustomerType, CreateCustomerInput, Customer, CustomerDirectoryEntry } from '@easyfactura/shared-types';
 import { customerFormSchema, CustomerFormData } from '@/lib/validators/customer.schema';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +14,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
-import { useCreateCustomer, useCustomerByNif } from '@/hooks/use-customers';
+import { useCreateCustomer, useCustomerByNif, useDirectoryLookup } from '@/hooks/use-customers';
 import { CustomerFormFields } from '@/components/clientes/CustomerFormFields';
 
 // ==================== TYPES ====================
@@ -73,8 +73,29 @@ export function QuickCreateCustomerModal({
   }, [open, form]);
 
   const watchedNif = form.watch('nif') ?? '';
+  const watchedType = form.watch('type');
 
   const { existingCustomer, isSearching } = useCustomerByNif(watchedNif);
+
+  // Sugerencia del directorio fiscal global (solo para entidades jurídicas, solo si no hay duplicado)
+  const { directorySuggestion } = useDirectoryLookup(
+    watchedNif,
+    watchedType,
+    !!existingCustomer,
+  );
+
+  const handleDirectoryAutofill = useCallback(
+    (entry: CustomerDirectoryEntry) => {
+      form.setValue('name', entry.name, { shouldValidate: true });
+      if (entry.legalName) form.setValue('legalName', entry.legalName);
+      if (entry.address) form.setValue('address', entry.address);
+      if (entry.postalCode) form.setValue('postalCode', entry.postalCode);
+      if (entry.city) form.setValue('city', entry.city);
+      if (entry.province) form.setValue('province', entry.province);
+      form.setValue('country', entry.country || 'ES');
+    },
+    [form],
+  );
 
   const handleTypeSelect = useCallback(
     (type: CustomerType) => {
@@ -131,6 +152,8 @@ export function QuickCreateCustomerModal({
               duplicateBannerTitle="Este NIF ya existe en tu cartera"
               onDuplicateNavigate={handleUseExisting}
               duplicateBannerActionLabel="Usar este cliente para la factura"
+              directorySuggestion={directorySuggestion}
+              onDirectoryAutofill={handleDirectoryAutofill}
             />
           </form>
         </div>

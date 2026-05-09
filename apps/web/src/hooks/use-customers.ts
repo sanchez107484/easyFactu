@@ -8,6 +8,8 @@ import { getApiErrorMessage } from '@/lib/api-error';
 import { seriesApi } from '@/lib/api/series-api';
 import {
   Customer,
+  CustomerDirectoryEntry,
+  CustomerType,
   SharedPoolCustomer,
   PaginatedResponse,
   QueryCustomersInput,
@@ -178,6 +180,65 @@ export function useCustomerByNif(nif: string, skip = false): UseCustomerByNifRes
   return {
     existingCustomer: data?.data?.[0] ?? null,
     isSearching: isFetching && !!debouncedNif,
+  };
+}
+
+// ==================== GLOBAL CUSTOMER DIRECTORY LOOKUP ====================
+
+/** Customer types that are legal entities — eligible for the global directory */
+const DIRECTORY_ELIGIBLE_TYPES: CustomerType[] = [
+  CustomerType.COMPANY,
+  CustomerType.PUBLIC_ENTITY,
+  CustomerType.INTRACOMMUNITY,
+];
+
+interface UseDirectoryLookupResult {
+  directorySuggestion: CustomerDirectoryEntry | null;
+  isDirectorySearching: boolean;
+}
+
+/**
+ * Looks up a NIF in the global customer directory with 600ms debounce.
+ * Only fires for legal entity types (COMPANY, PUBLIC_ENTITY, INTRACOMMUNITY).
+ * Returns null for natural persons (INDIVIDUAL, SELF_EMPLOYED).
+ *
+ * @param nif   - NIF to look up (normalised internally)
+ * @param type  - Customer type (skips directory for natural persons)
+ * @param skip  - Disables the lookup entirely (e.g. when a local duplicate already exists)
+ */
+export function useDirectoryLookup(
+  nif: string,
+  type: CustomerType,
+  skip = false,
+): UseDirectoryLookupResult {
+  const [debouncedNif, setDebouncedNif] = useState('');
+
+  const cleanNif = nif
+    .toUpperCase()
+    .trim()
+    .replace(/[\s.-]/g, '');
+
+  const isEligibleType = DIRECTORY_ELIGIBLE_TYPES.includes(type);
+
+  useEffect(() => {
+    if (skip || !isEligibleType || cleanNif.length < NIF_MIN_LENGTH) {
+      setDebouncedNif('');
+      return;
+    }
+    const timer = setTimeout(() => setDebouncedNif(cleanNif), NIF_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [cleanNif, isEligibleType, skip]);
+
+  const { data, isFetching } = useQuery({
+    queryKey: ['customers', 'directory', debouncedNif],
+    queryFn: () => customerApi.lookupDirectory(debouncedNif),
+    enabled: !!debouncedNif && !skip && isEligibleType,
+    staleTime: 60_000,
+  });
+
+  return {
+    directorySuggestion: data ?? null,
+    isDirectorySearching: isFetching && !!debouncedNif,
   };
 }
 

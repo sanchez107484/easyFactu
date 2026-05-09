@@ -343,6 +343,26 @@ export interface SharedPoolCustomer extends Customer {
   sourceTenantName: string;
 }
 
+/**
+ * An entry from the global customer directory.
+ * Only contains public fiscal data — no email, phone, IBAN, or private fields.
+ * Only populated for legal entities (COMPANY, PUBLIC_ENTITY, INTRACOMMUNITY).
+ */
+export interface CustomerDirectoryEntry {
+  id: string;
+  nif: string;
+  type: CustomerType;
+  name: string;
+  legalName: string | null;
+  address: string | null;
+  postalCode: string | null;
+  city: string | null;
+  province: string | null;
+  country: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ==================== PRODUCT ====================
 
 export interface Product {

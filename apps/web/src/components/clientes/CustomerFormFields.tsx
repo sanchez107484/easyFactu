@@ -1,7 +1,7 @@
 'use client';
 
 import { UseFormReturn } from 'react-hook-form';
-import { Customer, CustomerType } from '@easyfactura/shared-types';
+import { Customer, CustomerDirectoryEntry, CustomerType } from '@easyfactura/shared-types';
 import { PROVINCES } from '@easyfactura/shared-constants';
 import { CustomerFormData } from '@/lib/validators/customer.schema';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ import {
   UserCheck,
   ArrowRight,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SectionLabel } from '@/components/common/section-label';
@@ -135,6 +136,10 @@ export interface CustomerFormFieldsProps {
   onDuplicateNavigate: (customerId: string) => void;
   /** Texto del botón de acción del banner de duplicado. Por defecto: "Ver ficha del cliente" */
   duplicateBannerActionLabel?: string;
+  /** Sugerencia de datos fiscales del directorio global (solo para entidades jurídicas) */
+  directorySuggestion?: CustomerDirectoryEntry | null;
+  /** Callback para aplicar la sugerencia del directorio al formulario */
+  onDirectoryAutofill?: (entry: CustomerDirectoryEntry) => void;
 }
 
 // ==================== COMPONENT ====================
@@ -148,6 +153,8 @@ export function CustomerFormFields({
   duplicateBannerTitle,
   onDuplicateNavigate,
   duplicateBannerActionLabel = 'Ver ficha del cliente',
+  directorySuggestion,
+  onDirectoryAutofill,
 }: CustomerFormFieldsProps) {
   const selectedType = form.watch('type');
   const currentTypeOption = TYPE_OPTIONS.find((o) => o.value === selectedType) ?? TYPE_OPTIONS[0]!;
@@ -288,6 +295,47 @@ export function CustomerFormFields({
                     >
                       <ArrowRight className="h-3.5 w-3.5 mr-1.5" />
                       {duplicateBannerActionLabel}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Banner de sugerencia del directorio fiscal global */}
+            {!showDuplicateBanner && directorySuggestion && onDirectoryAutofill && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/40 p-4">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
+                      Encontramos datos para este CIF
+                    </p>
+                    <p className="text-xs text-blue-700/70 dark:text-blue-400/70 mt-0.5">
+                      Otro usuario registró esta empresa. Puedes autorellenar el formulario.
+                    </p>
+                    <div className="mt-2 rounded-md bg-white/60 dark:bg-black/20 border border-blue-200/50 dark:border-blue-700/50 p-3 space-y-0.5">
+                      <p className="text-sm font-medium">{directorySuggestion.name}</p>
+                      {directorySuggestion.legalName && (
+                        <p className="text-xs text-muted-foreground">
+                          {directorySuggestion.legalName}
+                        </p>
+                      )}
+                      {(directorySuggestion.city || directorySuggestion.province) && (
+                        <p className="text-xs text-muted-foreground">
+                          {[directorySuggestion.city, directorySuggestion.province]
+                            .filter(Boolean)
+                            .join(', ')}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-600"
+                      onClick={() => onDirectoryAutofill(directorySuggestion)}
+                    >
+                      <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                      Autorellenar datos
                     </Button>
                   </div>
                 </div>
