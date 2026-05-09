@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma, CustomerType as PrismaCustomerType, CustomerType } from '@prisma/client';
@@ -20,6 +21,8 @@ const DIRECTORY_ELIGIBLE_TYPES: CustomerType[] = [
 
 @Injectable()
 export class CustomerService {
+  private readonly logger = new Logger(CustomerService.name);
+
   constructor(private prisma: PrismaService) {}
 
   async create(tenantId: string, dto: CreateCustomerDto) {
@@ -50,7 +53,10 @@ export class CustomerService {
     });
 
     // Update global directory for legal entities (fire-and-forget — never block the response)
-    void this.upsertDirectory(customer);
+    void this.upsertDirectory(customer).catch((err: unknown) => {
+      const maskedNif = `${customer.nif.slice(0, 3)}***`;
+      this.logger.warn(`Failed to upsert customer directory for NIF ${maskedNif}: ${String(err)}`);
+    });
 
     return customer;
   }
@@ -164,7 +170,10 @@ export class CustomerService {
     });
 
     // Sync global directory for legal entities (fire-and-forget)
-    void this.upsertDirectory(updated);
+    void this.upsertDirectory(updated).catch((err: unknown) => {
+      const maskedNif = `${updated.nif.slice(0, 3)}***`;
+      this.logger.warn(`Failed to upsert customer directory for NIF ${maskedNif}: ${String(err)}`);
+    });
 
     return updated;
   }

@@ -95,10 +95,11 @@ function EditCustomerForm({ customerId, defaultValues, originalNif }: EditFormPr
   const { existingCustomer, isSearching } = useCustomerByNif(watchedNif, !nifChanged);
 
   // Sugerencia del directorio fiscal global (solo si el NIF cambió y no hay duplicado local)
+  const shouldSkipDirectoryLookup = !nifChanged || !!existingCustomer;
   const { directorySuggestion } = useDirectoryLookup(
     watchedNif,
     selectedType,
-    !nifChanged || !!existingCustomer,
+    shouldSkipDirectoryLookup,
   );
 
   const handleDirectoryAutofill = useCallback(

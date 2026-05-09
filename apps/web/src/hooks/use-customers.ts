@@ -213,7 +213,7 @@ export function useDirectoryLookup(
 ): UseDirectoryLookupResult {
   const [debouncedNif, setDebouncedNif] = useState('');
 
-  const cleanNif = nif
+  const cleanNif = (nif || '')
     .toUpperCase()
     .trim()
     .replace(/[\s.-]/g, '');
