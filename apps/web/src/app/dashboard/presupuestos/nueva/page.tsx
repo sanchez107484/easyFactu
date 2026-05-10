@@ -178,6 +178,16 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
 
   const handleFormKeyDown = useInvoiceFormKeyDown();
 
+  // Apply pendingCustomerId to the form once the customers list has loaded.
+  // Covers: quick-create customer and import-from-pool flows.
+  useEffect(() => {
+    if (!pendingCustomerId) return;
+    if (customers.some((c) => c.id === pendingCustomerId)) {
+      form.setValue('customerId', pendingCustomerId, { shouldValidate: true });
+      setPendingCustomerId(null);
+    }
+  }, [customers, pendingCustomerId, form]);
+
   const triggerSubmit = () => {
     const submitBtn = document.getElementById('form-submit-trigger');
     if (submitBtn) {
@@ -721,5 +731,5 @@ export default function NuevoPresupuestoPage() {
         lines: [{ ...EMPTY_LINE }] as ExtendedLineData[],
       };
 
-  return <QuoteForm defaultValues={defaultValues} editId={editId ?? undefined} />;
+  return <QuoteForm key={editId ?? 'new'} defaultValues={defaultValues} editId={editId ?? undefined} />;
 }
