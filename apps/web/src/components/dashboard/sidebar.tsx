@@ -37,11 +37,15 @@ interface NavItem {
   // When false, disables Next.js Link prefetching for routes that are visited rarely
   // and pull in heavy bundles (e.g. exportador, auditoría).
   prefetch?: boolean;
+  /** When true, applies agency (violet) color scheme to this nav item */
+  isAgency?: boolean;
 }
 
 interface NavSeparator {
   type: 'separator';
   label?: string;
+  /** When true, renders as a styled agency section header instead of a plain divider */
+  isAgency?: boolean;
 }
 
 type NavEntry = NavItem | NavSeparator;
@@ -78,24 +82,27 @@ const agencyNavItems: NavEntry[] = [
   { title: 'Ajustes', href: '/dashboard/ajustes', icon: Settings },
 
   // ── Gestión de cartera ────────────────────────────────────────────────────
-  { type: 'separator', label: 'Gestión de clientes' },
-  { title: 'Mi panel', href: '/dashboard/asesoria', icon: Briefcase },
+  { type: 'separator', label: 'Panel de asesoría', isAgency: true },
+  { title: 'Mi panel', href: '/dashboard/asesoria', icon: Briefcase, isAgency: true },
   {
     title: 'Mis clientes',
     href: '/dashboard/asesoria/clientes',
     icon: UserCheck,
+    isAgency: true,
     description: 'Autónomos y empresas que gestionas',
   },
   {
     title: 'Facturas de clientes',
     href: '/dashboard/asesoria/facturas',
     icon: FileText,
+    isAgency: true,
     description: 'Vista consolidada de todas las facturas',
   },
   {
     title: 'Exportar facturas',
     href: '/dashboard/asesoria/exportar',
     icon: FileDown,
+    isAgency: true,
     description: 'Exporta facturas para tu programa de contabilidad',
     prefetch: false,
   },
@@ -103,6 +110,7 @@ const agencyNavItems: NavEntry[] = [
     title: 'Auditoría',
     href: '/dashboard/asesoria/auditoria',
     icon: ShieldCheck,
+    isAgency: true,
     description: 'Registro de accesos a clientes',
     prefetch: false,
   },
@@ -202,6 +210,25 @@ export function DashboardSidebar() {
       <nav className="flex-1 space-y-1 overflow-y-auto p-2">
         {navItems.map((entry, index) => {
           if ('type' in entry && entry.type === 'separator') {
+            if (entry.isAgency) {
+              return (
+                <div
+                  key={`sep-${index}`}
+                  className="mx-1 mb-1 mt-3 overflow-hidden rounded-md border border-agency-200/70 bg-agency-50 dark:border-agency-800/70 dark:bg-agency-950/40"
+                >
+                  {sidebarCollapsed ? (
+                    <div className="mx-2 my-2 h-0.5 rounded-full bg-agency-300 dark:bg-agency-700" />
+                  ) : (
+                    entry.label && (
+                      <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-agency-600 dark:text-agency-400">
+                        {entry.label}
+                      </p>
+                    )
+                  )}
+                </div>
+              );
+            }
+
             return (
               <div key={`sep-${index}`} className="px-1 pb-1 pt-2">
                 <div className="border-t border-border" />
@@ -227,15 +254,30 @@ export function DashboardSidebar() {
               href={item.href}
               prefetch={item.prefetch}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                'flex items-center gap-3 px-3 py-2 text-sm transition-colors',
+                item.isAgency
+                  ? [
+                      'rounded-r-lg border-l-2',
+                      isActive
+                        ? 'border-agency-600 bg-agency-600 text-white'
+                        : 'border-agency-300 text-agency-700 hover:bg-agency-100 hover:text-agency-800 dark:border-agency-700 dark:text-agency-300 dark:hover:bg-agency-900/50 dark:hover:text-agency-200',
+                    ]
+                  : [
+                      'rounded-lg',
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                    ],
                 sidebarCollapsed && 'justify-center',
               )}
               title={sidebarCollapsed ? item.title : undefined}
             >
-              <Icon className="h-5 w-5 shrink-0" />
+              <Icon
+                className={cn(
+                  'h-5 w-5 shrink-0',
+                  item.isAgency && !isActive && 'text-agency-500 dark:text-agency-400',
+                )}
+              />
               {!sidebarCollapsed && (
                 <div className="min-w-0 flex-1">
                   <span className="block leading-tight">{item.title}</span>
@@ -244,7 +286,11 @@ export function DashboardSidebar() {
                       title={item.description}
                       className={cn(
                         'mt-0.5 block truncate text-xs leading-tight',
-                        isActive ? 'text-primary-foreground/70' : 'opacity-55',
+                        isActive
+                          ? item.isAgency
+                            ? 'text-white/70'
+                            : 'text-primary-foreground/70'
+                          : 'opacity-55',
                       )}
                     >
                       {item.description}
