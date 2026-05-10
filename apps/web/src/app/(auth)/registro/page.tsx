@@ -129,7 +129,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Desktop top bar */}
-        <div className="hidden items-center justify-between p-6 lg:flex">
+        <div className="hidden items-center justify-between p-4 lg:flex">
           <div className="flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-400">
             <Sparkles className="h-4 w-4" />6 meses gratis · Sin tarjeta
           </div>
@@ -143,23 +143,23 @@ export default function RegisterPage() {
         </div>
 
         {/* Form container */}
-        <div className="flex flex-1 items-center justify-center overflow-y-auto p-6 lg:p-12">
-          <div className="w-full max-w-md space-y-6">
+        <div className="flex flex-1 items-center justify-center overflow-y-auto p-4 lg:p-8">
+          <div className="w-full max-w-md space-y-4">
             {/* Header */}
             <div className="text-center lg:text-left">
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
                 Crea tu cuenta gratis
               </h1>
-              <p className="mt-2 text-muted-foreground">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Empieza a facturar cumpliendo con VeriFactu en 2 minutos
               </p>
             </div>
 
             {/* Form */}
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
                 {/* Name fields */}
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="firstName"
@@ -171,7 +171,7 @@ export default function RegisterPage() {
                             <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                               placeholder="Juan"
-                              className="h-11 pl-10"
+                              className="h-9 pl-10"
                               disabled={isLoading}
                               {...field}
                             />
@@ -191,7 +191,7 @@ export default function RegisterPage() {
                         <FormControl>
                           <Input
                             placeholder="García"
-                            className="h-11"
+                            className="h-9"
                             disabled={isLoading}
                             {...field}
                           />
@@ -215,7 +215,7 @@ export default function RegisterPage() {
                           <Input
                             type="email"
                             placeholder="tu@email.com"
-                            className="h-11 pl-10"
+                            className="h-9 pl-10"
                             disabled={isLoading}
                             {...field}
                           />
@@ -239,7 +239,7 @@ export default function RegisterPage() {
                           <Input
                             type={showPassword ? 'text' : 'password'}
                             placeholder="••••••••"
-                            className="h-11 pl-10 pr-10"
+                            className="h-9 pl-10 pr-10"
                             disabled={isLoading}
                             {...field}
                           />
@@ -264,7 +264,7 @@ export default function RegisterPage() {
                 />
 
                 {/* Divider */}
-                <div className="relative py-2">
+                <div className="relative py-1">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t" />
                   </div>
@@ -287,7 +287,7 @@ export default function RegisterPage() {
                           <Building2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                           <Input
                             placeholder="Mi Empresa S.L. o tu nombre"
-                            className="h-11 pl-10"
+                            className="h-9 pl-10"
                             disabled={isLoading}
                             {...field}
                           />
@@ -310,7 +310,7 @@ export default function RegisterPage() {
                           <FileText className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                           <Input
                             placeholder="12345678A o B12345678"
-                            className="h-11 pl-10 uppercase"
+                            className="h-9 pl-10 uppercase"
                             maxLength={9}
                             disabled={isLoading}
                             {...field}
@@ -337,7 +337,7 @@ export default function RegisterPage() {
                 </p>
 
                 {/* Submit button */}
-                <Button type="submit" className="h-12 w-full text-base" disabled={isLoading}>
+                <Button type="submit" className="h-10 w-full" disabled={isLoading}>
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -352,7 +352,7 @@ export default function RegisterPage() {
                 </Button>
 
                 {/* Trust badges */}
-                <div className="flex flex-wrap items-center justify-center gap-3 pt-2 text-xs text-muted-foreground">
+                <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />6 meses gratis
                   </span>
@@ -369,22 +369,22 @@ export default function RegisterPage() {
                 {/* Agency CTA */}
                 <Link
                   href="/registro/asesoria"
-                  className="flex items-center justify-between gap-3 rounded-xl border-2 border-indigo-200 bg-gradient-to-r from-indigo-50 to-indigo-100/50 p-4 transition-all hover:border-indigo-400 hover:shadow-md"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-primary-200 bg-primary-50/50 p-3 transition-all hover:border-primary-400 hover:shadow-sm dark:border-primary-800 dark:bg-primary-950/20"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-600">
-                      <Users className="h-5 w-5 text-white" />
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-primary-600">
+                      <Users className="h-4 w-4 text-white" />
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-bold text-indigo-900">
+                      <p className="text-sm font-semibold text-primary-900 dark:text-primary-100">
                         ¿Eres asesoría o gestoría?
                       </p>
-                      <p className="text-xs text-indigo-600">
+                      <p className="text-xs text-primary-600 dark:text-primary-400">
                         Panel para gestionar todos tus clientes · Gratis para siempre
                       </p>
                     </div>
                   </div>
-                  <ChevronRight className="h-5 w-5 flex-shrink-0 text-indigo-400" />
+                  <ChevronRight className="h-4 w-4 flex-shrink-0 text-primary-400" />
                 </Link>
               </form>
             </Form>

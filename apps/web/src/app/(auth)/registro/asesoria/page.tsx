@@ -104,11 +104,11 @@ function AgencySidePanel() {
       <div className="relative z-10">
         <Link href="/">
           <Image
-            src={brandConfig.logos.white}
+            src={brandConfig.logos.main}
             alt={brandConfig.app.name}
             width={160}
             height={48}
-            className="object-contain"
+            className="brightness-0 invert"
             style={{ width: 'auto', height: '40px' }}
           />
         </Link>
