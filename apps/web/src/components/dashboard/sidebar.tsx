@@ -208,99 +208,137 @@ export function DashboardSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 overflow-y-auto p-2">
-        {navItems.map((entry, index) => {
-          if ('type' in entry && entry.type === 'separator') {
-            if (entry.isAgency) {
-              return (
-                <div
-                  key={`sep-${index}`}
-                  className="mx-1 mb-1 mt-3 overflow-hidden rounded-md border border-agency-200/70 bg-agency-50 dark:border-agency-800/70 dark:bg-agency-950/40"
-                >
-                  {sidebarCollapsed ? (
-                    <div className="mx-2 my-2 h-0.5 rounded-full bg-agency-300 dark:bg-agency-700" />
-                  ) : (
-                    entry.label && (
-                      <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-agency-600 dark:text-agency-400">
-                        {entry.label}
-                      </p>
-                    )
-                  )}
-                </div>
-              );
-            }
+        {(() => {
+          // Split navItems into personal entries and the agency block
+          const agencySepIdx = navItems.findIndex(
+            (e) => 'type' in e && e.type === 'separator' && (e as NavSeparator).isAgency,
+          );
+          const personalEntries = agencySepIdx >= 0 ? navItems.slice(0, agencySepIdx) : navItems;
+          const agencyEntries =
+            agencySepIdx >= 0
+              ? (navItems.slice(agencySepIdx + 1).filter((e) => !('type' in e)) as NavItem[])
+              : [];
+          const agencyLabel =
+            agencySepIdx >= 0
+              ? ((navItems[agencySepIdx] as NavSeparator).label ?? 'Panel de asesoría')
+              : 'Panel de asesoría';
+
+          const renderNavItem = (item: NavItem) => {
+            const Icon = item.icon;
+            const isActive =
+              item.href === '/dashboard' || item.href === '/dashboard/asesoria'
+                ? pathname === item.href
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
             return (
-              <div key={`sep-${index}`} className="px-1 pb-1 pt-2">
-                <div className="border-t border-border" />
-                {!sidebarCollapsed && entry.label && (
-                  <p className="mt-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">
-                    {entry.label}
-                  </p>
+              <Link
+                key={item.href}
+                href={item.href}
+                prefetch={item.prefetch}
+                className={cn(
+                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                  isActive
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                  sidebarCollapsed && 'justify-center',
                 )}
-              </div>
+                title={sidebarCollapsed ? item.title : undefined}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                {!sidebarCollapsed && (
+                  <div className="min-w-0 flex-1">
+                    <span className="block leading-tight">{item.title}</span>
+                    {item.description && (
+                      <span
+                        title={item.description}
+                        className={cn(
+                          'mt-0.5 block truncate text-xs leading-tight',
+                          isActive ? 'text-primary-foreground/70' : 'opacity-55',
+                        )}
+                      >
+                        {item.description}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </Link>
             );
-          }
+          };
 
-          const item = entry as NavItem;
-          const Icon = item.icon;
-          const isActive =
-            item.href === '/dashboard' || item.href === '/dashboard/asesoria'
-              ? pathname === item.href
-              : pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const renderAgencyItem = (item: NavItem) => {
+            const Icon = item.icon;
+            const isActive =
+              item.href === '/dashboard' || item.href === '/dashboard/asesoria'
+                ? pathname === item.href
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                prefetch={item.prefetch}
+                className={cn(
+                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+                  isActive
+                    ? 'bg-agency-600 text-white'
+                    : 'text-muted-foreground hover:bg-agency-100/80 hover:text-foreground dark:hover:bg-agency-900/40 dark:hover:text-foreground',
+                  sidebarCollapsed && 'justify-center',
+                )}
+                title={sidebarCollapsed ? item.title : undefined}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                {!sidebarCollapsed && (
+                  <div className="min-w-0 flex-1">
+                    <span className="block leading-tight">{item.title}</span>
+                    {item.description && (
+                      <span
+                        title={item.description}
+                        className={cn(
+                          'mt-0.5 block truncate text-xs leading-tight',
+                          isActive ? 'text-white/70' : 'opacity-55',
+                        )}
+                      >
+                        {item.description}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </Link>
+            );
+          };
 
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              prefetch={item.prefetch}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2 text-sm transition-colors',
-                item.isAgency
-                  ? [
-                      'rounded-r-lg border-l-2',
-                      isActive
-                        ? 'border-agency-600 bg-agency-600 text-white'
-                        : 'border-agency-300 text-agency-700 hover:bg-agency-100 hover:text-agency-800 dark:border-agency-700 dark:text-agency-300 dark:hover:bg-agency-900/50 dark:hover:text-agency-200',
-                    ]
-                  : [
-                      'rounded-lg',
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                    ],
-                sidebarCollapsed && 'justify-center',
-              )}
-              title={sidebarCollapsed ? item.title : undefined}
-            >
-              <Icon
-                className={cn(
-                  'h-5 w-5 shrink-0',
-                  item.isAgency && !isActive && 'text-agency-500 dark:text-agency-400',
-                )}
-              />
-              {!sidebarCollapsed && (
-                <div className="min-w-0 flex-1">
-                  <span className="block leading-tight">{item.title}</span>
-                  {item.description && (
-                    <span
-                      title={item.description}
-                      className={cn(
-                        'mt-0.5 block truncate text-xs leading-tight',
-                        isActive
-                          ? item.isAgency
-                            ? 'text-white/70'
-                            : 'text-primary-foreground/70'
-                          : 'opacity-55',
-                      )}
-                    >
-                      {item.description}
-                    </span>
+            <>
+              {/* Personal nav items */}
+              {personalEntries.map((entry) => {
+                if ('type' in entry) return null;
+                return renderNavItem(entry as NavItem);
+              })}
+
+              {/* Agency block */}
+              {agencyEntries.length > 0 && (
+                <div
+                  className={cn(
+                    'mt-3 overflow-hidden rounded-lg border border-agency-200/70 bg-agency-50 dark:border-agency-800/70 dark:bg-agency-950/30',
+                    sidebarCollapsed ? 'p-1' : 'p-1.5',
                   )}
+                >
+                  {/* Header label (only when expanded) */}
+                  {!sidebarCollapsed && (
+                    <p className="mb-1 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-agency-600 dark:text-agency-400">
+                      {agencyLabel}
+                    </p>
+                  )}
+                  {sidebarCollapsed && (
+                    <div className="mb-1 mx-1 h-0.5 rounded-full bg-agency-300 dark:bg-agency-700" />
+                  )}
+                  {/* Agency nav items */}
+                  <div className="space-y-0.5">{agencyEntries.map(renderAgencyItem)}</div>
                 </div>
               )}
-            </Link>
+            </>
           );
-        })}
+        })()}
       </nav>
 
       {/* Tenant info footer */}
