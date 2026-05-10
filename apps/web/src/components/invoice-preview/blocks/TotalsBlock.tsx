@@ -33,7 +33,7 @@ function TotalsRow({ label, value, bold, color }: TotalsRowProps) {
 }
 
 export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
-  const { showTaxBreakdown, showIrpf } = layout.totals;
+  const { showTaxBreakdown, showIrpf = true } = layout.totals;
   const { primary } = layout.colors;
 
   const taxRates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
@@ -55,7 +55,7 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
           <TotalsRow label={ivaLabel} value={formatCurrency(invoice.taxTotal)} />
         )}
 
-        {showIrpf && (invoice.irpfTotal ?? 0) > 0 && (
+        {(invoice.irpfTotal ?? 0) > 0 && (
           <TotalsRow
             label={`IRPF (${invoice.irpfPercent ?? 0}%)`}
             value={`-${formatCurrency(invoice.irpfTotal ?? 0)}`}

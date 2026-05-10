@@ -523,6 +523,8 @@ export class InvoiceService {
         select: {
           id: true,
           tenantId: true,
+          customerId: true,
+          seriesId: true,
           number: true,
           invoiceType: true,
           status: true,
@@ -532,6 +534,9 @@ export class InvoiceService {
           dueDate: true,
           validUntil: true,
           subtotal: true,
+          discountPercent: true,
+          discountAmount: true,
+          irpfPercent: true,
           taxTotal: true,
           irpfTotal: true,
           total: true,

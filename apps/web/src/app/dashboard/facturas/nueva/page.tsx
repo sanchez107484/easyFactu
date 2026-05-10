@@ -757,12 +757,12 @@ export default function NuevaFacturaPage() {
 
   const defaultValues: FormData = sourceInvoice
     ? {
-        customerId: sourceInvoice.customerId ?? '',
+        customerId: sourceInvoice.customer?.id ?? sourceInvoice.customerId ?? '',
         issueDate: editId
           ? (sourceInvoice.issueDate?.split('T')[0] ?? new Date().toISOString().split('T')[0])
           : new Date().toISOString().split('T')[0],
         dueDate: editId ? (sourceInvoice.dueDate?.split('T')[0] ?? undefined) : undefined,
-        seriesId: editId ? (sourceInvoice.seriesId ?? '') : '',
+        seriesId: editId ? (sourceInvoice.series?.id ?? sourceInvoice.seriesId ?? '') : '',
         discountPercent: sourceInvoice.discountPercent
           ? Number(sourceInvoice.discountPercent)
           : undefined,
