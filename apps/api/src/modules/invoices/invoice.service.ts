@@ -523,6 +523,8 @@ export class InvoiceService {
         select: {
           id: true,
           tenantId: true,
+          customerId: true,
+          seriesId: true,
           number: true,
           invoiceType: true,
           status: true,

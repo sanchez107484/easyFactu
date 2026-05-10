@@ -676,12 +676,12 @@ export default function NuevoPresupuestoPage() {
 
   const defaultValues: FormData = sourceQuote
     ? {
-        customerId: sourceQuote.customerId ?? '',
+        customerId: sourceQuote.customer?.id ?? sourceQuote.customerId ?? '',
         issueDate: sourceQuote.issueDate?.split('T')[0] ?? new Date().toISOString().split('T')[0],
         dueDate:
           (sourceQuote as unknown as { validUntil?: string }).validUntil?.split('T')[0] ??
           defaultValidUntil,
-        seriesId: sourceQuote.seriesId ?? '',
+        seriesId: sourceQuote.series?.id ?? sourceQuote.seriesId ?? '',
         discountPercent: sourceQuote.discountPercent
           ? Number(sourceQuote.discountPercent)
           : undefined,
