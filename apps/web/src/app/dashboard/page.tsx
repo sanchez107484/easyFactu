@@ -66,6 +66,7 @@ interface StatCardProps {
   isLoading: boolean;
   href?: string;
   trend?: number | null;
+  trendLabel?: string;
   trendGoodWhenUp?: boolean;
   alert?: boolean;
 }
@@ -78,6 +79,7 @@ function StatCard({
   isLoading,
   href,
   trend,
+  trendLabel,
   trendGoodWhenUp = true,
   alert,
 }: StatCardProps) {
@@ -133,6 +135,9 @@ function StatCard({
                   {trendPositive ? '+' : ''}
                   {trend}%
                 </span>
+              )}
+              {trendLabel && trend !== null && trend !== undefined && (
+                <span className="text-[10px] text-muted-foreground">{trendLabel}</span>
               )}
             </div>
           </>
@@ -528,6 +533,22 @@ export default function DashboardPage() {
   ] as const;
   const ytdDescription = `Ene – ${YTD_MONTHS[now.getMonth()]} ${now.getFullYear()}`;
 
+  const MONTH_NAMES_FULL = [
+    'enero',
+    'febrero',
+    'marzo',
+    'abril',
+    'mayo',
+    'junio',
+    'julio',
+    'agosto',
+    'septiembre',
+    'octubre',
+    'noviembre',
+    'diciembre',
+  ] as const;
+  const prevMonthName = MONTH_NAMES_FULL[now.getMonth() === 0 ? 11 : now.getMonth() - 1]!;
+
   const monthTrend =
     billedLastMonth > 0
       ? Math.round(((billedThisMonth - billedLastMonth) / billedLastMonth) * 100)
@@ -647,6 +668,7 @@ export default function DashboardPage() {
             isLoading={isLoadingStats}
             href="/dashboard/facturas"
             trend={monthTrend}
+            trendLabel={`vs ${prevMonthName}`}
           />
           <StatCard
             title="Cobrado este mes"
