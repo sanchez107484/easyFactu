@@ -75,7 +75,7 @@ export default function SiteHeader() {
               <Link href="/registro">
                 <Button size="sm" className="gap-1.5">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Reservar plaza
+                  Empezar gratis ahora
                 </Button>
               </Link>
             </>
@@ -133,7 +133,7 @@ export default function SiteHeader() {
                 <Link href="/registro" onClick={() => setMobileOpen(false)}>
                   <Button size="sm" className="w-full gap-1.5">
                     <Sparkles className="h-3.5 w-3.5" />
-                    Reservar plaza gratis
+                    Empezar gratis ahora
                   </Button>
                 </Link>
               </>

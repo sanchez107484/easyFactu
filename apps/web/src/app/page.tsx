@@ -407,115 +407,71 @@ export default function App() {
 
       <main className="flex-1">
         {/* ══════════════════════════════════════════════════════════════
-            SECTION 1 — HERO
+            SECTION 1 — HERO  +  AGENCY BANNER (full viewport)
             ══════════════════════════════════════════════════════════════ */}
-        <section className="relative overflow-hidden py-20 md:py-28 lg:py-32">
-          {/* Background gradient */}
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage:
-                'radial-gradient(circle at 25% 50%, #3b82f6 0%, transparent 50%), radial-gradient(circle at 75% 25%, #3b82f6 0%, transparent 40%)',
-            }}
-          />
+        <div className="flex min-h-[calc(100vh-4rem)] flex-col">
+          <section className="relative flex flex-1 items-center overflow-hidden">
+            {/* Background gradient */}
+            <div
+              className="pointer-events-none absolute inset-0 opacity-[0.04]"
+              style={{
+                backgroundImage:
+                  'radial-gradient(circle at 25% 50%, #3b82f6 0%, transparent 50%), radial-gradient(circle at 75% 25%, #3b82f6 0%, transparent 40%)',
+              }}
+            />
 
-          <div className="relative mx-auto max-w-4xl px-4 text-center">
-            {/* Live badge */}
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
-              </span>
-              Plataforma nativa VeriFactu
-            </div>
-
-            {/* H1 */}
-            <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl lg:text-7xl">
-              Software de facturación{' '}
-              <span className="relative whitespace-nowrap text-blue-600">
-                VeriFactu
-                <svg
-                  className="absolute -bottom-2 left-0 w-full"
-                  viewBox="0 0 300 12"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M2 9 C75 3, 225 3, 298 9"
-                    stroke="#3b82f6"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    opacity="0.4"
-                  />
-                </svg>
-              </span>{' '}
-              para autónomos y pymes
-            </h1>
-
-            {/* Subtitle */}
-            <p className="mx-auto mb-8 max-w-2xl text-lg text-slate-500 sm:text-xl">
-              Cumple con la <strong className="text-slate-800">Ley Antifraude 11/2021</strong> de
-              forma automática. Genera facturas legales con hash encadenado, código QR y envío
-              directo a la AEAT.
-            </p>
-
-            {/* Offer box */}
-            <div className="mb-8 inline-flex flex-col items-center gap-2 rounded-xl border-2 border-blue-200 bg-blue-50 px-6 py-4">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-blue-600" />
-                <span className="text-lg font-bold text-slate-900">
-                  6 meses completamente gratuitos
+            <div className="relative mx-auto w-full max-w-4xl px-4 py-12 text-center">
+              {/* Live badge */}
+              <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
                 </span>
+                Plataforma nativa VeriFactu
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <Users className="h-4 w-4 text-amber-600" />
-                <span>
-                  Limitado a{' '}
-                  <strong className="text-slate-800">
-                    {PLAZAS_CONFIG.total.toLocaleString('es-ES')} plazas
-                  </strong>{' '}
-                  ·{' '}
-                  <span className="font-semibold text-amber-600">
-                    {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} disponibles
+
+              {/* H1 */}
+              <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
+                Software de facturación{' '}
+                <span className="relative whitespace-nowrap text-blue-600">
+                  VeriFactu
+                  <svg
+                    className="absolute -bottom-2 left-0 w-full"
+                    viewBox="0 0 300 12"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M2 9 C75 3, 225 3, 298 9"
+                      stroke="#3b82f6"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      opacity="0.4"
+                    />
+                  </svg>
+                </span>{' '}
+                para autónomos y pymes
+              </h1>
+
+              {/* Subtitle */}
+              <p className="mx-auto mb-8 max-w-2xl text-lg text-slate-500 sm:text-xl">
+                Cumple con la <strong className="text-slate-800">Ley Antifraude 11/2021</strong> de
+                forma automática. Genera facturas legales con hash encadenado, código QR y envío
+                directo a la AEAT.
+              </p>
+
+              {/* Urgency block — offer + progress bar unificados */}
+              <div className="mx-auto mb-8 max-w-md rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 px-6 py-5">
+                <div className="mb-4 flex items-center justify-center gap-2">
+                  <Sparkles className="h-5 w-5 text-blue-600" />
+                  <span className="text-base font-bold text-slate-900">
+                    6 meses completamente gratuitos
                   </span>
-                </span>
-              </div>
-            </div>
-
-            {/* CTAs */}
-            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                href="/registro"
-                className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 text-base font-bold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl sm:w-auto"
-              >
-                Reservar mi plaza gratuita
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <a
-                href="#como-funciona"
-                className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-8 text-base font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 sm:w-auto"
-              >
-                Ver cómo funciona
-              </a>
-            </div>
-
-            {/* Trust badges */}
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-slate-500">
-              {trustBadges.map(({ icon: Icon, text }) => (
-                <span key={text} className="flex items-center gap-1.5">
-                  <Icon className="h-4 w-4 text-blue-500" />
-                  {text}
-                </span>
-              ))}
-            </div>
-
-            {/* Progress bar */}
-            <div className="mx-auto mt-10 max-w-md">
-              <div className="rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4">
-                <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2 font-semibold text-slate-700">
-                    <Users className="h-4 w-4 text-amber-600" />
-                    Plazas gratuitas ocupadas
+                </div>
+                <div className="mb-1.5 flex items-center justify-between text-xs font-medium text-slate-600">
+                  <span className="flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5 text-amber-600" />
+                    Plazas ocupadas
                   </span>
                   <span className="font-bold text-amber-600">{PLAZAS_CONFIG.porcentaje}%</span>
                 </div>
@@ -526,15 +482,80 @@ export default function App() {
                   />
                 </div>
                 <p className="mt-2 text-center text-xs text-slate-500">
-                  {PLAZAS_CONFIG.ocupadas.toLocaleString('es-ES')} inscritos ·{' '}
+                  <span className="font-semibold text-slate-700">
+                    {PLAZAS_CONFIG.ocupadas.toLocaleString('es-ES')} inscritos
+                  </span>{' '}
+                  ·{' '}
                   <span className="font-bold text-amber-600">
                     {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas restantes
-                  </span>
+                  </span>{' '}
+                  de {PLAZAS_CONFIG.total.toLocaleString('es-ES')}
                 </p>
               </div>
+
+              {/* CTAs */}
+              <div className="mb-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <Link
+                  href="/registro"
+                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 text-base font-bold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl sm:w-auto"
+                >
+                  Empezar gratis ahora
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <a
+                  href="#como-funciona"
+                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-8 text-base font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 sm:w-auto"
+                >
+                  Ver cómo funciona
+                </a>
+              </div>
+
+              {/* Trust badges */}
+              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-500">
+                {trustBadges.map(({ icon: Icon, text }) => (
+                  <span key={text} className="flex items-center gap-1.5">
+                    <Icon className="h-4 w-4 text-blue-500" />
+                    {text}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+
+          {/* ══════════════════════════════════════════════════════════════
+            AGENCY BANNER
+            ══════════════════════════════════════════════════════════════ */}
+          <section className="bg-gradient-to-r from-indigo-600 to-indigo-800 py-6">
+            <div className="mx-auto max-w-5xl px-4">
+              <div className="flex flex-col items-center justify-between gap-6 text-center md:flex-row md:text-left">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 rounded-xl bg-white/10 p-3">
+                    <Building2 className="h-7 w-7 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-indigo-300">
+                      Para asesorías y gestorías
+                    </p>
+                    <h3 className="mt-1 text-xl font-bold text-white sm:text-2xl">
+                      ¿Gestionas la facturación de varios clientes?
+                    </h3>
+                    <p className="mt-1 text-sm text-indigo-200">
+                      Panel centralizado para operar como cada uno de tus autónomos. VeriFactu
+                      automático bajo cada NIF. Completamente gratis para asesorías.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/asesoria"
+                  className="inline-flex flex-shrink-0 items-center gap-2 rounded-xl bg-white px-6 py-3 text-base font-bold text-indigo-700 shadow-lg transition-all hover:bg-indigo-50 hover:shadow-xl"
+                >
+                  Ver solución para asesorías
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </section>
+        </div>
 
         {/* ══════════════════════════════════════════════════════════════
             SECTION 2 — STATS
@@ -561,40 +582,6 @@ export default function App() {
                   <p className="mt-1 text-sm text-slate-500">{label}</p>
                 </div>
               ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════════
-            AGENCY BANNER
-            ══════════════════════════════════════════════════════════════ */}
-        <section className="bg-gradient-to-r from-indigo-600 to-indigo-800 py-10">
-          <div className="mx-auto max-w-5xl px-4">
-            <div className="flex flex-col items-center justify-between gap-6 text-center md:flex-row md:text-left">
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 rounded-xl bg-white/10 p-3">
-                  <Building2 className="h-7 w-7 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-indigo-300">
-                    Para asesorías y gestorías
-                  </p>
-                  <h3 className="mt-1 text-xl font-bold text-white sm:text-2xl">
-                    ¿Gestionas la facturación de varios clientes?
-                  </h3>
-                  <p className="mt-1 text-sm text-indigo-200">
-                    Panel centralizado para operar como cada uno de tus autónomos. VeriFactu
-                    automático bajo cada NIF. Completamente gratis para asesorías.
-                  </p>
-                </div>
-              </div>
-              <Link
-                href="/asesoria"
-                className="inline-flex flex-shrink-0 items-center gap-2 rounded-xl bg-white px-6 py-3 text-base font-bold text-indigo-700 shadow-lg transition-all hover:bg-indigo-50 hover:shadow-xl"
-              >
-                Ver solución para asesorías
-                <ArrowRight className="h-4 w-4" />
-              </Link>
             </div>
           </div>
         </section>
@@ -682,7 +669,7 @@ export default function App() {
                 href="/registro"
                 className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-8 py-3.5 text-base font-bold text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow-md"
               >
-                Reservar mi plaza gratuita
+                Empezar gratis ahora
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -928,7 +915,7 @@ export default function App() {
                   href="/registro"
                   className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-10 text-base font-bold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl sm:w-auto"
                 >
-                  Reservar mi plaza gratuita
+                  Empezar gratis ahora
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <p className="mt-4 text-sm text-slate-400">
@@ -1094,7 +1081,7 @@ export default function App() {
               href="/registro"
               className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-10 text-base font-bold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl sm:w-auto"
             >
-              Reservar mi plaza
+              Empezar gratis ahora
               <ArrowRight className="h-4 w-4" />
             </Link>
 
@@ -1126,7 +1113,7 @@ export default function App() {
             href="/registro"
             className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-base font-bold text-white transition-all hover:bg-blue-700"
           >
-            Reservar plaza gratuita
+            Empezar gratis ahora
             <ArrowRight className="h-4 w-4" />
           </Link>
           <p className="mt-2 text-center text-xs text-slate-400">
