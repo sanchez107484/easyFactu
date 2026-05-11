@@ -11,8 +11,9 @@ import { Menu, X, Sparkles } from 'lucide-react';
 
 const navLinks = [
   { href: '/funcionalidades', label: 'Funcionalidades' },
-  { href: '/precios', label: 'Precios' },
+  { href: '/verifactu', label: 'VeriFactu' },
   { href: '/asesoria', label: 'Asesorías', highlight: true },
+  { href: '/precios', label: 'Precios' },
   { href: '/blog', label: 'Blog' },
   { href: '/contacto', label: 'Contacto' },
 ];

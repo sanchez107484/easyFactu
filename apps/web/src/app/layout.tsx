@@ -33,7 +33,10 @@ const organizationJsonLd = {
     contactType: 'customer support',
     availableLanguage: 'Spanish',
   },
-  sameAs: [],
+  sameAs: [
+    'https://www.linkedin.com/company/novafactura',
+    'https://www.instagram.com/nova.factura',
+  ],
 };
 
 // WebSite schema enables Google Sitelinks Searchbox and signals the canonical
@@ -50,6 +53,14 @@ const websiteJsonLd = {
     '@type': 'Organization',
     name: brandConfig.app.name,
     url: brandConfig.app.url,
+  },
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: `${brandConfig.app.url}/blog?q={search_term_string}`,
+    },
+    'query-input': 'required name=search_term_string',
   },
 };
 
@@ -83,10 +94,10 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: `${brandConfig.app.name} | Factura sin preocuparte de Verifactu | Gratis tus primeros 6 meses`,
+    default: `${brandConfig.app.name} | Factura sin preocuparte de VeriFactu | Gratis tus primeros 6 meses`,
     template: `%s | ${brandConfig.app.name}`,
   },
-  description: `Tú haces tu factura, nosotros nos encargamos de Verifactu. Software de facturación para autónomos y pymes. 100% Gratis tus primeros 6 meses. Sin tarjeta. Sin complicaciones.`,
+  description: `Tú haces tu factura, nosotros nos encargamos de VeriFactu. Software de facturación para autónomos y pymes. 100% Gratis tus primeros 6 meses. Sin tarjeta. Sin complicaciones.`,
   keywords: [
     // Keywords de alta conversión (lo que REALMENTE buscan)
     'programa facturación autónomos',
@@ -116,7 +127,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_ES',
     url: brandConfig.app.url,
-    title: `${brandConfig.app.name} | Factura sin preocuparte de Verifactu`,
+    title: `${brandConfig.app.name} | Factura sin preocuparte de VeriFactu`,
     description: `Tú haces tu factura, nosotros nos encargamos de Hacienda. Gratis tus primeros 6 meses. Sin tarjeta. Para autónomos y pymes.`,
     siteName: brandConfig.app.name,
     images: [
@@ -124,13 +135,13 @@ export const metadata: Metadata = {
         url: `${brandConfig.app.url}/og-image.jpg`, // Crea esta imagen: mockup + texto "Gratis tus primeros 6 meses"
         width: 1200,
         height: 630,
-        alt: `${brandConfig.app.name} - Software de facturación Verifactu`,
+        alt: `${brandConfig.app.name} - Software de facturación VeriFactu`,
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${brandConfig.app.name} | Factura sin preocuparte de Verifactu`,
+    title: `${brandConfig.app.name} | Factura sin preocuparte de VeriFactu`,
     description: `Gratis tus primeros 6 meses. Sin tarjeta. Cumplimiento automático con Hacienda.`,
     images: [`${brandConfig.app.url}/og-image.jpg`],
   },

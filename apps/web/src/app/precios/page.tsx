@@ -122,42 +122,66 @@ const schemaData = {
       mainEntity: [
         {
           '@type': 'Question',
-          name: `¿Cuánto cuesta ${brandConfig.app.name}?`,
+          name: `¿Cuánto cuesta ${brandConfig.app.name} después de los ${PRICING.freePeriodMonths} meses gratuitos?`,
           acceptedAnswer: {
             '@type': 'Answer',
-            text: `Los primeros ${PRICING.freePeriodMonths} meses son completamente gratuitos. A partir del séptimo mes, puedes elegir Plan Starter (${PRICING.starter.monthly}€/mes o ${PRICING.starter.annualMonthly}€/mes anual) o Plan PRO con VeriFactu (${PRICING.pro.monthly}€/mes o ${PRICING.pro.annualMonthly}€/mes anual). Sin permanencia.`,
+            text: `Tienes dos planes: Plan Starter a ${PRICING.starter.monthly}€/mes (${PRICING.starter.annualMonthly}€/mes anual) para facturar sin VeriFactu, y Plan PRO a ${PRICING.pro.monthly}€/mes (${PRICING.pro.annualMonthly}€/mes anual) con VeriFactu automático y envío AEAT incluido. Sin permanencia en ningún caso.`,
           },
         },
         {
           '@type': 'Question',
-          name: '¿Necesito tarjeta de crédito para empezar?',
+          name: '¿Cuál es la diferencia entre Plan Starter y Plan PRO?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: `No. Solo necesitas tu email para registrarte. No pedimos ningún dato de pago durante los ${PRICING.freePeriodMonths} meses gratuitos. Añades tu método de pago cuando decidas continuar.`,
+            text: `El Plan Starter incluye todo lo necesario para facturar: facturas ilimitadas, clientes, PDF profesional, presupuestos y facturas recurrentes. El Plan PRO añade VeriFactu 100% automático — hash encadenado, código QR y envío directo a la AEAT en cada factura — para cumplir con la Ley Antifraude 11/2021.`,
           },
         },
         {
           '@type': 'Question',
-          name: '¿Cuánto ahorro con el plan anual?',
+          name: `¿Qué incluyen exactamente los ${PRICING.freePeriodMonths} meses gratuitos?`,
           acceptedAnswer: {
             '@type': 'Answer',
-            text: `Con el Plan Starter anual pagas ${PRICING.starter.annualTotal}€/año (${PRICING.starter.annualMonthly}€/mes) en lugar de ${PRICING.starter.monthly}€/mes — ahorras ${PRICING.starter.annualSaving}€. Con el Plan PRO anual pagas ${PRICING.pro.annualTotal}€/año (${PRICING.pro.annualMonthly}€/mes) en lugar de ${PRICING.pro.monthly}€/mes — ahorras ${PRICING.pro.annualSaving}€.`,
+            text: `Acceso completo al plan que elijas — incluyendo todas las funcionalidades del Plan PRO si decides empezar con él. Sin restricciones ni versión reducida durante los ${PRICING.freePeriodMonths} meses.`,
           },
         },
         {
           '@type': 'Question',
-          name: `¿Qué diferencia hay entre Plan Starter y Plan PRO?`,
+          name: '¿Puedo cambiar de Starter a PRO más adelante?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'El Plan Starter incluye facturas ilimitadas, clientes, PDF, presupuestos y recurrentes. El Plan PRO añade VeriFactu 100% automático, hash encadenado, código QR y envío directo a la AEAT — cumplimiento total con la Ley Antifraude 11/2021.',
+            text: 'Sí. Puedes hacer upgrade en cualquier momento desde el panel de ajustes con un clic. Si cuando VeriFactu sea obligatorio para tu actividad quieres activarlo automáticamente, también puedes configurarlo para que se haga de forma automática.',
           },
         },
         {
           '@type': 'Question',
-          name: '¿Hay permanencia o coste de cancelación?',
+          name: '¿Necesito tarjeta de crédito para registrarme?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'No. Puedes cancelar cuando quieras sin penalización. Tus datos son tuyos y puedes exportarlos en cualquier momento.',
+            text: `No. Solo necesitas tu dirección de email. No pedimos ningún dato de pago durante los ${PRICING.freePeriodMonths} meses gratuitos. Añades tu método de pago cuando decidas continuar.`,
+          },
+        },
+        {
+          '@type': 'Question',
+          name: '¿Cuánto ahorro eligiendo el plan anual?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: `Con Plan Starter anual pagas ${PRICING.starter.annualTotal}€/año (${PRICING.starter.annualMonthly}€/mes) — ahorras ${PRICING.starter.annualSaving}€. Con Plan PRO anual pagas ${PRICING.pro.annualTotal}€/año (${PRICING.pro.annualMonthly}€/mes) — ahorras ${PRICING.pro.annualSaving}€. En ambos casos, más de 2 meses gratis respecto al mensual.`,
+          },
+        },
+        {
+          '@type': 'Question',
+          name: '¿Puedo cancelar en cualquier momento?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Sí, absolutamente. Sin permanencia mínima, sin letra pequeña. Cancelas desde el panel en menos de un minuto y no te cobramos nada más.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: '¿Puedo migrar mis facturas actuales?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: `Sí. Importación gratuita desde Excel, CSV o Holded. El equipo de ${brandConfig.app.name} te ayuda en el proceso sin coste adicional.`,
           },
         },
       ],

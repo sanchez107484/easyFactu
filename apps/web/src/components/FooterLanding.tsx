@@ -30,6 +30,12 @@ export default function FooterLanding(): JSX.Element {
               <Link href="/funcionalidades" className="text-muted-foreground hover:text-foreground">
                 Funcionalidades
               </Link>
+              <Link href="/verifactu" className="text-muted-foreground hover:text-foreground">
+                VeriFactu
+              </Link>
+              <Link href="/asesoria" className="text-muted-foreground hover:text-foreground">
+                Asesorías
+              </Link>
               <Link href="/precios" className="text-muted-foreground hover:text-foreground">
                 Precios
               </Link>

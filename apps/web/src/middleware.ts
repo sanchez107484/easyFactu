@@ -14,6 +14,9 @@ const publicRoutes = [
   // Marketing
   '/precios',
   '/funcionalidades',
+  '/verifactu',
+  '/asesoria',
+  '/blog',
   '/contacto',
   // Legal
   '/aviso-legal',

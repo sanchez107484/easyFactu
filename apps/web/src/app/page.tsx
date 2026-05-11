@@ -1,5 +1,4 @@
-'use client';
-
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
   Shield,
@@ -26,7 +25,11 @@ import {
 import { brandConfig, PLAZAS_CONFIG, PRICING } from '@easyfactura/brand-config';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
-import { useEffect, useState, useRef } from 'react';
+import {
+  HomeStickyCtaBanner,
+  HomeAnimatedStats,
+  HomeFaqAccordion,
+} from '@/components/home/home-client';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data
@@ -296,6 +299,39 @@ const homepageSoftwareJsonLd = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SEO — Page-level metadata (overrides layout.tsx defaults for the homepage)
+// ─────────────────────────────────────────────────────────────────────────────
+export const metadata: Metadata = {
+  title: `Software de facturación VeriFactu para autónomos y pymes | ${brandConfig.app.name}`,
+  description: `${brandConfig.app.name} es el software de facturación con VeriFactu integrado para autónomos y pymes. Cumplimiento automático con la Ley Antifraude 11/2021. ${PRICING.freePeriodMonths} meses gratis. Sin tarjeta.`,
+  alternates: {
+    canonical: brandConfig.app.url,
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'es_ES',
+    url: brandConfig.app.url,
+    title: `Software de facturación VeriFactu para autónomos | ${brandConfig.app.name}`,
+    description: `Cumple con la Ley Antifraude 11/2021 de forma automática. Hash encadenado, código QR y envío a la AEAT incluidos. ${PRICING.freePeriodMonths} meses gratis. Sin tarjeta.`,
+    siteName: brandConfig.app.name,
+    images: [
+      {
+        url: `${brandConfig.app.url}/og-image.jpg`,
+        width: 1200,
+        height: 630,
+        alt: `${brandConfig.app.name} — Software de facturación VeriFactu para autónomos`,
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `Software de facturación VeriFactu para autónomos | ${brandConfig.app.name}`,
+    description: `Cumplimiento automático con Hacienda. ${PRICING.freePeriodMonths} meses gratis. Sin tarjeta.`,
+    images: [`${brandConfig.app.url}/og-image.jpg`],
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Small UI helpers
 // ─────────────────────────────────────────────────────────────────────────────
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -305,92 +341,9 @@ function Card({ children, className = '' }: { children: React.ReactNode; classNa
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Accordion
+// Main Page (Server Component)
 // ─────────────────────────────────────────────────────────────────────────────
-function AccordionItem({ q, a }: { q: string; a: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div
-      className={`rounded-xl border-2 bg-white px-4 transition-colors ${open ? 'border-blue-200' : 'border-slate-200'}`}
-    >
-      <button
-        className="flex w-full items-center justify-between py-4 text-left text-base font-semibold text-slate-900 transition-colors hover:text-blue-600"
-        onClick={() => setOpen(!open)}
-      >
-        <span>{q}</span>
-        <span
-          className={`ml-4 shrink-0 transition-transform duration-200 ${open ? 'rotate-45' : ''}`}
-        >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path
-              d="M10 4v12M4 10h12"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
-        </span>
-      </button>
-      <div
-        className={`overflow-hidden transition-all duration-300 ${open ? 'max-h-48 pb-4' : 'max-h-0'}`}
-      >
-        <p className="text-sm leading-relaxed text-slate-500">{a}</p>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Main Page
-// ─────────────────────────────────────────────────────────────────────────────
-export default function App() {
-  const [showStickyCTA, setShowStickyCTA] = useState(false);
-  // Initialize with the real target values so the SSR HTML contains the actual numbers.
-  // Google crawls the server-rendered HTML — starting at 0 would make it see "0+ inscritos".
-  // The client-side animation will still run (overwriting these values from 0 on scroll),
-  // but bots never execute JavaScript so they always see the pre-rendered real numbers.
-  const [counters, setCounters] = useState({
-    facturas: 10420,
-    usuarios: PLAZAS_CONFIG.ocupadas,
-    ahorro: 50000,
-  });
-  const statsRef = useRef<HTMLDivElement>(null);
-  const hasAnimated = useRef(false);
-
-  useEffect(() => {
-    const handleScroll = () => setShowStickyCTA(window.scrollY > 500);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !hasAnimated.current) {
-          hasAnimated.current = true;
-          const duration = 2000;
-          const targets = { facturas: 10420, usuarios: PLAZAS_CONFIG.ocupadas, ahorro: 50000 };
-          const start = Date.now();
-          const tick = () => {
-            const elapsed = Date.now() - start;
-            const progress = Math.min(elapsed / duration, 1);
-            const ease = 1 - Math.pow(1 - progress, 3);
-            setCounters({
-              facturas: Math.floor(ease * targets.facturas),
-              usuarios: Math.floor(ease * targets.usuarios),
-              ahorro: Math.floor(ease * targets.ahorro),
-            });
-            if (progress < 1) requestAnimationFrame(tick);
-          };
-          requestAnimationFrame(tick);
-        }
-      },
-      { threshold: 0.3 },
-    );
-    if (statsRef.current) observer.observe(statsRef.current);
-    return () => observer.disconnect();
-  }, []);
-
+export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col bg-white text-slate-900">
       {/* JSON-LD — FAQPage: expands search results with rich Q&A snippets */}
@@ -558,33 +511,9 @@ export default function App() {
         </div>
 
         {/* ══════════════════════════════════════════════════════════════
-            SECTION 2 — STATS
+            SECTION 2 — STATS (client island: animated counters)
             ══════════════════════════════════════════════════════════════ */}
-        <section ref={statsRef} className="border-y border-slate-100 bg-slate-50 py-12">
-          <div className="mx-auto max-w-4xl px-4">
-            <div className="grid gap-8 sm:grid-cols-3">
-              {[
-                {
-                  value: `${counters.facturas.toLocaleString('es-ES')}+`,
-                  label: 'Facturas procesadas',
-                },
-                {
-                  value: `${counters.usuarios.toLocaleString('es-ES')}+`,
-                  label: 'Profesionales inscritos',
-                },
-                {
-                  value: `${counters.ahorro.toLocaleString('es-ES')}€`,
-                  label: 'En sanciones evitadas',
-                },
-              ].map(({ value, label }) => (
-                <div key={label} className="text-center">
-                  <div className="text-4xl font-extrabold tabular-nums text-slate-900">{value}</div>
-                  <p className="mt-1 text-sm text-slate-500">{label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <HomeAnimatedStats />
 
         {/* ══════════════════════════════════════════════════════════════
             SECTION 3 — PROBLEM
@@ -1050,11 +979,7 @@ export default function App() {
               Resolvemos las consultas más frecuentes de autónomos y pymes
             </p>
 
-            <div className="space-y-2">
-              {faqs.map((faq, i) => (
-                <AccordionItem key={i} q={faq.q} a={faq.a} />
-              ))}
-            </div>
+            <HomeFaqAccordion faqs={faqs} />
           </div>
         </section>
 
@@ -1107,23 +1032,8 @@ export default function App() {
       {/* ══════════════════════════════════════════════════════════════
           STICKY MOBILE CTA
           ══════════════════════════════════════════════════════════════ */}
-      {showStickyCTA && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur sm:hidden">
-          <Link
-            href="/registro"
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-base font-bold text-white transition-all hover:bg-blue-700"
-          >
-            Empezar gratis ahora
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          <p className="mt-2 text-center text-xs text-slate-400">
-            <span className="font-bold text-amber-600">
-              {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas restantes
-            </span>
-            {' · '}6 meses gratis · Sin tarjeta al registrarte
-          </p>
-        </div>
-      )}
+      {/* Sticky mobile CTA (client island: scroll-triggered) */}
+      <HomeStickyCtaBanner />
     </div>
   );
 }

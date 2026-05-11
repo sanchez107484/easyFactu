@@ -61,6 +61,25 @@ export default async function BlogPage() {
   const posts = await getPosts();
   const [featured, ...rest] = posts;
 
+  // ItemList schema — lists all blog posts for Google's carousel/rich snippets.
+  // Only rendered when posts exist to avoid empty arrays confusing crawlers.
+  const itemListJsonLd =
+    posts.length > 0
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          name: `Blog — ${brandConfig.app.name}`,
+          url: `${brandConfig.app.url}/blog`,
+          numberOfItems: posts.length,
+          itemListElement: posts.map((post, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            url: `${brandConfig.app.url}/blog/${post.slug}`,
+            name: post.title,
+          })),
+        }
+      : null;
+
   return (
     <>
       <script
@@ -71,6 +90,12 @@ export default async function BlogPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
+      {itemListJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
+        />
+      )}
       <SiteHeader />
 
       <main className="min-h-screen bg-background">

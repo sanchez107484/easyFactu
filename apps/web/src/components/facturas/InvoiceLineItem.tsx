@@ -210,14 +210,14 @@ export function InvoiceLineItem({
   const line: ExtendedLineData = useWatch({ control: form.control, name: `lines.${index}` }) ?? {};
   const mode: LineMode = line._mode ?? 'custom';
 
-  // â”€â”€ Calculations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Calculations --------------------------------------------------
   const qty = mode === 'service' ? 1 : (line.quantity ?? 0);
   const price = line.unitPrice ?? 0;
   const tax = line.taxRate ?? 21;
   const subtotal = round2(qty * price);
   const lineTotal = round2(subtotal * (1 + tax / 100));
 
-  // â”€â”€ Mode change â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Mode change ---------------------------------------------------
   const handleModeChange = (newMode: LineMode) => {
     form.setValue(`lines.${index}._mode`, newMode);
     if (newMode === 'service') {
@@ -239,7 +239,7 @@ export function InvoiceLineItem({
     }
   };
 
-  // â”€â”€ Errors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Errors -------------------------------------------------------
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const lineErrors = (form.formState.errors as any)?.lines?.[index] as
     | Record<string, { message?: string }>
@@ -250,7 +250,7 @@ export function InvoiceLineItem({
 
   return (
     <div className="rounded-lg border bg-background overflow-hidden" onFocus={onFocus}>
-      {/* â”€â”€ Header bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* -- Header bar ----------------------------------------------- */}
       <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/30 border-b">
         {/* Line number */}
         <span className="text-xs font-mono text-muted-foreground w-4 shrink-0 select-none">
@@ -282,7 +282,7 @@ export function InvoiceLineItem({
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Catalog button â€” always visible */}
+        {/* Catalog button – always visible */}
         <CatalogPicker
           selectedProductId={line.productId}
           defaultType={mode === 'product' ? ProductType.PRODUCT : ProductType.SERVICE}
@@ -330,7 +330,7 @@ export function InvoiceLineItem({
             type="button"
             onClick={onDuplicate}
             className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            title="Duplicar lÃ­nea"
+            title="Duplicar línea"
           >
             <Copy className="h-3.5 w-3.5" />
           </button>
@@ -339,7 +339,7 @@ export function InvoiceLineItem({
               type="button"
               onClick={onRemove}
               className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-              title="Eliminar lÃ­nea"
+              title="Eliminar línea"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -347,7 +347,7 @@ export function InvoiceLineItem({
         </div>
       </div>
 
-      {/* â”€â”€ Body â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* -- Body ----------------------------------------------------- */}
       <div className="px-3 pb-3 pt-2.5 space-y-2">
         {/* Description */}
         <Textarea
@@ -369,7 +369,7 @@ export function InvoiceLineItem({
 
         {/* Numbers row */}
         <div className="flex items-center gap-2">
-          {/* Qty â€” hidden for service, optional for custom, required for product */}
+          {/* Qty – hidden for service, optional for custom, required for product */}
           {showQtyField && (
             <div className="relative">
               <Input

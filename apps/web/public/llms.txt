@@ -1,0 +1,47 @@
+# NovaFactura — Software de facturación VeriFactu para autónomos y pymes en España
+
+> Software de facturación VeriFactu certificado por la AEAT. Cumplimiento automático con la Ley Antifraude 11/2021. Completamente gratuito durante 6 meses para autónomos y pymes. Gratis para siempre para asesorías y gestorías.
+
+NovaFactura es el software de facturación nativo VeriFactu para autónomos, pymes y asesorías en España. Automatiza el hash encadenado SHA-256, la firma electrónica, el código QR y el envío directo al endpoint de la AEAT.
+
+## ¿Qué es NovaFactura?
+
+- **URL**: https://www.novafactura.es
+- **Tipo**: SaaS de facturación electrónica VeriFactu
+- **Mercado**: España (autónomos, pymes, asesorías, gestorías)
+- **Normativa**: Ley Antifraude 11/2021, Reglamento VeriFactu, AEAT
+- **Precio autónomos/pymes**: Gratis 6 meses, después desde 9,90€/mes
+- **Precio asesorías**: Gratis para siempre
+
+## Para autónomos y pymes
+
+NovaFactura permite crear facturas legales con VeriFactu en menos de 60 segundos. El software genera automáticamente el hash encadenado, la firma electrónica cualificada, el código QR verificable y envía el registro a la Agencia Tributaria. Cumplimiento 100% garantizado con la Ley Antifraude 11/2021.
+
+## Para asesorías y gestorías
+
+Panel centralizado para gestionar la facturación VeriFactu de múltiples clientes. Cada factura emitida queda registrada bajo el NIF fiscal de cada cliente. Cambio de contexto entre clientes en un clic. Sin coste para la asesoría.
+
+## Funcionalidades principales
+
+- Facturación VeriFactu 100% automática (hash encadenado, código QR, firma, envío AEAT)
+- Software garante certificado por la Agencia Tributaria
+- Gestión de facturas, presupuestos, clientes y productos
+- Facturas recurrentes y cobros parciales
+- Panel de gestión para asesorías y gestorías (gratis para siempre)
+- Migración desde Excel, CSV o Holded
+- Informes y estadísticas de facturación
+- Plantillas PDF personalizables con logo
+
+## ¿Qué es VeriFactu?
+
+VeriFactu es el sistema de verificación de facturas de la Agencia Tributaria española, obligatorio para autónomos y empresas bajo la Ley Antifraude 11/2021. Obliga a que cada factura incluya un hash encadenado SHA-256, un código QR verificable y sea transmitida en tiempo real a la AEAT. El uso de Excel, Word o software no homologado deja de ser legal. Las sanciones por incumplimiento llegan hasta 50.000€.
+
+## Páginas de referencia
+
+- Inicio: https://www.novafactura.es
+- Funcionalidades: https://www.novafactura.es/funcionalidades
+- Precios: https://www.novafactura.es/precios
+- Para asesorías: https://www.novafactura.es/asesoria
+- Blog (recursos VeriFactu): https://www.novafactura.es/blog
+- Contacto: https://www.novafactura.es/contacto
+- Registro gratuito: https://www.novafactura.es/registro

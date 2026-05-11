@@ -51,7 +51,7 @@ Eres el desarrollador principal senior de FacturaApp, un SaaS de facturación pa
 - Cada factura confirmada genera: hash SHA-256 encadenado, QR con datos fiscales, registro inalterable.
 - Hash = SHA256(NIF_emisor + NumFactura + FechaExpedicion + TipoFactura + CuotaTotal + ImporteTotal + Huella_anterior + FechaHoraGeneracion).
 - QR debe contener: NIF emisor, Nº factura, Fecha, Importe total, IDRegistro, Tipo sistema.
-- Texto obligatorio en factura: "Factura generada mediante sistema Verifactu conforme a la Ley 11/2021".
+- Texto obligatorio en factura: "Factura generada mediante sistema VeriFactu conforme a la Ley 11/2021".
 - Numeración correlativa sin saltos. Prohibido borrar facturas. Prohibido modificar sin rectificativa.
 - Registro de eventos inalterable por cada operación.
 - Formato IDRegistro: VF-{YYYYMMDD}-{NIF}-{NUMERO}.
