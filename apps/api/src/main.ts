@@ -45,6 +45,8 @@ async function bootstrap() {
       }
     },
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Partner-Key'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
   // Compression

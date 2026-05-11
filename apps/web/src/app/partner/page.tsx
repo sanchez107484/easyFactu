@@ -22,6 +22,8 @@ import {
   Search,
   X,
   Repeat,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -367,12 +369,23 @@ function DualLineChart({
       {/* Period comparison row */}
       <div className="mb-5 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs">
         <div className="flex items-center gap-1.5">
-          <span className="inline-block h-[2px] w-4 rounded-full" style={{ backgroundColor: color }} />
+          <span
+            className="inline-block h-[2px] w-4 rounded-full"
+            style={{ backgroundColor: color }}
+          />
           <span className="text-gray-300">{currentLabel}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <svg width="14" height="4" className="shrink-0">
-            <line x1="0" y1="2" x2="14" y2="2" stroke="#4b5563" strokeWidth="2" strokeDasharray="4 2" />
+            <line
+              x1="0"
+              y1="2"
+              x2="14"
+              y2="2"
+              stroke="#4b5563"
+              strokeWidth="2"
+              strokeDasharray="4 2"
+            />
           </svg>
           <span className="text-gray-500">
             {previousLabel}
@@ -630,6 +643,7 @@ function LoginForm({ onSuccess }: { onSuccess: (key: string) => void }) {
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showKey, setShowKey] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -665,14 +679,25 @@ function LoginForm({ onSuccess }: { onSuccess: (key: string) => void }) {
           <p className="mt-1 text-sm text-gray-400">Acceso restringido</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="password"
-            placeholder="Clave de acceso"
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            className="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-white placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-            autoFocus
-          />
+          <div className="relative">
+            <input
+              type={showKey ? 'text' : 'password'}
+              placeholder="Clave de acceso"
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              className="w-full rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 pr-12 text-white placeholder-gray-500 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={() => setShowKey((v) => !v)}
+              className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 hover:text-gray-300"
+              tabIndex={-1}
+              aria-label={showKey ? 'Ocultar clave' : 'Mostrar clave'}
+            >
+              {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
           {error && (
             <p className="flex items-center gap-2 text-sm text-red-400">
               <AlertTriangle className="h-4 w-4 shrink-0" />
@@ -734,7 +759,8 @@ function Dashboard({
   const payingTenants = stats.tenants.byPlan.BASIC + stats.tenants.byPlan.PROFESSIONAL;
   const payingRate = pct(payingTenants, totalTenants);
   const verifactuRate = pct(stats.verifactu.tenantsWithCertificate, totalTenants);
-  const avgInvoicesPerTenant = totalTenants > 0 ? Math.round(stats.invoices.total / totalTenants) : 0;
+  const avgInvoicesPerTenant =
+    totalTenants > 0 ? Math.round(stats.invoices.total / totalTenants) : 0;
 
   const { currentPeriod, previousPeriod } = stats.growth;
   const currentLabel = `${fmtDateShort(currentPeriod.startDate)} – ${fmtDateShort(currentPeriod.endDate)}`;
@@ -761,10 +787,13 @@ function Dashboard({
       else if (col === 'plan') cmp = (PLAN_ORDER[a.plan] ?? 0) - (PLAN_ORDER[b.plan] ?? 0);
       else if (col === 'accountType') cmp = a.accountType.localeCompare(b.accountType, 'es');
       else if (col === 'invoiceCount') cmp = a.invoiceCount - b.invoiceCount;
-      else if (col === 'recurringInvoiceCount') cmp = a.recurringInvoiceCount - b.recurringInvoiceCount;
+      else if (col === 'recurringInvoiceCount')
+        cmp = a.recurringInvoiceCount - b.recurringInvoiceCount;
       else if (col === 'customerCount') cmp = a.customerCount - b.customerCount;
-      else if (col === 'setupCompleted') cmp = (a.setupCompleted ? 1 : 0) - (b.setupCompleted ? 1 : 0);
-      else if (col === 'createdAt') cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      else if (col === 'setupCompleted')
+        cmp = (a.setupCompleted ? 1 : 0) - (b.setupCompleted ? 1 : 0);
+      else if (col === 'createdAt')
+        cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       else if (col === 'lastUserActivityAt') {
         const aT = a.lastUserActivityAt ? new Date(a.lastUserActivityAt).getTime() : -Infinity;
         const bT = b.lastUserActivityAt ? new Date(b.lastUserActivityAt).getTime() : -Infinity;
@@ -821,7 +850,6 @@ function Dashboard({
       </header>
 
       <main className="mx-auto max-w-screen-2xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
-
         {/* ── 1. KPIs ── */}
         <section>
           <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-500">
@@ -975,7 +1003,11 @@ function Dashboard({
               {[
                 { label: 'Esta semana', value: stats.users.newThisWeek, color: 'text-blue-400' },
                 { label: 'Este mes', value: stats.users.newThisMonth, color: 'text-blue-300' },
-                { label: 'Email verificado', value: stats.users.verified, color: 'text-emerald-400' },
+                {
+                  label: 'Email verificado',
+                  value: stats.users.verified,
+                  color: 'text-emerald-400',
+                },
                 { label: 'Sin verificar', value: stats.users.unverified, color: 'text-orange-400' },
                 { label: 'Total acumulado', value: stats.users.total, color: 'text-white' },
               ].map(({ label, value, color }) => (
@@ -995,9 +1027,17 @@ function Dashboard({
             <div className="space-y-3">
               {[
                 { label: 'Total registradas', value: totalTenants, color: 'text-white' },
-                { label: 'Activas (período)', value: stats.tenants.active, color: 'text-emerald-400' },
+                {
+                  label: 'Activas (período)',
+                  value: stats.tenants.active,
+                  color: 'text-emerald-400',
+                },
                 { label: 'Inactivas', value: stats.tenants.inactive, color: 'text-gray-500' },
-                { label: 'Setup completado', value: stats.tenants.setupCompleted, color: 'text-blue-400' },
+                {
+                  label: 'Setup completado',
+                  value: stats.tenants.setupCompleted,
+                  color: 'text-blue-400',
+                },
                 {
                   label: 'Sin completar',
                   value: totalTenants - stats.tenants.setupCompleted,
@@ -1145,9 +1185,7 @@ function Dashboard({
                     style={{ width: verifactuRate }}
                   />
                 </div>
-                <p className="mt-2 text-right text-xl font-bold text-indigo-300">
-                  {verifactuRate}
-                </p>
+                <p className="mt-2 text-right text-xl font-bold text-indigo-300">{verifactuRate}</p>
               </div>
             </div>
           </div>
@@ -1176,18 +1214,24 @@ function Dashboard({
               <table className="min-w-full divide-y divide-gray-800">
                 <thead className="bg-gray-800/40">
                   <tr>
-                    {([
-                      { col: 'businessName', label: 'Empresa', align: 'text-left' },
-                      { col: 'email', label: 'Email', align: 'text-left' },
-                      { col: 'plan', label: 'Plan', align: 'text-center' },
-                      { col: 'accountType', label: 'Tipo', align: 'text-center' },
-                      { col: 'invoiceCount', label: 'Facturas', align: 'text-center' },
-                      { col: 'recurringInvoiceCount', label: 'Recurrentes', align: 'text-center' },
-                      { col: 'customerCount', label: 'Clientes', align: 'text-center' },
-                      { col: 'setupCompleted', label: 'Setup', align: 'text-center' },
-                      { col: 'createdAt', label: 'Registro', align: 'text-left' },
-                      { col: 'lastUserActivityAt', label: 'Últ. acceso', align: 'text-left' },
-                    ] as const).map(({ col, label, align }) => (
+                    {(
+                      [
+                        { col: 'businessName', label: 'Empresa', align: 'text-left' },
+                        { col: 'email', label: 'Email', align: 'text-left' },
+                        { col: 'plan', label: 'Plan', align: 'text-center' },
+                        { col: 'accountType', label: 'Tipo', align: 'text-center' },
+                        { col: 'invoiceCount', label: 'Facturas', align: 'text-center' },
+                        {
+                          col: 'recurringInvoiceCount',
+                          label: 'Recurrentes',
+                          align: 'text-center',
+                        },
+                        { col: 'customerCount', label: 'Clientes', align: 'text-center' },
+                        { col: 'setupCompleted', label: 'Setup', align: 'text-center' },
+                        { col: 'createdAt', label: 'Registro', align: 'text-left' },
+                        { col: 'lastUserActivityAt', label: 'Últ. acceso', align: 'text-left' },
+                      ] as const
+                    ).map(({ col, label, align }) => (
                       <SortableHeader
                         key={col}
                         col={col}
@@ -1202,10 +1246,7 @@ function Dashboard({
                 <tbody className="divide-y divide-gray-800/60">
                   {filteredTenants.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan={10}
-                        className="px-4 py-10 text-center text-sm text-gray-500"
-                      >
+                      <td colSpan={10} className="px-4 py-10 text-center text-sm text-gray-500">
                         Ninguna empresa coincide con los filtros aplicados.
                       </td>
                     </tr>
@@ -1255,12 +1296,12 @@ function Dashboard({
                             <XCircle className="mx-auto h-4 w-4 text-gray-700" />
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-400">
-                          {fmtDate(t.createdAt)}
-                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-400">{fmtDate(t.createdAt)}</td>
                         <td className="px-4 py-3 text-sm">
                           {t.lastUserActivityAt ? (
-                            <span className="text-gray-300">{fmtDateTime(t.lastUserActivityAt)}</span>
+                            <span className="text-gray-300">
+                              {fmtDateTime(t.lastUserActivityAt)}
+                            </span>
                           ) : (
                             <span className="text-gray-700">—</span>
                           )}
@@ -1292,22 +1333,19 @@ export default function PartnerPage() {
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadStats = useCallback(
-    async (key: string, days: number) => {
-      setRefreshing(true);
-      setError('');
-      try {
-        const data = await fetchStats(key, days);
-        setStats(data);
-      } catch {
-        setError('No se pudieron cargar las estadísticas.');
-        setStats(null);
-      } finally {
-        setRefreshing(false);
-      }
-    },
-    [],
-  );
+  const loadStats = useCallback(async (key: string, days: number) => {
+    setRefreshing(true);
+    setError('');
+    try {
+      const data = await fetchStats(key, days);
+      setStats(data);
+    } catch {
+      setError('No se pudieron cargar las estadísticas.');
+      setStats(null);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
