@@ -150,7 +150,7 @@ function pct(num: number, denom: number): string {
 
 async function fetchStats(key: string, days: number): Promise<PartnerStats> {
   const res = await fetch(`${API_URL}/partner/stats?days=${days}`, {
-    headers: { 'X-Partner-Key': key },
+    headers: { Authorization: `Bearer ${key}` },
     cache: 'no-store',
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);

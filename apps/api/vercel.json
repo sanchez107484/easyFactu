@@ -2,21 +2,6 @@
   "version": 2,
   "buildCommand": "pnpm run vercel:build",
   "installCommand": "pnpm install --frozen-lockfile --prefer-offline",
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET,POST,PUT,PATCH,DELETE,OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type,Authorization,X-Partner-Key"
-        }
-      ]
-    }
-  ],
   "functions": {
     "api/index.ts": {
       "includeFiles": "dist/**,node_modules/.prisma/**,node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/**,node_modules/@easyfactura/**",
