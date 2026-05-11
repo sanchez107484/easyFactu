@@ -17,6 +17,7 @@ import { AgencyModule } from './modules/agency/agency.module';
 import { EmailModule } from './common/email/email.module';
 import { RecurringInvoiceModule } from './modules/recurring-invoices/recurring-invoice.module';
 import { PaymentModule } from './modules/payments/payment.module';
+import { PartnerModule } from './modules/partner/partner.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { PaymentModule } from './modules/payments/payment.module';
     EmailModule,
     RecurringInvoiceModule,
     PaymentModule,
+    PartnerModule,
   ],
   controllers: [],
   providers: [
