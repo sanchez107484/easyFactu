@@ -32,6 +32,8 @@ async function bootstrap() {
   const allowedOrigins = new Set([
     'http://localhost:3000',
     'https://easyfactu-web.vercel.app',
+    'https://www.novafactura.es',
+    'https://novafactura.es',
     ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map((o) => o.trim()) : []),
   ]);
 
