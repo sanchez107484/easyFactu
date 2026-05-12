@@ -66,6 +66,7 @@ const FORMAT_LABELS: Record<ExportFormat, string> = {
   CEGID: 'Cegid Contasimple (.xlsx)',
   CONTAPLUS: 'ContaPlus (.txt)',
   A3CON: 'A3CON (.txt) — Próximamente',
+  DIAMACON: 'Diamacon (.xlsx) — Próximamente',
 };
 
 const MODE_LABELS: Record<ExportMode, string> = {
