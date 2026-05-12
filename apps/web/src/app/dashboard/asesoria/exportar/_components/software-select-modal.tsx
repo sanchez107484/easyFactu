@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,11 @@ export function SoftwareSelectModal({
 }: SoftwareSelectModalProps) {
   const [selected, setSelected] = useState<ExportFormat>(currentFormat);
   const [saveDefault, setSaveDefault] = useState(isFirstTime);
+
+  // Sync selection with currentFormat every time the modal opens
+  useEffect(() => {
+    if (open) setSelected(currentFormat);
+  }, [open, currentFormat]);
 
   if (!open) return null;
 
@@ -73,15 +79,27 @@ export function SoftwareSelectModal({
                 )}
               >
                 <div className="flex items-center gap-3">
-                  <span
-                    className={cn(
-                      'h-9 w-9 rounded-md text-sm font-bold flex items-center justify-center shrink-0',
-                      info.brandBg,
-                      info.brandText,
-                    )}
-                  >
-                    {info.initials}
-                  </span>
+                  {info.logoUrl ? (
+                    <span className="h-9 w-9 rounded-md flex items-center justify-center shrink-0 overflow-hidden">
+                      <Image
+                        src={info.logoUrl}
+                        alt={info.name}
+                        width={36}
+                        height={36}
+                        className="object-cover w-full h-full"
+                      />
+                    </span>
+                  ) : (
+                    <span
+                      className={cn(
+                        'h-9 w-9 rounded-md text-sm font-bold flex items-center justify-center shrink-0',
+                        info.brandBg,
+                        info.brandText,
+                      )}
+                    >
+                      {info.initials}
+                    </span>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm">{info.name}</span>

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AgencyController } from './agency.controller';
 import { AgencyService } from './agency.service';
 import { AgencyExportService } from './agency-export.service';
+import { AgencyExportCegidService } from './agency-export-cegid.service';
 import { ContaPlusExportService } from './contaplus-export.service';
 import { FiscalValidatorService } from './fiscal-validator.service';
 import { PrismaModule } from '../../prisma/prisma.module';
@@ -15,6 +16,7 @@ import { AgencyAccessGuard } from '../../common/guards/agency-access.guard';
   providers: [
     AgencyService,
     AgencyExportService,
+    AgencyExportCegidService,
     ContaPlusExportService,
     FiscalValidatorService,
     AgencyAccessGuard,

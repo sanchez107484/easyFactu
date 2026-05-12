@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Decimal } from '@prisma/client/runtime/library';
-import { InvoiceStatus, Prisma } from '@prisma/client';
+import { ExportFormat, InvoiceStatus, Prisma } from '@prisma/client';
 import * as iconv from 'iconv-lite';
 import { ExportModePrisma, ExportFormatDto } from './dto/export-invoices.dto';
+import { AgencyExportCegidService } from './agency-export-cegid.service';
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -54,24 +55,60 @@ export interface ExportResult {
   totalRevenue: number;
 }
 
-type ExportableInvoice = {
+export type ExportableInvoice = {
   id: string;
   number: string | null;
   issueDate: Date;
+  dueDate: Date | null;
   total: Decimal;
   subtotal: Decimal;
   taxTotal: Decimal;
   irpfTotal: Decimal | null;
+  irpfPercent: Decimal | null;
+  discountPercent: Decimal | null;
   status: string;
-  customer: { name: string; nif: string } | null;
-  lines: { subtotal: Decimal; taxRate: Decimal; taxAmount: Decimal }[];
+  isRectificative: boolean;
+  notes: string | null;
+  rectifiedInvoice: { number: string | null } | null;
+  series: { name: string; code: string } | null;
+  customer: {
+    name: string;
+    legalName: string | null;
+    type: string;
+    nif: string;
+    address: string | null;
+    postalCode: string | null;
+    city: string | null;
+    province: string | null;
+    country: string;
+    phone: string | null;
+    email: string | null;
+  } | null;
+  lines: {
+    description: string;
+    quantity: Decimal;
+    unitPrice: Decimal;
+    subtotal: Decimal;
+    taxRate: Decimal;
+    taxAmount: Decimal;
+    irpfRate: Decimal | null;
+    irpfAmount: Decimal | null;
+  }[];
+  payments: {
+    paymentDate: Date;
+    amount: Decimal;
+    paymentMethod: string | null;
+  }[];
 };
 
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 @Injectable()
 export class AgencyExportService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cegidService: AgencyExportCegidService
+  ) {}
 
   /**
    * Returns invoices for the export preview modal, with their export status.
@@ -173,7 +210,13 @@ export class AgencyExportService {
       );
     }
 
-    const fileBuffer = this.generateFileBuffer(format, invoices, clientTenant, dateFrom, dateTo);
+    const fileBuffer = await this.generateFileBuffer(
+      format,
+      invoices,
+      clientTenant,
+      dateFrom,
+      dateTo
+    );
     const filename = this.buildFilename(format, clientTenant.nif, dateFrom, dateTo);
     const totalRevenue = invoices.reduce((sum, inv) => sum + Number(inv.total), 0);
 
@@ -209,7 +252,7 @@ export class AgencyExportService {
   async updatePreferredFormat(agencyTenantId: string, format: ExportFormatDto): Promise<void> {
     await this.prisma.tenant.update({
       where: { id: agencyTenantId },
-      data: { preferredExportFormat: format },
+      data: { preferredExportFormat: format as unknown as ExportFormat },
     });
   }
 
@@ -356,9 +399,54 @@ export class AgencyExportService {
 
     return this.prisma.invoice.findMany({
       where,
-      include: {
-        customer: { select: { name: true, nif: true } },
-        lines: { select: { subtotal: true, taxRate: true, taxAmount: true } },
+      select: {
+        id: true,
+        number: true,
+        issueDate: true,
+        dueDate: true,
+        total: true,
+        subtotal: true,
+        taxTotal: true,
+        irpfTotal: true,
+        irpfPercent: true,
+        discountPercent: true,
+        status: true,
+        isRectificative: true,
+        notes: true,
+        rectifiedInvoice: { select: { number: true } },
+        series: { select: { name: true, code: true } },
+        customer: {
+          select: {
+            name: true,
+            legalName: true,
+            type: true,
+            nif: true,
+            address: true,
+            postalCode: true,
+            city: true,
+            province: true,
+            country: true,
+            phone: true,
+            email: true,
+          },
+        },
+        lines: {
+          select: {
+            description: true,
+            quantity: true,
+            unitPrice: true,
+            subtotal: true,
+            taxRate: true,
+            taxAmount: true,
+            irpfRate: true,
+            irpfAmount: true,
+          },
+          orderBy: { sortOrder: 'asc' },
+        },
+        payments: {
+          select: { paymentDate: true, amount: true, paymentMethod: true },
+          orderBy: { paymentDate: 'asc' },
+        },
       },
       orderBy: [{ issueDate: 'asc' }, { number: 'asc' }],
     });
@@ -366,18 +454,20 @@ export class AgencyExportService {
 
   // ─── Private: file generation ─────────────────────────────────────────────
 
-  private generateFileBuffer(
+  private async generateFileBuffer(
     format: ExportFormatDto,
     invoices: ExportableInvoice[],
     clientTenant: { businessName: string; nif: string },
     dateFrom?: string,
     dateTo?: string
-  ): Buffer {
+  ): Promise<Buffer> {
     switch (format) {
       case ExportFormatDto.CONTAPLUS:
         return this.generateContaPlusBuffer(invoices, clientTenant, dateFrom, dateTo);
+      case ExportFormatDto.CEGID:
+        return this.cegidService.generate(invoices);
       case ExportFormatDto.A3CON:
-      case ExportFormatDto.EXCEL:
+      case ExportFormatDto.DIAMACON:
         throw new BadRequestException(`El formato ${format} aún no está disponible. Próximamente.`);
     }
   }
@@ -486,7 +576,8 @@ export class AgencyExportService {
         : `pendientes_${new Date().toISOString().substring(0, 10).replace(/-/g, '')}`;
 
     const ext = format === ExportFormatDto.CONTAPLUS ? 'txt' : 'xlsx';
-    return `${format}_${nifClean}_${period}.${ext}`;
+    const prefix = format === ExportFormatDto.CEGID ? 'CEGID' : format;
+    return `${prefix}_${nifClean}_${period}.${ext}`;
   }
 
   // ─── Private: database writes ─────────────────────────────────────────────
@@ -519,7 +610,7 @@ export class AgencyExportService {
           agencyTenantId,
           clientTenantId,
           requestedByUserId,
-          format,
+          format: format as unknown as ExportFormat,
           mode,
           dateFrom: dateFrom ? new Date(dateFrom) : null,
           dateTo: dateTo ? new Date(dateTo) : null,
@@ -535,7 +626,7 @@ export class AgencyExportService {
           agencyTenantId,
           clientTenantId,
           exportLogId: log.id,
-          format,
+          format: format as unknown as ExportFormat,
           exportedByUserId: requestedByUserId,
         })),
       });

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { CheckCircle2, HelpCircle, Lightbulb, Download, X } from 'lucide-react';
 import {
   Dialog,
@@ -56,6 +57,16 @@ export function ImportGuideModal({
             {variant === 'success' ? (
               <div className="h-11 w-11 rounded-full bg-emerald-600 flex items-center justify-center shrink-0">
                 <CheckCircle2 className="h-6 w-6 text-white" />
+              </div>
+            ) : info.logoUrl ? (
+              <div className="h-11 w-11 rounded-lg shrink-0 overflow-hidden">
+                <Image
+                  src={info.logoUrl}
+                  alt={info.name}
+                  width={44}
+                  height={44}
+                  className="object-cover w-full h-full"
+                />
               </div>
             ) : (
               <div

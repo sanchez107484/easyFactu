@@ -1198,9 +1198,10 @@ export interface QuarterlyIvaSummary {
 // ==================== AGENCY EXPORT ====================
 
 export enum ExportFormat {
+  CEGID = 'CEGID',
   CONTAPLUS = 'CONTAPLUS',
   A3CON = 'A3CON',
-  EXCEL = 'EXCEL',
+  DIAMACON = 'DIAMACON',
 }
 
 export enum ExportMode {

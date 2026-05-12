@@ -317,7 +317,12 @@ export class AgencyController {
         body.invoiceIds
       );
 
-    res.setHeader('Content-Type', 'text/plain; charset=windows-1252');
+    const contentType =
+      body.format === 'CEGID'
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'text/plain; charset=windows-1252';
+
+    res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', String(fileBuffer.length));
     res.setHeader('X-Invoices-Count', String(invoicesCount));

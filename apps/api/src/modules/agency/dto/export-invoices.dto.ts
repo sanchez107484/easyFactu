@@ -15,9 +15,10 @@ export enum ExportModePrisma {
 }
 
 export enum ExportFormatDto {
+  CEGID = 'CEGID',
   CONTAPLUS = 'CONTAPLUS',
   A3CON = 'A3CON',
-  EXCEL = 'EXCEL',
+  DIAMACON = 'DIAMACON',
 }
 
 export class ExportInvoicesDto {

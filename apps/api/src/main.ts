@@ -48,6 +48,7 @@ async function bootstrap() {
     },
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Partner-Key'],
+    exposedHeaders: ['Content-Disposition', 'X-Invoices-Count', 'X-Total-Revenue'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 

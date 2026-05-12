@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -156,8 +157,10 @@ export default function ExportarFacturasPage() {
   useEffect(() => {
     if (preferredLoading || preferredLoadedRef.current) return;
     preferredLoadedRef.current = true;
-    if (preferred?.format) {
-      patch({ format: preferred.format });
+    // Guard against stale DB values (e.g. old 'EXCEL' key before the CEGID rename)
+    const isKnownFormat = preferred?.format && preferred.format in SOFTWARE_INFO;
+    if (isKnownFormat) {
+      patch({ format: preferred.format as ExportFormat });
     } else {
       setSoftwareModalOpen(true);
     }
@@ -251,7 +254,7 @@ export default function ExportarFacturasPage() {
   const isPeriodMode = config.mode === 'PERIOD';
   const isNoDate = !config.dateFrom && !config.dateTo;
   const periodMissingDates = isPeriodMode && (!config.dateFrom || !config.dateTo);
-  const softwareInfo = SOFTWARE_INFO[config.format];
+  const softwareInfo = SOFTWARE_INFO[config.format] ?? SOFTWARE_INFO.CEGID;
 
   const dateStepTitle = isPeriodMode ? 'Período de fechas' : 'Filtrar por fechas (opcional)';
   const dateStepDescription = isPeriodMode
@@ -300,15 +303,27 @@ export default function ExportarFacturasPage() {
             )}
             title="Cambiar software de exportación"
           >
-            <span
-              className={cn(
-                'h-6 w-6 rounded text-[10px] font-bold flex items-center justify-center shrink-0',
-                softwareInfo.brandBg,
-                softwareInfo.brandText,
-              )}
-            >
-              {softwareInfo.initials}
-            </span>
+            {softwareInfo.logoUrl ? (
+              <span className="h-6 w-6 rounded shrink-0 overflow-hidden">
+                <Image
+                  src={softwareInfo.logoUrl}
+                  alt={softwareInfo.name}
+                  width={24}
+                  height={24}
+                  className="object-cover w-full h-full"
+                />
+              </span>
+            ) : (
+              <span
+                className={cn(
+                  'h-6 w-6 rounded text-[10px] font-bold flex items-center justify-center shrink-0',
+                  softwareInfo.brandBg,
+                  softwareInfo.brandText,
+                )}
+              >
+                {softwareInfo.initials}
+              </span>
+            )}
             <div className="flex flex-col items-start leading-none gap-0.5">
               <span className="text-[10px] text-muted-foreground">Exportando para</span>
               <span className="text-sm font-semibold">{softwareInfo.name}</span>

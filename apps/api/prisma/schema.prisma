@@ -633,9 +633,10 @@ model AgencyRelationHistory {
 // ==================== AGENCY EXPORT LOGS ====================
 
 enum ExportFormat {
+  CEGID
   CONTAPLUS
   A3CON
-  EXCEL
+  DIAMACON
 }
 
 enum ExportMode {

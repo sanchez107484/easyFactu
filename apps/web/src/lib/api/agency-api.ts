@@ -285,7 +285,8 @@ export const agencyApi = {
 
     const disposition = response.headers['content-disposition'] as string | undefined;
     const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
-    const filename = filenameMatch?.[1] ?? `export_${clientTenantId}.txt`;
+    const ext = data.format === 'CEGID' ? 'xlsx' : 'txt';
+    const filename = filenameMatch?.[1] ?? `export_${clientTenantId}.${ext}`;
     const invoicesCount = parseInt(response.headers['x-invoices-count'] ?? '0', 10);
     const totalRevenue = parseFloat(response.headers['x-total-revenue'] ?? '0');
 
