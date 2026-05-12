@@ -1,4 +1,12 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  NotFoundException,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { Public } from '../../common/decorators/public.decorator';
 import { PartnerGuard } from './partner.guard';
 import { PartnerService } from './partner.service';
@@ -16,5 +24,13 @@ export class PartnerController {
     const parsed = parseInt(daysStr ?? '30', 10);
     const days = (ALLOWED_DAYS as readonly number[]).includes(parsed) ? parsed : 30;
     return this.partnerService.getStats(days);
+  }
+
+  @Delete('tenant/:id')
+  async deleteTenant(@Param('id') id: string) {
+    if (!id?.match(/^[0-9a-f-]{36}$/i)) {
+      throw new NotFoundException('Tenant no encontrado');
+    }
+    return this.partnerService.deleteTenant(id);
   }
 }

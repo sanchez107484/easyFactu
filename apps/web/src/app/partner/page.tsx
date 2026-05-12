@@ -24,6 +24,7 @@ import {
   Repeat,
   Eye,
   EyeOff,
+  Trash2,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -77,6 +78,7 @@ interface PartnerStats {
     createdAt: string;
     invoiceCount: number;
     customerCount: number;
+    productCount: number;
     recurringInvoiceCount: number;
     lastUserActivityAt: string | null;
   }>;
@@ -156,6 +158,14 @@ async function fetchStats(key: string, days: number): Promise<PartnerStats> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const body = await res.json();
   return body.data ?? body;
+}
+
+async function apiDeleteTenant(key: string, tenantId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/partner/tenant/${tenantId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${key}` },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
 // ── KpiCard ────────────────────────────────────────────────────────────────────
@@ -728,6 +738,7 @@ const ACCOUNT_TYPE_LABEL: Record<string, string> = {
 
 function Dashboard({
   stats,
+  partnerKey,
   selectedDays,
   onPeriodChange,
   onRefresh,
@@ -735,6 +746,7 @@ function Dashboard({
   refreshing,
 }: {
   stats: PartnerStats;
+  partnerKey: string;
   selectedDays: number;
   onPeriodChange: (days: number) => void;
   onRefresh: () => void;
@@ -748,6 +760,23 @@ function Dashboard({
     quick: new Set(),
   });
   const [sort, setSort] = useState<SortState>({ col: 'createdAt', dir: 'desc' });
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    try {
+      await apiDeleteTenant(partnerKey, confirmDelete.id);
+      setConfirmDelete(null);
+      onRefresh();
+    } catch {
+      // silently close — onRefresh will show updated data
+      setConfirmDelete(null);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   function handleSort(col: string) {
     setSort((prev) =>
@@ -789,6 +818,7 @@ function Dashboard({
       else if (col === 'invoiceCount') cmp = a.invoiceCount - b.invoiceCount;
       else if (col === 'recurringInvoiceCount')
         cmp = a.recurringInvoiceCount - b.recurringInvoiceCount;
+      else if (col === 'productCount') cmp = a.productCount - b.productCount;
       else if (col === 'customerCount') cmp = a.customerCount - b.customerCount;
       else if (col === 'setupCompleted')
         cmp = (a.setupCompleted ? 1 : 0) - (b.setupCompleted ? 1 : 0);
@@ -1226,6 +1256,7 @@ function Dashboard({
                           label: 'Recurrentes',
                           align: 'text-center',
                         },
+                        { col: 'productCount', label: 'Productos', align: 'text-center' },
                         { col: 'customerCount', label: 'Clientes', align: 'text-center' },
                         { col: 'setupCompleted', label: 'Setup', align: 'text-center' },
                         { col: 'createdAt', label: 'Registro', align: 'text-left' },
@@ -1241,12 +1272,15 @@ function Dashboard({
                         onSort={handleSort}
                       />
                     ))}
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      Acción
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800/60">
                   {filteredTenants.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="px-4 py-10 text-center text-sm text-gray-500">
+                      <td colSpan={12} className="px-4 py-10 text-center text-sm text-gray-500">
                         Ninguna empresa coincide con los filtros aplicados.
                       </td>
                     </tr>
@@ -1287,6 +1321,9 @@ function Dashboard({
                           )}
                         </td>
                         <td className="px-4 py-3 text-center text-sm text-gray-400">
+                          {fmt(t.productCount)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-sm text-gray-400">
                           {fmt(t.customerCount)}
                         </td>
                         <td className="px-4 py-3 text-center">
@@ -1306,6 +1343,15 @@ function Dashboard({
                             <span className="text-gray-700">—</span>
                           )}
                         </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => setConfirmDelete({ id: t.id, name: t.businessName })}
+                            className="rounded-lg p-1.5 text-gray-600 transition hover:bg-red-900/40 hover:text-red-400"
+                            title="Eliminar empresa"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -1320,6 +1366,48 @@ function Dashboard({
           {new Date(stats.generatedAt).toLocaleString('es-ES')}
         </footer>
       </main>
+
+      {/* ── Modal confirmación eliminar ── */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-red-900/40 bg-gray-900 p-6 shadow-2xl">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="rounded-lg bg-red-900/30 p-2">
+                <Trash2 className="h-5 w-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white">Eliminar empresa</h3>
+                <p className="text-xs text-gray-500">Esta acción es irreversible</p>
+              </div>
+            </div>
+            <p className="mb-2 text-sm text-gray-300">
+              Se eliminará permanentemente{' '}
+              <strong className="text-white">{confirmDelete.name}</strong> junto con todas sus
+              facturas, clientes, productos, recurrentes y usuarios que no pertenezcan a ninguna
+              otra empresa.
+            </p>
+            <p className="mb-6 text-xs text-red-400">
+              ¿Estás seguro? No hay forma de deshacer esto.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                disabled={deleting}
+                className="flex-1 rounded-xl border border-gray-700 py-2.5 text-sm font-medium text-gray-300 transition hover:bg-gray-800 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white transition hover:bg-red-500 disabled:opacity-50"
+              >
+                {deleting ? 'Eliminando...' : 'Sí, eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1406,6 +1494,7 @@ export default function PartnerPage() {
   return (
     <Dashboard
       stats={stats!}
+      partnerKey={partnerKey}
       selectedDays={selectedDays}
       onPeriodChange={handlePeriodChange}
       onRefresh={handleRefresh}

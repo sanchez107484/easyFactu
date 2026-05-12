@@ -109,10 +109,12 @@ export class PartnerService {
           accountType: true,
           setupCompleted: true,
           createdAt: true,
-          _count: { select: { invoices: true, customers: true, recurringInvoices: true } },
-        tenantUsers: {
-          select: { user: { select: { lastLoginAt: true } } },
-        },
+          _count: {
+            select: { invoices: true, customers: true, recurringInvoices: true, products: true },
+          },
+          tenantUsers: {
+            select: { user: { select: { lastLoginAt: true } } },
+          },
         },
         orderBy: { createdAt: 'desc' },
         take: 100,
@@ -120,26 +122,33 @@ export class PartnerService {
     ]);
 
     // Sequential queries that depend on computed periodStart
-    const [activeTenants, newUsersThisWeek, newUsersThisMonth, verifiedUsers, setupCompleted, invoicesThisMonth, invoicesThisWeek] =
-      await Promise.all([
-        this.prisma.tenant.count({
-          where: {
-            invoices: {
-              some: { status: { notIn: ['DRAFT'] }, createdAt: { gte: periodStart } },
-            },
+    const [
+      activeTenants,
+      newUsersThisWeek,
+      newUsersThisMonth,
+      verifiedUsers,
+      setupCompleted,
+      invoicesThisMonth,
+      invoicesThisWeek,
+    ] = await Promise.all([
+      this.prisma.tenant.count({
+        where: {
+          invoices: {
+            some: { status: { notIn: ['DRAFT'] }, createdAt: { gte: periodStart } },
           },
-        }),
-        this.prisma.user.count({ where: { createdAt: { gte: startOfWeek } } }),
-        this.prisma.user.count({ where: { createdAt: { gte: startOfMonth } } }),
-        this.prisma.user.count({ where: { emailVerified: true } }),
-        this.prisma.tenant.count({ where: { setupCompleted: true } }),
-        this.prisma.invoice.count({
-          where: { status: { notIn: ['DRAFT'] }, createdAt: { gte: startOfMonth } },
-        }),
-        this.prisma.invoice.count({
-          where: { status: { notIn: ['DRAFT'] }, createdAt: { gte: startOfWeek } },
-        }),
-      ]);
+        },
+      }),
+      this.prisma.user.count({ where: { createdAt: { gte: startOfWeek } } }),
+      this.prisma.user.count({ where: { createdAt: { gte: startOfMonth } } }),
+      this.prisma.user.count({ where: { emailVerified: true } }),
+      this.prisma.tenant.count({ where: { setupCompleted: true } }),
+      this.prisma.invoice.count({
+        where: { status: { notIn: ['DRAFT'] }, createdAt: { gte: startOfMonth } },
+      }),
+      this.prisma.invoice.count({
+        where: { status: { notIn: ['DRAFT'] }, createdAt: { gte: startOfWeek } },
+      }),
+    ]);
 
     // Build plan map
     const planMap: Record<string, number> = { FREE: 0, BASIC: 0, PROFESSIONAL: 0 };
@@ -222,11 +231,41 @@ export class PartnerService {
           createdAt: t.createdAt,
           invoiceCount: t._count.invoices,
           customerCount: t._count.customers,
+          productCount: t._count.products,
           recurringInvoiceCount: t._count.recurringInvoices,
           lastUserActivityAt,
         };
       }),
       generatedAt: now.toISOString(),
     };
+  }
+
+  async deleteTenant(tenantId: string): Promise<{ deleted: boolean; usersDeleted: number }> {
+    // Find users linked exclusively to this tenant before deleting it
+    const tenantUsers = await this.prisma.tenantUser.findMany({
+      where: { tenantId },
+      select: { userId: true },
+    });
+    const userIds = tenantUsers.map((tu) => tu.userId);
+
+    // Cascade delete: all tenant data (invoices, customers, products, etc.) is removed automatically
+    await this.prisma.tenant.delete({ where: { id: tenantId } });
+
+    // Delete users who no longer belong to any tenant
+    const orphanedUsers = await this.prisma.user.findMany({
+      where: {
+        id: { in: userIds },
+        tenantUsers: { none: {} },
+      },
+      select: { id: true },
+    });
+
+    if (orphanedUsers.length > 0) {
+      await this.prisma.user.deleteMany({
+        where: { id: { in: orphanedUsers.map((u) => u.id) } },
+      });
+    }
+
+    return { deleted: true, usersDeleted: orphanedUsers.length };
   }
 }
