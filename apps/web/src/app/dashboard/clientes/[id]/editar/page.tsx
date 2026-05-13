@@ -5,12 +5,12 @@ import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { CustomerType, UpdateCustomerInput } from '@easyfactura/shared-types';
+import { CustomerType, UpdateCustomerInput, CustomerDirectoryEntry } from '@easyfactura/shared-types';
 import { customerFormSchema, CustomerFormData } from '@/lib/validators/customer.schema';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
-import { useCustomer, useUpdateCustomer, useCustomerByNif } from '@/hooks/use-customers';
+import { useCustomer, useUpdateCustomer, useCustomerByNif, useDirectoryLookup } from '@/hooks/use-customers';
 import { CustomerFormFields } from '@/components/clientes/CustomerFormFields';
 
 // ==================== TYPES & CONSTANTS ====================
@@ -94,6 +94,27 @@ function EditCustomerForm({ customerId, defaultValues, originalNif }: EditFormPr
   const nifChanged = watchedNif.toUpperCase().trim() !== originalNif.toUpperCase().trim();
   const { existingCustomer, isSearching } = useCustomerByNif(watchedNif, !nifChanged);
 
+  // Sugerencia del directorio fiscal global (solo si el NIF cambió y no hay duplicado local)
+  const shouldSkipDirectoryLookup = !nifChanged || !!existingCustomer;
+  const { directorySuggestion } = useDirectoryLookup(
+    watchedNif,
+    selectedType,
+    shouldSkipDirectoryLookup,
+  );
+
+  const handleDirectoryAutofill = useCallback(
+    (entry: CustomerDirectoryEntry) => {
+      form.setValue('name', entry.name, { shouldValidate: true });
+      if (entry.legalName) form.setValue('legalName', entry.legalName);
+      if (entry.address) form.setValue('address', entry.address);
+      if (entry.postalCode) form.setValue('postalCode', entry.postalCode);
+      if (entry.city) form.setValue('city', entry.city);
+      if (entry.province) form.setValue('province', entry.province);
+      form.setValue('country', entry.country || 'ES');
+    },
+    [form],
+  );
+
   const handleTypeSelect = useCallback(
     (type: CustomerType) => {
       form.setValue('type', type, { shouldValidate: false });
@@ -176,6 +197,8 @@ function EditCustomerForm({ customerId, defaultValues, originalNif }: EditFormPr
             showDuplicateBanner={!!existingCustomer && nifChanged}
             duplicateBannerTitle="Este NIF ya pertenece a otro cliente"
             onDuplicateNavigate={(id) => router.push(`/dashboard/clientes/${id}`)}
+            directorySuggestion={directorySuggestion}
+            onDirectoryAutofill={handleDirectoryAutofill}
           />
         </form>
       </div>

@@ -2,6 +2,7 @@ import { apiClient } from '../api-client';
 import { unwrapApiResponse, ApiResponse } from '../api-response';
 import {
   Customer,
+  CustomerDirectoryEntry,
   SharedPoolCustomer,
   PaginatedResponse,
   QueryCustomersInput,
@@ -49,5 +50,12 @@ export const customerApi = {
   importFromPool: (nif: string): Promise<Customer> =>
     apiClient
       .post<ApiResponse<Customer>>('/customers/import-from-pool', { nif })
+      .then(unwrapApiResponse),
+
+  lookupDirectory: (nif: string): Promise<CustomerDirectoryEntry | null> =>
+    apiClient
+      .get<ApiResponse<CustomerDirectoryEntry | null>>(`/customers/lookup`, {
+        params: { nif },
+      })
       .then(unwrapApiResponse),
 };

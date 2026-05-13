@@ -3,16 +3,26 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma, CustomerType as PrismaCustomerType } from '@prisma/client';
+import { Prisma, CustomerType as PrismaCustomerType, CustomerType } from '@prisma/client';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 import { validateNif } from '@easyfactura/shared-validators';
 
+/** Types that represent legal entities whose fiscal data may be shared globally */
+const DIRECTORY_ELIGIBLE_TYPES: CustomerType[] = [
+  CustomerType.COMPANY,
+  CustomerType.PUBLIC_ENTITY,
+  CustomerType.INTRACOMMUNITY,
+];
+
 @Injectable()
 export class CustomerService {
+  private readonly logger = new Logger(CustomerService.name);
+
   constructor(private prisma: PrismaService) {}
 
   async create(tenantId: string, dto: CreateCustomerDto) {
@@ -33,7 +43,7 @@ export class CustomerService {
     }
 
     // Create customer
-    return this.prisma.customer.create({
+    const customer = await this.prisma.customer.create({
       data: {
         ...dto,
         type: dto.type as unknown as PrismaCustomerType,
@@ -41,6 +51,14 @@ export class CustomerService {
         tenantId,
       },
     });
+
+    // Update global directory for legal entities (fire-and-forget — never block the response)
+    void this.upsertDirectory(customer).catch((err: unknown) => {
+      const maskedNif = `${customer.nif.slice(0, 3)}***`;
+      this.logger.warn(`Failed to upsert customer directory for NIF ${maskedNif}: ${String(err)}`);
+    });
+
+    return customer;
   }
 
   async findAll(tenantId: string, query: QueryCustomerDto) {
@@ -146,10 +164,18 @@ export class CustomerService {
       legalName: dto.legalName !== undefined ? dto.legalName.trim() || null : undefined,
     };
 
-    return this.prisma.customer.update({
+    const updated = await this.prisma.customer.update({
       where: { id },
       data,
     });
+
+    // Sync global directory for legal entities (fire-and-forget)
+    void this.upsertDirectory(updated).catch((err: unknown) => {
+      const maskedNif = `${updated.nif.slice(0, 3)}***`;
+      this.logger.warn(`Failed to upsert customer directory for NIF ${maskedNif}: ${String(err)}`);
+    });
+
+    return updated;
   }
 
   async remove(tenantId: string, id: string) {
@@ -168,6 +194,65 @@ export class CustomerService {
     return this.prisma.customer.update({
       where: { id },
       data: { isActive: true },
+    });
+  }
+
+  // ─── Global customer directory ──────────────────────────────────────────────
+
+  /**
+   * Looks up a NIF in the global customer directory.
+   * Returns null if not found or if the NIF belongs to a natural person type.
+   */
+  async lookupDirectory(nif: string) {
+    const normalizedNif = nif.toUpperCase().trim();
+    return this.prisma.customerDirectory.findUnique({
+      where: { nif: normalizedNif },
+    });
+  }
+
+  /**
+   * Upserts a customer's public fiscal data into the global directory.
+   * Only runs for legal entities (COMPANY, PUBLIC_ENTITY, INTRACOMMUNITY).
+   * Natural persons are excluded for GDPR reasons.
+   */
+  private async upsertDirectory(customer: {
+    type: PrismaCustomerType;
+    nif: string;
+    name: string;
+    legalName: string | null;
+    address: string | null;
+    postalCode: string | null;
+    city: string | null;
+    province: string | null;
+    country: string;
+  }) {
+    if (!DIRECTORY_ELIGIBLE_TYPES.includes(customer.type)) return;
+
+    const nif = customer.nif.toUpperCase().trim();
+
+    await this.prisma.customerDirectory.upsert({
+      where: { nif },
+      create: {
+        nif,
+        type: customer.type,
+        name: customer.name,
+        legalName: customer.legalName,
+        address: customer.address,
+        postalCode: customer.postalCode,
+        city: customer.city,
+        province: customer.province,
+        country: customer.country,
+      },
+      update: {
+        type: customer.type,
+        name: customer.name,
+        legalName: customer.legalName,
+        address: customer.address,
+        postalCode: customer.postalCode,
+        city: customer.city,
+        province: customer.province,
+        country: customer.country,
+      },
     });
   }
 

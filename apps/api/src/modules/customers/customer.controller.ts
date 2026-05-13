@@ -24,6 +24,7 @@ import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 import { ImportFromPoolDto } from './dto/import-from-pool.dto';
+import { LookupCustomerDto } from './dto/lookup-customer.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 
@@ -49,6 +50,13 @@ export class CustomerController {
   }
 
   // NOTE: Static routes must be declared before /:id to avoid param capture
+  @Get('lookup')
+  @ApiOperation({ summary: 'Buscar NIF en el directorio fiscal global (sugerencia de autorellenar)' })
+  @ApiOkResponse({ description: 'Datos fiscales del directorio o null si no existe' })
+  lookupDirectory(@Query() query: LookupCustomerDto) {
+    return this.customerService.lookupDirectory(query.nif);
+  }
+
   @Get('shared-pool')
   @ApiOperation({ summary: 'Buscar clientes en el directorio compartido de la asesoría' })
   @ApiOkResponse({ description: 'Clientes de otros tenants de la misma asesoría' })

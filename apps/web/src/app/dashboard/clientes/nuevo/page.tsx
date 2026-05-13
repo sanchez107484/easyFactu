@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { CustomerType, CreateCustomerInput } from '@easyfactura/shared-types';
+import { CustomerType, CreateCustomerInput, CustomerDirectoryEntry } from '@easyfactura/shared-types';
 import { customerFormSchema, CustomerFormData } from '@/lib/validators/customer.schema';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { useCreateCustomer, useCustomerByNif } from '@/hooks/use-customers';
+import { useCreateCustomer, useCustomerByNif, useDirectoryLookup } from '@/hooks/use-customers';
 import { CustomerFormFields } from '@/components/clientes/CustomerFormFields';
 import { AgencySharedPoolImport } from '@/components/clientes/AgencySharedPoolImport';
 
@@ -55,9 +55,30 @@ export default function NuevoClientePage() {
   });
 
   const watchedNif = form.watch('nif') ?? '';
+  const watchedType = form.watch('type');
 
   // Detección de NIF duplicado en tiempo real
   const { existingCustomer, isSearching } = useCustomerByNif(watchedNif);
+
+  // Sugerencia del directorio fiscal global (solo para entidades jurídicas, solo si no hay duplicado)
+  const { directorySuggestion } = useDirectoryLookup(
+    watchedNif,
+    watchedType,
+    !!existingCustomer,
+  );
+
+  const handleDirectoryAutofill = useCallback(
+    (entry: CustomerDirectoryEntry) => {
+      form.setValue('name', entry.name, { shouldValidate: true });
+      if (entry.legalName) form.setValue('legalName', entry.legalName);
+      if (entry.address) form.setValue('address', entry.address);
+      if (entry.postalCode) form.setValue('postalCode', entry.postalCode);
+      if (entry.city) form.setValue('city', entry.city);
+      if (entry.province) form.setValue('province', entry.province);
+      form.setValue('country', entry.country || 'ES');
+    },
+    [form],
+  );
 
   const handleTypeSelect = useCallback(
     (type: CustomerType) => {
@@ -133,6 +154,8 @@ export default function NuevoClientePage() {
             showDuplicateBanner={!!existingCustomer}
             duplicateBannerTitle="Este NIF ya existe en tu cartera"
             onDuplicateNavigate={(id) => router.push(`/dashboard/clientes/${id}`)}
+            directorySuggestion={directorySuggestion}
+            onDirectoryAutofill={handleDirectoryAutofill}
           />
         </form>
       </div>
