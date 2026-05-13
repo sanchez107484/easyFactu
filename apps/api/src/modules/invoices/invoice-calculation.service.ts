@@ -21,7 +21,16 @@ export interface CalculatedInvoiceTotals {
   taxBreakdown: TaxBreakdownItem[];
   taxTotal: number;
   irpfTotal: number;
+  /** REAGYP only: compensation amount (subtotalAfterDiscount × compensacionPercent). 0 for GENERAL. */
+  compensacionAmount: number;
   total: number;
+}
+
+export interface CalculateTotalsOptions {
+  discountPercent?: number;
+  irpfPercent?: number;
+  /** REAGYP compensation rate (%). Pass undefined or 0 for GENERAL regime. */
+  compensacionPercent?: number;
 }
 
 /**
@@ -30,6 +39,15 @@ export interface CalculatedInvoiceTotals {
  * RULE: All amounts are rounded to 2 decimal places after each multiplication
  * to avoid floating-point accumulation errors. Arithmetic is done in cents
  * internally and converted back to euros.
+ *
+ * Regime behaviour:
+ * - GENERAL (compensacionPercent not set):
+ *     total = subtotalAfterDiscount + taxTotal − irpfTotal
+ * - REAGYP (compensacionPercent set to 12.0 or 10.5):
+ *     taxTotal = 0 (no IVA)
+ *     compensacionAmount = subtotalAfterDiscount × compensacionPercent / 100
+ *     IRPF base = subtotalAfterDiscount + compensacionAmount  (Art. 102.Dos LIVA)
+ *     total = subtotalAfterDiscount + compensacionAmount − irpfTotal
  */
 @Injectable()
 export class InvoiceCalculationService {
@@ -45,18 +63,34 @@ export class InvoiceCalculationService {
    * Calculates all totals for an invoice.
    *
    * @param lines - Invoice line items
-   * @param discountPercent - Global discount on subtotal (0-100)
-   * @param irpfPercent - IRPF withholding percentage (0-100)
+   * @param options - Optional discount, IRPF and REAGYP compensation settings
    */
   calculateTotals(
     lines: CreateInvoiceLineDto[],
-    discountPercent?: number,
-    irpfPercent?: number
+    options?: CalculateTotalsOptions | number, // number kept for backwards-compat
+    irpfPercentLegacy?: number
   ): CalculatedInvoiceTotals {
+    // Backwards-compatible: old callers pass (lines, discountPercent, irpfPercent)
+    let discountPercent: number | undefined;
+    let irpfPercent: number | undefined;
+    let compensacionPercent: number | undefined;
+
+    if (options !== undefined && typeof options === 'object') {
+      discountPercent = options.discountPercent;
+      irpfPercent = options.irpfPercent;
+      compensacionPercent = options.compensacionPercent;
+    } else {
+      discountPercent = options as number | undefined;
+      irpfPercent = irpfPercentLegacy;
+    }
+
+    const isReagyp = compensacionPercent != null && compensacionPercent > 0;
+
     // === STEP 1: Calculate per-line amounts ===
     const calculatedLines: CalculatedLine[] = lines.map((line) => {
       const subtotal = this.round2(Number(line.quantity) * Number(line.unitPrice));
-      const taxAmount = this.round2(subtotal * (Number(line.taxRate) / 100));
+      // In REAGYP, lines have no IVA
+      const taxAmount = isReagyp ? 0 : this.round2(subtotal * (Number(line.taxRate) / 100));
       const lineTotal = this.round2(subtotal + taxAmount);
       return { subtotal, taxAmount, lineTotal };
     });
@@ -70,46 +104,61 @@ export class InvoiceCalculationService {
       : 0;
     const subtotalAfterDiscount = this.round2(subtotal - discountAmount);
 
-    // === STEP 4: Tax breakdown grouped by tax rate ===
-    // When a discount is applied, distribute it proportionally to each tax group
-    const discountRatio = subtotal > 0 ? subtotalAfterDiscount / subtotal : 1;
+    // === STEP 4a: GENERAL regime — standard IVA tax breakdown ===
+    let taxBreakdown: TaxBreakdownItem[] = [];
+    let taxTotal = 0;
 
-    const taxMap = new Map<number, { baseAmount: number; taxAmount: number }>();
+    if (!isReagyp) {
+      const discountRatio = subtotal > 0 ? subtotalAfterDiscount / subtotal : 1;
+      const taxMap = new Map<number, { baseAmount: number; taxAmount: number }>();
 
-    lines.forEach((line, index) => {
-      const rate = Number(line.taxRate);
-      const lineSubtotalAfterDiscount = this.round2(
-        calculatedLines[index]!.subtotal * discountRatio
-      );
-      const lineTaxAfterDiscount = this.round2(lineSubtotalAfterDiscount * (rate / 100));
+      lines.forEach((line, index) => {
+        const rate = Number(line.taxRate);
+        const lineSubtotalAfterDiscount = this.round2(
+          calculatedLines[index]!.subtotal * discountRatio
+        );
+        const lineTaxAfterDiscount = this.round2(lineSubtotalAfterDiscount * (rate / 100));
 
-      const existing = taxMap.get(rate);
-      if (existing) {
-        existing.baseAmount = this.round2(existing.baseAmount + lineSubtotalAfterDiscount);
-        existing.taxAmount = this.round2(existing.taxAmount + lineTaxAfterDiscount);
-      } else {
-        taxMap.set(rate, {
-          baseAmount: lineSubtotalAfterDiscount,
-          taxAmount: lineTaxAfterDiscount,
-        });
-      }
-    });
+        const existing = taxMap.get(rate);
+        if (existing) {
+          existing.baseAmount = this.round2(existing.baseAmount + lineSubtotalAfterDiscount);
+          existing.taxAmount = this.round2(existing.taxAmount + lineTaxAfterDiscount);
+        } else {
+          taxMap.set(rate, {
+            baseAmount: lineSubtotalAfterDiscount,
+            taxAmount: lineTaxAfterDiscount,
+          });
+        }
+      });
 
-    const taxBreakdown: TaxBreakdownItem[] = Array.from(taxMap.entries())
-      .map(([taxRate, amounts]) => ({ taxRate, ...amounts }))
-      .sort((a, b) => b.taxRate - a.taxRate);
+      taxBreakdown = Array.from(taxMap.entries())
+        .map(([taxRate, amounts]) => ({ taxRate, ...amounts }))
+        .sort((a, b) => b.taxRate - a.taxRate);
 
-    const taxTotal = this.round2(taxBreakdown.reduce((sum, item) => sum + item.taxAmount, 0));
+      taxTotal = this.round2(taxBreakdown.reduce((sum, item) => sum + item.taxAmount, 0));
+    }
+
+    // === STEP 4b: REAGYP regime — agrarian compensation (no IVA) ===
+    const compensacionAmount = isReagyp
+      ? this.round2(subtotalAfterDiscount * (Number(compensacionPercent) / 100))
+      : 0;
 
     // === STEP 5: IRPF (withheld from the invoiced amount) ===
-    // IRPF applies to subtotalAfterDiscount (before taxes)
+    // GENERAL: IRPF applies to subtotalAfterDiscount (before IVA)
+    // REAGYP:  IRPF applies to subtotalAfterDiscount + compensacionAmount (Art. 102.Dos LIVA)
+    const irpfBase = isReagyp
+      ? this.round2(subtotalAfterDiscount + compensacionAmount)
+      : subtotalAfterDiscount;
     const irpfTotal = irpfPercent
-      ? this.round2(subtotalAfterDiscount * (Number(irpfPercent) / 100))
+      ? this.round2(irpfBase * (Number(irpfPercent) / 100))
       : 0;
 
     // === STEP 6: Final total ===
-    // total = subtotal after discount + taxes - IRPF withholding
-    const total = this.round2(subtotalAfterDiscount + taxTotal - irpfTotal);
+    // GENERAL: subtotalAfterDiscount + taxTotal − irpfTotal
+    // REAGYP:  subtotalAfterDiscount + compensacionAmount − irpfTotal
+    const total = isReagyp
+      ? this.round2(subtotalAfterDiscount + compensacionAmount - irpfTotal)
+      : this.round2(subtotalAfterDiscount + taxTotal - irpfTotal);
 
     return {
       lines: calculatedLines,
@@ -119,6 +168,7 @@ export class InvoiceCalculationService {
       taxBreakdown,
       taxTotal,
       irpfTotal,
+      compensacionAmount,
       total,
     };
   }

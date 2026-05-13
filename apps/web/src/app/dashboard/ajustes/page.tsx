@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '@/hooks/use-tenant';
 import { useAuthStore } from '@/store/auth-store';
-import { Plan } from '@easyfactura/shared-types';
+import { AccountType, Plan } from '@easyfactura/shared-types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const PLAN_LABELS: Record<Plan, string> = {
@@ -28,7 +28,7 @@ const PLAN_LABELS: Record<Plan, string> = {
   [Plan.PROFESSIONAL]: 'Profesional',
 };
 
-const SETTINGS_SECTIONS = [
+const BASE_SETTINGS_SECTIONS = [
   {
     href: '/dashboard/ajustes/cuenta',
     icon: UserCircle,
@@ -90,6 +90,22 @@ const SETTINGS_SECTIONS = [
 export default function AjustesPage() {
   const { data: tenant, isLoading } = useTenant();
   const currentTenant = useAuthStore((s) => s.currentTenant);
+
+  const isAgency = currentTenant?.accountType === AccountType.AGENCY;
+
+  const SETTINGS_SECTIONS = [
+    ...BASE_SETTINGS_SECTIONS,
+    ...(!isAgency
+      ? [
+          {
+            href: '/dashboard/ajustes/asesorias',
+            icon: Users,
+            title: 'Mis asesorías',
+            description: 'Gestorías o asesorías con acceso a tu cuenta',
+          },
+        ]
+      : []),
+  ];
 
   const plan = currentTenant?.plan ?? Plan.FREE;
   const hasCertificate = Boolean(tenant?.certificateUrl);

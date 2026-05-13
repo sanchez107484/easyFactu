@@ -87,6 +87,7 @@ export class VerifactuXmlService {
       <FechaExpedicionFactura>${issueDate}</FechaExpedicionFactura>
     </IDFactura>
     <TipoFactura>F1</TipoFactura>
+    ${invoice.compensacionPercent != null ? '<ClaveRegimenEspecial>02</ClaveRegimenEspecial>' : ''}
     <Destinatarios>
       <IDDestinatario>
         <NombreRazon>${this.escapeXml(custName)}</NombreRazon>
@@ -106,10 +107,37 @@ export class VerifactuXmlService {
   }
 
   /**
-   * Build tax breakdown section
-   * Groups lines by tax rate
+   * Build tax breakdown section.
+   *
+   * For REAGYP invoices (compensacionPercent is set), emits a single block with
+   * the agrarian compensation data (no IVA, regime code already added by buildXml).
+   * For standard invoices, groups lines by tax rate and emits one block per rate.
    */
   private buildTaxBreakdown(invoice: InvoiceWithRelations): string {
+    // ── REAGYP path ────────────────────────────────────────────────────────────
+    if (invoice.compensacionPercent != null && invoice.compensacionAmount != null) {
+      const base = invoice.lines.reduce((s, l) => s + Number(l.subtotal), 0);
+      const discountedBase = invoice.discountAmount
+        ? base - Number(invoice.discountAmount)
+        : base;
+      const compensacionPercent = Number(invoice.compensacionPercent);
+      const compensacionAmount = Number(invoice.compensacionAmount);
+      const irpfAmount = invoice.irpfTotal ? Number(invoice.irpfTotal) : 0;
+
+      return `<DetalleDesglose>
+        <BaseImponible>${discountedBase.toFixed(2)}</BaseImponible>
+        <TipoImpositivo>${compensacionPercent.toFixed(2)}</TipoImpositivo>
+        <CuotaImpuesto>${compensacionAmount.toFixed(2)}</CuotaImpuesto>
+        ${
+          irpfAmount > 0
+            ? `<BaseRetencion>${(discountedBase + compensacionAmount).toFixed(2)}</BaseRetencion>
+        <RetencionSoportada>${irpfAmount.toFixed(2)}</RetencionSoportada>`
+            : ''
+        }
+      </DetalleDesglose>`;
+    }
+
+    // ── General IVA path ───────────────────────────────────────────────────────
     // Group lines by tax rate
     const taxGroups = new Map<number, { base: number; tax: number; irpf: number }>();
 

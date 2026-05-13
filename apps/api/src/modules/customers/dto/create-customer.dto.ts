@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsEnum, IsOptional, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsEmail, IsEnum, IsOptional, IsBoolean, MinLength, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CustomerType } from '@easyfactura/shared-types';
 import { IsValidNif } from '../../../common/validators/is-valid-nif.validator';
@@ -79,4 +79,13 @@ export class CreateCustomerDto {
   @IsString()
   @MaxLength(500, { message: 'Las notas no pueden superar los 500 caracteres' })
   notes?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Indica si este cliente también está acogido al REAGYP. Cuando es true y el tenant emisor está en REAGYP, la compensación agrícola NO se aplica.',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'isReagyp debe ser un booleano' })
+  isReagyp?: boolean;
 }

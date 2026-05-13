@@ -322,7 +322,13 @@ export class InvoicePdfService {
     doc.fontSize(12).font('Helvetica-Bold').text('Totales:', 40, undefined);
     doc.fontSize(10);
     doc.text(`Subtotal: ${formatCurrency(invoice.subtotal)}`);
-    doc.text(`IVA: ${formatCurrency(invoice.taxTotal)}`);
+    if (invoice.compensacionPercent != null) {
+      doc.text(
+        `Compensación agraria (${invoice.compensacionPercent}%): +${formatCurrency(Number(invoice.compensacionAmount ?? 0))}`,
+      );
+    } else {
+      doc.text(`IVA: ${formatCurrency(invoice.taxTotal)}`);
+    }
     if (invoice.irpfTotal) doc.text(`IRPF: ${formatCurrency(invoice.irpfTotal)}`);
     if (invoice.discountAmount) doc.text(`Descuento: ${formatCurrency(invoice.discountAmount)}`);
     doc.text(`Total: ${formatCurrency(invoice.total)}`);
@@ -380,6 +386,8 @@ export class InvoicePdfService {
       taxTotal: 210,
       irpfPercent: null,
       irpfTotal: null,
+      compensacionPercent: null,
+      compensacionAmount: null,
       total: 1210,
       paymentMethod: null,
       paymentDetails: null,
@@ -414,6 +422,7 @@ export class InvoicePdfService {
         country: 'ES',
         notes: null,
         isActive: true,
+        isReagyp: false,
         createdAt: now,
         updatedAt: now,
       },

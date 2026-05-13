@@ -20,6 +20,7 @@ export const customerFormSchema = z
     province: z.string().max(100).optional().or(z.literal('')),
     country: z.string().length(2, 'Código de país de 2 letras').default('ES').optional(),
     notes: z.string().max(500, 'Máximo 500 caracteres').optional().or(z.literal('')),
+    isReagyp: z.boolean().default(false).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.type !== CustomerType.INTRACOMMUNITY && data.nif) {

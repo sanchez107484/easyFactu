@@ -5,13 +5,14 @@ import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { CustomerType, UpdateCustomerInput } from '@easyfactura/shared-types';
+import { CustomerType, UpdateCustomerInput, TaxRegime } from '@easyfactura/shared-types';
 import { customerFormSchema, CustomerFormData } from '@/lib/validators/customer.schema';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
 import { useCustomer, useUpdateCustomer, useCustomerByNif } from '@/hooks/use-customers';
 import { CustomerFormFields } from '@/components/clientes/CustomerFormFields';
+import { useTenant } from '@/hooks/use-tenant';
 
 // ==================== TYPES & CONSTANTS ====================
 
@@ -37,6 +38,7 @@ function buildUpdateInput(data: FormData): UpdateCustomerInput {
     province: data.province?.trim() || '',
     country: data.country || 'ES',
     notes: data.notes?.trim() || undefined,
+    isReagyp: data.isReagyp ?? false,
   };
 }
 
@@ -81,6 +83,8 @@ interface EditFormProps {
 function EditCustomerForm({ customerId, defaultValues, originalNif }: EditFormProps) {
   const router = useRouter();
   const updateMutation = useUpdateCustomer();
+  const { data: tenant } = useTenant();
+  const showReagypToggle = tenant?.taxRegime === TaxRegime.REAGYP;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -176,6 +180,7 @@ function EditCustomerForm({ customerId, defaultValues, originalNif }: EditFormPr
             showDuplicateBanner={!!existingCustomer && nifChanged}
             duplicateBannerTitle="Este NIF ya pertenece a otro cliente"
             onDuplicateNavigate={(id) => router.push(`/dashboard/clientes/${id}`)}
+            showReagypToggle={showReagypToggle}
           />
         </form>
       </div>
@@ -221,6 +226,7 @@ export default function EditarClientePage() {
     province: customer.province ?? '',
     country: customer.country ?? 'ES',
     notes: customer.notes ?? '',
+    isReagyp: customer.isReagyp ?? false,
   };
 
   return (

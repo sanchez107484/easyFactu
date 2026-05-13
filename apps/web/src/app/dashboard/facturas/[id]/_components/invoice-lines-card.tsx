@@ -89,7 +89,18 @@ export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
             </span>
           </div>
         )}
-        <DataRow label={taxLabel} value={formatCurrency(invoice.taxTotal)} />
+        {invoice.compensacionPercent != null ? (
+          <div className="flex justify-between items-baseline py-1">
+            <span className="text-sm">
+              Compensación agraria ({invoice.compensacionPercent}%)
+            </span>
+            <span className="text-sm tabular-nums">
+              +{formatCurrency(invoice.compensacionAmount ?? 0)}
+            </span>
+          </div>
+        ) : (
+          <DataRow label={taxLabel} value={formatCurrency(invoice.taxTotal)} />
+        )}
         {parseNum(invoice.irpfPercent) > 0 && (
           <div className="flex justify-between items-baseline py-1">
             <span className="text-sm text-rectificativa-600">IRPF ({invoice.irpfPercent}%)</span>

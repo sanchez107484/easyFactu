@@ -422,6 +422,18 @@ export function createInvoicePdfElement(
 
           {layout.totals.showTaxBreakdown &&
             (() => {
+              if (invoice.compensacionPercent != null) {
+                return (
+                  <View style={styles.totalsRow}>
+                    <Text style={styles.totalsLabel}>
+                      Comp. agraria ({formatPercent(Number(invoice.compensacionPercent))})
+                    </Text>
+                    <Text style={styles.totalsValue}>
+                      +{formatCurrency(Number(invoice.compensacionAmount ?? 0))}
+                    </Text>
+                  </View>
+                );
+              }
               const lines = invoice.lines ?? [];
               const taxRates = [...new Set(lines.map((l) => l.taxRate))];
               const ivaLabel =

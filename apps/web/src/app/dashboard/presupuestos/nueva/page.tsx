@@ -37,6 +37,7 @@ import {
   InvoiceTemplate,
   SeriesType,
   Tenant,
+  TaxRegime,
 } from '@easyfactura/shared-types';
 import { resolveUrl } from '@/lib/utils';
 import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
@@ -74,6 +75,7 @@ const formSchema = z.object({
   seriesId: z.string().optional().default(''),
   discountPercent: z.number().min(0).max(100).optional(),
   irpfPercent: z.number().min(0).max(100).optional(),
+  compensacionPercent: z.number().min(0).max(100).optional(),
   paymentMethod: z
     .nativeEnum(PaymentMethod, { invalid_type_error: 'Método de pago no válido' })
     .optional(),
@@ -166,8 +168,24 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
 
   const effectiveSeriesId = watchedValues.seriesId || defaultSeriesId;
   const selectedSeries = availableSeries.find((s) => s.id === effectiveSeriesId) ?? null;
-  const previewInvoice = buildPreviewInvoice(watchedValues, customers, selectedSeries);
   const selectedCustomer = customers.find((c) => c.id === watchedValues.customerId);
+  const showCompensacion = tenantData?.taxRegime === TaxRegime.REAGYP;
+
+  // Auto-populate compensacionPercent when the customer or tenant changes.
+  useEffect(() => {
+    if (!showCompensacion) return;
+    const rate =
+      !selectedCustomer?.isReagyp && tenantData?.reaypRate ? Number(tenantData.reaypRate) : 0;
+    form.setValue('compensacionPercent', rate, { shouldDirty: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedValues.customerId, tenantData?.taxRegime, tenantData?.reaypRate]);
+
+  const previewInvoice = buildPreviewInvoice(
+    watchedValues,
+    customers,
+    selectedSeries,
+    watchedValues.compensacionPercent,
+  );
   const activePaymentMethod = watchedValues.paymentMethod as PaymentMethod | undefined;
 
   const handlePreviewSectionClick = useCallback((fieldId: string) => {
@@ -576,7 +594,7 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
                 <CardContent>
                   <section
                     id="field-discountPercent"
-                    className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                    className={`grid grid-cols-1 gap-4 ${showCompensacion ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
                     onFocus={() => setActiveSection('discountPercent')}
                   >
                     <div className="space-y-2">
@@ -607,6 +625,22 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
                         })}
                       />
                     </div>
+                    {showCompensacion && (
+                      <div className="space-y-2">
+                        <Label htmlFor="compensacionPercent">Comp. agraria REAGYP (%)</Label>
+                        <Input
+                          id="compensacionPercent"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          placeholder="0"
+                          {...form.register('compensacionPercent', {
+                            setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                          })}
+                        />
+                      </div>
+                    )}
                   </section>
                 </CardContent>
               </Card>

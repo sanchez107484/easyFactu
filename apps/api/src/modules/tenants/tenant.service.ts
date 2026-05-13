@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { SetupTenantDto } from './dto/setup-tenant.dto';
+import { TaxRegime } from '@easyfactura/shared-types';
 
 @Injectable()
 export class TenantService {
@@ -36,7 +37,11 @@ export class TenantService {
 
     return this.prisma.tenant.update({
       where: { id: tenantId },
-      data: dto,
+      data: {
+        ...dto,
+        // Explicitly clear the rate when switching back to the general regime
+        ...(dto.taxRegime === TaxRegime.GENERAL ? { reaypRate: null } : {}),
+      },
     });
   }
 

@@ -334,6 +334,38 @@ export class InvoiceService {
     }
   }
 
+  /**
+   * Returns the agrarian compensation rate (%) to apply to the invoice, or undefined
+   * if the regime is GENERAL or compensation does not apply to this customer.
+   *
+   * Rules (Arts. 124-134 LIVA):
+   *  - Tenant must be in REAGYP regime and have a reaypRate configured.
+   *  - Customer must NOT be marked as isReagyp = true (B2B exemption between two REAGYP entities).
+   *  - Customer type INDIVIDUAL receives compensation (they pay more for the produce).
+   */
+  private async resolveCompensacionPercent(
+    tenantId: string,
+    customerId: string
+  ): Promise<number | undefined> {
+    const [tenant, customer] = await Promise.all([
+      this.prisma.tenant.findUniqueOrThrow({
+        where: { id: tenantId },
+        select: { taxRegime: true, reaypRate: true },
+      }),
+      this.prisma.customer.findFirst({
+        where: { id: customerId, tenantId },
+        select: { isReagyp: true },
+      }),
+    ]);
+
+    if (tenant.taxRegime !== 'REAGYP') return undefined;
+    if (!tenant.reaypRate) return undefined;
+    // If the customer is also in REAGYP, no compensation is applied
+    if (customer?.isReagyp) return undefined;
+
+    return Number(tenant.reaypRate);
+  }
+
   // ==================== PUBLIC CRUD ====================
 
   async create(tenantId: string, createdByUserId: string | null, dto: CreateInvoiceDto) {
@@ -341,11 +373,18 @@ export class InvoiceService {
     const isProforma = dto.invoiceType === 'proforma';
 
     // For quotes the series is auto-resolved inside the transaction; skip the default lookup.
-    const [seriesId] = await Promise.all([
+    // If the frontend sends compensacionPercent (including 0), use it directly.
+    // Otherwise derive it from the tenant/customer fiscal regime.
+    const useFrontendCompensacion = dto.compensacionPercent !== undefined;
+    const [seriesId, resolvedCompensacion] = await Promise.all([
       isQuote ? Promise.resolve('') : this.resolveSeriesId(tenantId, dto.seriesId),
+      useFrontendCompensacion
+        ? Promise.resolve(dto.compensacionPercent)
+        : this.resolveCompensacionPercent(tenantId, dto.customerId),
       this.validateCustomer(tenantId, dto.customerId),
       this.validateProductIds(tenantId, dto.lines),
     ]);
+    const compensacionPercent = resolvedCompensacion;
     let invoiceStatus: PrismaInvoiceStatus;
     if (isProforma) {
       invoiceStatus = PrismaInvoiceStatus.PROFORMA;
@@ -358,11 +397,11 @@ export class InvoiceService {
     // Quotes get a PRE- sequential number immediately.
     const invoiceNumber = null;
 
-    const totals = this.calculationService.calculateTotals(
-      dto.lines,
-      dto.discountPercent,
-      dto.irpfPercent
-    );
+    const totals = this.calculationService.calculateTotals(dto.lines, {
+      discountPercent: dto.discountPercent,
+      irpfPercent: dto.irpfPercent,
+      compensacionPercent,
+    });
 
     return this.prisma.$transaction(async (tx) => {
       let quoteNumber: string | null = invoiceNumber;
@@ -409,6 +448,8 @@ export class InvoiceService {
           taxTotal: totals.taxTotal,
           irpfPercent: dto.irpfPercent ?? null,
           irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+          compensacionPercent: compensacionPercent ?? null,
+          compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
           total: totals.total,
           paymentMethod: (dto.paymentMethod ?? null) as any,
           notes: dto.notes ?? null,
@@ -580,6 +621,7 @@ export class InvoiceService {
         taxTotal: true,
         irpfPercent: true,
         irpfTotal: true,
+        compensacionPercent: true,
         total: true,
         paymentMethod: true,
         paymentDetails: true,
@@ -781,11 +823,19 @@ export class InvoiceService {
           ? Number(invoice.irpfPercent)
           : undefined;
 
-    const totals = this.calculationService.calculateTotals(
-      linesToUse,
-      currentDiscount,
-      currentIrpf
-    );
+    // Re-derive compensation on every update: customer may have changed and tenant
+    // regime may have been updated since the draft was created.
+    // If the frontend sends compensacionPercent (including 0), honour the override.
+    const compensacionPercent =
+      dto.compensacionPercent !== undefined
+        ? dto.compensacionPercent
+        : await this.resolveCompensacionPercent(tenantId, customerId);
+
+    const totals = this.calculationService.calculateTotals(linesToUse, {
+      discountPercent: currentDiscount,
+      irpfPercent: currentIrpf,
+      compensacionPercent,
+    });
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       if (dto.lines) {
@@ -815,6 +865,8 @@ export class InvoiceService {
         discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
         irpfPercent: dto.irpfPercent !== undefined ? dto.irpfPercent : undefined,
         irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+        compensacionPercent: compensacionPercent ?? null,
+        compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
         paymentMethod: (dto.paymentMethod !== undefined ? dto.paymentMethod : null) as any,
         notes: dto.notes !== undefined ? dto.notes : undefined,
         ...(dto.paymentDetails !== undefined ? { paymentDetails: { ...dto.paymentDetails } } : {}),
@@ -883,11 +935,18 @@ export class InvoiceService {
           tx
         );
 
-        const totals = this.calculationService.calculateTotals(
-          lines,
-          invoice.discountPercent ? Number(invoice.discountPercent) : undefined,
-          invoice.irpfPercent ? Number(invoice.irpfPercent) : undefined
-        );
+        // Use the stored compensacionPercent from the draft — it was set at create/update time
+        // based on the tenant's taxRegime at that point. This ensures the confirmed invoice
+        // exactly matches what the user previewed before confirming.
+        const storedCompensacion = invoice.compensacionPercent
+          ? Number(invoice.compensacionPercent)
+          : undefined;
+
+        const totals = this.calculationService.calculateTotals(lines, {
+          discountPercent: invoice.discountPercent ? Number(invoice.discountPercent) : undefined,
+          irpfPercent: invoice.irpfPercent ? Number(invoice.irpfPercent) : undefined,
+          compensacionPercent: storedCompensacion,
+        });
 
         await tx.invoiceLine.deleteMany({ where: { invoiceId: id } });
 
@@ -900,6 +959,8 @@ export class InvoiceService {
             discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
             taxTotal: totals.taxTotal,
             irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+            compensacionPercent: storedCompensacion ?? null,
+            compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
             total: totals.total,
             ...customerSnapshot,
             ...issuerSnapshot,
@@ -1052,11 +1113,13 @@ export class InvoiceService {
     );
 
     const lines = original.lines as unknown as CreateInvoiceLineDto[];
-    const totals = this.calculationService.calculateTotals(
-      lines,
-      original.discountPercent ? Number(original.discountPercent) : undefined,
-      original.irpfPercent ? Number(original.irpfPercent) : undefined
-    );
+    // Re-derive compensation: duplicate creates a new draft — use current tenant config
+    const compensacionPercent = await this.resolveCompensacionPercent(tenantId, original.customerId);
+    const totals = this.calculationService.calculateTotals(lines, {
+      discountPercent: original.discountPercent ? Number(original.discountPercent) : undefined,
+      irpfPercent: original.irpfPercent ? Number(original.irpfPercent) : undefined,
+      compensacionPercent,
+    });
 
     const paymentDetails = original.paymentDetails;
 
@@ -1077,6 +1140,8 @@ export class InvoiceService {
         taxTotal: totals.taxTotal,
         irpfPercent: original.irpfPercent,
         irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+        compensacionPercent: compensacionPercent ?? null,
+        compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
         total: totals.total,
         paymentMethod: original.paymentMethod as any,
         ...(paymentDetails != null ? { paymentDetails } : {}),
@@ -1113,7 +1178,9 @@ export class InvoiceService {
 
     await this.validateProductIds(tenantId, dto.lines);
 
-    const totals = this.calculationService.calculateTotals(dto.lines);
+    // Rectificative invoices use the same regime as the original tenant config
+    const compensacionPercent = await this.resolveCompensacionPercent(tenantId, original.customerId);
+    const totals = this.calculationService.calculateTotals(dto.lines, { compensacionPercent });
 
     const paymentDetails = original.paymentDetails;
 
@@ -1136,6 +1203,8 @@ export class InvoiceService {
           rectificationReason: dto.rectificationReason,
           subtotal: totals.subtotal,
           taxTotal: totals.taxTotal,
+          compensacionPercent: compensacionPercent ?? null,
+          compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
           total: totals.total,
           paymentMethod: original.paymentMethod as any,
           ...(paymentDetails != null ? { paymentDetails } : {}),
@@ -1203,11 +1272,12 @@ export class InvoiceService {
     }
 
     const lines = invoice.lines as unknown as CreateInvoiceLineDto[];
-    const totals = this.calculationService.calculateTotals(
-      lines,
-      invoice.discountPercent ? Number(invoice.discountPercent) : undefined,
-      invoice.irpfPercent ? Number(invoice.irpfPercent) : undefined
-    );
+    const compensacionPercent = await this.resolveCompensacionPercent(tenantId, invoice.customerId);
+    const totals = this.calculationService.calculateTotals(lines, {
+      discountPercent: invoice.discountPercent ? Number(invoice.discountPercent) : undefined,
+      irpfPercent: invoice.irpfPercent ? Number(invoice.irpfPercent) : undefined,
+      compensacionPercent,
+    });
 
     const paymentDetails = invoice.paymentDetails;
 
@@ -1234,6 +1304,8 @@ export class InvoiceService {
           taxTotal: totals.taxTotal,
           irpfPercent: invoice.irpfPercent,
           irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+          compensacionPercent: compensacionPercent ?? null,
+          compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
           total: totals.total,
           paymentMethod: invoice.paymentMethod as any,
           ...(paymentDetails != null ? { paymentDetails } : {}),
@@ -1341,11 +1413,12 @@ export class InvoiceService {
     );
 
     const lines = invoice.lines as unknown as CreateInvoiceLineDto[];
-    const totals = this.calculationService.calculateTotals(
-      lines,
-      invoice.discountPercent ? Number(invoice.discountPercent) : undefined,
-      invoice.irpfPercent ? Number(invoice.irpfPercent) : undefined
-    );
+    const compensacionPercent = await this.resolveCompensacionPercent(tenantId, invoice.customerId);
+    const totals = this.calculationService.calculateTotals(lines, {
+      discountPercent: invoice.discountPercent ? Number(invoice.discountPercent) : undefined,
+      irpfPercent: invoice.irpfPercent ? Number(invoice.irpfPercent) : undefined,
+      compensacionPercent,
+    });
     const paymentDetails = invoice.paymentDetails;
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -1367,6 +1440,8 @@ export class InvoiceService {
           taxTotal: totals.taxTotal,
           irpfPercent: invoice.irpfPercent,
           irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+          compensacionPercent: compensacionPercent ?? null,
+          compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
           total: totals.total,
           paymentMethod: invoice.paymentMethod as any,
           ...(paymentDetails != null ? { paymentDetails } : {}),
@@ -1419,11 +1494,12 @@ export class InvoiceService {
     );
 
     const lines = invoice.lines as unknown as CreateInvoiceLineDto[];
-    const totals = this.calculationService.calculateTotals(
-      lines,
-      invoice.discountPercent ? Number(invoice.discountPercent) : undefined,
-      invoice.irpfPercent ? Number(invoice.irpfPercent) : undefined
-    );
+    const compensacionPercent = await this.resolveCompensacionPercent(tenantId, invoice.customerId);
+    const totals = this.calculationService.calculateTotals(lines, {
+      discountPercent: invoice.discountPercent ? Number(invoice.discountPercent) : undefined,
+      irpfPercent: invoice.irpfPercent ? Number(invoice.irpfPercent) : undefined,
+      compensacionPercent,
+    });
     const paymentDetails = invoice.paymentDetails;
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -1445,6 +1521,8 @@ export class InvoiceService {
           taxTotal: totals.taxTotal,
           irpfPercent: invoice.irpfPercent,
           irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+          compensacionPercent: compensacionPercent ?? null,
+          compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
           total: totals.total,
           paymentMethod: invoice.paymentMethod as any,
           ...(paymentDetails != null ? { paymentDetails } : {}),

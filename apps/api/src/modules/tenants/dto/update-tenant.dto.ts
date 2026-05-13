@@ -1,6 +1,7 @@
-import { IsString, IsEmail, IsOptional, IsEnum, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsEnum, MinLength, MaxLength, IsNumber, Min, Max, ValidateIf } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { AccountType } from '@easyfactura/shared-types';
+import { AccountType, TaxRegime } from '@easyfactura/shared-types';
 import { IsValidNif } from '../../../common/validators/is-valid-nif.validator';
 import { IsValidIban } from '../../../common/validators/is-valid-iban.validator';
 import { IsValidSpanishPostalCode } from '../../../common/validators/is-valid-postal-code.validator';
@@ -95,4 +96,25 @@ export class UpdateTenantDto {
   @IsOptional()
   @IsEnum(AccountType, { message: 'Tipo de cuenta no válido' })
   accountType?: AccountType;
+
+  @ApiPropertyOptional({
+    enum: TaxRegime,
+    description: 'Régimen fiscal: GENERAL (IVA estándar) o REAGYP (compensación agraria)',
+  })
+  @IsOptional()
+  @IsEnum(TaxRegime, { message: 'Régimen fiscal no válido' })
+  taxRegime?: TaxRegime;
+
+  @ApiPropertyOptional({
+    description: 'Tasa de compensación agraria (%). 12.0 para agricultura/silvicultura, 10.5 para ganadería/pesca. Solo obligatorio cuando taxRegime = REAGYP. Enviar null para borrar.',
+    minimum: 0,
+    maximum: 100,
+  })
+  @IsOptional()
+  @ValidateIf((o) => o.reaypRate !== null)
+  @IsNumber({}, { message: 'La tasa de compensación debe ser un número' })
+  @Min(0, { message: 'La tasa de compensación no puede ser negativa' })
+  @Max(100, { message: 'La tasa de compensación no puede superar el 100%' })
+  @Type(() => Number)
+  reaypRate?: number | null;
 }

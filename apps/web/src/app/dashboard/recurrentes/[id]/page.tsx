@@ -58,6 +58,7 @@ import {
   PaymentMethod,
   RecurringStatus,
   Tenant,
+  TaxRegime,
   type RecurringInvoice,
   type Invoice,
 } from '@easyfactura/shared-types';
@@ -99,7 +100,7 @@ const RECURRING_STATUS_CONFIG = {
 
 // ==================== HELPERS ====================
 
-function buildRecurringPreviewInvoice(recurring: RecurringInvoice): Invoice {
+function buildRecurringPreviewInvoice(recurring: RecurringInvoice, tenant?: Tenant | null): Invoice {
   const today = new Date().toISOString();
   const lines = recurring.lines ?? [];
 
@@ -113,18 +114,30 @@ function buildRecurringPreviewInvoice(recurring: RecurringInvoice): Invoice {
   const subtotalAfterDiscount = round2(subtotal - discountAmount);
   const discFactor = subtotal > 0 ? subtotalAfterDiscount / subtotal : 1;
 
-  const taxTotal = round2(
-    lines.reduce((acc, l) => {
-      const base = round2(Number(l.quantity) * Number(l.unitPrice));
-      return acc + round2(base * discFactor * (Number(l.taxRate) / 100));
-    }, 0),
-  );
+  // REAGYP: apply compensation when tenant is in REAGYP and customer is not also REAGYP
+  const isReagyp =
+    tenant?.taxRegime === TaxRegime.REAGYP &&
+    !(recurring.customer as { isReagyp?: boolean } | null)?.isReagyp &&
+    !!tenant?.reaypRate;
+  const compensacionPercent = isReagyp ? Number(tenant!.reaypRate) : 0;
+  const compensacionAmount = isReagyp ? round2(subtotalAfterDiscount * (compensacionPercent / 100)) : 0;
 
+  const taxTotal = isReagyp
+    ? 0
+    : round2(
+        lines.reduce((acc, l) => {
+          const base = round2(Number(l.quantity) * Number(l.unitPrice));
+          return acc + round2(base * discFactor * (Number(l.taxRate) / 100));
+        }, 0),
+      );
+
+  // For REAGYP, IRPF base includes compensation (Art. 102.Dos LIVA)
+  const irpfBase = isReagyp ? round2(subtotalAfterDiscount + compensacionAmount) : subtotalAfterDiscount;
   const irpfTotal = recurring.irpfPercent
-    ? round2(subtotalAfterDiscount * (Number(recurring.irpfPercent) / 100))
+    ? round2(irpfBase * (Number(recurring.irpfPercent) / 100))
     : null;
 
-  const total = round2(subtotalAfterDiscount + taxTotal - (irpfTotal ?? 0));
+  const total = round2(subtotalAfterDiscount + taxTotal + compensacionAmount - (irpfTotal ?? 0));
 
   return {
     id: 'preview',
@@ -141,6 +154,8 @@ function buildRecurringPreviewInvoice(recurring: RecurringInvoice): Invoice {
     taxTotal,
     irpfPercent: recurring.irpfPercent,
     irpfTotal,
+    compensacionPercent: isReagyp ? compensacionPercent : null,
+    compensacionAmount: isReagyp ? compensacionAmount : null,
     total,
     paymentMethod: recurring.paymentMethod ?? null,
     paymentDetails: recurring.paymentDetails ?? null,
@@ -239,8 +254,8 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
   };
 
   const previewInvoice = useMemo(
-    () => (recurring ? buildRecurringPreviewInvoice(recurring) : null),
-    [recurring],
+    () => (recurring ? buildRecurringPreviewInvoice(recurring, tenantData ?? currentTenant) : null),
+    [recurring, tenantData, currentTenant],
   );
 
   const previewTenant = useMemo((): Tenant | null => {
@@ -519,7 +534,18 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
                   </span>
                 </div>
               )}
-              <DataRow label="IVA" value={formatCurrency(taxTotal)} />
+              {previewInvoice!.compensacionPercent != null ? (
+                <div className="flex justify-between items-baseline py-1">
+                  <span className="text-sm">
+                    Compensación agraria ({previewInvoice!.compensacionPercent}%)
+                  </span>
+                  <span className="text-sm tabular-nums">
+                    +{formatCurrency(previewInvoice!.compensacionAmount ?? 0)}
+                  </span>
+                </div>
+              ) : (
+                <DataRow label="IVA" value={formatCurrency(taxTotal)} />
+              )}
               {recurring.irpfPercent && Number(recurring.irpfPercent) > 0 && (
                 <div className="flex justify-between items-baseline py-1">
                   <span className="text-sm text-rectificativa-600">

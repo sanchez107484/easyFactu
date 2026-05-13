@@ -35,6 +35,8 @@ export interface InvoiceFormData {
   layoutOverride?: LayoutOverride;
   discountPercent?: number;
   irpfPercent?: number;
+  /** Porcentaje de compensación agraria (solo REAGYP). Editado por el usuario en el formulario. */
+  compensacionPercent?: number;
   paymentMethod?: PaymentMethod;
   paymentDetails?: Record<string, string | undefined>;
   notes?: string;
@@ -46,11 +48,14 @@ export interface InvoiceFormData {
 /**
  * Construye un objeto Invoice sintético para la vista previa en tiempo real.
  * No se persiste en base de datos — solo se usa para renderizar LiveInvoicePreview.
+ *
+ * @param compensacionPercent - Porcentaje de compensación agraria (solo REAGYP). Pass 0 or undefined for GENERAL.
  */
 export function buildPreviewInvoice(
   data: Partial<InvoiceFormData>,
   customers: Customer[],
   selectedSeries?: InvoiceSeries | null,
+  compensacionPercent?: number,
 ): Invoice {
   const today = new Date().toISOString();
   const lines = data.lines ?? [];
@@ -64,18 +69,32 @@ export function buildPreviewInvoice(
   const subtotalAfterDiscount = round2(subtotal - discountAmount);
   const discFactor = subtotal > 0 ? subtotalAfterDiscount / subtotal : 1;
 
-  const taxTotal = round2(
-    lines.reduce((acc, l) => {
-      const base = round2((l.quantity ?? 0) * (l.unitPrice ?? 0));
-      return acc + round2(base * discFactor * ((l.taxRate ?? 0) / 100));
-    }, 0),
+  // ── REAGYP vs. GENERAL totals ──
+  const isReagyp = !!compensacionPercent && compensacionPercent > 0;
+
+  const taxTotal = isReagyp
+    ? 0
+    : round2(
+        lines.reduce((acc, l) => {
+          const base = round2((l.quantity ?? 0) * (l.unitPrice ?? 0));
+          return acc + round2(base * discFactor * ((l.taxRate ?? 0) / 100));
+        }, 0),
+      );
+
+  const previewCompensacionAmount = isReagyp
+    ? round2(subtotalAfterDiscount * (compensacionPercent / 100))
+    : 0;
+
+  // IRPF base: for REAGYP it includes the compensation amount (Art. 102.Dos LIVA)
+  const irpfBase = isReagyp
+    ? round2(subtotalAfterDiscount + previewCompensacionAmount)
+    : subtotalAfterDiscount;
+
+  const irpfTotal = data.irpfPercent ? round2(irpfBase * (data.irpfPercent / 100)) : null;
+
+  const total = round2(
+    subtotalAfterDiscount + taxTotal + previewCompensacionAmount - (irpfTotal ?? 0),
   );
-
-  const irpfTotal = data.irpfPercent
-    ? round2(subtotalAfterDiscount * (data.irpfPercent / 100))
-    : null;
-
-  const total = round2(subtotalAfterDiscount + taxTotal - (irpfTotal ?? 0));
 
   const previewLines = lines.map((l, i) => {
     // Determine whether to hide the quantity for this line in the live preview:
@@ -122,6 +141,8 @@ export function buildPreviewInvoice(
     taxTotal,
     irpfPercent: data.irpfPercent ?? null,
     irpfTotal,
+    compensacionPercent: isReagyp ? compensacionPercent : null,
+    compensacionAmount: isReagyp ? previewCompensacionAmount : null,
     total,
     paymentMethod: data.paymentMethod ?? null,
     paymentDetails: data.paymentDetails ?? null,
@@ -162,6 +183,9 @@ export function buildCreateInput(data: InvoiceFormData) {
     invoiceType: data.invoiceType ?? 'standard',
     discountPercent: data.discountPercent || undefined,
     irpfPercent: data.irpfPercent || undefined,
+    // Send the user's compensacion choice when it's explicitly set (even 0 means 'no compensation').
+    // We only omit it entirely when the user hasn't interacted with a REAGYP tenant context.
+    compensacionPercent: data.compensacionPercent !== undefined ? data.compensacionPercent : undefined,
     paymentMethod: data.paymentMethod,
     paymentDetails: data.paymentDetails,
     notes: data.notes,

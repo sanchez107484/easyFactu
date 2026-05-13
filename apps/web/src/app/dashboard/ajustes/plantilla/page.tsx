@@ -222,6 +222,8 @@ export default function PlantillaPage() {
     isActive: true,
     createdAt: currentTenant?.createdAt ?? new Date().toISOString(),
     updatedAt: currentTenant?.updatedAt ?? new Date().toISOString(),
+    taxRegime: currentTenant?.taxRegime ?? ('GENERAL' as never),
+    reaypRate: currentTenant?.reaypRate ?? null,
   };
 
   const previewPaymentDetails: PaymentDetails = {

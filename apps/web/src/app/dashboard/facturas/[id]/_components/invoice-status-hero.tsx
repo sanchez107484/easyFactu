@@ -93,11 +93,20 @@ export function InvoiceStatusHero({
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             Base: {formatCurrency(invoice.subtotal)} ·{' '}
-            {(() => {
-              const rates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
-              return rates.length === 1 ? `IVA (${rates[0]}%)` : 'IVA';
-            })()}
-            : {formatCurrency(invoice.taxTotal)}
+            {invoice.compensacionPercent != null ? (
+              <>
+                Comp. agraria ({invoice.compensacionPercent}%):{' '}
+                +{formatCurrency(invoice.compensacionAmount ?? 0)}
+              </>
+            ) : (
+              <>
+                {(() => {
+                  const rates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
+                  return rates.length === 1 ? `IVA (${rates[0]}%)` : 'IVA';
+                })()}
+                : {formatCurrency(invoice.taxTotal)}
+              </>
+            )}
             {parseNum(invoice.irpfPercent) > 0 && (
               <> · IRPF: −{formatCurrency(invoice.irpfTotal)}</>
             )}

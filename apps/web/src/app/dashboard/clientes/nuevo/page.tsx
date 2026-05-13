@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { CustomerType, CreateCustomerInput } from '@easyfactura/shared-types';
+import { CustomerType, CreateCustomerInput, TaxRegime } from '@easyfactura/shared-types';
 import { customerFormSchema, CustomerFormData } from '@/lib/validators/customer.schema';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useCreateCustomer, useCustomerByNif } from '@/hooks/use-customers';
 import { CustomerFormFields } from '@/components/clientes/CustomerFormFields';
 import { AgencySharedPoolImport } from '@/components/clientes/AgencySharedPoolImport';
+import { useTenant } from '@/hooks/use-tenant';
 
 // ==================== TYPES & CONSTANTS ====================
 
@@ -37,6 +38,7 @@ function buildCreateInput(data: FormData): CreateCustomerInput {
     province: data.province?.trim() || undefined,
     country: data.country || 'ES',
     notes: data.notes?.trim() || undefined,
+    isReagyp: data.isReagyp ?? false,
   };
 }
 
@@ -45,6 +47,8 @@ function buildCreateInput(data: FormData): CreateCustomerInput {
 export default function NuevoClientePage() {
   const router = useRouter();
   const createMutation = useCreateCustomer();
+  const { data: tenant } = useTenant();
+  const showReagypToggle = tenant?.taxRegime === TaxRegime.REAGYP;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -133,6 +137,7 @@ export default function NuevoClientePage() {
             showDuplicateBanner={!!existingCustomer}
             duplicateBannerTitle="Este NIF ya existe en tu cartera"
             onDuplicateNavigate={(id) => router.push(`/dashboard/clientes/${id}`)}
+            showReagypToggle={showReagypToggle}
           />
         </form>
       </div>

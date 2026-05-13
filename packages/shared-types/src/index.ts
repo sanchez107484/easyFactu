@@ -95,6 +95,11 @@ export enum AgencyInvitationStatus {
   CANCELLED = 'CANCELLED',
 }
 
+export enum TaxRegime {
+  GENERAL = 'GENERAL',   // Régimen general de IVA (por defecto)
+  REAGYP = 'REAGYP',     // Régimen Especial Agricultura, Ganadería y Pesca (Arts. 124-134 LIVA)
+}
+
 export enum RelationTerminator {
   AGENCY = 'AGENCY',
   CLIENT = 'CLIENT',
@@ -141,6 +146,9 @@ export interface Tenant {
   certificateExpiry: string | null;
   setupCompleted: boolean;
   accountType: AccountType;
+  taxRegime: TaxRegime;
+  /** Tasa de compensación agraria (%). Solo cuando taxRegime = REAGYP. */
+  reaypRate: number | null;
   plan: Plan;
   isActive: boolean;
   createdAt: string;
@@ -188,6 +196,9 @@ export interface UpdateTenantInput {
   bankAccountHolder?: string;
   bic?: string;
   accountType?: AccountType;
+  taxRegime?: TaxRegime;
+  /** Tasa de compensación agraria (12.0 o 10.5). Solo cuando taxRegime = REAGYP. Null para borrar. */
+  reaypRate?: number | null;
 }
 
 // ==================== USER ====================
@@ -287,6 +298,8 @@ export interface Customer {
   province: string;
   country: string;
   notes: string | null;
+  /** Indica si el cliente está acogido al REAGYP. Si true, no se aplica compensación agraria. */
+  isReagyp: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -305,6 +318,7 @@ export interface CreateCustomerInput {
   province?: string;
   country?: string;
   notes?: string;
+  isReagyp?: boolean;
 }
 
 export interface UpdateCustomerInput {
@@ -320,6 +334,7 @@ export interface UpdateCustomerInput {
   province?: string;
   country?: string;
   notes?: string;
+  isReagyp?: boolean;
   isActive?: boolean;
 }
 
@@ -493,6 +508,10 @@ export interface Invoice {
   taxTotal: number;
   irpfPercent: number | null;
   irpfTotal: number | null;
+  /** Porcentaje de compensación agraria REAGYP (12.0 o 10.5). Null en régimen general. */
+  compensacionPercent: number | null;
+  /** Importe de la compensación agraria. Null en régimen general. */
+  compensacionAmount: number | null;
   total: number;
   paymentMethod: PaymentMethod | null;
   paymentDetails: Record<string, unknown> | null;
@@ -604,6 +623,12 @@ export interface CreateInvoiceInput {
   validUntil?: string;
   discountPercent?: number;
   irpfPercent?: number;
+  /**
+   * Porcentaje de compensación agraria REAGYP (%). Solo para régimen REAGYP.
+   * Si se envía (incluido 0), el frontend está indicando el valor exacto a usar.
+   * Si se omite, el backend lo deriva del régimen fiscal del tenant.
+   */
+  compensacionPercent?: number;
   paymentMethod?: PaymentMethod;
   notes?: string;
   /**
@@ -631,6 +656,12 @@ export interface UpdateInvoiceInput {
   quoteAcceptanceStatus?: QuoteAcceptanceStatus;
   discountPercent?: number;
   irpfPercent?: number;
+  /**
+   * Porcentaje de compensación agraria REAGYP (%). Solo para régimen REAGYP.
+   * Si se envía (incluido 0), el frontend está indicando el valor exacto a usar.
+   * Si se omite, el backend lo deriva del régimen fiscal del tenant.
+   */
+  compensacionPercent?: number;
   paymentMethod?: PaymentMethod;
   notes?: string;
   /**

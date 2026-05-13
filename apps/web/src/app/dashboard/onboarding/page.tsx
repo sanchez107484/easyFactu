@@ -26,7 +26,7 @@ import { useTenant, useUpdateTenant, useCompleteSetup } from '@/hooks/use-tenant
 import { useCreateSeries, useUpdateSeries, useInvoiceSeries } from '@/hooks/use-invoice-series';
 import { useInvoiceDefaults, useUpdateInvoiceDefaults } from '@/hooks/use-invoice-defaults';
 import { useAuthStore } from '@/store/auth-store';
-import { AccountType, SeriesType, PaymentMethod } from '@easyfactura/shared-types';
+import { AccountType, SeriesType, PaymentMethod, TaxRegime } from '@easyfactura/shared-types';
 import { PROVINCES, PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import {
   ArrowRight,
@@ -60,15 +60,27 @@ const accountTypeSchema = z.object({
   accountType: z.nativeEnum(AccountType),
 });
 
-const companyDataSchema = z.object({
-  businessName: z.string().min(2, 'Mínimo 2 caracteres'),
-  nif: z.string().min(9, 'NIF/CIF inválido').max(9),
-  address: z.string().min(1, 'La dirección es obligatoria'),
-  postalCode: z.string().regex(/^\d{5}$/, 'Código postal inválido'),
-  city: z.string().min(1, 'La ciudad es obligatoria'),
-  province: z.string().min(1, 'Selecciona una provincia'),
-  phone: z.string().optional(),
-});
+const companyDataSchema = z
+  .object({
+    businessName: z.string().min(2, 'Mínimo 2 caracteres'),
+    nif: z.string().min(9, 'NIF/CIF inválido').max(9),
+    address: z.string().min(1, 'La dirección es obligatoria'),
+    postalCode: z.string().regex(/^\d{5}$/, 'Código postal inválido'),
+    city: z.string().min(1, 'La ciudad es obligatoria'),
+    province: z.string().min(1, 'Selecciona una provincia'),
+    phone: z.string().optional(),
+    taxRegime: z.nativeEnum(TaxRegime).default(TaxRegime.GENERAL),
+    reaypRate: z.preprocess(
+      (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+      z.number().min(0).max(100).optional(),
+    ),
+  })
+  .refine(
+    (data) =>
+      data.taxRegime !== TaxRegime.REAGYP ||
+      (data.reaypRate !== undefined && data.reaypRate > 0),
+    { message: 'Introduce la tasa de compensación agraria (12,0 o 10,5)', path: ['reaypRate'] },
+  );
 
 const invoiceDefaultsSchema = z.object({
   paymentMethod: z.nativeEnum(PaymentMethod).optional().nullable(),
@@ -273,6 +285,7 @@ function Step2CompanyData({ onSuccess, onBack }: { onSuccess: () => void; onBack
 
   const form = useForm<CompanyDataFormData>({
     resolver: zodResolver(companyDataSchema),
+    resetOptions: { keepDirtyValues: true },
     values: {
       businessName: tenant?.businessName ?? '',
       nif: tenant?.nif ?? '',
@@ -281,11 +294,19 @@ function Step2CompanyData({ onSuccess, onBack }: { onSuccess: () => void; onBack
       city: tenant?.city ?? '',
       province: tenant?.province ?? '',
       phone: tenant?.phone ?? '',
+      taxRegime: tenant?.taxRegime ?? TaxRegime.GENERAL,
+      reaypRate: tenant?.reaypRate != null ? Number(tenant.reaypRate) : undefined,
     },
   });
 
+  const watchedTaxRegime = form.watch('taxRegime');
+  const isReagyp = watchedTaxRegime === TaxRegime.REAGYP;
+
   async function handleSubmit(data: CompanyDataFormData) {
-    await updateTenant.mutateAsync(data);
+    await updateTenant.mutateAsync({
+      ...data,
+      reaypRate: data.taxRegime === TaxRegime.REAGYP ? data.reaypRate : null,
+    });
     onSuccess();
   }
 
@@ -397,6 +418,66 @@ function Step2CompanyData({ onSuccess, onBack }: { onSuccess: () => void; onBack
             </p>
           )}
         </div>
+
+        <div className="sm:col-span-2">
+          <Label htmlFor="taxRegime">Régimen fiscal</Label>
+          <Controller
+            control={form.control}
+            name="taxRegime"
+            render={({ field }) => (
+              <Select key={field.value} value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger id="taxRegime" className="mt-1">
+                  <SelectValue placeholder="Selecciona régimen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={TaxRegime.GENERAL}>General (IVA estándar)</SelectItem>
+                  <SelectItem value={TaxRegime.REAGYP}>REAGYP — Compensación Agraria</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Arts. 124–134 LIVA. Si estás en REAGYP, se aplica compensación agraria en lugar de IVA.
+          </p>
+        </div>
+
+        {isReagyp && (
+          <div className="sm:col-span-2">
+            <Label htmlFor="reaypRate">Tasa de compensación (%)</Label>
+            <div className="mt-1 flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => form.setValue('reaypRate', 12.0)}
+              >
+                12,0 % — Agricultura / Silvicultura
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => form.setValue('reaypRate', 10.5)}
+              >
+                10,5 % — Ganadería / Pesca
+              </Button>
+            </div>
+            <Input
+              id="reaypRate"
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              className="mt-2"
+              {...form.register('reaypRate', { valueAsNumber: true })}
+            />
+            {form.formState.errors.reaypRate && (
+              <p className="mt-1 text-xs text-destructive">
+                {form.formState.errors.reaypRate.message}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <StepActions isSaving={updateTenant.isPending} onBack={onBack} />
@@ -758,7 +839,6 @@ export default function OnboardingPage() {
   }
 
   function handleGoToDashboard() {
-    resetOnboarding();
     router.push(isAgency ? '/dashboard/asesoria' : '/dashboard');
   }
 

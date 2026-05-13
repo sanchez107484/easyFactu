@@ -55,6 +55,7 @@ import {
   InvoiceDefaults,
   Customer,
   SharedPoolCustomer,
+  TaxRegime,
 } from '@easyfactura/shared-types';
 import { FREQUENCY_OPTIONS, PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import { cn, resolveUrl } from '@/lib/utils';
@@ -87,6 +88,7 @@ const formSchema = z
     autoConfirm: z.boolean(),
     irpfPercent: z.coerce.number().min(0).max(30).optional(),
     discountPercent: z.coerce.number().min(0).max(100).optional(),
+    compensacionPercent: z.coerce.number().min(0).max(100).optional(),
     paymentMethod: z.nativeEnum(PaymentMethod).optional(),
     paymentDetails: paymentDetailsSchema,
     notes: z.string().max(1000).optional(),
@@ -305,6 +307,18 @@ function RecurringInvoiceForm({
     }
   }, [customers, pendingCustomerId, form]);
 
+  const selectedCustomer = customers.find((c) => c.id === watchedValues.customerId);
+  const showCompensacion = tenantData?.taxRegime === TaxRegime.REAGYP;
+
+  // Auto-populate compensacionPercent when the customer or tenant changes.
+  useEffect(() => {
+    if (!showCompensacion) return;
+    const rate =
+      !selectedCustomer?.isReagyp && tenantData?.reaypRate ? Number(tenantData.reaypRate) : 0;
+    form.setValue('compensacionPercent', rate, { shouldDirty: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedValues.customerId, tenantData?.taxRegime, tenantData?.reaypRate]);
+
   const previewInvoice = buildPreviewInvoice(
     {
       customerId: watchedValues.customerId,
@@ -318,6 +332,7 @@ function RecurringInvoiceForm({
     },
     customers,
     null,
+    watchedValues.compensacionPercent,
   );
 
   const source = tenantData ?? currentTenant;
@@ -887,7 +902,7 @@ function RecurringInvoiceForm({
             <CardContent>
               <section
                 id="field-discountPercent"
-                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                className={`grid grid-cols-1 gap-4 ${showCompensacion ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
                 onFocus={() => setActiveSection('discountPercent')}
               >
                 <div className="space-y-2">
@@ -918,6 +933,22 @@ function RecurringInvoiceForm({
                     })}
                   />
                 </div>
+                {showCompensacion && (
+                  <div className="space-y-2">
+                    <Label htmlFor="compensacionPercent">Comp. agraria REAGYP (%)</Label>
+                    <Input
+                      id="compensacionPercent"
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      max={100}
+                      placeholder="0"
+                      {...form.register('compensacionPercent', {
+                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                      })}
+                    />
+                  </div>
+                )}
               </section>
             </CardContent>
           </Card>

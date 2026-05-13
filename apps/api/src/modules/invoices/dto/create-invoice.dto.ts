@@ -147,6 +147,20 @@ export class CreateInvoiceDto {
   irpfPercent?: number;
 
   @ApiPropertyOptional({
+    description:
+      'Porcentaje de compensación agraria REAGYP (%). ' +
+      'Cuando el frontend lo envía, se usa directamente en lugar del tipo configurado en el tenant. ' +
+      'Enviar 0 desactiva la compensación para esta factura.',
+    minimum: 0,
+    maximum: 100,
+  })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  compensacionPercent?: number;
+
+  @ApiPropertyOptional({
     enum: PaymentMethod,
     description: 'Método de pago (obligatorio para facturas, opcional para presupuestos)',
   })

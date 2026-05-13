@@ -38,6 +38,7 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
 
   const taxRates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
   const ivaLabel = taxRates.length === 1 ? `IVA (${taxRates[0]}%)` : 'IVA';
+  const isReagyp = invoice.compensacionPercent != null;
 
   return (
     <div className="flex justify-end">
@@ -51,11 +52,18 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
           />
         )}
 
-        {showTaxBreakdown && (
-          <TotalsRow label={ivaLabel} value={formatCurrency(invoice.taxTotal)} />
+        {isReagyp ? (
+          <TotalsRow
+            label={`Comp. agraria (${invoice.compensacionPercent}%)`}
+            value={`+${formatCurrency(invoice.compensacionAmount ?? 0)}`}
+          />
+        ) : (
+          showTaxBreakdown && (
+            <TotalsRow label={ivaLabel} value={formatCurrency(invoice.taxTotal)} />
+          )
         )}
 
-        {(invoice.irpfTotal ?? 0) > 0 && (
+        {showIrpf && (invoice.irpfTotal ?? 0) > 0 && (
           <TotalsRow
             label={`IRPF (${invoice.irpfPercent ?? 0}%)`}
             value={`-${formatCurrency(invoice.irpfTotal ?? 0)}`}

@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SectionLabel } from '@/components/common/section-label';
+import { Switch } from '@/components/ui/switch';
 
 // ==================== TYPES & CONSTANTS ====================
 
@@ -135,6 +136,12 @@ export interface CustomerFormFieldsProps {
   onDuplicateNavigate: (customerId: string) => void;
   /** Texto del botón de acción del banner de duplicado. Por defecto: "Ver ficha del cliente" */
   duplicateBannerActionLabel?: string;
+  /**
+   * Muestra el toggle REAGYP. Solo debe activarse cuando el tenant emisor está en régimen REAGYP.
+   * Si true, el usuario puede marcar este cliente como "también REAGYP", lo que desactiva la
+   * compensación agraria en sus facturas.
+   */
+  showReagypToggle?: boolean;
 }
 
 // ==================== COMPONENT ====================
@@ -148,6 +155,7 @@ export function CustomerFormFields({
   duplicateBannerTitle,
   onDuplicateNavigate,
   duplicateBannerActionLabel = 'Ver ficha del cliente',
+  showReagypToggle = false,
 }: CustomerFormFieldsProps) {
   const selectedType = form.watch('type');
   const currentTypeOption = TYPE_OPTIONS.find((o) => o.value === selectedType) ?? TYPE_OPTIONS[0]!;
@@ -450,6 +458,27 @@ export function CustomerFormFields({
         />
         <FieldError message={form.formState.errors.notes?.message} />
       </div>
+
+      {/* ── FILA 5: REAGYP (solo si el tenant emisor está en REAGYP) ── */}
+      {showReagypToggle && (
+        <div className="rounded-xl border bg-card p-5">
+          <SectionLabel>Régimen fiscal del cliente</SectionLabel>
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Este cliente también está en REAGYP</p>
+              <p className="text-xs text-muted-foreground">
+                Si está activo, la compensación agraria no se aplicará en sus facturas (operación
+                B2B entre agricultores acogidos al régimen).
+              </p>
+            </div>
+            <Switch
+              id="isReagyp"
+              checked={form.watch('isReagyp') ?? false}
+              onCheckedChange={(checked) => form.setValue('isReagyp', checked)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,24 +24,36 @@ import {
   useDeleteTenantLogo,
 } from '@/hooks/use-tenant';
 import { PROVINCES } from '@easyfactura/shared-constants';
-import { AccountType, PaymentMethod } from '@easyfactura/shared-types';
+import { AccountType, PaymentMethod, TaxRegime } from '@easyfactura/shared-types';
 import { BancarioSection } from '@/components/ajustes/BancarioSection';
 import { resolveUrl } from '@/lib/utils';
 import { useInvoiceDefaults, useUpdateInvoiceDefaults } from '@/hooks/use-invoice-defaults';
 
 // ==================== SCHEMAS ====================
 
-const empresaSchema = z.object({
-  businessName: z.string().min(2, 'Mínimo 2 caracteres').max(100, 'Máximo 100 caracteres'),
-  legalName: z.string().max(100).optional().or(z.literal('')),
-  nif: z.string().min(9, 'NIF/CIF inválido').max(9, 'NIF/CIF inválido'),
-  email: z.string().email('Email no válido'),
-  address: z.string().min(1, 'La dirección es obligatoria').max(200),
-  postalCode: z.string().regex(/^\d{5}$/, 'Código postal inválido (5 dígitos)'),
-  city: z.string().min(1, 'La ciudad es obligatoria').max(100),
-  province: z.string().min(1, 'Selecciona una provincia'),
-  phone: z.string().max(20).optional().or(z.literal('')),
-});
+const empresaSchema = z
+  .object({
+    businessName: z.string().min(2, 'Mínimo 2 caracteres').max(100, 'Máximo 100 caracteres'),
+    legalName: z.string().max(100).optional().or(z.literal('')),
+    nif: z.string().min(9, 'NIF/CIF inválido').max(9, 'NIF/CIF inválido'),
+    email: z.string().email('Email no válido'),
+    address: z.string().min(1, 'La dirección es obligatoria').max(200),
+    postalCode: z.string().regex(/^\d{5}$/, 'Código postal inválido (5 dígitos)'),
+    city: z.string().min(1, 'La ciudad es obligatoria').max(100),
+    province: z.string().min(1, 'Selecciona una provincia'),
+    phone: z.string().max(20).optional().or(z.literal('')),
+    taxRegime: z.nativeEnum(TaxRegime).default(TaxRegime.GENERAL),
+    reaypRate: z.preprocess(
+      (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+      z.number().min(0).max(100).optional(),
+    ),
+  })
+  .refine(
+    (data) =>
+      data.taxRegime !== TaxRegime.REAGYP ||
+      (data.reaypRate !== undefined && data.reaypRate > 0),
+    { message: 'Introduce la tasa de compensación agraria (12,0 o 10,5)', path: ['reaypRate'] },
+  );
 
 type EmpresaFormData = z.infer<typeof empresaSchema>;
 
@@ -74,8 +86,13 @@ export default function AjustesEmpresaPage() {
       city: '',
       province: '',
       phone: '',
+      taxRegime: TaxRegime.GENERAL,
+      reaypRate: undefined,
     },
   });
+
+  const watchedTaxRegime = useWatch({ control: empresaForm.control, name: 'taxRegime' });
+  const isReagyp = watchedTaxRegime === TaxRegime.REAGYP;
 
   useEffect(() => {
     if (tenant) {
@@ -89,12 +106,18 @@ export default function AjustesEmpresaPage() {
         city: tenant.city ?? '',
         province: tenant.province ?? '',
         phone: tenant.phone ?? '',
+        taxRegime: tenant.taxRegime ?? TaxRegime.GENERAL,
+        reaypRate: tenant.reaypRate != null ? Number(tenant.reaypRate) : undefined,
       });
     }
   }, [tenant]);
 
   function onSubmitEmpresa(data: EmpresaFormData) {
-    updateTenant.mutate(data);
+    updateTenant.mutate({
+      ...data,
+      // Explicitly null so the backend clears the DB column when switching to GENERAL
+      reaypRate: data.taxRegime === TaxRegime.REAGYP ? data.reaypRate : null,
+    });
   }
 
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -258,6 +281,68 @@ export default function AjustesEmpresaPage() {
                 <Label htmlFor="phone">Teléfono</Label>
                 <Input id="phone" {...empresaForm.register('phone')} />
               </div>
+
+              <div className="md:col-span-2">
+                <Label htmlFor="taxRegime">Régimen fiscal</Label>
+                <Controller
+                  control={empresaForm.control}
+                  name="taxRegime"
+                  render={({ field }) => (
+                    <Select key={field.value} value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="taxRegime" className="mt-1">
+                        <SelectValue placeholder="Selecciona régimen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={TaxRegime.GENERAL}>General (IVA estándar)</SelectItem>
+                        <SelectItem value={TaxRegime.REAGYP}>
+                          REAGYP — Compensación Agraria
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Arts. 124–134 LIVA. El REAGYP aplica compensación agraria en lugar de IVA.
+                </p>
+              </div>
+
+              {isReagyp && (
+                <div className="md:col-span-2">
+                  <Label htmlFor="reaypRate">Tasa de compensación (%)</Label>
+                  <div className="mt-1 flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => empresaForm.setValue('reaypRate', 12.0)}
+                    >
+                      12,0 % — Agricultura / Silvicultura
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => empresaForm.setValue('reaypRate', 10.5)}
+                    >
+                      10,5 % — Ganadería / Pesca
+                    </Button>
+                  </div>
+                  <Input
+                    id="reaypRate"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    className="mt-2"
+                    {...empresaForm.register('reaypRate', { valueAsNumber: true })}
+                  />
+                  {empresaForm.formState.errors.reaypRate && (
+                    <p className="mt-1 text-sm text-destructive">
+                      {empresaForm.formState.errors.reaypRate.message}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end pt-2">
@@ -373,6 +458,8 @@ export default function AjustesEmpresaPage() {
             />
           </CardContent>
         </Card>
+
+
       </div>
     </div>
   );

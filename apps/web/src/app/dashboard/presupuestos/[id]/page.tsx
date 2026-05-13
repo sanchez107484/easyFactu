@@ -356,7 +356,10 @@ export default function PresupuestoDetailPage() {
                     {formatCurrency(quote.total)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Base: {formatCurrency(quote.subtotal)} · IVA: {formatCurrency(quote.taxTotal)}
+                    Base: {formatCurrency(quote.subtotal)}
+                    {quote.compensacionPercent != null
+                      ? ` · Comp. agraria: +${formatCurrency(quote.compensacionAmount ?? 0)}`
+                      : ` · IVA: ${formatCurrency(quote.taxTotal)}`}
                     {parseNum(quote.irpfPercent) > 0 && (
                       <> · IRPF: −{formatCurrency(quote.irpfTotal)}</>
                     )}
@@ -625,7 +628,18 @@ export default function PresupuestoDetailPage() {
                     </span>
                   </div>
                 )}
-                <DataRow label="IVA" value={formatCurrency(quote.taxTotal)} />
+                {quote.compensacionPercent != null ? (
+                  <div className="flex justify-between items-baseline py-1">
+                    <span className="text-sm">
+                      Compensación agraria ({quote.compensacionPercent}%)
+                    </span>
+                    <span className="text-sm tabular-nums">
+                      +{formatCurrency(quote.compensacionAmount ?? 0)}
+                    </span>
+                  </div>
+                ) : (
+                  <DataRow label="IVA" value={formatCurrency(quote.taxTotal)} />
+                )}
                 {parseNum(quote.irpfPercent) > 0 && (
                   <div className="flex justify-between items-baseline py-1">
                     <span className="text-sm text-rectificativa-600">
