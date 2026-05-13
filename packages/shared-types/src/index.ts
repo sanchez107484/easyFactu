@@ -518,6 +518,40 @@ export interface Invoice {
   createdByAgency?: InvoiceAgencyCreator | null;
   createdAt: string;
   updatedAt: string;
+
+  // ── Customer snapshot ────────────────────────────────────────────────────────
+  // Immutable copy of the customer's billing data captured at invoice creation/
+  // confirmation time. Null for invoices created before this feature was added.
+  // When present, these fields MUST be used in PDFs and legal documents instead
+  // of the live customer relation, to comply with VeriFactu immutability rules.
+  customerSnapshotName?: string | null;
+  customerSnapshotLegalName?: string | null;
+  customerSnapshotNif?: string | null;
+  customerSnapshotType?: string | null;
+  customerSnapshotEmail?: string | null;
+  customerSnapshotPhone?: string | null;
+  customerSnapshotAddress?: string | null;
+  customerSnapshotPostalCode?: string | null;
+  customerSnapshotCity?: string | null;
+  customerSnapshotProvince?: string | null;
+  customerSnapshotCountry?: string | null;
+
+  // ── Issuer snapshot ──────────────────────────────────────────────────────────
+  // Immutable copy of the tenant's billing data captured at invoice creation/
+  // confirmation time. Null for invoices created before this feature was added.
+  // When present, these fields MUST be used in PDFs and legal documents instead
+  // of the live tenant data, to comply with VeriFactu immutability rules.
+  issuerSnapshotName?: string | null;
+  issuerSnapshotLegalName?: string | null;
+  issuerSnapshotNif?: string | null;
+  issuerSnapshotEmail?: string | null;
+  issuerSnapshotPhone?: string | null;
+  issuerSnapshotAddress?: string | null;
+  issuerSnapshotPostalCode?: string | null;
+  issuerSnapshotCity?: string | null;
+  issuerSnapshotProvince?: string | null;
+  issuerSnapshotCountry?: string | null;
+
   series?: InvoiceSeries;
   customer?: Customer;
   lines?: InvoiceLine[];

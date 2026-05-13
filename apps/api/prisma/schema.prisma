@@ -328,6 +328,34 @@ model Invoice {
   paymentStatus       PaymentStatus  @default(UNPAID) @map("payment_status")
   createdByUserId     String?        @map("created_by_user_id")
   recurringInvoiceId  String?        @map("recurring_invoice_id")
+
+  // ── Customer snapshot — immutable copy of the customer's billing data at creation/confirmation.
+  // All fields nullable for backwards-compatibility with invoices created before this migration.
+  customerSnapshotName        String?  @map("customer_snapshot_name")
+  customerSnapshotLegalName   String?  @map("customer_snapshot_legal_name")
+  customerSnapshotNif         String?  @map("customer_snapshot_nif")
+  customerSnapshotType        String?  @map("customer_snapshot_type")
+  customerSnapshotEmail       String?  @map("customer_snapshot_email")
+  customerSnapshotPhone       String?  @map("customer_snapshot_phone")
+  customerSnapshotAddress     String?  @map("customer_snapshot_address")
+  customerSnapshotPostalCode  String?  @map("customer_snapshot_postal_code")
+  customerSnapshotCity        String?  @map("customer_snapshot_city")
+  customerSnapshotProvince    String?  @map("customer_snapshot_province")
+  customerSnapshotCountry     String?  @map("customer_snapshot_country")
+
+  // ── Issuer snapshot — immutable copy of the tenant's billing data at creation/confirmation.
+  // All fields nullable for backwards-compatibility with invoices created before this migration.
+  issuerSnapshotName          String?  @map("issuer_snapshot_name")
+  issuerSnapshotLegalName     String?  @map("issuer_snapshot_legal_name")
+  issuerSnapshotNif           String?  @map("issuer_snapshot_nif")
+  issuerSnapshotEmail         String?  @map("issuer_snapshot_email")
+  issuerSnapshotPhone         String?  @map("issuer_snapshot_phone")
+  issuerSnapshotAddress       String?  @map("issuer_snapshot_address")
+  issuerSnapshotPostalCode    String?  @map("issuer_snapshot_postal_code")
+  issuerSnapshotCity          String?  @map("issuer_snapshot_city")
+  issuerSnapshotProvince      String?  @map("issuer_snapshot_province")
+  issuerSnapshotCountry       String?  @map("issuer_snapshot_country")
+
   createdAt           DateTime       @default(now()) @map("created_at")
   updatedAt           DateTime       @updatedAt @map("updated_at")
 

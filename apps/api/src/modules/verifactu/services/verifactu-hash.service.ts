@@ -3,7 +3,12 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import * as crypto from 'crypto';
 
 interface InvoiceHashData {
-  nif: string;
+  /**
+   * NIF of the invoice issuer (tenant). Must be taken from `issuerSnapshotNif`
+   * for confirmed invoices so the hash is always computed with the NIF that was
+   * current at confirmation time — not the potentially-updated live tenant data.
+   */
+  issuerNif: string;
   number: string;
   issueDate: Date;
   total: number;
@@ -21,17 +26,14 @@ export class VerifactuHashService {
     tenantId: string,
     invoiceData: InvoiceHashData
   ): Promise<{ hash: string; prevHash: string | null }> {
-    // Get tenant NIF
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { id: tenantId },
-      select: { nif: true },
-    });
-
-    if (!tenant?.nif) {
-      throw new Error('El tenant no tiene NIF configurado');
+    if (!invoiceData.issuerNif) {
+      throw new Error(
+        'No se puede generar el hash: el NIF del emisor está vacío. ' +
+          'Comprueba que el snapshot del emisor se generó correctamente al confirmar la factura.'
+      );
     }
 
-    // Get previous invoice hash from the same tenant
+    // Get previous invoice hash from the same tenant for chain continuity
     const previousInvoice = await this.prisma.invoice.findFirst({
       where: {
         tenantId,
@@ -46,7 +48,7 @@ export class VerifactuHashService {
 
     // Build hash string according to VeriFactu specification
     const hashString = this.buildHashString(
-      tenant.nif,
+      invoiceData.issuerNif,
       invoiceData.number,
       invoiceData.issueDate,
       invoiceData.total,
@@ -96,7 +98,14 @@ export class VerifactuHashService {
   async verifyHashChain(tenantId: string, invoiceId: string): Promise<boolean> {
     const invoice = await this.prisma.invoice.findFirst({
       where: { id: invoiceId, tenantId },
-      include: { customer: true },
+      select: {
+        hash: true,
+        prevHash: true,
+        number: true,
+        issueDate: true,
+        total: true,
+        issuerSnapshotNif: true,
+      },
     });
 
     if (!invoice || !invoice.hash) {
@@ -104,12 +113,17 @@ export class VerifactuHashService {
     }
 
     if (!invoice.number) {
-      return false; // Cannot verify hash for a DRAFT invoice without a number
+      return false; // Cannot verify hash for an invoice without a number
     }
 
-    // Regenerate hash and compare
+    const issuerNif = invoice.issuerSnapshotNif ?? '';
+    if (!issuerNif) {
+      return false; // Cannot verify hash without the issuer NIF snapshot
+    }
+
+    // Regenerate hash using the immutable snapshot NIF and compare
     const { hash, prevHash } = await this.generateHash(tenantId, {
-      nif: invoice.customer.nif,
+      issuerNif,
       number: invoice.number,
       issueDate: invoice.issueDate,
       total: Number(invoice.total),

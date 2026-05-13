@@ -544,11 +544,11 @@ export default function FacturasPage() {
                           <td className="px-4 py-3">
                             <div className="min-w-0">
                               <p className="text-sm font-medium truncate max-w-[180px]">
-                                {invoice.customer?.name ?? '-'}
+                                {invoice.customerSnapshotName ?? invoice.customer?.name ?? '-'}
                               </p>
-                              {invoice.customer?.nif && (
+                              {(invoice.customerSnapshotNif ?? invoice.customer?.nif) && (
                                 <p className="text-xs font-mono text-muted-foreground">
-                                  {invoice.customer.nif}
+                                  {invoice.customerSnapshotNif ?? invoice.customer?.nif}
                                 </p>
                               )}
                             </div>

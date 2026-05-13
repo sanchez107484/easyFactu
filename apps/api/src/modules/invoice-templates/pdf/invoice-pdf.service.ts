@@ -112,18 +112,30 @@ export class InvoicePdfService {
   /**
    * Computes a short SHA-256 hash from the inputs that affect PDF content.
    * When any of these change, the hash changes and the cache auto-invalidates.
+   *
+   * For confirmed invoices with an issuer snapshot, the rendered PDF uses the
+   * immutable snapshot fields — not live tenant data. In that case we use a
+   * stable marker (snapshot NIF) instead of tenant.updatedAt so that unrelated
+   * tenant changes (e.g. updating a phone number) do not bust the cache and
+   * trigger a re-render that would incorrectly overwrite the snapshot data.
    */
   private computeContentHash(
     invoice: {
       updatedAt: Date | string;
+      issuerSnapshotNif?: string | null;
       template?: { updatedAt: Date | string } | null;
       layoutOverride?: unknown;
     },
     tenant: { updatedAt: Date | string; logoUrl?: string | null }
   ): string {
+    const issuerPart =
+      invoice.issuerSnapshotNif != null
+        ? `snapshot:${invoice.issuerSnapshotNif}`
+        : String(tenant.updatedAt);
+
     const parts = [
       String(invoice.updatedAt),
-      String(tenant.updatedAt),
+      issuerPart,
       tenant.logoUrl ?? '',
       invoice.template ? String(invoice.template.updatedAt) : 'default',
       invoice.layoutOverride ? JSON.stringify(invoice.layoutOverride) : '',
@@ -134,10 +146,14 @@ export class InvoicePdfService {
   private buildFilename(invoice: {
     number: string | null;
     invoiceType?: string | null;
+    customerSnapshotName?: string | null;
     customer?: { name: string } | null;
   }): string {
     const typeLabel = this.resolveDocumentTypeLabel(invoice.invoiceType);
-    const raw = [invoice.number ?? typeLabel, invoice.customer?.name].filter(Boolean).join(' - ');
+    // Prefer snapshot name (immutable) over live customer name so the filename
+    // always matches the customer name printed inside the PDF.
+    const customerName = invoice.customerSnapshotName ?? invoice.customer?.name;
+    const raw = [invoice.number ?? typeLabel, customerName].filter(Boolean).join(' - ');
     return raw.replace(/[/\\:*?"<>|]/g, '').trim() || 'documento';
   }
 
@@ -190,7 +206,9 @@ export class InvoicePdfService {
     tenant: Tenant
   ): Promise<Buffer> {
     const logoBuffer = this.resolveLogo(tenant.logoUrl);
-    const pdfTitle = [invoice.number, invoice.customer?.name].filter(Boolean).join(' - ');
+    // Prefer snapshot name so the PDF metadata title is consistent with the rendered content.
+    const customerDisplayName = invoice.customerSnapshotName ?? invoice.customer?.name;
+    const pdfTitle = [invoice.number, customerDisplayName].filter(Boolean).join(' - ');
     const doc = new PDFDocument({ size: 'A4', margin: 40, info: { Title: pdfTitle } });
     const buffers: Buffer[] = [];
     doc.on('data', buffers.push.bind(buffers));
@@ -217,13 +235,27 @@ export class InvoicePdfService {
       }
     }
 
-    // Cabecera empresa
-    doc.fontSize(16).text(tenant.legalName || '', 200, 40, { align: 'right' });
-    doc.fontSize(10).text(tenant.address || '', 200, 60, { align: 'right' });
-    doc.text(`${tenant.postalCode || ''} ${tenant.city || ''}`, 200, 75, { align: 'right' });
-    doc.text(`${tenant.province || ''} (${tenant.country || ''})`, 200, 90, { align: 'right' });
-    doc.text(`NIF: ${tenant.nif || ''}`, 200, 105, { align: 'right' });
-    doc.text(`Email: ${tenant.email || ''}`, 200, 120, { align: 'right' });
+    // Cabecera empresa — prefer immutable issuer snapshot; fall back to live tenant data.
+    // Confirmed invoices always have snapshot fields; drafts/proformas fall back transparently.
+    const issuerName =
+      invoice.issuerSnapshotLegalName ??
+      invoice.issuerSnapshotName ??
+      tenant.legalName ??
+      tenant.businessName;
+    const issuerNif = invoice.issuerSnapshotNif ?? tenant.nif;
+    const issuerAddress = invoice.issuerSnapshotAddress ?? tenant.address;
+    const issuerPostalCode = invoice.issuerSnapshotPostalCode ?? tenant.postalCode;
+    const issuerCity = invoice.issuerSnapshotCity ?? tenant.city;
+    const issuerProvince = invoice.issuerSnapshotProvince ?? tenant.province;
+    const issuerCountry = invoice.issuerSnapshotCountry ?? tenant.country;
+    const issuerEmail = invoice.issuerSnapshotEmail ?? tenant.email;
+
+    doc.fontSize(16).text(issuerName || '', 200, 40, { align: 'right' });
+    doc.fontSize(10).text(issuerAddress || '', 200, 60, { align: 'right' });
+    doc.text(`${issuerPostalCode || ''} ${issuerCity || ''}`, 200, 75, { align: 'right' });
+    doc.text(`${issuerProvince || ''} (${issuerCountry || ''})`, 200, 90, { align: 'right' });
+    doc.text(`NIF: ${issuerNif || ''}`, 200, 105, { align: 'right' });
+    doc.text(`Email: ${issuerEmail || ''}`, 200, 120, { align: 'right' });
 
     // Datos factura
     const docTypeLabel = this.resolveDocumentTypeLabel(invoice.invoiceType);
@@ -233,15 +265,35 @@ export class InvoicePdfService {
     doc.fontSize(10).text(`Fecha emisión: ${invoice.issueDate?.toString().slice(0, 10) || ''}`);
     if (invoice.dueDate) doc.text(`Fecha vencimiento: ${invoice.dueDate.toString().slice(0, 10)}`);
 
-    // Cliente
+    // Cliente — prefer immutable snapshot fields; fall back to live customer relation.
+    const hasCustomerSnapshot = invoice.customerSnapshotNif != null;
+    const custLegalName = hasCustomerSnapshot
+      ? (invoice.customerSnapshotLegalName ?? invoice.customerSnapshotName)
+      : invoice.customer?.legalName;
+    const custAddress = hasCustomerSnapshot
+      ? invoice.customerSnapshotAddress
+      : invoice.customer?.address;
+    const custPostalCode = hasCustomerSnapshot
+      ? invoice.customerSnapshotPostalCode
+      : invoice.customer?.postalCode;
+    const custCity = hasCustomerSnapshot ? invoice.customerSnapshotCity : invoice.customer?.city;
+    const custProvince = hasCustomerSnapshot
+      ? invoice.customerSnapshotProvince
+      : invoice.customer?.province;
+    const custCountry = hasCustomerSnapshot
+      ? invoice.customerSnapshotCountry
+      : invoice.customer?.country;
+    const custNif = hasCustomerSnapshot ? invoice.customerSnapshotNif : invoice.customer?.nif;
+    const custEmail = hasCustomerSnapshot ? invoice.customerSnapshotEmail : invoice.customer?.email;
+
     doc.moveDown(1);
     doc.fontSize(12).font('Helvetica-Bold').text('Cliente:', 40, undefined);
-    doc.fontSize(10).text(invoice.customer?.legalName || '');
-    doc.text(invoice.customer?.address || '');
-    doc.text(`${invoice.customer?.postalCode || ''} ${invoice.customer?.city || ''}`);
-    doc.text(`${invoice.customer?.province || ''} (${invoice.customer?.country || ''})`);
-    doc.text(`NIF: ${invoice.customer?.nif || ''}`);
-    doc.text(`Email: ${invoice.customer?.email || ''}`);
+    doc.fontSize(10).text(custLegalName || '');
+    doc.text(custAddress || '');
+    doc.text(`${custPostalCode || ''} ${custCity || ''}`);
+    doc.text(`${custProvince || ''} (${custCountry || ''})`);
+    doc.text(`NIF: ${custNif || ''}`);
+    doc.text(`Email: ${custEmail || ''}`);
 
     // Líneas de factura
     doc.moveDown(1);

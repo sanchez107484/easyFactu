@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, onWheel, ...props }, ref) => {
     return (
       <input
         type={type}
@@ -13,6 +13,17 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className,
         )}
         ref={ref}
+        // Prevent the scroll wheel from changing the value on number inputs.
+        // Without this, scrolling over a focused numeric field changes its value
+        // instead of scrolling the page — a common UX pitfall.
+        onWheel={
+          type === 'number'
+            ? (e) => {
+                e.currentTarget.blur();
+                onWheel?.(e);
+              }
+            : onWheel
+        }
         {...props}
       />
     );

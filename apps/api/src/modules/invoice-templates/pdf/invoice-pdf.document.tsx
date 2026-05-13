@@ -252,46 +252,87 @@ export function createInvoicePdfElement(
   const showTaxColumn = layout.itemsTable.showTaxColumn ?? true;
   const showLineTotal = layout.itemsTable.showLineTotal ?? true;
 
+  // Prefer immutable snapshot fields; fall back to live tenant relation for backwards compat.
+  const senderName = invoice.issuerSnapshotName ?? tenant.businessName;
+  const senderLegalName =
+    invoice.issuerSnapshotName != null ? invoice.issuerSnapshotLegalName : tenant.legalName;
+  const senderNif = invoice.issuerSnapshotNif ?? tenant.nif;
+  const senderAddress = invoice.issuerSnapshotAddress ?? tenant.address;
+  const senderPostalCode = invoice.issuerSnapshotPostalCode ?? tenant.postalCode;
+  const senderCity = invoice.issuerSnapshotCity ?? tenant.city;
+  const senderProvince = invoice.issuerSnapshotProvince ?? tenant.province;
+  const senderEmail = invoice.issuerSnapshotEmail ?? tenant.email;
+  const senderPhone = invoice.issuerSnapshotPhone ?? tenant.phone;
+
   const senderBlock = (
     <View style={styles.senderBlock}>
       {layout.logo.visible && logoAbsolutePath && (
         <Image style={styles.logo} src={logoAbsolutePath} />
       )}
-      <Text style={styles.businessName}>{tenant.businessName}</Text>
-      {tenant.legalName && tenant.legalName !== tenant.businessName && (
-        <Text style={styles.valueText}>{tenant.legalName}</Text>
+      <Text style={styles.businessName}>{senderName}</Text>
+      {senderLegalName && senderLegalName !== senderName && (
+        <Text style={styles.valueText}>{senderLegalName}</Text>
       )}
-      <Text style={styles.valueText}>{tenant.nif}</Text>
-      <Text style={styles.valueText}>{tenant.address}</Text>
+      <Text style={styles.valueText}>{senderNif}</Text>
+      <Text style={styles.valueText}>{senderAddress}</Text>
       <Text style={styles.valueText}>
-        {tenant.postalCode} {tenant.city}, {tenant.province}
+        {senderPostalCode} {senderCity}, {senderProvince}
       </Text>
-      <Text style={styles.valueText}>{tenant.email}</Text>
-      {layout.header.showPhone && tenant.phone && (
-        <Text style={styles.valueText}>{tenant.phone}</Text>
+      <Text style={styles.valueText}>{senderEmail}</Text>
+      {layout.header.showPhone && senderPhone && (
+        <Text style={styles.valueText}>{senderPhone}</Text>
       )}
+      {/* IBAN is intentionally read from live tenant data — not the snapshot.
+          The IBAN is not a fiscally required field (AEAT/VeriFactu) and showing the
+          current account is preferable: a customer opening a historical invoice to pay
+          today should see the active IBAN, not a possibly defunct one. */}
       {layout.header.showIban && tenant.iban && (
         <Text style={styles.valueText}>IBAN: {formatIban(tenant.iban)}</Text>
       )}
     </View>
   );
 
-  const customer = invoice.customer;
-  const customerBlock = customer ? (
-    <View style={styles.customerBlock}>
-      <Text style={styles.sectionLabel}>Facturar a</Text>
-      <Text style={styles.businessName}>{customer.name}</Text>
-      {customer.legalName && customer.legalName !== customer.name && (
-        <Text style={styles.valueText}>{customer.legalName}</Text>
-      )}
-      <Text style={styles.valueText}>{customer.nif}</Text>
-      <Text style={styles.valueText}>{customer.address}</Text>
-      <Text style={styles.valueText}>
-        {customer.postalCode} {customer.city}, {customer.province}
-      </Text>
-      {customer.email && <Text style={styles.valueText}>{customer.email}</Text>}
-    </View>
-  ) : null;
+  // Prefer immutable snapshot fields; fall back to live customer relation.
+  const hasCustomerSnapshot = invoice.customerSnapshotNif != null;
+  const custName = hasCustomerSnapshot
+    ? (invoice.customerSnapshotName ?? '')
+    : (invoice.customer?.name ?? '');
+  const custLegalName = hasCustomerSnapshot
+    ? invoice.customerSnapshotLegalName
+    : invoice.customer?.legalName;
+  const custNif = hasCustomerSnapshot
+    ? (invoice.customerSnapshotNif ?? '')
+    : (invoice.customer?.nif ?? '');
+  const custAddress = hasCustomerSnapshot
+    ? invoice.customerSnapshotAddress
+    : invoice.customer?.address;
+  const custPostalCode = hasCustomerSnapshot
+    ? invoice.customerSnapshotPostalCode
+    : invoice.customer?.postalCode;
+  const custCity = hasCustomerSnapshot ? invoice.customerSnapshotCity : invoice.customer?.city;
+  const custProvince = hasCustomerSnapshot
+    ? invoice.customerSnapshotProvince
+    : invoice.customer?.province;
+  const custEmail = hasCustomerSnapshot ? invoice.customerSnapshotEmail : invoice.customer?.email;
+
+  const customerBlock =
+    custName || custNif ? (
+      <View style={styles.customerBlock}>
+        <Text style={styles.sectionLabel}>Facturar a</Text>
+        <Text style={styles.businessName}>{custName}</Text>
+        {custLegalName && custLegalName !== custName && (
+          <Text style={styles.valueText}>{custLegalName}</Text>
+        )}
+        <Text style={styles.valueText}>{custNif}</Text>
+        {custAddress && <Text style={styles.valueText}>{custAddress}</Text>}
+        {(custPostalCode || custCity || custProvince) && (
+          <Text style={styles.valueText}>
+            {custPostalCode} {custCity}, {custProvince}
+          </Text>
+        )}
+        {custEmail && <Text style={styles.valueText}>{custEmail}</Text>}
+      </View>
+    ) : null;
 
   const isLeftSender = layout.header.senderSide === 'left';
 
@@ -379,20 +420,19 @@ export function createInvoicePdfElement(
             </View>
           )}
 
-          {layout.totals.showTaxBreakdown && (() => {
-            const lines = invoice.lines ?? [];
-            const taxRates = [...new Set(lines.map((l) => l.taxRate))];
-            const ivaLabel =
-              taxRates.length === 1
-                ? `IVA (${formatPercent(taxRates[0])})`
-                : 'IVA';
-            return (
-              <View style={styles.totalsRow}>
-                <Text style={styles.totalsLabel}>{ivaLabel}</Text>
-                <Text style={styles.totalsValue}>{formatCurrency(invoice.taxTotal)}</Text>
-              </View>
-            );
-          })()}
+          {layout.totals.showTaxBreakdown &&
+            (() => {
+              const lines = invoice.lines ?? [];
+              const taxRates = [...new Set(lines.map((l) => l.taxRate))];
+              const ivaLabel =
+                taxRates.length === 1 ? `IVA (${formatPercent(taxRates[0])})` : 'IVA';
+              return (
+                <View style={styles.totalsRow}>
+                  <Text style={styles.totalsLabel}>{ivaLabel}</Text>
+                  <Text style={styles.totalsValue}>{formatCurrency(invoice.taxTotal)}</Text>
+                </View>
+              );
+            })()}
 
           {(invoice.irpfTotal ?? 0) > 0 && (
             <View style={styles.totalsRow}>
@@ -421,6 +461,7 @@ export function createInvoicePdfElement(
 
         {/* Footer */}
         <View style={styles.footer}>
+          {/* IBAN intentionally live — see header block comment above. */}
           {layout.footer.showPaymentInfo && invoice.customer && tenant.iban && (
             <View style={styles.paymentInfoRow}>
               <Text style={styles.paymentText}>

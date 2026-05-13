@@ -32,10 +32,16 @@ export class VerifactuService {
     try {
       this.logger.log(`Processing invoice ${invoiceId} for VeriFactu`);
 
-      // Get invoice
+      // Get invoice — only the scalar fields needed; customer JOIN not required
       const invoice = await this.prisma.invoice.findFirst({
         where: { id: invoiceId, tenantId },
-        include: { customer: true },
+        select: {
+          status: true,
+          number: true,
+          issueDate: true,
+          total: true,
+          issuerSnapshotNif: true,
+        },
       });
 
       if (!invoice) {
@@ -50,9 +56,19 @@ export class VerifactuService {
         throw new Error('La factura confirmada no tiene número asignado');
       }
 
-      // Step 1: Generate hash chain
+      if (!invoice.issuerSnapshotNif) {
+        throw new Error(
+          'La factura no tiene NIF del emisor en el snapshot. ' +
+            'El flujo de confirmación puede estar incompleto — confirma la factura de nuevo.'
+        );
+      }
+
+      // Step 1: Generate hash chain using the immutable issuer snapshot NIF.
+      // Using the snapshot instead of re-fetching the tenant guarantees the hash
+      // is always computed with the NIF that was current at confirmation time,
+      // even if the tenant later changes their fiscal data or a retry happens days later.
       const { hash, prevHash } = await this.hashService.generateHash(tenantId, {
-        nif: invoice.customer.nif,
+        issuerNif: invoice.issuerSnapshotNif,
         number: invoice.number,
         issueDate: invoice.issueDate,
         total: Number(invoice.total),

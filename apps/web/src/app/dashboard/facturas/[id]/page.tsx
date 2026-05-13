@@ -456,19 +456,40 @@ export default function FacturaDetailPage() {
             {/* ZONA B — Cliente */}
             <div className="rounded-xl border bg-card p-5">
               <SectionLabel icon={Building2}>Cliente</SectionLabel>
-              <p className="font-semibold text-base leading-tight">{invoice.customer?.name}</p>
-              <p className="text-sm text-muted-foreground mt-0.5">{invoice.customer?.nif}</p>
-              {invoice.customer?.address && (
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  {invoice.customer.address}
-                  {invoice.customer.postalCode && `, ${invoice.customer.postalCode}`}
-                  {invoice.customer.city && ` ${invoice.customer.city}`}
-                  {invoice.customer.province && ` (${invoice.customer.province})`}
-                </p>
-              )}
-              {invoice.customer?.email && (
-                <p className="text-sm text-muted-foreground">{invoice.customer.email}</p>
-              )}
+              {(() => {
+                // Prefer immutable snapshot fields; fall back to live customer relation
+                const hasSnapshot = invoice.customerSnapshotNif != null;
+                const cName = hasSnapshot ? invoice.customerSnapshotName : invoice.customer?.name;
+                const cNif = hasSnapshot ? invoice.customerSnapshotNif : invoice.customer?.nif;
+                const cAddress = hasSnapshot
+                  ? invoice.customerSnapshotAddress
+                  : invoice.customer?.address;
+                const cPostalCode = hasSnapshot
+                  ? invoice.customerSnapshotPostalCode
+                  : invoice.customer?.postalCode;
+                const cCity = hasSnapshot ? invoice.customerSnapshotCity : invoice.customer?.city;
+                const cProvince = hasSnapshot
+                  ? invoice.customerSnapshotProvince
+                  : invoice.customer?.province;
+                const cEmail = hasSnapshot
+                  ? invoice.customerSnapshotEmail
+                  : invoice.customer?.email;
+                return (
+                  <>
+                    <p className="font-semibold text-base leading-tight">{cName}</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">{cNif}</p>
+                    {cAddress && (
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {cAddress}
+                        {cPostalCode && `, ${cPostalCode}`}
+                        {cCity && ` ${cCity}`}
+                        {cProvince && ` (${cProvince})`}
+                      </p>
+                    )}
+                    {cEmail && <p className="text-sm text-muted-foreground">{cEmail}</p>}
+                  </>
+                );
+              })()}
             </div>
 
             {/* ZONA C — Líneas + totales */}

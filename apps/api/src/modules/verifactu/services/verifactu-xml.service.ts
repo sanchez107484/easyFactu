@@ -45,24 +45,43 @@ export class VerifactuXmlService {
   }
 
   /**
-   * Build XML structure according to VeriFactu specification
+   * Build XML structure according to VeriFactu specification.
+   *
+   * Issuer and customer data are resolved from the immutable snapshot fields captured
+   * at confirmation time. This guarantees the XML is always consistent with the legally
+   * binding moment, even if the tenant or customer data changes after confirmation or
+   * if VeriFactu submission is retried days later.
+   *
+   * Falls back to live tenant/customer data for invoices created before the snapshot
+   * migration (backwards compatibility).
    */
   private buildXml(tenant: Tenant, invoice: InvoiceWithRelations): string {
     const issueDate = this.formatDate(invoice.issueDate);
-    const issueTime = this.formatTime(invoice.issueDate);
+
+    // Issuer: prefer snapshot fields, fall back to live tenant data
+    const issuerNif = invoice.issuerSnapshotNif ?? tenant.nif ?? '';
+    const issuerName =
+      invoice.issuerSnapshotLegalName ??
+      invoice.issuerSnapshotName ??
+      tenant.legalName ??
+      tenant.businessName;
+
+    // Customer: prefer snapshot fields, fall back to live customer relation
+    const custName = invoice.customerSnapshotName ?? invoice.customer.name;
+    const custNif = invoice.customerSnapshotNif ?? invoice.customer.nif ?? '';
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <ven:VeriFactu xmlns:ven="https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroInformacion.xsd">
   <Cabecera>
     <ObligadoEmision>
-      <NombreRazon>${this.escapeXml(tenant.legalName || tenant.businessName)}</NombreRazon>
-      <NIF>${tenant.nif}</NIF>
+      <NombreRazon>${this.escapeXml(issuerName)}</NombreRazon>
+      <NIF>${issuerNif}</NIF>
     </ObligadoEmision>
   </Cabecera>
   <RegistroFactura>
     <IDFactura>
       <IDEmisorFactura>
-        <NIF>${tenant.nif}</NIF>
+        <NIF>${issuerNif}</NIF>
       </IDEmisorFactura>
       <NumSerieFactura>${this.escapeXml(invoice.number!)}</NumSerieFactura>
       <FechaExpedicionFactura>${issueDate}</FechaExpedicionFactura>
@@ -70,8 +89,8 @@ export class VerifactuXmlService {
     <TipoFactura>F1</TipoFactura>
     <Destinatarios>
       <IDDestinatario>
-        <NombreRazon>${this.escapeXml(invoice.customer.name)}</NombreRazon>
-        <NIF>${invoice.customer.nif}</NIF>
+        <NombreRazon>${this.escapeXml(custName)}</NombreRazon>
+        <NIF>${custNif}</NIF>
       </IDDestinatario>
     </Destinatarios>
     <Desglose>

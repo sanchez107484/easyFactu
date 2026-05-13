@@ -203,6 +203,102 @@ export class InvoiceService {
     }
   }
 
+  // ==================== SNAPSHOT HELPERS ====================
+
+  /**
+   * Builds a customer snapshot object from the customer's current billing data.
+   * Called exclusively at confirmation time — the legally binding, irreversible moment.
+   */
+  private buildCustomerSnapshot(customer: {
+    name: string;
+    legalName: string | null;
+    nif: string;
+    type: string;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+    postalCode: string | null;
+    city: string | null;
+    province: string | null;
+    country: string;
+  }) {
+    return {
+      customerSnapshotName: customer.name,
+      customerSnapshotLegalName: customer.legalName,
+      customerSnapshotNif: customer.nif,
+      customerSnapshotType: customer.type,
+      customerSnapshotEmail: customer.email,
+      customerSnapshotPhone: customer.phone,
+      customerSnapshotAddress: customer.address,
+      customerSnapshotPostalCode: customer.postalCode,
+      customerSnapshotCity: customer.city,
+      customerSnapshotProvince: customer.province,
+      customerSnapshotCountry: customer.country,
+    };
+  }
+
+  /**
+   * Fetches the tenant's current billing data and builds an issuer snapshot object.
+   * Called exclusively at confirmation time — the legally binding, irreversible moment.
+   */
+  private async fetchIssuerSnapshot(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: {
+        businessName: true,
+        legalName: true,
+        nif: true,
+        email: true,
+        phone: true,
+        address: true,
+        postalCode: true,
+        city: true,
+        province: true,
+        country: true,
+      },
+    });
+    return {
+      issuerSnapshotName: tenant.businessName,
+      issuerSnapshotLegalName: tenant.legalName,
+      issuerSnapshotNif: tenant.nif,
+      issuerSnapshotEmail: tenant.email,
+      issuerSnapshotPhone: tenant.phone,
+      issuerSnapshotAddress: tenant.address,
+      issuerSnapshotPostalCode: tenant.postalCode,
+      issuerSnapshotCity: tenant.city,
+      issuerSnapshotProvince: tenant.province,
+      issuerSnapshotCountry: tenant.country,
+    };
+  }
+
+  /**
+   * Fetches a customer's current data for snapshot purposes.
+   * Unlike validateCustomer, this does not require isActive = true — a customer
+   * may have been deactivated after the draft was created but before confirmation.
+   */
+  private async fetchCustomerForSnapshot(tenantId: string, customerId: string) {
+    const customer = await this.prisma.customer.findFirst({
+      where: { id: customerId, tenantId },
+      select: {
+        name: true,
+        legalName: true,
+        nif: true,
+        type: true,
+        email: true,
+        phone: true,
+        address: true,
+        postalCode: true,
+        city: true,
+        province: true,
+        country: true,
+      },
+    });
+    if (!customer) throw new NotFoundException('Cliente no encontrado');
+    return customer;
+  }
+
+  // ==================== END SNAPSHOT HELPERS ====================
+
   private async resolveSeriesId(tenantId: string, seriesId?: string): Promise<string> {
     if (seriesId) {
       const series = await this.invoiceNumberService.validateSeries(tenantId, seriesId);
@@ -245,7 +341,7 @@ export class InvoiceService {
     const isProforma = dto.invoiceType === 'proforma';
 
     // For quotes the series is auto-resolved inside the transaction; skip the default lookup.
-    const [seriesId, customer] = await Promise.all([
+    const [seriesId] = await Promise.all([
       isQuote ? Promise.resolve('') : this.resolveSeriesId(tenantId, dto.seriesId),
       this.validateCustomer(tenantId, dto.customerId),
       this.validateProductIds(tenantId, dto.lines),
@@ -350,9 +446,17 @@ export class InvoiceService {
     const where: Prisma.InvoiceWhereInput = { tenantId };
 
     if (search) {
+      // Search across invoice number, current customer name/NIF (covers drafts and
+      // customers that haven't changed), and snapshot fields (covers confirmed invoices
+      // whose customer later changed name or NIF). Both paths are needed so that a
+      // search for the old name still returns historical confirmed invoices, and a
+      // search for the new name still finds them via the live JOIN.
       where.OR = [
         { number: { contains: search, mode: 'insensitive' } },
         { customer: { name: { contains: search, mode: 'insensitive' } } },
+        { customer: { nif: { contains: search, mode: 'insensitive' } } },
+        { customerSnapshotName: { contains: search, mode: 'insensitive' } },
+        { customerSnapshotNif: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -420,6 +524,8 @@ export class InvoiceService {
           createdAt: true,
           updatedAt: true,
           createdByUserId: true,
+          customerSnapshotName: true,
+          customerSnapshotNif: true,
           customer: { select: { id: true, name: true, nif: true } },
           series: { select: { id: true, name: true, prefix: true } },
           payments: {
@@ -553,6 +659,29 @@ export class InvoiceService {
           createdAt: true,
           updatedAt: true,
           createdByUserId: true,
+          // Customer snapshot
+          customerSnapshotName: true,
+          customerSnapshotLegalName: true,
+          customerSnapshotNif: true,
+          customerSnapshotType: true,
+          customerSnapshotEmail: true,
+          customerSnapshotPhone: true,
+          customerSnapshotAddress: true,
+          customerSnapshotPostalCode: true,
+          customerSnapshotCity: true,
+          customerSnapshotProvince: true,
+          customerSnapshotCountry: true,
+          // Issuer snapshot
+          issuerSnapshotName: true,
+          issuerSnapshotLegalName: true,
+          issuerSnapshotNif: true,
+          issuerSnapshotEmail: true,
+          issuerSnapshotPhone: true,
+          issuerSnapshotAddress: true,
+          issuerSnapshotPostalCode: true,
+          issuerSnapshotCity: true,
+          issuerSnapshotProvince: true,
+          issuerSnapshotCountry: true,
           customer: {
             select: {
               id: true,
@@ -634,8 +763,6 @@ export class InvoiceService {
     const seriesId = dto.seriesId
       ? await this.resolveSeriesId(tenantId, dto.seriesId)
       : invoice.seriesId;
-
-    if (dto.customerId) await this.validateCustomer(tenantId, dto.customerId);
 
     const linesToUse = dto.lines ?? (invoice.lines as unknown as CreateInvoiceLineDto[]);
     if (dto.lines) await this.validateProductIds(tenantId, dto.lines);
@@ -739,6 +866,15 @@ export class InvoiceService {
 
     const lines = invoice.lines as unknown as CreateInvoiceLineDto[];
 
+    // Re-take both snapshots at confirmation time — this is the legally binding moment.
+    // Even if the customer or tenant data changed since the draft was created, the
+    // confirmed invoice will always reflect the data as it was at confirmation.
+    const [customerForSnapshot, issuerSnapshot] = await Promise.all([
+      this.fetchCustomerForSnapshot(tenantId, invoice.customerId),
+      this.fetchIssuerSnapshot(tenantId),
+    ]);
+    const customerSnapshot = this.buildCustomerSnapshot(customerForSnapshot);
+
     const confirmedInvoice = await this.prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
         const invoiceNumber = await this.invoiceNumberService.generateNextNumber(
@@ -765,6 +901,8 @@ export class InvoiceService {
             taxTotal: totals.taxTotal,
             irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
             total: totals.total,
+            ...customerSnapshot,
+            ...issuerSnapshot,
             lines: {
               create: this.buildLineCreateData(tenantId, lines, totals.lines),
             },
