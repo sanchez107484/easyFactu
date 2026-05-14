@@ -181,7 +181,10 @@ export class CustomerService {
   async findAgencySharedPool(tenantId: string, search?: string) {
     const relation = await this.prisma.agencyClientRelation.findFirst({
       where: { clientTenantId: tenantId },
-      select: { agencyTenantId: true },
+      select: {
+        agencyTenantId: true,
+        agencyTenant: { select: { businessName: true } },
+      },
     });
 
     if (!relation) return [];
@@ -197,15 +200,16 @@ export class CustomerService {
       },
     });
 
-    if (siblings.length === 0) return [];
+    // Include the agency's own customer directory + all sibling client tenants
+    const allSourceIds = [relation.agencyTenantId, ...siblings.map((s) => s.clientTenantId)];
 
-    const siblingIds = siblings.map((s) => s.clientTenantId);
-    const tenantNameMap = new Map(
-      siblings.map((s) => [s.clientTenantId, s.clientTenant.businessName])
-    );
+    const tenantNameMap = new Map<string, string>([
+      [relation.agencyTenantId, relation.agencyTenant.businessName],
+      ...siblings.map((s): [string, string] => [s.clientTenantId, s.clientTenant.businessName]),
+    ]);
 
     const where: Prisma.CustomerWhereInput = {
-      tenantId: { in: siblingIds },
+      tenantId: { in: allSourceIds },
       isActive: true,
     };
 
@@ -220,7 +224,7 @@ export class CustomerService {
     const customers = await this.prisma.customer.findMany({
       where,
       orderBy: { name: 'asc' },
-      take: 20,
+      take: 50,
     });
 
     return customers.map((c) => ({
@@ -247,11 +251,21 @@ export class CustomerService {
 
     const normalizedNif = nif.toUpperCase().trim();
 
-    // Return existing customer if already present in this tenant
+    // Return existing customer if already present in this tenant (active or inactive)
+    // Checking regardless of isActive to avoid the unique constraint on (tenant_id, nif)
     const existing = await this.prisma.customer.findFirst({
-      where: { tenantId, nif: { equals: normalizedNif, mode: 'insensitive' }, isActive: true },
+      where: { tenantId, nif: { equals: normalizedNif, mode: 'insensitive' } },
     });
-    if (existing) return existing;
+    if (existing) {
+      // Reactivate if it was soft-deleted
+      if (!existing.isActive) {
+        return this.prisma.customer.update({
+          where: { id: existing.id },
+          data: { isActive: true },
+        });
+      }
+      return existing;
+    }
 
     const siblings = await this.prisma.agencyClientRelation.findMany({
       where: {
@@ -261,11 +275,12 @@ export class CustomerService {
       select: { clientTenantId: true },
     });
 
-    const siblingIds = siblings.map((s) => s.clientTenantId);
+    // Include the agency's own customers in the import source pool
+    const allSourceIds = [relation.agencyTenantId, ...siblings.map((s) => s.clientTenantId)];
 
     const source = await this.prisma.customer.findFirst({
       where: {
-        tenantId: { in: siblingIds },
+        tenantId: { in: allSourceIds },
         nif: { equals: normalizedNif, mode: 'insensitive' },
         isActive: true,
       },

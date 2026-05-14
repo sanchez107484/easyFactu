@@ -53,6 +53,13 @@ export function CustomerCombobox({
     );
   }, [customers, search]);
 
+  // Remove from the pool any customer whose NIF already exists locally
+  const sharedDeduped = useMemo(() => {
+    if (!sharedCustomers?.length) return [];
+    const localNifs = new Set(customers.map((c) => c.nif.toUpperCase()));
+    return sharedCustomers.filter((c) => !localNifs.has(c.nif.toUpperCase()));
+  }, [sharedCustomers, customers]);
+
   const handleSearchChange = (val: string) => {
     setSearch(val);
     onSearchChange?.(val);
@@ -73,9 +80,8 @@ export function CustomerCombobox({
   };
 
   const trimmedSearch = search.trim();
-  const showSharedGroup =
-    agencyMode && trimmedSearch.length >= 2 && (sharedCustomers?.length ?? 0) > 0;
-  const showSharedLoading = agencyMode && trimmedSearch.length >= 2 && isLoadingShared;
+  const showSharedGroup = agencyMode && sharedDeduped.length > 0;
+  const showSharedLoading = agencyMode && isLoadingShared && sharedDeduped.length === 0;
   const hasNoLocalResults = filteredLocal.length === 0;
 
   return (
@@ -144,14 +150,14 @@ export function CustomerCombobox({
                     {showSharedLoading && (
                       <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground border-t">
                         <Loader2 className="h-3 w-3 animate-spin" />
-                        Buscando en el directorio de la asesoría…
+                        Cargando directorio de la asesoría…
                       </div>
                     )}
                     {showSharedGroup && (
                       <>
                         <CommandSeparator />
-                        <CommandGroup heading="Del directorio de la asesoría">
-                          {sharedCustomers!.map((c) => (
+                        <CommandGroup heading="Directorio de la asesoría">
+                          {sharedDeduped.map((c) => (
                             <CommandItem
                               key={`shared-${c.id}`}
                               value={`shared-${c.id}`}

@@ -193,20 +193,19 @@ export function useInvoiceSeries(year?: number) {
 
 // ==================== AGENCY SHARED POOL ====================
 
-const SHARED_POOL_MIN_LENGTH = 2;
-
 /**
- * Searches customers across sibling tenants in the same agency network.
- * Only fires when the search term is at least 2 characters long.
+ * Fetches the agency shared pool for the current tenant.
+ * Returns pool customers immediately on mount (no min search length required).
+ * Filters by the search term when provided.
  * Returns an empty array when no agency relation exists — never throws.
  */
-export function useSharedCustomerPool(search: string) {
+export function useSharedCustomerPool(search: string, enabled = true) {
   const trimmed = search.trim();
   return useQuery({
     queryKey: ['customers', 'shared-pool', trimmed],
     queryFn: () => customerApi.getSharedPool(trimmed),
-    enabled: trimmed.length >= SHARED_POOL_MIN_LENGTH,
-    staleTime: 30_000,
+    enabled,
+    staleTime: 60_000,
     placeholderData: [] as SharedPoolCustomer[],
   });
 }
