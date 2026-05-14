@@ -44,6 +44,8 @@ interface InvoiceLineItemProps {
   onMoveDown: () => void;
   onFocus: () => void;
   autoFocusDescription?: boolean;
+  /** True when the tenant is in REAGYP regime — IVA does not apply per line. */
+  isReagyp?: boolean;
 }
 
 // ==================== CONSTANTS ====================
@@ -206,6 +208,7 @@ export function InvoiceLineItem({
   onMoveDown,
   onFocus,
   autoFocusDescription = false,
+  isReagyp = false,
 }: InvoiceLineItemProps) {
   const line: ExtendedLineData = useWatch({ control: form.control, name: `lines.${index}` }) ?? {};
   const mode: LineMode = line._mode ?? 'custom';
@@ -214,8 +217,11 @@ export function InvoiceLineItem({
   const qty = mode === 'service' ? 1 : (line.quantity ?? 0);
   const price = line.unitPrice ?? 0;
   const tax = line.taxRate ?? 21;
-  const subtotal = round2(qty * price);
-  const lineTotal = round2(subtotal * (1 + tax / 100));
+  const discount = line.discountPercent ?? 0;
+  const grossSubtotal = round2(qty * price);
+  const subtotal = discount > 0 ? round2(grossSubtotal * (1 - discount / 100)) : grossSubtotal;
+  // In REAGYP, IVA does not apply per line — compensation is at invoice level
+  const lineTotal = isReagyp ? subtotal : round2(subtotal * (1 + tax / 100));
 
   // -- Mode change ---------------------------------------------------
   const handleModeChange = (newMode: LineMode) => {
@@ -292,7 +298,8 @@ export function InvoiceLineItem({
             form.setValue(`lines.${index}.unitPrice`, Number(product.unitPrice), {
               shouldValidate: true,
             });
-            form.setValue(`lines.${index}.taxRate`, Number(product.taxRate), {
+            // In REAGYP, IVA = 0 — compensation applies at invoice level
+            form.setValue(`lines.${index}.taxRate`, isReagyp ? 0 : Number(product.taxRate), {
               shouldValidate: true,
             });
             form.setValue(`lines.${index}.productId`, product.id);
@@ -434,24 +441,51 @@ export function InvoiceLineItem({
             </span>
           </div>
 
-          {/* IVA */}
-          <Select
-            value={String(line.taxRate ?? 21)}
-            onValueChange={(v) =>
-              form.setValue(`lines.${index}.taxRate`, parseFloat(v), { shouldValidate: true })
-            }
-          >
-            <SelectTrigger className="w-[80px] h-9 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TAX_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* IVA — hidden in REAGYP (Arts. 124-134 LIVA) */}
+          {!isReagyp && (
+            <Select
+              value={String(line.taxRate ?? 21)}
+              onValueChange={(v) =>
+                form.setValue(`lines.${index}.taxRate`, parseFloat(v), { shouldValidate: true })
+              }
+            >
+              <SelectTrigger className="w-[80px] h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TAX_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {/* Discount % */}
+          <div className="relative">
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              placeholder="0"
+              className="w-[72px] text-sm h-9 pr-5"
+              value={
+                line.discountPercent === 0 || line.discountPercent == null
+                  ? ''
+                  : String(line.discountPercent)
+              }
+              onChange={(e) => {
+                const val = e.target.value;
+                const num = val === '' ? 0 : Math.min(100, Math.max(0, parseFloat(val) || 0));
+                form.setValue(`lines.${index}.discountPercent`, num, { shouldValidate: false });
+              }}
+            />
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground select-none">
+              %
+            </span>
+          </div>
 
           {/* Total */}
           <div className="text-sm font-semibold tabular-nums text-right min-w-[72px]">

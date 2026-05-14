@@ -117,9 +117,7 @@ export class VerifactuXmlService {
     // ── REAGYP path ────────────────────────────────────────────────────────────
     if (invoice.compensacionPercent != null && invoice.compensacionAmount != null) {
       const base = invoice.lines.reduce((s, l) => s + Number(l.subtotal), 0);
-      const discountedBase = invoice.discountAmount
-        ? base - Number(invoice.discountAmount)
-        : base;
+      const discountedBase = invoice.discountAmount ? base - Number(invoice.discountAmount) : base;
       const compensacionPercent = Number(invoice.compensacionPercent);
       const compensacionAmount = Number(invoice.compensacionAmount);
       const irpfAmount = invoice.irpfTotal ? Number(invoice.irpfTotal) : 0;

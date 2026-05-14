@@ -30,6 +30,8 @@ export const extendedLineSchema = z.object({
   // quantity=0 means "not specified" in Libre mode → sent as 1 to API, hidden in invoice
   quantity: z.number().min(0).default(1),
   unitPrice: z.number({ invalid_type_error: 'Requerido' }).min(0, 'No puede ser negativo'),
+  /** Per-line discount (0–100). Default 0 = no discount. */
+  discountPercent: z.number().min(0).max(100).default(0),
   taxRate: z.number({ invalid_type_error: 'Requerido' }),
   productId: z.string().optional(),
   // Frontend-only — stripped before sending to the API
@@ -44,6 +46,7 @@ export const EMPTY_LINE: ExtendedLineData = {
   description: '',
   quantity: 1,
   unitPrice: 0,
+  discountPercent: 0,
   taxRate: 21,
   _mode: 'custom',
   _hideQty: true,

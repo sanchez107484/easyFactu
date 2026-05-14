@@ -117,7 +117,7 @@ function LoginForm() {
             />
           </Link>
           <Link href="/registro">
-            <Button variant="outline" size="sm">
+            <Button variant="default" size="sm">
               Crear cuenta
             </Button>
           </Link>
@@ -127,7 +127,7 @@ function LoginForm() {
         <div className="hidden items-center justify-end gap-4 p-6 lg:flex">
           <span className="text-sm text-muted-foreground">¿No tienes cuenta?</span>
           <Link href="/registro">
-            <Button variant="outline">Crear cuenta gratis</Button>
+            <Button variant="default">Crear cuenta gratis</Button>
           </Link>
         </div>
 

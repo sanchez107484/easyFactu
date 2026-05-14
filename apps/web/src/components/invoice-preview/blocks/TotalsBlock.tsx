@@ -40,6 +40,12 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
   const ivaLabel = taxRates.length === 1 ? `IVA (${taxRates[0]}%)` : 'IVA';
   const isReagyp = invoice.compensacionPercent != null;
 
+  // When IRPF is configured (irpfPercent > 0) it must always appear — legal requirement
+  // and matches PDF generator behavior (invoice-pdf.document.tsx never checks showIrpf).
+  // The template showIrpf toggle only controls the empty-IRPF cosmetic row.
+  // isReagyp preserves the "always show for REAGYP" behaviour regardless of the toggle.
+  const effectiveShowIrpf = showIrpf || Number(invoice.irpfPercent) > 0 || isReagyp;
+
   return (
     <div className="flex justify-end">
       <div className="w-52">
@@ -53,6 +59,7 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
         )}
 
         {isReagyp ? (
+          // REAGYP: compensation replaces IVA (Arts. 124-134 LIVA)
           <TotalsRow
             label={`Comp. agraria (${invoice.compensacionPercent}%)`}
             value={`+${formatCurrency(invoice.compensacionAmount ?? 0)}`}
@@ -63,12 +70,22 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
           )
         )}
 
-        {showIrpf && (invoice.irpfTotal ?? 0) > 0 && (
-          <TotalsRow
-            label={`IRPF (${invoice.irpfPercent ?? 0}%)`}
-            value={`-${formatCurrency(invoice.irpfTotal ?? 0)}`}
-          />
-        )}
+        {effectiveShowIrpf &&
+          (isReagyp ? (
+            // In REAGYP: always show IRPF line (even at 0%) — base is subtotal + compensation
+            <TotalsRow
+              label={`IRPF (${invoice.irpfPercent ?? 0}% s/base + comp.)`}
+              value={`-${formatCurrency(invoice.irpfTotal ?? 0)}`}
+            />
+          ) : (
+            // In GENERAL: show IRPF whenever a rate has been configured (mirrors invoice-lines-card)
+            Number(invoice.irpfPercent) > 0 && (
+              <TotalsRow
+                label={`IRPF (${invoice.irpfPercent ?? 0}%)`}
+                value={`-${formatCurrency(invoice.irpfTotal ?? 0)}`}
+              />
+            )
+          ))}
 
         <div className="border-t mt-1 pt-1" style={{ borderColor: primary }}>
           <TotalsRow label="TOTAL" value={formatCurrency(invoice.total)} bold color={primary} />

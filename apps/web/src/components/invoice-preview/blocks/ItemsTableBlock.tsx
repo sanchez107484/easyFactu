@@ -18,10 +18,14 @@ function resolveHideQty(line: PreviewLine): boolean {
 
 export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
   const lines = invoice.lines ?? [];
-  const { style, showDiscount, showReference } = layout.itemsTable;
+  const { style, showReference } = layout.itemsTable;
   const showUnitPrice = layout.itemsTable.showUnitPrice ?? true;
-  const showTaxColumn = layout.itemsTable.showTaxColumn ?? true;
+  // In REAGYP mode all lines have taxRate=0 and IVA doesn't apply — hide the column
+  const isReagyp = invoice.compensacionPercent != null;
+  const showTaxColumn = !isReagyp && (layout.itemsTable.showTaxColumn ?? true);
   const showLineTotal = layout.itemsTable.showLineTotal ?? true;
+  // Discount column is data-driven: only shown when at least one line has a discount
+  const showDiscount = lines.some((l) => (l.discountPercent ?? 0) > 0);
   const { tableHeader, primary } = layout.colors;
 
   const isGrid = style === 'grid';
@@ -77,7 +81,11 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
                 <td className={cn(tdClass, 'text-right')}>{formatCurrency(line.unitPrice)}</td>
               )}
               {showTaxColumn && <td className={cn(tdClass, 'text-right')}>{line.taxRate}%</td>}
-              {showDiscount && <td className={cn(tdClass, 'text-right')}>—</td>}
+              {showDiscount && (
+                <td className={cn(tdClass, 'text-right')}>
+                  {(line.discountPercent ?? 0) > 0 ? `${line.discountPercent}%` : '—'}
+                </td>
+              )}
               {showLineTotal && (
                 <td className={cn(tdClass, 'text-right font-medium')} style={{ color: primary }}>
                   {formatCurrency(line.lineTotal)}

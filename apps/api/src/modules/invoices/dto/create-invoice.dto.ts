@@ -67,6 +67,13 @@ export class CreateInvoiceLineDto {
   @IsEnum(VALID_TAX_RATES, { message: 'El tipo de IVA debe ser 0, 4, 10 o 21' })
   taxRate!: number;
 
+  @ApiPropertyOptional({ description: 'Descuento por línea (%)', minimum: 0, maximum: 100 })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El descuento admite hasta 2 decimales' })
+  @Min(0)
+  @Max(100)
+  discountPercent?: number;
+
   @ApiPropertyOptional({ description: 'Retención IRPF por línea (%)', minimum: 0, maximum: 100 })
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El IRPF admite hasta 2 decimales' })

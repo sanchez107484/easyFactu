@@ -18,6 +18,8 @@ type RecurringWithLines = {
   autoConfirm: boolean;
   discountPercent: unknown;
   irpfPercent: unknown;
+  /** Stored REAGYP rate override. When set, used instead of the tenant's reaypRate at invoice creation. */
+  compensacionPercent: unknown;
   paymentMethod: string | null;
   paymentDetails: unknown;
   notes: string | null;
@@ -27,6 +29,7 @@ type RecurringWithLines = {
     unitPrice: unknown;
     taxRate: unknown;
     irpfRate: unknown;
+    discountPercent: unknown;
     hideQty: boolean;
     productId: string | null;
   }>;
@@ -116,6 +119,11 @@ export class RecurringInvoiceSchedulerService {
       discountPercent:
         recurring.discountPercent != null ? Number(recurring.discountPercent) : undefined,
       irpfPercent: recurring.irpfPercent != null ? Number(recurring.irpfPercent) : undefined,
+      // If the template stores an explicit REAGYP rate, pass it so the invoice service uses it
+      // directly instead of resolving from the tenant's current reaypRate.
+      ...(recurring.compensacionPercent != null
+        ? { compensacionPercent: Number(recurring.compensacionPercent) }
+        : {}),
       paymentMethod: recurring.paymentMethod as CreateInvoiceDto['paymentMethod'],
       paymentDetails: recurring.paymentDetails as Record<string, unknown> | undefined,
       notes: recurring.notes ?? undefined,
@@ -126,6 +134,9 @@ export class RecurringInvoiceSchedulerService {
         unitPrice: Number(line.unitPrice),
         taxRate: Number(line.taxRate),
         hideQty: line.hideQty,
+        ...(line.discountPercent != null && Number(line.discountPercent) > 0
+          ? { discountPercent: Number(line.discountPercent) }
+          : {}),
       })),
     };
 

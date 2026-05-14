@@ -50,8 +50,7 @@ const empresaSchema = z
   })
   .refine(
     (data) =>
-      data.taxRegime !== TaxRegime.REAGYP ||
-      (data.reaypRate !== undefined && data.reaypRate > 0),
+      data.taxRegime !== TaxRegime.REAGYP || (data.reaypRate !== undefined && data.reaypRate > 0),
     { message: 'Introduce la tasa de compensación agraria (12,0 o 10,5)', path: ['reaypRate'] },
   );
 
@@ -447,7 +446,7 @@ export default function AjustesEmpresaPage() {
                   updateInvoiceDefaults.mutate({
                     paymentMethod: PaymentMethod.BANK_TRANSFER,
                     paymentDetails: {
-                      ...(invoiceDefaults.paymentDetails as object ?? {}),
+                      ...((invoiceDefaults.paymentDetails as object) ?? {}),
                       iban: data.iban?.replace(/\s/g, '') || undefined,
                       accountHolder: data.bankAccountHolder || undefined,
                       bic: data.bic?.trim() || undefined,
@@ -458,8 +457,6 @@ export default function AjustesEmpresaPage() {
             />
           </CardContent>
         </Card>
-
-
       </div>
     </div>
   );

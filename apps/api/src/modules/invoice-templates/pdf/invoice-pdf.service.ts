@@ -324,7 +324,7 @@ export class InvoicePdfService {
     doc.text(`Subtotal: ${formatCurrency(invoice.subtotal)}`);
     if (invoice.compensacionPercent != null) {
       doc.text(
-        `Compensación agraria (${invoice.compensacionPercent}%): +${formatCurrency(Number(invoice.compensacionAmount ?? 0))}`,
+        `Compensación agraria (${invoice.compensacionPercent}%): +${formatCurrency(Number(invoice.compensacionAmount ?? 0))}`
       );
     } else {
       doc.text(`IVA: ${formatCurrency(invoice.taxTotal)}`);

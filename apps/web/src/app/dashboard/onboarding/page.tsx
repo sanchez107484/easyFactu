@@ -77,8 +77,7 @@ const companyDataSchema = z
   })
   .refine(
     (data) =>
-      data.taxRegime !== TaxRegime.REAGYP ||
-      (data.reaypRate !== undefined && data.reaypRate > 0),
+      data.taxRegime !== TaxRegime.REAGYP || (data.reaypRate !== undefined && data.reaypRate > 0),
     { message: 'Introduce la tasa de compensación agraria (12,0 o 10,5)', path: ['reaypRate'] },
   );
 

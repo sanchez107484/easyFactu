@@ -122,7 +122,7 @@ export default function RegisterPage() {
             />
           </Link>
           <Link href="/login">
-            <Button variant="outline" size="sm">
+            <Button variant="default" size="sm">
               Iniciar sesión
             </Button>
           </Link>
@@ -137,7 +137,7 @@ export default function RegisterPage() {
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">¿Ya tienes cuenta?</span>
             <Link href="/login">
-              <Button variant="outline">Iniciar sesión</Button>
+              <Button variant="default">Iniciar sesión</Button>
             </Link>
           </div>
         </div>

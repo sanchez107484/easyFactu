@@ -18,6 +18,7 @@ import {
   Banknote,
   TicketCheck,
   Zap,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -100,7 +101,10 @@ const RECURRING_STATUS_CONFIG = {
 
 // ==================== HELPERS ====================
 
-function buildRecurringPreviewInvoice(recurring: RecurringInvoice, tenant?: Tenant | null): Invoice {
+function buildRecurringPreviewInvoice(
+  recurring: RecurringInvoice,
+  tenant?: Tenant | null,
+): Invoice {
   const today = new Date().toISOString();
   const lines = recurring.lines ?? [];
 
@@ -120,7 +124,9 @@ function buildRecurringPreviewInvoice(recurring: RecurringInvoice, tenant?: Tena
     !(recurring.customer as { isReagyp?: boolean } | null)?.isReagyp &&
     !!tenant?.reaypRate;
   const compensacionPercent = isReagyp ? Number(tenant!.reaypRate) : 0;
-  const compensacionAmount = isReagyp ? round2(subtotalAfterDiscount * (compensacionPercent / 100)) : 0;
+  const compensacionAmount = isReagyp
+    ? round2(subtotalAfterDiscount * (compensacionPercent / 100))
+    : 0;
 
   const taxTotal = isReagyp
     ? 0
@@ -132,7 +138,9 @@ function buildRecurringPreviewInvoice(recurring: RecurringInvoice, tenant?: Tena
       );
 
   // For REAGYP, IRPF base includes compensation (Art. 102.Dos LIVA)
-  const irpfBase = isReagyp ? round2(subtotalAfterDiscount + compensacionAmount) : subtotalAfterDiscount;
+  const irpfBase = isReagyp
+    ? round2(subtotalAfterDiscount + compensacionAmount)
+    : subtotalAfterDiscount;
   const irpfTotal = recurring.irpfPercent
     ? round2(irpfBase * (Number(recurring.irpfPercent) / 100))
     : null;
@@ -453,6 +461,29 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
             </div>
           </div>
 
+          {/* Aviso: régimen REAGYP activo pero plantilla creada con IVA */}
+          {(() => {
+            const tenantIsReagyp = (tenantData ?? currentTenant)?.taxRegime === TaxRegime.REAGYP;
+            const linesHaveIva = (recurring.lines ?? []).some((l) => Number(l.taxRate) > 0);
+            if (!tenantIsReagyp || !linesHaveIva) return null;
+            return (
+              <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-4 py-3">
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300 leading-tight">
+                    Plantilla creada con régimen general
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 leading-relaxed">
+                    Tu empresa está ahora en el Régimen Especial Agrario (REAGYP). Las facturas que
+                    se generen a partir de esta plantilla aplicarán automáticamente la compensación
+                    agraria y no incluirán IVA, independientemente de los porcentajes guardados en
+                    las líneas. Edita la plantilla para actualizar los datos.
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* ZONA B — Cliente */}
           <div className="rounded-xl border bg-card p-5">
             <SectionLabel icon={Building2}>Cliente</SectionLabel>
@@ -474,53 +505,62 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
           {/* ZONA C — Líneas + totales */}
           <div className="rounded-xl border bg-card p-5">
             <SectionLabel icon={FileText}>Líneas de factura</SectionLabel>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
-                    Descripción
-                  </th>
-                  {lines.some((l) => !l.hideQty) && (
-                    <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
-                      Cant.
-                    </th>
-                  )}
-                  <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
-                    Precio
-                  </th>
-                  <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
-                    IVA
-                  </th>
-                  <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
-                    Subtotal
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {lines.map((line, i) => {
-                  const sub = round2(Number(line.quantity) * Number(line.unitPrice));
-                  return (
-                    <tr key={i}>
-                      <td className="py-2.5 pr-4">{line.description}</td>
+            {(() => {
+              const isReagyp = previewInvoice!.compensacionPercent != null;
+              return (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
+                        Descripción
+                      </th>
                       {lines.some((l) => !l.hideQty) && (
-                        <td className="py-2.5 text-right tabular-nums">
-                          {line.hideQty ? '' : Number(line.quantity)}
-                        </td>
+                        <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
+                          Cant.
+                        </th>
                       )}
-                      <td className="py-2.5 text-right tabular-nums">
-                        {formatCurrency(Number(line.unitPrice))}
-                      </td>
-                      <td className="py-2.5 text-right tabular-nums text-muted-foreground">
-                        {Number(line.taxRate)}%
-                      </td>
-                      <td className="py-2.5 text-right tabular-nums font-medium">
-                        {formatCurrency(sub)}
-                      </td>
+                      <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
+                        Precio
+                      </th>
+                      {!isReagyp && (
+                        <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
+                          IVA
+                        </th>
+                      )}
+                      <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
+                        Subtotal
+                      </th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody className="divide-y">
+                    {lines.map((line, i) => {
+                      const sub = round2(Number(line.quantity) * Number(line.unitPrice));
+                      return (
+                        <tr key={i}>
+                          <td className="py-2.5 pr-4">{line.description}</td>
+                          {lines.some((l) => !l.hideQty) && (
+                            <td className="py-2.5 text-right tabular-nums">
+                              {line.hideQty ? '' : Number(line.quantity)}
+                            </td>
+                          )}
+                          <td className="py-2.5 text-right tabular-nums">
+                            {formatCurrency(Number(line.unitPrice))}
+                          </td>
+                          {!isReagyp && (
+                            <td className="py-2.5 text-right tabular-nums text-muted-foreground">
+                              {Number(line.taxRate)}%
+                            </td>
+                          )}
+                          <td className="py-2.5 text-right tabular-nums font-medium">
+                            {formatCurrency(sub)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              );
+            })()}
 
             <div className="mt-4 pt-4 border-t ml-auto w-64 space-y-1.5">
               <DataRow label="Base imponible" value={formatCurrency(subtotal)} />

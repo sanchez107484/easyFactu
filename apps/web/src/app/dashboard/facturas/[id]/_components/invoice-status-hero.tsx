@@ -95,8 +95,8 @@ export function InvoiceStatusHero({
             Base: {formatCurrency(invoice.subtotal)} ·{' '}
             {invoice.compensacionPercent != null ? (
               <>
-                Comp. agraria ({invoice.compensacionPercent}%):{' '}
-                +{formatCurrency(invoice.compensacionAmount ?? 0)}
+                Comp. agraria ({invoice.compensacionPercent}%): +
+                {formatCurrency(invoice.compensacionAmount ?? 0)}
               </>
             ) : (
               <>

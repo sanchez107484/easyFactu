@@ -52,6 +52,12 @@ export class CreateRecurringInvoiceLineDto {
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
+  @Max(100)
+  discountPercent?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
   @Max(30)
   irpfRate?: number;
 }
@@ -98,6 +104,13 @@ export class CreateRecurringInvoiceDto {
   @Min(0)
   @Max(30)
   irpfPercent?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  /** Per-template REAGYP compensation rate. If set, overrides the tenant reaypRate at generation time. */
+  compensacionPercent?: number;
 
   @IsOptional()
   @IsEnum(PaymentMethod)

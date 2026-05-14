@@ -9,8 +9,6 @@ import { z } from 'zod';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -58,6 +56,8 @@ import { useInvoiceFormKeyDown } from '@/hooks/use-invoice-form-key-down';
 import { useDebounce } from '@/hooks/use-debounce';
 import { InvoiceFormHeader } from './_components/invoice-form-header';
 import { InvoiceGeneralDataCard } from './_components/invoice-general-data-card';
+import { DiscountsSectionGeneral } from '@/components/facturas/DiscountsSectionGeneral';
+import { DiscountsSectionReagyp } from '@/components/facturas/DiscountsSectionReagyp';
 
 // ==================== SCHEMA ====================
 
@@ -222,8 +222,7 @@ function InvoiceForm({
   // This sets the sensible default but leaves the user free to override it.
   useEffect(() => {
     if (!showCompensacion) return;
-    const rate =
-      !selectedCustomer?.isReagyp && tenant?.reaypRate ? Number(tenant.reaypRate) : 0;
+    const rate = !selectedCustomer?.isReagyp && tenant?.reaypRate ? Number(tenant.reaypRate) : 0;
     form.setValue('compensacionPercent', rate, { shouldDirty: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchedValues.customerId, tenant?.taxRegime, tenant?.reaypRate]);
@@ -627,6 +626,7 @@ function InvoiceForm({
                         onMoveDown={() => swap(index, index + 1)}
                         onFocus={() => setActiveSection('lines-section')}
                         autoFocusDescription={index === lastAddedIndex}
+                        isReagyp={showCompensacion}
                       />
                     ))}
                   </div>
@@ -668,56 +668,31 @@ function InvoiceForm({
                   <CardTitle className="text-base">Descuentos y retenciones</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <section
-                    id="field-discountPercent"
-                    className={`grid grid-cols-1 gap-4 ${showCompensacion ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
-                    onFocus={() => setActiveSection('discountPercent')}
-                  >
-                    <div className="space-y-2">
-                      <Label htmlFor="discountPercent">Descuento global (%)</Label>
-                      <Input
-                        id="discountPercent"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        placeholder="0"
-                        {...form.register('discountPercent', {
-                          setValueAs: (v) => (v === '' ? undefined : Number(v)),
-                        })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="irpfPercent">Retención IRPF (%)</Label>
-                      <Input
-                        id="irpfPercent"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        placeholder="0 (15% general)"
-                        {...form.register('irpfPercent', {
-                          setValueAs: (v) => (v === '' ? undefined : Number(v)),
-                        })}
-                      />
-                    </div>
-                    {showCompensacion && (
-                      <div className="space-y-2">
-                        <Label htmlFor="compensacionPercent">Comp. agraria REAGYP (%)</Label>
-                        <Input
-                          id="compensacionPercent"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          max="100"
-                          placeholder="0"
-                          {...form.register('compensacionPercent', {
-                            setValueAs: (v) => (v === '' ? undefined : Number(v)),
-                          })}
-                        />
-                      </div>
-                    )}
-                  </section>
+                  {showCompensacion ? (
+                    <DiscountsSectionReagyp
+                      discountPercentProps={form.register('discountPercent', {
+                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                      })}
+                      compensacionPercentProps={form.register('compensacionPercent', {
+                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                      })}
+                      irpfPercentProps={form.register('irpfPercent', {
+                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                      })}
+                      isCustomerReagyp={selectedCustomer?.isReagyp ?? false}
+                      onFocus={() => setActiveSection('discountPercent')}
+                    />
+                  ) : (
+                    <DiscountsSectionGeneral
+                      discountPercentProps={form.register('discountPercent', {
+                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                      })}
+                      irpfPercentProps={form.register('irpfPercent', {
+                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                      })}
+                      onFocus={() => setActiveSection('discountPercent')}
+                    />
+                  )}
                 </CardContent>
               </Card>
 
@@ -805,6 +780,9 @@ export default function NuevaFacturaPage() {
           ? Number(sourceInvoice.discountPercent)
           : undefined,
         irpfPercent: sourceInvoice.irpfPercent ? Number(sourceInvoice.irpfPercent) : undefined,
+        compensacionPercent: sourceInvoice.compensacionPercent
+          ? Number(sourceInvoice.compensacionPercent)
+          : undefined,
         paymentMethod: (sourceInvoice.paymentMethod as PaymentMethod) ?? undefined,
         paymentDetails: (sourceInvoice.paymentDetails as Record<string, string | undefined>) ?? {},
         notes: sourceInvoice.notes || undefined,
@@ -812,9 +790,10 @@ export default function NuevaFacturaPage() {
           description: l.description ?? '',
           quantity: Number(l.quantity) || 1,
           unitPrice: Number(l.unitPrice) || 0,
+          discountPercent: Number(l.discountPercent) || 0,
           taxRate: Number(l.taxRate) || 0,
           productId: l.productId ?? undefined,
-          _mode: l.productId ? 'product' : l.hideQty ? 'service' : 'custom',
+          _mode: l.hideQty ? 'service' : l.productId ? 'product' : 'custom',
           _hideQty: l.hideQty ?? false,
         })),
       }

@@ -251,6 +251,8 @@ export function createInvoicePdfElement(
   const showUnitPrice = layout.itemsTable.showUnitPrice ?? true;
   const showTaxColumn = layout.itemsTable.showTaxColumn ?? true;
   const showLineTotal = layout.itemsTable.showLineTotal ?? true;
+  // Discount column is data-driven: only shown when at least one line has a discount
+  const showDiscount = lines.some((line) => (Number(line.discountPercent) || 0) > 0);
 
   // Prefer immutable snapshot fields; fall back to live tenant relation for backwards compat.
   const senderName = invoice.issuerSnapshotName ?? tenant.businessName;
@@ -378,9 +380,7 @@ export function createInvoicePdfElement(
             <Text style={[styles.headerCell, styles.colQty]}>Cant.</Text>
             {showUnitPrice && <Text style={[styles.headerCell, styles.colPrice]}>Precio</Text>}
             {showTaxColumn && <Text style={[styles.headerCell, styles.colTax]}>IVA</Text>}
-            {layout.itemsTable.showDiscount && (
-              <Text style={[styles.headerCell, styles.colDiscount]}>Dto.</Text>
-            )}
+            {showDiscount && <Text style={[styles.headerCell, styles.colDiscount]}>Dto.</Text>}
             {showLineTotal && <Text style={[styles.headerCell, styles.colTotal]}>Total</Text>}
           </View>
 
@@ -394,8 +394,12 @@ export function createInvoicePdfElement(
               {showTaxColumn && (
                 <Text style={[styles.cell, styles.colTax]}>{formatPercent(line.taxRate)}</Text>
               )}
-              {layout.itemsTable.showDiscount && (
-                <Text style={[styles.cell, styles.colDiscount]}>—</Text>
+              {showDiscount && (
+                <Text style={[styles.cell, styles.colDiscount]}>
+                  {(Number(line.discountPercent) || 0) > 0
+                    ? formatPercent(Number(line.discountPercent))
+                    : '\u2014'}
+                </Text>
               )}
               {showLineTotal && (
                 <Text style={[styles.cell, styles.colTotal]}>{formatCurrency(line.lineTotal)}</Text>

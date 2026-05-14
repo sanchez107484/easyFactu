@@ -1,4 +1,13 @@
-import { IsOptional, IsString, IsEnum, IsDateString, IsUUID, IsIn } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsDateString,
+  IsUUID,
+  IsIn,
+  IsBoolean,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 import { InvoiceStatus, PaymentStatus, QuoteAcceptanceStatus } from '@easyfactura/shared-types';
@@ -53,4 +62,15 @@ export class QueryInvoiceDto extends PaginationDto {
   @IsOptional()
   @IsIn(INVOICE_SORT_FIELDS)
   declare sortBy?: string;
+
+  @ApiPropertyOptional({ description: 'Filtrar solo facturas REAGYP (compensación agraria)' })
+  @IsOptional()
+  @Transform(({ obj }) => {
+    const raw = (obj as Record<string, unknown>).isReagyp;
+    if (raw === undefined || raw === null) return undefined;
+    if (raw === 'false' || raw === false) return false;
+    return raw === 'true' || raw === true;
+  })
+  @IsBoolean()
+  isReagyp?: boolean;
 }

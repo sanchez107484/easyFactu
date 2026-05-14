@@ -101,6 +101,9 @@ export class InvoiceService {
       lineTotal: calculatedLines[index]!.lineTotal,
       // BUG-03 fix: persist per-line irpfRate so it survives duplication/scheduler generation
       ...(line.irpfRate != null ? { irpfRate: line.irpfRate } : {}),
+      ...(line.discountPercent != null && line.discountPercent > 0
+        ? { discountPercent: line.discountPercent }
+        : {}),
       hideQty: line.hideQty ?? false,
       sortOrder: index,
     }));
@@ -481,6 +484,7 @@ export class InvoiceService {
       quoteAcceptanceStatus,
       sortBy = 'issueDate',
       sortOrder = 'desc',
+      isReagyp,
     } = query;
     const skip = (page - 1) * limit;
 
@@ -524,6 +528,10 @@ export class InvoiceService {
       where.quoteAcceptanceStatus = quoteAcceptanceStatus as PrismaQuoteAcceptanceStatus;
     }
 
+    if (isReagyp !== undefined) {
+      where.compensacionPercent = isReagyp ? { not: null } : null;
+    }
+
     const validSortFields: Record<string, true> = {
       number: true,
       issueDate: true,
@@ -562,6 +570,7 @@ export class InvoiceService {
           paymentMethod: true,
           notes: true,
           hash: true,
+          compensacionPercent: true,
           createdAt: true,
           updatedAt: true,
           createdByUserId: true,
@@ -687,6 +696,8 @@ export class InvoiceService {
           irpfPercent: true,
           taxTotal: true,
           irpfTotal: true,
+          compensacionPercent: true,
+          compensacionAmount: true,
           total: true,
           amountPaid: true,
           paymentMethod: true,
@@ -697,6 +708,10 @@ export class InvoiceService {
           recurringInvoiceId: true,
           rectifiedInvoiceId: true,
           rectificationReason: true,
+          isRectificative: true,
+          templateId: true,
+          layoutOverride: true,
+          verifactuQr: true,
           convertedToInvoiceId: true,
           createdAt: true,
           updatedAt: true,
@@ -1114,7 +1129,10 @@ export class InvoiceService {
 
     const lines = original.lines as unknown as CreateInvoiceLineDto[];
     // Re-derive compensation: duplicate creates a new draft — use current tenant config
-    const compensacionPercent = await this.resolveCompensacionPercent(tenantId, original.customerId);
+    const compensacionPercent = await this.resolveCompensacionPercent(
+      tenantId,
+      original.customerId
+    );
     const totals = this.calculationService.calculateTotals(lines, {
       discountPercent: original.discountPercent ? Number(original.discountPercent) : undefined,
       irpfPercent: original.irpfPercent ? Number(original.irpfPercent) : undefined,
@@ -1179,7 +1197,10 @@ export class InvoiceService {
     await this.validateProductIds(tenantId, dto.lines);
 
     // Rectificative invoices use the same regime as the original tenant config
-    const compensacionPercent = await this.resolveCompensacionPercent(tenantId, original.customerId);
+    const compensacionPercent = await this.resolveCompensacionPercent(
+      tenantId,
+      original.customerId
+    );
     const totals = this.calculationService.calculateTotals(dto.lines, { compensacionPercent });
 
     const paymentDetails = original.paymentDetails;

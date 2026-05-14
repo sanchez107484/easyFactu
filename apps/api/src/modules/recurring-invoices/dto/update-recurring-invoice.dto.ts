@@ -49,6 +49,13 @@ export class UpdateRecurringInvoiceDto {
   irpfPercent?: number | null;
 
   @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  /** Per-template REAGYP compensation rate. Pass null to clear (fall back to tenant rate). */
+  compensacionPercent?: number | null;
+
+  @IsOptional()
   @IsEnum(PaymentMethod)
   paymentMethod?: PaymentMethod | null;
 

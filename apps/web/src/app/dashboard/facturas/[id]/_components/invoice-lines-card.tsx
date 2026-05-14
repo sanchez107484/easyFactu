@@ -13,10 +13,12 @@ interface InvoiceLinesCardProps {
 export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
   const taxRates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
   const taxLabel = taxRates.length === 1 ? `IVA (${taxRates[0]}%)` : 'IVA';
+  const isReagyp = invoice.compensacionPercent != null;
 
   const showQtyColumn = (invoice.lines ?? []).some((l) => !l.hideQty);
   const showUnitPrice = template?.layout.itemsTable.showUnitPrice ?? true;
-  const showTaxColumn = template?.layout.itemsTable.showTaxColumn ?? true;
+  // In REAGYP mode, the IVA column is meaningless (all lines are 0%) — hide it
+  const showTaxColumn = !isReagyp && (template?.layout.itemsTable.showTaxColumn ?? true);
   const showLineTotal = template?.layout.itemsTable.showLineTotal ?? true;
 
   return (
@@ -91,9 +93,7 @@ export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
         )}
         {invoice.compensacionPercent != null ? (
           <div className="flex justify-between items-baseline py-1">
-            <span className="text-sm">
-              Compensación agraria ({invoice.compensacionPercent}%)
-            </span>
+            <span className="text-sm">Compensación agraria ({invoice.compensacionPercent}%)</span>
             <span className="text-sm tabular-nums">
               +{formatCurrency(invoice.compensacionAmount ?? 0)}
             </span>

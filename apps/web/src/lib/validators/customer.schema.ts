@@ -24,7 +24,10 @@ export const customerFormSchema = z
   })
   .superRefine((data, ctx) => {
     if (data.type !== CustomerType.INTRACOMMUNITY && data.nif) {
-      const cleanedNif = data.nif.toUpperCase().trim().replace(/[\s.-]/g, '');
+      const cleanedNif = data.nif
+        .toUpperCase()
+        .trim()
+        .replace(/[\s.-]/g, '');
       const result = validateNif(cleanedNif);
       if (!result.isValid) {
         ctx.addIssue({

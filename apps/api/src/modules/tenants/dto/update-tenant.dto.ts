@@ -1,4 +1,15 @@
-import { IsString, IsEmail, IsOptional, IsEnum, MinLength, MaxLength, IsNumber, Min, Max, ValidateIf } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsEnum,
+  MinLength,
+  MaxLength,
+  IsNumber,
+  Min,
+  Max,
+  ValidateIf,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { AccountType, TaxRegime } from '@easyfactura/shared-types';
@@ -106,7 +117,8 @@ export class UpdateTenantDto {
   taxRegime?: TaxRegime;
 
   @ApiPropertyOptional({
-    description: 'Tasa de compensación agraria (%). 12.0 para agricultura/silvicultura, 10.5 para ganadería/pesca. Solo obligatorio cuando taxRegime = REAGYP. Enviar null para borrar.',
+    description:
+      'Tasa de compensación agraria (%). 12.0 para agricultura/silvicultura, 10.5 para ganadería/pesca. Solo obligatorio cuando taxRegime = REAGYP. Enviar null para borrar.',
     minimum: 0,
     maximum: 100,
   })

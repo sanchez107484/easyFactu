@@ -96,8 +96,8 @@ export enum AgencyInvitationStatus {
 }
 
 export enum TaxRegime {
-  GENERAL = 'GENERAL',   // Régimen general de IVA (por defecto)
-  REAGYP = 'REAGYP',     // Régimen Especial Agricultura, Ganadería y Pesca (Arts. 124-134 LIVA)
+  GENERAL = 'GENERAL', // Régimen general de IVA (por defecto)
+  REAGYP = 'REAGYP', // Régimen Especial Agricultura, Ganadería y Pesca (Arts. 124-134 LIVA)
 }
 
 export enum RelationTerminator {
@@ -451,6 +451,8 @@ export interface InvoiceLine {
   quantity: number;
   unitPrice: number;
   subtotal: number;
+  /** Per-line discount percentage (0–100). Applied before tax. */
+  discountPercent?: number | null;
   taxRate: number;
   taxAmount: number;
   lineTotal: number;
@@ -604,6 +606,8 @@ export interface CreateInvoiceLineInput {
   description: string;
   quantity: number;
   unitPrice: number;
+  /** Per-line discount percentage (0–100). Applied before tax. */
+  discountPercent?: number;
   taxRate: number;
   /** Whether to hide the quantity in the invoice preview/PDF */
   hideQty?: boolean;
@@ -686,6 +690,8 @@ export interface QueryInvoicesInput {
   quoteAcceptanceStatus?: QuoteAcceptanceStatus;
   sortBy?: 'number' | 'issueDate' | 'dueDate' | 'total' | 'createdAt' | 'customer' | 'validUntil';
   sortOrder?: 'asc' | 'desc';
+  /** Filter to only REAGYP invoices (compensacionPercent is set) or only non-REAGYP. */
+  isReagyp?: boolean;
 }
 
 export interface ConfirmInvoiceInput {
@@ -867,6 +873,8 @@ export interface RecurringInvoiceLine {
   description: string;
   quantity: number;
   unitPrice: number;
+  /** Per-line discount percentage (0–100). Applied before tax. */
+  discountPercent?: number | null;
   taxRate: number;
   irpfRate: number | null;
   hideQty: boolean;
@@ -889,6 +897,8 @@ export interface RecurringInvoice {
   status: RecurringStatus;
   discountPercent: number | null;
   irpfPercent: number | null;
+  /** Per-template REAGYP override. If set, the scheduler uses this rate instead of the tenant's current reaypRate. */
+  compensacionPercent?: number | null;
   paymentMethod: PaymentMethod | null;
   paymentDetails: Record<string, unknown> | null;
   notes: string | null;
@@ -911,6 +921,8 @@ export interface CreateRecurringInvoiceLineInput {
   description: string;
   quantity: number;
   unitPrice: number;
+  /** Per-line discount percentage (0–100). Applied before tax. */
+  discountPercent?: number;
   taxRate: number;
   irpfRate?: number;
   hideQty?: boolean;
@@ -926,6 +938,8 @@ export interface CreateRecurringInvoiceInput {
   autoConfirm?: boolean;
   discountPercent?: number;
   irpfPercent?: number;
+  /** Optional REAGYP rate override for this template. If omitted, the scheduler uses the tenant's reaypRate at generation time. */
+  compensacionPercent?: number;
   paymentMethod?: PaymentMethod;
   paymentDetails?: Record<string, unknown>;
   notes?: string;
@@ -941,6 +955,8 @@ export interface UpdateRecurringInvoiceInput {
   autoConfirm?: boolean;
   discountPercent?: number | null;
   irpfPercent?: number | null;
+  /** Optional REAGYP rate override for this template. Pass null to clear (fall back to tenant rate). */
+  compensacionPercent?: number | null;
   paymentMethod?: PaymentMethod | null;
   paymentDetails?: Record<string, unknown> | null;
   notes?: string | null;

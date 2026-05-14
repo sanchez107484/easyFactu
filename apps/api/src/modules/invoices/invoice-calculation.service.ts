@@ -88,7 +88,13 @@ export class InvoiceCalculationService {
 
     // === STEP 1: Calculate per-line amounts ===
     const calculatedLines: CalculatedLine[] = lines.map((line) => {
-      const subtotal = this.round2(Number(line.quantity) * Number(line.unitPrice));
+      const grossSubtotal = this.round2(Number(line.quantity) * Number(line.unitPrice));
+      // Apply per-line discount (if any) before computing tax
+      const lineDiscountAmount =
+        line.discountPercent && Number(line.discountPercent) > 0
+          ? this.round2(grossSubtotal * (Number(line.discountPercent) / 100))
+          : 0;
+      const subtotal = this.round2(grossSubtotal - lineDiscountAmount);
       // In REAGYP, lines have no IVA
       const taxAmount = isReagyp ? 0 : this.round2(subtotal * (Number(line.taxRate) / 100));
       const lineTotal = this.round2(subtotal + taxAmount);
@@ -149,9 +155,7 @@ export class InvoiceCalculationService {
     const irpfBase = isReagyp
       ? this.round2(subtotalAfterDiscount + compensacionAmount)
       : subtotalAfterDiscount;
-    const irpfTotal = irpfPercent
-      ? this.round2(irpfBase * (Number(irpfPercent) / 100))
-      : 0;
+    const irpfTotal = irpfPercent ? this.round2(irpfBase * (Number(irpfPercent) / 100)) : 0;
 
     // === STEP 6: Final total ===
     // GENERAL: subtotalAfterDiscount + taxTotal − irpfTotal

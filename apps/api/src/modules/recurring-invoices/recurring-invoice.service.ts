@@ -164,6 +164,9 @@ export class RecurringInvoiceService {
       unitPrice: line.unitPrice,
       taxRate: line.taxRate,
       irpfRate: line.irpfRate ?? null,
+      ...(line.discountPercent != null && line.discountPercent > 0
+        ? { discountPercent: line.discountPercent }
+        : {}),
       hideQty: line.hideQty ?? false,
       sortOrder: index,
     }));
@@ -250,6 +253,10 @@ export class RecurringInvoiceService {
               unitPrice: line.unitPrice,
               taxRate: line.taxRate,
               irpfRate: line.irpfRate ?? null,
+              discountPercent:
+                line.discountPercent != null && line.discountPercent > 0
+                  ? line.discountPercent
+                  : null,
               hideQty: line.hideQty ?? false,
               sortOrder: index,
             },
@@ -271,6 +278,10 @@ export class RecurringInvoiceService {
             unitPrice: line.unitPrice,
             taxRate: line.taxRate,
             irpfRate: line.irpfRate ?? null,
+            discountPercent:
+              line.discountPercent != null && line.discountPercent > 0
+                ? line.discountPercent
+                : null,
             hideQty: line.hideQty ?? false,
             sortOrder: index,
           };
@@ -391,6 +402,7 @@ export class RecurringInvoiceService {
           status: PrismaRecurringStatus.ACTIVE,
           discountPercent: dto.discountPercent ?? null,
           irpfPercent: dto.irpfPercent ?? null,
+          compensacionPercent: dto.compensacionPercent ?? null,
           estimatedTotal: this.computeEstimatedTotal(
             dto.lines,
             dto.discountPercent ?? null,
@@ -471,6 +483,9 @@ export class RecurringInvoiceService {
           ...(dto.autoConfirm !== undefined ? { autoConfirm: dto.autoConfirm } : {}),
           ...(dto.discountPercent !== undefined ? { discountPercent: dto.discountPercent } : {}),
           ...(dto.irpfPercent !== undefined ? { irpfPercent: dto.irpfPercent } : {}),
+          ...(dto.compensacionPercent !== undefined
+            ? { compensacionPercent: dto.compensacionPercent }
+            : {}),
           ...(recomputedEstimatedTotal !== undefined
             ? { estimatedTotal: recomputedEstimatedTotal }
             : {}),

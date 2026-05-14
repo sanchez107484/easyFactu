@@ -62,7 +62,13 @@ export function buildPreviewInvoice(
   const customer = customers.find((c) => c.id === data.customerId);
 
   const subtotal = round2(
-    lines.reduce((acc, l) => acc + round2((l.quantity ?? 0) * (l.unitPrice ?? 0)), 0),
+    lines.reduce((acc, l) => {
+      const grossSubtotal = round2((l.quantity ?? 0) * (l.unitPrice ?? 0));
+      const lineDiscount = l.discountPercent ?? 0;
+      return (
+        acc + (lineDiscount > 0 ? round2(grossSubtotal * (1 - lineDiscount / 100)) : grossSubtotal)
+      );
+    }, 0),
   );
 
   const discountAmount = data.discountPercent ? round2(subtotal * (data.discountPercent / 100)) : 0;
@@ -76,8 +82,11 @@ export function buildPreviewInvoice(
     ? 0
     : round2(
         lines.reduce((acc, l) => {
-          const base = round2((l.quantity ?? 0) * (l.unitPrice ?? 0));
-          return acc + round2(base * discFactor * ((l.taxRate ?? 0) / 100));
+          const grossSubtotal = round2((l.quantity ?? 0) * (l.unitPrice ?? 0));
+          const lineDiscount = l.discountPercent ?? 0;
+          const lineNet =
+            lineDiscount > 0 ? round2(grossSubtotal * (1 - lineDiscount / 100)) : grossSubtotal;
+          return acc + round2(lineNet * discFactor * ((l.taxRate ?? 0) / 100));
         }, 0),
       );
 
@@ -103,7 +112,10 @@ export function buildPreviewInvoice(
     // - custom: hide only when _hideQty=true (user left quantity blank)
     const hideQty = l._mode === 'service' || (l._mode === 'custom' && l._hideQty === true);
     const effectiveQty = l.quantity && l.quantity > 0 ? l.quantity : 1;
-    const lineSubtotal = round2(effectiveQty * (l.unitPrice ?? 0));
+    const grossSubtotal = round2(effectiveQty * (l.unitPrice ?? 0));
+    const lineDiscount = l.discountPercent ?? 0;
+    const lineSubtotal =
+      lineDiscount > 0 ? round2(grossSubtotal * (1 - lineDiscount / 100)) : grossSubtotal;
     return {
       id: `preview-${i}`,
       tenantId: '',
@@ -113,6 +125,7 @@ export function buildPreviewInvoice(
       quantity: effectiveQty,
       unitPrice: l.unitPrice ?? 0,
       subtotal: lineSubtotal,
+      discountPercent: lineDiscount > 0 ? lineDiscount : null,
       taxRate: l.taxRate ?? 0,
       taxAmount: round2(lineSubtotal * ((l.taxRate ?? 0) / 100)),
       lineTotal: round2(lineSubtotal * (1 + (l.taxRate ?? 0) / 100)),
@@ -185,7 +198,8 @@ export function buildCreateInput(data: InvoiceFormData) {
     irpfPercent: data.irpfPercent || undefined,
     // Send the user's compensacion choice when it's explicitly set (even 0 means 'no compensation').
     // We only omit it entirely when the user hasn't interacted with a REAGYP tenant context.
-    compensacionPercent: data.compensacionPercent !== undefined ? data.compensacionPercent : undefined,
+    compensacionPercent:
+      data.compensacionPercent !== undefined ? data.compensacionPercent : undefined,
     paymentMethod: data.paymentMethod,
     paymentDetails: data.paymentDetails,
     notes: data.notes,
@@ -195,6 +209,8 @@ export function buildCreateInput(data: InvoiceFormData) {
         description: clean.description,
         quantity: clean.quantity,
         unitPrice: clean.unitPrice,
+        discountPercent:
+          clean.discountPercent && clean.discountPercent > 0 ? clean.discountPercent : undefined,
         taxRate: clean.taxRate,
         productId: clean.productId,
         hideQty: clean.hideQty,

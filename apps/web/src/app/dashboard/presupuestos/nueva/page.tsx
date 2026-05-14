@@ -54,6 +54,8 @@ import {
 } from '@/components/facturas/PaymentDetailsFields';
 import { useInvoiceFormKeyDown } from '@/hooks/use-invoice-form-key-down';
 import { useDebounce } from '@/hooks/use-debounce';
+import { DiscountsSectionGeneral } from '@/components/facturas/DiscountsSectionGeneral';
+import { DiscountsSectionReagyp } from '@/components/facturas/DiscountsSectionReagyp';
 
 // ==================== SCHEMA ====================
 
@@ -572,6 +574,7 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
                         onMoveDown={() => swap(index, index + 1)}
                         onFocus={() => setActiveSection('lines-section')}
                         autoFocusDescription={index === lastAddedIndex}
+                        isReagyp={showCompensacion}
                       />
                     ))}
                   </div>
@@ -592,56 +595,31 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
                   <CardTitle className="text-base">Descuentos y retenciones</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <section
-                    id="field-discountPercent"
-                    className={`grid grid-cols-1 gap-4 ${showCompensacion ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
-                    onFocus={() => setActiveSection('discountPercent')}
-                  >
-                    <div className="space-y-2">
-                      <Label htmlFor="discountPercent">Descuento global (%)</Label>
-                      <Input
-                        id="discountPercent"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        placeholder="0"
-                        {...form.register('discountPercent', {
-                          setValueAs: (v) => (v === '' ? undefined : Number(v)),
-                        })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="irpfPercent">Retención IRPF (%)</Label>
-                      <Input
-                        id="irpfPercent"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        placeholder="0 (15% general)"
-                        {...form.register('irpfPercent', {
-                          setValueAs: (v) => (v === '' ? undefined : Number(v)),
-                        })}
-                      />
-                    </div>
-                    {showCompensacion && (
-                      <div className="space-y-2">
-                        <Label htmlFor="compensacionPercent">Comp. agraria REAGYP (%)</Label>
-                        <Input
-                          id="compensacionPercent"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          max="100"
-                          placeholder="0"
-                          {...form.register('compensacionPercent', {
-                            setValueAs: (v) => (v === '' ? undefined : Number(v)),
-                          })}
-                        />
-                      </div>
-                    )}
-                  </section>
+                  {showCompensacion ? (
+                    <DiscountsSectionReagyp
+                      discountPercentProps={form.register('discountPercent', {
+                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                      })}
+                      compensacionPercentProps={form.register('compensacionPercent', {
+                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                      })}
+                      irpfPercentProps={form.register('irpfPercent', {
+                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                      })}
+                      isCustomerReagyp={selectedCustomer?.isReagyp ?? false}
+                      onFocus={() => setActiveSection('discountPercent')}
+                    />
+                  ) : (
+                    <DiscountsSectionGeneral
+                      discountPercentProps={form.register('discountPercent', {
+                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                      })}
+                      irpfPercentProps={form.register('irpfPercent', {
+                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                      })}
+                      onFocus={() => setActiveSection('discountPercent')}
+                    />
+                  )}
                 </CardContent>
               </Card>
 
@@ -730,6 +708,9 @@ export default function NuevoPresupuestoPage() {
           ? Number(sourceQuote.discountPercent)
           : undefined,
         irpfPercent: sourceQuote.irpfPercent ? Number(sourceQuote.irpfPercent) : undefined,
+        compensacionPercent: sourceQuote.compensacionPercent
+          ? Number(sourceQuote.compensacionPercent)
+          : undefined,
         paymentMethod: (sourceQuote.paymentMethod as PaymentMethod) ?? undefined,
         paymentDetails:
           (sourceQuote as unknown as { paymentDetails?: Record<string, string | undefined> })
@@ -743,9 +724,10 @@ export default function NuevoPresupuestoPage() {
             description: l.description ?? '',
             quantity: qty,
             unitPrice: Number(l.unitPrice) || 0,
+            discountPercent: Number(l.discountPercent) || 0,
             taxRate: Number(l.taxRate) || 0,
             productId: l.productId ?? undefined,
-            _mode: (hideQty && !l.productId ? 'service' : 'custom') as 'service' | 'custom',
+            _mode: hideQty ? 'service' : l.productId ? 'product' : 'custom',
             _hideQty: hideQty,
           };
         }),
@@ -765,5 +747,7 @@ export default function NuevoPresupuestoPage() {
         lines: [{ ...EMPTY_LINE }] as ExtendedLineData[],
       };
 
-  return <QuoteForm key={editId ?? 'new'} defaultValues={defaultValues} editId={editId ?? undefined} />;
+  return (
+    <QuoteForm key={editId ?? 'new'} defaultValues={defaultValues} editId={editId ?? undefined} />
+  );
 }

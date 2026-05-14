@@ -46,6 +46,8 @@ import { useInvoiceSeries } from '@/hooks/use-invoice-series';
 import { useInvoiceDefaults } from '@/hooks/use-invoice-defaults';
 import { useInvoiceFormKeyDown } from '@/hooks/use-invoice-form-key-down';
 import { useDebounce } from '@/hooks/use-debounce';
+import { DiscountsSectionGeneral } from '@/components/facturas/DiscountsSectionGeneral';
+import { DiscountsSectionReagyp } from '@/components/facturas/DiscountsSectionReagyp';
 import { useAuthStore } from '@/store/auth-store';
 import {
   Frequency,
@@ -386,6 +388,8 @@ function RecurringInvoiceForm({
       description: line.description,
       quantity: line._hideQty ? 1 : line.quantity,
       unitPrice: line.unitPrice,
+      discountPercent:
+        line.discountPercent && line.discountPercent > 0 ? line.discountPercent : undefined,
       taxRate: line.taxRate,
       hideQty: line._hideQty ?? false,
     }));
@@ -404,6 +408,7 @@ function RecurringInvoiceForm({
           autoConfirm: data.autoConfirm,
           irpfPercent: data.irpfPercent ?? null,
           discountPercent: data.discountPercent ?? null,
+          compensacionPercent: data.compensacionPercent ?? null,
           paymentMethod: data.paymentMethod ?? null,
           paymentDetails: paymentDetailsPayload ?? null,
           notes: data.notes ?? null,
@@ -422,6 +427,7 @@ function RecurringInvoiceForm({
         autoConfirm: data.autoConfirm,
         irpfPercent: data.irpfPercent || undefined,
         discountPercent: data.discountPercent || undefined,
+        compensacionPercent: data.compensacionPercent,
         paymentMethod: data.paymentMethod || undefined,
         paymentDetails: paymentDetailsPayload,
         notes: data.notes || undefined,
@@ -857,6 +863,7 @@ function RecurringInvoiceForm({
                     onMoveDown={() => swap(index, index + 1)}
                     onFocus={() => setActiveSection('lines-section')}
                     autoFocusDescription={index === lastAddedIndex}
+                    isReagyp={showCompensacion}
                   />
                 ))}
               </div>
@@ -900,56 +907,31 @@ function RecurringInvoiceForm({
               <CardTitle className="text-base">Descuentos y retenciones</CardTitle>
             </CardHeader>
             <CardContent>
-              <section
-                id="field-discountPercent"
-                className={`grid grid-cols-1 gap-4 ${showCompensacion ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
-                onFocus={() => setActiveSection('discountPercent')}
-              >
-                <div className="space-y-2">
-                  <Label htmlFor="discountPercent">Descuento global (%)</Label>
-                  <Input
-                    id="discountPercent"
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    max={100}
-                    placeholder="0"
-                    {...form.register('discountPercent', {
-                      setValueAs: (v) => (v === '' ? undefined : Number(v)),
-                    })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="irpfPercent">Retención IRPF (%)</Label>
-                  <Input
-                    id="irpfPercent"
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    max={30}
-                    placeholder="0 (15% general)"
-                    {...form.register('irpfPercent', {
-                      setValueAs: (v) => (v === '' ? undefined : Number(v)),
-                    })}
-                  />
-                </div>
-                {showCompensacion && (
-                  <div className="space-y-2">
-                    <Label htmlFor="compensacionPercent">Comp. agraria REAGYP (%)</Label>
-                    <Input
-                      id="compensacionPercent"
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      max={100}
-                      placeholder="0"
-                      {...form.register('compensacionPercent', {
-                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
-                      })}
-                    />
-                  </div>
-                )}
-              </section>
+              {showCompensacion ? (
+                <DiscountsSectionReagyp
+                  discountPercentProps={form.register('discountPercent', {
+                    setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                  })}
+                  compensacionPercentProps={form.register('compensacionPercent', {
+                    setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                  })}
+                  irpfPercentProps={form.register('irpfPercent', {
+                    setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                  })}
+                  isCustomerReagyp={selectedCustomer?.isReagyp ?? false}
+                  onFocus={() => setActiveSection('discountPercent')}
+                />
+              ) : (
+                <DiscountsSectionGeneral
+                  discountPercentProps={form.register('discountPercent', {
+                    setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                  })}
+                  irpfPercentProps={form.register('irpfPercent', {
+                    setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                  })}
+                  onFocus={() => setActiveSection('discountPercent')}
+                />
+              )}
             </CardContent>
           </Card>
 
@@ -1010,6 +992,9 @@ export default function NuevaRecurrentePage() {
         discountPercent: editRecurring.discountPercent
           ? Number(editRecurring.discountPercent)
           : undefined,
+        compensacionPercent: editRecurring.compensacionPercent
+          ? Number(editRecurring.compensacionPercent)
+          : undefined,
         paymentMethod: (editRecurring.paymentMethod as PaymentMethod) ?? undefined,
         paymentDetails: (editRecurring.paymentDetails as Record<string, string | undefined>) ?? {},
         notes: editRecurring.notes ?? '',
@@ -1017,9 +1002,10 @@ export default function NuevaRecurrentePage() {
           description: l.description ?? '',
           quantity: Number(l.quantity) || 1,
           unitPrice: Number(l.unitPrice) || 0,
+          discountPercent: Number(l.discountPercent) || 0,
           taxRate: Number(l.taxRate) || 0,
           productId: l.productId ?? undefined,
-          _mode: l.productId ? 'product' : l.hideQty ? 'service' : 'custom',
+          _mode: l.hideQty ? 'service' : l.productId ? 'product' : 'custom',
           _hideQty: l.hideQty ?? false,
         })),
       }
