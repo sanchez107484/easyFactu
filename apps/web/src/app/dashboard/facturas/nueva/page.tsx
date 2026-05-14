@@ -446,6 +446,7 @@ function InvoiceForm({
         description: l.description,
         quantity: l._hideQty ? 1 : l.quantity,
         unitPrice: l.unitPrice,
+        discountPercent: l.discountPercent && l.discountPercent > 0 ? l.discountPercent : undefined,
         taxRate: l.taxRate,
         hideQty: l._hideQty ?? false,
       })),

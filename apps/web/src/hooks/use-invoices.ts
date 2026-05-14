@@ -246,9 +246,12 @@ export function useConvertProformaToOfficial() {
   return useMutation({
     mutationFn: (id: string) => invoiceApi.convertToOfficial(id),
     onSuccess: (invoice, proformaId) => {
-      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
-      queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      // Cancel and remove the old proforma query FIRST to prevent a 404 refetch
+      // while the component is still mounted before navigation completes.
+      void queryClient.cancelQueries({ queryKey: invoiceKeys.detail(proformaId) });
       queryClient.removeQueries({ queryKey: invoiceKeys.detail(proformaId) });
+      queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
       toast.success(
         'Factura oficial creada como borrador. Revísala y confírmala cuando esté lista.',
       );

@@ -75,7 +75,11 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
               {showReference && <td className={tdClass}>{line.productId ?? '—'}</td>}
               <td className={cn(tdClass, 'whitespace-pre-wrap')}>{line.description}</td>
               {showQtyCol && (
-                <td className={cn(tdClass, 'text-right')}>{hideQty ? '' : line.quantity}</td>
+                <td className={cn(tdClass, 'text-right')}>
+                  {hideQty
+                    ? ''
+                    : Number(line.quantity).toLocaleString('es-ES', { maximumFractionDigits: 4 })}
+                </td>
               )}
               {showUnitPrice && (
                 <td className={cn(tdClass, 'text-right')}>{formatCurrency(line.unitPrice)}</td>
@@ -83,7 +87,9 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
               {showTaxColumn && <td className={cn(tdClass, 'text-right')}>{line.taxRate}%</td>}
               {showDiscount && (
                 <td className={cn(tdClass, 'text-right')}>
-                  {(line.discountPercent ?? 0) > 0 ? `${line.discountPercent}%` : '—'}
+                  {(line.discountPercent ?? 0) > 0
+                    ? `${Number(line.discountPercent).toLocaleString('es-ES', { maximumFractionDigits: 2 })}%`
+                    : '—'}
                 </td>
               )}
               {showLineTotal && (

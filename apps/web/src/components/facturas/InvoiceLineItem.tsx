@@ -213,6 +213,13 @@ export function InvoiceLineItem({
   const line: ExtendedLineData = useWatch({ control: form.control, name: `lines.${index}` }) ?? {};
   const mode: LineMode = line._mode ?? 'custom';
 
+  // Local raw string for discount input — lets the user type "10.5" or "10,5"
+  // without React clobbering the intermediate value on each keystroke.
+  const [discountRaw, setDiscountRaw] = useState<string>(() => {
+    const v = line.discountPercent;
+    return v ? String(v) : '';
+  });
+
   // -- Calculations --------------------------------------------------
   const qty = mode === 'service' ? 1 : (line.quantity ?? 0);
   const price = line.unitPrice ?? 0;
@@ -374,6 +381,30 @@ export function InvoiceLineItem({
           <p className="text-xs text-destructive -mt-1">{lineErrors.description.message}</p>
         )}
 
+        {/* Labels row */}
+        <div className="flex items-center gap-2 px-0.5">
+          {showQtyField && (
+            <div className="w-[96px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+              Cantidad
+            </div>
+          )}
+          {mode === 'product' && <div className="w-4 shrink-0" />}
+          <div className="flex-1 min-w-[100px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+            Precio/ud.
+          </div>
+          {!isReagyp && (
+            <div className="w-[80px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+              IVA
+            </div>
+          )}
+          <div className="w-[90px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+            Dto. %
+          </div>
+          <div className="min-w-[72px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide text-right">
+            Total
+          </div>
+        </div>
+
         {/* Numbers row */}
         <div className="flex items-center gap-2">
           {/* Qty – hidden for service, optional for custom, required for product */}
@@ -388,7 +419,9 @@ export function InvoiceLineItem({
                 data-invoice-qty={index}
                 value={
                   mode === 'product'
-                    ? String(line.quantity ?? 1)
+                    ? line.quantity === 0
+                      ? ''
+                      : String(line.quantity ?? 1)
                     : line._hideQty
                       ? ''
                       : String(line.quantity ?? '')
@@ -396,20 +429,29 @@ export function InvoiceLineItem({
                 onChange={(e) => {
                   const val = e.target.value;
                   if (val === '') {
-                    if (qtyIsOptional) {
-                      // Modo libre: campo vacío = sin cantidad (ocultar en factura)
+                    if (mode === 'product') {
+                      // Permite borrar temporalmente — se normaliza en onBlur
+                      form.setValue(`lines.${index}.quantity`, 0);
+                    } else if (qtyIsOptional) {
                       form.setValue(`lines.${index}.quantity`, 1);
                       form.setValue(`lines.${index}._hideQty`, true);
                     }
-                    // Modo producto: no permitir vacío
                   } else {
                     const num = parseFloat(val);
                     const safeNum = isNaN(num) ? 1 : num;
                     form.setValue(
                       `lines.${index}.quantity`,
-                      mode === 'product' ? Math.max(1, safeNum) : safeNum,
+                      mode === 'product' ? Math.max(0, safeNum) : safeNum,
                     );
                     form.setValue(`lines.${index}._hideQty`, false);
+                  }
+                }}
+                onBlur={() => {
+                  if (mode === 'product') {
+                    const qty = form.getValues(`lines.${index}.quantity`) as number;
+                    if (!qty || qty < 1) {
+                      form.setValue(`lines.${index}.quantity`, 1);
+                    }
                   }
                 }}
               />
@@ -465,21 +507,44 @@ export function InvoiceLineItem({
           {/* Discount % */}
           <div className="relative">
             <Input
-              type="number"
-              step="0.01"
-              min="0"
-              max="100"
+              type="text"
+              inputMode="decimal"
               placeholder="0"
-              className="w-[72px] text-sm h-9 pr-5"
-              value={
-                line.discountPercent === 0 || line.discountPercent == null
-                  ? ''
-                  : String(line.discountPercent)
-              }
+              className="w-[90px] text-sm h-9 pr-5"
+              value={discountRaw}
               onChange={(e) => {
-                const val = e.target.value;
-                const num = val === '' ? 0 : Math.min(100, Math.max(0, parseFloat(val) || 0));
-                form.setValue(`lines.${index}.discountPercent`, num, { shouldValidate: false });
+                const raw = e.target.value;
+                // Allow comma as decimal separator
+                const normalized = raw.replace(',', '.');
+                setDiscountRaw(raw);
+                // Only sync to form when it's a valid number
+                if (normalized === '' || normalized === '.') {
+                  form.setValue(`lines.${index}.discountPercent`, 0, { shouldValidate: false });
+                } else {
+                  const num = parseFloat(normalized);
+                  if (!isNaN(num)) {
+                    form.setValue(
+                      `lines.${index}.discountPercent`,
+                      Math.min(100, Math.max(0, num)),
+                      { shouldValidate: false },
+                    );
+                  }
+                }
+              }}
+              onBlur={() => {
+                // Normalise on exit: strip trailing dot, clamp, update display
+                const normalized = discountRaw.replace(',', '.');
+                const num = parseFloat(normalized);
+                if (isNaN(num) || num <= 0) {
+                  setDiscountRaw('');
+                  form.setValue(`lines.${index}.discountPercent`, 0, { shouldValidate: false });
+                } else {
+                  const clamped = Math.min(100, Math.max(0, num));
+                  setDiscountRaw(String(clamped));
+                  form.setValue(`lines.${index}.discountPercent`, clamped, {
+                    shouldValidate: false,
+                  });
+                }
               }}
             />
             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground select-none">

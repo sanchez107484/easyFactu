@@ -172,6 +172,10 @@ export class InvoiceService {
               subtotal: calculatedLines[index]!.subtotal,
               taxAmount: calculatedLines[index]!.taxAmount,
               lineTotal: calculatedLines[index]!.lineTotal,
+              discountPercent:
+                line.discountPercent != null && Number(line.discountPercent) > 0
+                  ? line.discountPercent
+                  : null,
               irpfRate: line.irpfRate ?? null,
               hideQty: line.hideQty ?? false,
               sortOrder: index,
@@ -198,6 +202,9 @@ export class InvoiceService {
             taxAmount: calc.taxAmount,
             lineTotal: calc.lineTotal,
             ...(line.irpfRate != null ? { irpfRate: line.irpfRate } : {}),
+            ...(line.discountPercent != null && Number(line.discountPercent) > 0
+              ? { discountPercent: line.discountPercent }
+              : {}),
             hideQty: line.hideQty ?? false,
             sortOrder: index,
           };
@@ -654,6 +661,7 @@ export class InvoiceService {
             taxAmount: true,
             subtotal: true,
             lineTotal: true,
+            discountPercent: true,
             irpfRate: true,
             irpfAmount: true,
             hideQty: true,

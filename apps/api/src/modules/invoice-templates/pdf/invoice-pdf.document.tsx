@@ -29,7 +29,7 @@ function formatDate(dateStr: string): string {
 }
 
 function formatPercent(value: number): string {
-  return `${value}%`;
+  return `${Number(value).toLocaleString('es-ES', { maximumFractionDigits: 2 })}%`;
 }
 
 function buildStyles(StyleSheet: any, layout: InvoiceLayout) {
@@ -387,7 +387,9 @@ export function createInvoicePdfElement(
           {lines.map((line) => (
             <View key={line.id} style={styles.tableRow}>
               <Text style={[styles.cell, styles.colDescription]}>{line.description}</Text>
-              <Text style={[styles.cell, styles.colQty]}>{line.quantity}</Text>
+              <Text style={[styles.cell, styles.colQty]}>
+                {Number(line.quantity).toLocaleString('es-ES', { maximumFractionDigits: 4 })}
+              </Text>
               {showUnitPrice && (
                 <Text style={[styles.cell, styles.colPrice]}>{formatCurrency(line.unitPrice)}</Text>
               )}

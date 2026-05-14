@@ -566,52 +566,78 @@ export default function PresupuestoDetailPage() {
             {/* ZONA C — Líneas + totales */}
             <div className="rounded-xl border bg-card p-5">
               <SectionLabel icon={FileText}>Líneas del presupuesto</SectionLabel>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
-                      Descripción
-                    </th>
-                    {(quote.lines ?? []).some((l) => !l.hideQty) && (
-                      <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
-                        Cant.
-                      </th>
-                    )}
-                    <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
-                      Precio
-                    </th>
-                    <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
-                      IVA
-                    </th>
-                    <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
-                      Subtotal
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {(quote.lines ?? []).map((line) => {
-                    return (
-                      <tr key={line.id}>
-                        <td className="py-2.5 pr-4">{line.description}</td>
-                        {(quote.lines ?? []).some((l) => !l.hideQty) && (
-                          <td className="py-2.5 text-right tabular-nums">
-                            {line.hideQty ? '' : parseNum(line.quantity)}
-                          </td>
+              {(() => {
+                const quoteLines = quote.lines ?? [];
+                const isReagyp = quote.compensacionPercent != null;
+                const showQtyCol = quoteLines.some((l) => !l.hideQty);
+                const showDiscount = quoteLines.some((l) => parseNum(l.discountPercent) > 0);
+                return (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left pb-2 font-medium text-muted-foreground text-xs">
+                          Descripción
+                        </th>
+                        {showQtyCol && (
+                          <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
+                            Cant.
+                          </th>
                         )}
-                        <td className="py-2.5 text-right tabular-nums">
-                          {formatCurrency(line.unitPrice)}
-                        </td>
-                        <td className="py-2.5 text-right tabular-nums text-muted-foreground">
-                          {parseNum(line.taxRate)}%
-                        </td>
-                        <td className="py-2.5 text-right tabular-nums font-medium">
-                          {formatCurrency(line.subtotal)}
-                        </td>
+                        <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
+                          Precio
+                        </th>
+                        {!isReagyp && (
+                          <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
+                            IVA
+                          </th>
+                        )}
+                        {showDiscount && (
+                          <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
+                            Dto.
+                          </th>
+                        )}
+                        <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
+                          Subtotal
+                        </th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody className="divide-y">
+                      {quoteLines.map((line) => (
+                        <tr key={line.id}>
+                          <td className="py-2.5 pr-4">{line.description}</td>
+                          {showQtyCol && (
+                            <td className="py-2.5 text-right tabular-nums">
+                              {line.hideQty
+                                ? ''
+                                : parseNum(line.quantity).toLocaleString('es-ES', {
+                                    maximumFractionDigits: 4,
+                                  })}
+                            </td>
+                          )}
+                          <td className="py-2.5 text-right tabular-nums">
+                            {formatCurrency(line.unitPrice)}
+                          </td>
+                          {!isReagyp && (
+                            <td className="py-2.5 text-right tabular-nums text-muted-foreground">
+                              {parseNum(line.taxRate)}%
+                            </td>
+                          )}
+                          {showDiscount && (
+                            <td className="py-2.5 text-right tabular-nums text-muted-foreground">
+                              {parseNum(line.discountPercent) > 0
+                                ? `${parseNum(line.discountPercent).toLocaleString('es-ES', { maximumFractionDigits: 2 })}%`
+                                : '—'}
+                            </td>
+                          )}
+                          <td className="py-2.5 text-right tabular-nums font-medium">
+                            {formatCurrency(line.subtotal)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                );
+              })()}
 
               <div className="mt-4 pt-4 border-t ml-auto w-64 space-y-1.5">
                 <DataRow label="Base imponible" value={formatCurrency(quote.subtotal)} />

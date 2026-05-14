@@ -20,6 +20,7 @@ export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
   // In REAGYP mode, the IVA column is meaningless (all lines are 0%) — hide it
   const showTaxColumn = !isReagyp && (template?.layout.itemsTable.showTaxColumn ?? true);
   const showLineTotal = template?.layout.itemsTable.showLineTotal ?? true;
+  const showDiscount = (invoice.lines ?? []).some((l) => parseNum(l.discountPercent) > 0);
 
   return (
     <div className="rounded-xl border bg-card p-5">
@@ -45,6 +46,11 @@ export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
                 IVA
               </th>
             )}
+            {showDiscount && (
+              <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
+                Dto.
+              </th>
+            )}
             {showLineTotal && (
               <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
                 Subtotal
@@ -58,7 +64,9 @@ export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
               <td className="py-2.5 pr-4">{line.description}</td>
               {showQtyColumn && (
                 <td className="py-2.5 text-right tabular-nums">
-                  {line.hideQty ? '' : parseNum(line.quantity)}
+                  {line.hideQty
+                    ? ''
+                    : parseNum(line.quantity).toLocaleString('es-ES', { maximumFractionDigits: 4 })}
                 </td>
               )}
               {showUnitPrice && (
@@ -67,6 +75,13 @@ export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
               {showTaxColumn && (
                 <td className="py-2.5 text-right tabular-nums text-muted-foreground">
                   {parseNum(line.taxRate)}%
+                </td>
+              )}
+              {showDiscount && (
+                <td className="py-2.5 text-right tabular-nums text-muted-foreground">
+                  {parseNum(line.discountPercent) > 0
+                    ? `${parseNum(line.discountPercent).toLocaleString('es-ES', { maximumFractionDigits: 2 })}%`
+                    : '—'}
                 </td>
               )}
               {showLineTotal && (

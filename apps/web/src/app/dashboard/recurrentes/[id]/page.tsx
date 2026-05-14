@@ -527,6 +527,11 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
                           IVA
                         </th>
                       )}
+                      {lines.some((l) => Number(l.discountPercent) > 0) && (
+                        <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
+                          Dto.
+                        </th>
+                      )}
                       <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
                         Subtotal
                       </th>
@@ -535,12 +540,17 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
                   <tbody className="divide-y">
                     {lines.map((line, i) => {
                       const sub = round2(Number(line.quantity) * Number(line.unitPrice));
+                      const showDiscountCol = lines.some((l) => Number(l.discountPercent) > 0);
                       return (
                         <tr key={i}>
                           <td className="py-2.5 pr-4">{line.description}</td>
                           {lines.some((l) => !l.hideQty) && (
                             <td className="py-2.5 text-right tabular-nums">
-                              {line.hideQty ? '' : Number(line.quantity)}
+                              {line.hideQty
+                                ? ''
+                                : Number(line.quantity).toLocaleString('es-ES', {
+                                    maximumFractionDigits: 4,
+                                  })}
                             </td>
                           )}
                           <td className="py-2.5 text-right tabular-nums">
@@ -549,6 +559,13 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
                           {!isReagyp && (
                             <td className="py-2.5 text-right tabular-nums text-muted-foreground">
                               {Number(line.taxRate)}%
+                            </td>
+                          )}
+                          {showDiscountCol && (
+                            <td className="py-2.5 text-right tabular-nums text-muted-foreground">
+                              {Number(line.discountPercent) > 0
+                                ? `${Number(line.discountPercent).toLocaleString('es-ES', { maximumFractionDigits: 2 })}%`
+                                : '—'}
                             </td>
                           )}
                           <td className="py-2.5 text-right tabular-nums font-medium">
