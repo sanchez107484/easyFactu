@@ -334,7 +334,7 @@ function RecurringInvoiceForm({
     },
     customers,
     null,
-    watchedValues.compensacionPercent,
+    showCompensacion ? (watchedValues.compensacionPercent ?? 0) : watchedValues.compensacionPercent,
   );
 
   const source = tenantData ?? currentTenant;

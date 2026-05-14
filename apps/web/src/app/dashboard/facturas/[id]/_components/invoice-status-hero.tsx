@@ -94,10 +94,12 @@ export function InvoiceStatusHero({
           <p className="text-xs text-muted-foreground mt-1">
             Base: {formatCurrency(invoice.subtotal)} ·{' '}
             {invoice.compensacionPercent != null ? (
-              <>
-                Comp. agraria ({invoice.compensacionPercent}%): +
-                {formatCurrency(invoice.compensacionAmount ?? 0)}
-              </>
+              Number(invoice.compensacionPercent) > 0 ? (
+                <>
+                  Comp. agraria ({invoice.compensacionPercent}%): +
+                  {formatCurrency(invoice.compensacionAmount ?? 0)}
+                </>
+              ) : null
             ) : (
               <>
                 {(() => {

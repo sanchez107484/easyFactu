@@ -186,7 +186,7 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
     watchedValues,
     customers,
     selectedSeries,
-    watchedValues.compensacionPercent,
+    showCompensacion ? (watchedValues.compensacionPercent ?? 0) : watchedValues.compensacionPercent,
   );
   const activePaymentMethod = watchedValues.paymentMethod as PaymentMethod | undefined;
 

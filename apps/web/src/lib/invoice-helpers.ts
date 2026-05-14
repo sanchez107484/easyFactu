@@ -76,7 +76,10 @@ export function buildPreviewInvoice(
   const discFactor = subtotal > 0 ? subtotalAfterDiscount / subtotal : 1;
 
   // ── REAGYP vs. GENERAL totals ──
-  const isReagyp = !!compensacionPercent && compensacionPercent > 0;
+  // isReagyp is true whenever compensacionPercent is explicitly set (even 0).
+  // A value of 0 means: REAGYP invoice, no compensation rate (customer is already subject to REAGYP).
+  // In this case IVA must still be hidden but the compensation row must not appear.
+  const isReagyp = compensacionPercent != null;
 
   const taxTotal = isReagyp
     ? 0

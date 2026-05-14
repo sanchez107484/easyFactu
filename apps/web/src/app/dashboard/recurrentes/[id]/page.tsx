@@ -592,14 +592,16 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
                 </div>
               )}
               {previewInvoice!.compensacionPercent != null ? (
-                <div className="flex justify-between items-baseline py-1">
-                  <span className="text-sm">
-                    Compensación agraria ({previewInvoice!.compensacionPercent}%)
-                  </span>
-                  <span className="text-sm tabular-nums">
-                    +{formatCurrency(previewInvoice!.compensacionAmount ?? 0)}
-                  </span>
-                </div>
+                Number(previewInvoice!.compensacionPercent) > 0 && (
+                  <div className="flex justify-between items-baseline py-1">
+                    <span className="text-sm">
+                      Compensación agraria ({previewInvoice!.compensacionPercent}%)
+                    </span>
+                    <span className="text-sm tabular-nums">
+                      +{formatCurrency(previewInvoice!.compensacionAmount ?? 0)}
+                    </span>
+                  </div>
+                )
               ) : (
                 <DataRow label="IVA" value={formatCurrency(taxTotal)} />
               )}
