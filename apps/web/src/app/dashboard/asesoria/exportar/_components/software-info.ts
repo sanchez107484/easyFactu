@@ -31,7 +31,7 @@ export interface SoftwareInfo {
 
 export const SOFTWARE_INFO: Record<ExportFormat, SoftwareInfo> = {
   CEGID: {
-    name: 'Cegid Contasimple',
+    name: 'Cegid ',
     initials: 'CS',
     logoUrl: '/programas/favicon-cegid.png',
     fileExtension: '.xlsx',
@@ -40,11 +40,11 @@ export const SOFTWARE_INFO: Record<ExportFormat, SoftwareInfo> = {
     brandRing: 'ring-emerald-500',
     brandBgSoft: 'bg-emerald-50 dark:bg-emerald-950/40',
     brandBorder: 'border-emerald-200 dark:border-emerald-800',
-    tagline: 'Excel compatible con Cegid Contasimple',
+    tagline: 'Excel compatible con Cegid ',
     available: true,
     steps: [
       'Descarga el archivo .xlsx desde la sección de exportaciones.',
-      'Abre Cegid Contasimple y ve al menú Facturación → Importar en el menú lateral izquierdo.',
+      'Abre Cegid  y ve al menú Facturación → Importar en el menú lateral izquierdo.',
       'Selecciona el tipo de datos: "Facturas emitidas".',
       'Arrastra el archivo .xlsx al recuadro de importación o haz clic en "Seleccionar archivo".',
       'Cegid detectará automáticamente las columnas porque los nombres de cabecera coinciden exactamente con el formato requerido.',
@@ -52,9 +52,8 @@ export const SOFTWARE_INFO: Record<ExportFormat, SoftwareInfo> = {
       'Haz clic en "Continuar" y después en "Importar" para finalizar.',
     ],
     tips: [
-      'El archivo tiene una fila de cabecera y una fila por cada línea de factura — es el formato nativo de Cegid Contasimple.',
+      'El archivo tiene una fila de cabecera y una fila por cada línea de factura — es el formato nativo de Cegid .',
       'Si un cliente tiene varias líneas, los datos de cabecera (serie, número, cliente…) solo aparecen en la primera línea de cada factura.',
-      'Puedes reabrir esta guía en cualquier momento desde el botón "Cómo importar" de la barra superior.',
     ],
   },
   DIAMACON: {
@@ -67,9 +66,19 @@ export const SOFTWARE_INFO: Record<ExportFormat, SoftwareInfo> = {
     brandRing: 'ring-violet-500',
     brandBgSoft: 'bg-violet-50 dark:bg-violet-950/40',
     brandBorder: 'border-violet-200 dark:border-violet-800',
-    tagline: 'Software de gestión de Comeralia',
-    available: false,
-    steps: ['Próximamente disponible.'],
+    tagline: 'Excel compatible con Diamacon (Comeralia)',
+    available: true,
+    steps: [
+      'Descarga el archivo .xlsx desde la sección de exportaciones.',
+      'Abre Diamacon y accede al módulo de Facturación.',
+      'Ve a la opción de Importar facturas y selecciona el archivo .xlsx descargado.',
+      'Revisa el resumen de la importación y verifica que el número de facturas sea correcto.',
+      'Confirma la importación para finalizar.',
+    ],
+    tips: [
+      'La primera vez que importes el Excel en Diamacon, te pedirá enlazar cada columna con sus correspondientes campos.',
+      'Si un cliente tiene varias líneas, los datos de cabecera (serie, número, cliente…) solo aparecen en la primera línea de cada factura.',
+    ],
   },
   CONTAPLUS: {
     name: 'ContaPlus',

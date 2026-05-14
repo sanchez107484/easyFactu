@@ -5,6 +5,7 @@ import { ExportFormat, InvoiceStatus, Prisma } from '@prisma/client';
 import * as iconv from 'iconv-lite';
 import { ExportModePrisma, ExportFormatDto } from './dto/export-invoices.dto';
 import { AgencyExportCegidService } from './agency-export-cegid.service';
+import { AgencyExportDiamaconService } from './agency-export-diamacon.service';
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -107,7 +108,8 @@ export type ExportableInvoice = {
 export class AgencyExportService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly cegidService: AgencyExportCegidService
+    private readonly cegidService: AgencyExportCegidService,
+    private readonly diamaconService: AgencyExportDiamaconService
   ) {}
 
   /**
@@ -466,8 +468,9 @@ export class AgencyExportService {
         return this.generateContaPlusBuffer(invoices, clientTenant, dateFrom, dateTo);
       case ExportFormatDto.CEGID:
         return this.cegidService.generate(invoices);
-      case ExportFormatDto.A3CON:
       case ExportFormatDto.DIAMACON:
+        return this.diamaconService.generate(invoices);
+      case ExportFormatDto.A3CON:
         throw new BadRequestException(`El formato ${format} aún no está disponible. Próximamente.`);
     }
   }

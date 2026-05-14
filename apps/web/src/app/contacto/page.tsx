@@ -94,7 +94,7 @@ const faqs = [
     a: 'Sí. Puedes solicitar una demo guiada en el formulario de contacto. También tienes acceso a una demo interactiva pública en nuestra web sin necesidad de registro.',
   },
   {
-    q: '¿Ofrecéis ayuda para migrar desde Holded, Contasimple u otros?',
+    q: '¿Ofrecéis ayuda para migrar desde Holded, Cegid u otros?',
     a: 'Sí. Ofrecemos migración gratuita y asistida para todos los planes. Nuestro equipo se encarga de importar tus clientes, facturas y datos históricos.',
   },
   {

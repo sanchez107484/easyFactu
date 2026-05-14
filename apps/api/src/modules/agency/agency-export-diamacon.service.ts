@@ -5,8 +5,8 @@ import * as ExcelJS from 'exceljs';
 import type { ExportableInvoice } from './agency-export.service';
 
 /**
- * Generates Excel files in the format required by Cegid .
- * Extracted from AgencyExportService to keep each format's logic self-contained.
+ * Generates Excel files in the Cegid  format for import into Diamacon.
+ * Diamacon accepts the same 41-column layout as Cegid .
  *
  * Format rules:
  *  - 41 exact columns matching the Cegid import template header names
@@ -14,17 +14,17 @@ import type { ExportableInvoice } from './agency-export.service';
  *  - Invoice header columns (Serie, Número, Cliente…) only on the first row of each invoice
  */
 @Injectable()
-export class AgencyExportCegidService {
+export class AgencyExportDiamaconService {
   async generate(invoices: ExportableInvoice[]): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'Cegid ';
+    workbook.creator = 'EasyFactura';
     workbook.created = new Date();
 
     const sheet = workbook.addWorksheet('Sheet1', {
       views: [{ state: 'frozen', ySplit: 1 }],
     });
 
-    // ── 41 columns — exact Cegid  header names ────────────────
+    // ── 41 columns — Cegid  header names (Diamacon-compatible) ─
     sheet.columns = [
       { header: 'Serie', key: 'c01', width: 22 },
       { header: 'Número', key: 'c02', width: 18 },
@@ -87,7 +87,7 @@ export class AgencyExportCegidService {
     for (const inv of invoices) {
       const serie =
         inv.series?.name ?? (inv.isRectificative ? 'Facturas rectificativas' : 'Facturas normales');
-      const periodo = this.buildCegidPeriodo(inv.issueDate);
+      const periodo = this.buildPeriodo(inv.issueDate);
       const fechaFactura = this.formatDateEs(inv.issueDate);
       const fechaVto = inv.dueDate ? this.formatDateEs(inv.dueDate) : '';
       const estado = inv.status === 'PAID' ? 'Pagado' : 'Pendiente';
@@ -125,22 +125,22 @@ export class AgencyExportCegidService {
           /* c14 Fin servicio      */ '',
           /* c15 Descripción       */ line.description,
           /* c16 Desc. detallada   */ '',
-          /* c17 Base unit.        */ this.formatCegidAmount(line.unitPrice),
-          /* c18 Cantidad          */ this.formatCegidQty(line.quantity),
+          /* c17 Base unit.        */ this.formatAmount(line.unitPrice),
+          /* c18 Cantidad          */ this.formatQty(line.quantity),
           /* c19 % descuento       */ inv.discountPercent && Number(inv.discountPercent) > 0
-            ? this.formatCegidPct(inv.discountPercent)
+            ? this.formatPct(inv.discountPercent)
             : '0',
-          /* c20 Total base impon. */ this.formatCegidAmount(
+          /* c20 Total base impon. */ this.formatAmount(
             this.applyDiscount(line.subtotal, inv.discountPercent)
           ),
-          /* c21 % IVA             */ this.formatCegidPct(line.taxRate),
-          /* c22 Cuota IVA         */ this.formatCegidAmount(
+          /* c21 % IVA             */ this.formatPct(line.taxRate),
+          /* c22 Cuota IVA         */ this.formatAmount(
             this.applyDiscount(line.taxAmount, inv.discountPercent)
           ),
           /* c23 % RE              */ '0',
           /* c24 Cuota RE          */ '0',
-          /* c25 % Retención       */ irpfPct > 0 ? this.formatCegidPct(irpfPct) : '0',
-          /* c26 Cuota Retención   */ irpfAmt > 0 ? this.formatCegidAmount(irpfAmt) : '0',
+          /* c25 % Retención       */ irpfPct > 0 ? this.formatPct(irpfPct) : '0',
+          /* c26 Cuota Retención   */ irpfAmt > 0 ? this.formatAmount(irpfAmt) : '0',
           /* c27 Cliente NIF       */ isFirst ? (inv.customer?.nif ?? '') : '',
           /* c28 Cliente Nombre    */ isFirst
             ? (inv.customer?.legalName ?? inv.customer?.name ?? '')
@@ -157,9 +157,7 @@ export class AgencyExportCegidService {
             ? this.formatDateEs(primaryPayment.paymentDate)
             : '',
           /* c38 Cobro Importe     */ isFirst && primaryPayment
-            ? this.formatCegidAmount(
-                inv.payments.length === 1 ? primaryPayment.amount : totalPaidAmt
-              )
+            ? this.formatAmount(inv.payments.length === 1 ? primaryPayment.amount : totalPaidAmt)
             : '',
           /* c39 Cobro Método      */ isFirst && primaryPayment
             ? this.mapPaymentMethod(primaryPayment.paymentMethod)
@@ -186,7 +184,7 @@ export class AgencyExportCegidService {
   // ─── Private helpers ──────────────────────────────────────────────────────
 
   /** Returns quarter-based period string: "2026-2T" for April–June 2026. */
-  private buildCegidPeriodo(date: Date): string {
+  private buildPeriodo(date: Date): string {
     const quarter = Math.ceil((date.getMonth() + 1) / 3);
     return `${date.getFullYear()}-${quarter}T`;
   }
@@ -201,10 +199,10 @@ export class AgencyExportCegidService {
   }
 
   /**
-   * Formats a monetary amount as Cegid expects: Spanish decimal comma + "€" suffix.
+   * Formats a monetary amount: Spanish decimal comma + "€" suffix.
    * Zero values are represented as "0" (no suffix) to match the template.
    */
-  private formatCegidAmount(value: Decimal | number | null | undefined): string {
+  private formatAmount(value: Decimal | number | null | undefined): string {
     if (value === null || value === undefined) return '0';
     const n = Number(value);
     if (n === 0) return '0';
@@ -213,14 +211,14 @@ export class AgencyExportCegidService {
   }
 
   /** Formats a percentage value using Spanish decimal comma (e.g. "5,2" not "5.2"). */
-  private formatCegidPct(value: Decimal | number): string {
+  private formatPct(value: Decimal | number): string {
     const n = Number(value);
     if (n === 0) return '0';
     return n.toString().replace('.', ',');
   }
 
   /** Formats a quantity: integer if whole number, 2 decimal places otherwise. */
-  private formatCegidQty(value: Decimal | number): string {
+  private formatQty(value: Decimal | number): string {
     const n = Number(value);
     return Number.isInteger(n) ? String(n) : n.toFixed(2).replace('.', ',');
   }
@@ -239,7 +237,7 @@ export class AgencyExportCegidService {
   }
 
   /**
-   * Determines the Cegid "Tipo operación" from the customer's type and country:
+   * Determines the "Tipo operación" from the customer's type and country:
    *   INTRACOMMUNITY customer type → 'Intracomunitario'
    *   Non-EU country              → 'Exportación'
    *   Spain or rest of EU         → 'Nacional' / 'Intracomunitario'
@@ -249,11 +247,11 @@ export class AgencyExportCegidService {
     if (customer.type === 'INTRACOMMUNITY') return 'Intracomunitario';
     const country = (customer.country ?? 'ES').toUpperCase();
     if (country === 'ES') return 'Nacional';
-    if (AgencyExportCegidService.EU_COUNTRIES.has(country)) return 'Intracomunitario';
+    if (AgencyExportDiamaconService.EU_COUNTRIES.has(country)) return 'Intracomunitario';
     return 'Exportación';
   }
 
-  /** Maps an internal PaymentMethod enum value to the Cegid display label. */
+  /** Maps an internal PaymentMethod enum value to a display label. */
   private mapPaymentMethod(method: string | null | undefined): string {
     switch (method) {
       case 'BANK_TRANSFER':
