@@ -102,6 +102,7 @@ export function useCreateDirectClient() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clients() });
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.stats() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.allInvitations() });
       toast.success('Cliente añadido correctamente');
     },
     onError: (error) => {
@@ -345,6 +346,7 @@ export function useResendActivation() {
     onSuccess: (_result, { clientTenantId }) => {
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.client(clientTenantId) });
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clients() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.allInvitations() });
       toast.success('Enlace de activación enviado correctamente');
     },
     onError: (error) => {

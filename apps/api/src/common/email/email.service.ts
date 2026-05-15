@@ -263,7 +263,7 @@ export class EmailService {
       <hr style="border:none;border-top:1px solid #f3f4f6;margin:24px 0;" />
       <p style="color:#9ca3af;font-size:12px;margin:0;">
         O copia este enlace en tu navegador:<br />
-        <span style="color:#4f46e5;word-break:break-all;">${opts.activationUrl}</span>
+        <span style="color:#3B82F6;word-break:break-all;">${opts.activationUrl}</span>
       </p>`;
 
     return this.buildBaseLayout(content);
@@ -285,7 +285,7 @@ export class EmailService {
           <!-- Logo header -->
           <tr>
             <td align="center" style="padding-bottom:24px;">
-              <span style="font-size:22px;font-weight:700;color:#4f46e5;letter-spacing:-0.5px;">${this.appName}</span>
+              <span style="font-size:22px;font-weight:700;color:#3B82F6;letter-spacing:0.5px;text-transform:uppercase;">${this.appName}</span>
             </td>
           </tr>
           <!-- Card -->
@@ -314,7 +314,7 @@ export class EmailService {
   private buildButton(text: string, url: string): string {
     return `<table cellpadding="0" cellspacing="0" style="margin:28px 0;">
       <tr>
-        <td style="background:#4f46e5;border-radius:8px;padding:12px 28px;">
+        <td style="background:#3B82F6;border-radius:8px;padding:12px 28px;">
           <a href="${url}" style="color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">${text}</a>
         </td>
       </tr>
@@ -351,7 +351,7 @@ export class EmailService {
       <hr style="border:none;border-top:1px solid #f3f4f6;margin:24px 0;" />
       <p style="color:#9ca3af;font-size:12px;margin:0;">
         O copia este enlace en tu navegador:<br />
-        <span style="color:#4f46e5;word-break:break-all;">${opts.invitationUrl}</span>
+        <span style="color:#3B82F6;word-break:break-all;">${opts.invitationUrl}</span>
       </p>`;
 
     return this.buildBaseLayout(content);

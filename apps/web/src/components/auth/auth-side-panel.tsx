@@ -16,7 +16,7 @@ const benefits = [
   },
   {
     icon: Clock,
-    title: '6 meses gratis',
+    title: 'Gratis hasta 2027',
     description: 'Sin tarjeta de crédito requerida',
   },
   {

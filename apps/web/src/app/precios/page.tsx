@@ -44,16 +44,16 @@ const schemaData = {
     {
       '@type': 'Product',
       name: `${brandConfig.app.name} — Plan Starter`,
-      description: `Software de facturación para autónomos y pymes. ${PRICING.freePeriodMonths} meses gratis, luego ${PRICING.starter.monthly}€/mes o ${PRICING.starter.annualMonthly}€/mes con pago anual. Sin tarjeta al registrarte. Compatible con VeriFactu cuando sea obligatorio.`,
+      description: `Software de facturación para autónomos y pymes. Gratis hasta 2027, luego ${PRICING.starter.monthly}€/mes o ${PRICING.starter.annualMonthly}€/mes con pago anual. Sin tarjeta al registrarte. Compatible con VeriFactu cuando sea obligatorio.`,
       brand: { '@type': 'Brand', name: brandConfig.app.name },
       offers: [
         {
           '@type': 'Offer',
-          name: `Plan Starter — Gratuito ${PRICING.freePeriodMonths} meses`,
+          name: `Plan Starter — Gratis hasta 2027`,
           price: '0',
           priceCurrency: 'EUR',
           priceValidUntil,
-          description: `${PRICING.freePeriodMonths} meses completamente gratis para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscripciones.`,
+          description: `Gratis hasta 2027 para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscripciones.`,
           availability: 'https://schema.org/LimitedAvailability',
           url: `${brandConfig.app.url}/precios`,
         },
@@ -79,16 +79,16 @@ const schemaData = {
     {
       '@type': 'Product',
       name: `${brandConfig.app.name} — Plan PRO`,
-      description: `Software de facturación VeriFactu para autónomos y pymes. ${PRICING.freePeriodMonths} meses gratis, luego ${PRICING.pro.monthly}€/mes o ${PRICING.pro.annualMonthly}€/mes con pago anual. VeriFactu automático, envío AEAT y cumplimiento Ley Antifraude 11/2021.`,
+      description: `Software de facturación VeriFactu para autónomos y pymes. Gratis hasta 2027, luego ${PRICING.pro.monthly}€/mes o ${PRICING.pro.annualMonthly}€/mes con pago anual. VeriFactu automático, envío AEAT y cumplimiento Ley Antifraude 11/2021.`,
       brand: { '@type': 'Brand', name: brandConfig.app.name },
       offers: [
         {
           '@type': 'Offer',
-          name: `Plan PRO — Gratuito ${PRICING.freePeriodMonths} meses`,
+          name: `Plan PRO — Gratis hasta 2027`,
           price: '0',
           priceCurrency: 'EUR',
           priceValidUntil,
-          description: `${PRICING.freePeriodMonths} meses completamente gratis para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscripciones.`,
+          description: `Gratis hasta 2027 para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscripciones.`,
           availability: 'https://schema.org/LimitedAvailability',
           url: `${brandConfig.app.url}/precios`,
         },
@@ -122,7 +122,7 @@ const schemaData = {
       mainEntity: [
         {
           '@type': 'Question',
-          name: `¿Cuánto cuesta ${brandConfig.app.name} después de los ${PRICING.freePeriodMonths} meses gratuitos?`,
+          name: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
           acceptedAnswer: {
             '@type': 'Answer',
             text: `Tienes dos planes: Plan Starter a ${PRICING.starter.monthly}€/mes (${PRICING.starter.annualMonthly}€/mes anual) para facturar sin VeriFactu, y Plan PRO a ${PRICING.pro.monthly}€/mes (${PRICING.pro.annualMonthly}€/mes anual) con VeriFactu automático y envío AEAT incluido. Sin permanencia en ningún caso.`,
@@ -138,10 +138,10 @@ const schemaData = {
         },
         {
           '@type': 'Question',
-          name: `¿Qué incluyen exactamente los ${PRICING.freePeriodMonths} meses gratuitos?`,
+          name: `¿Qué incluye el acceso gratuito hasta 2027?`,
           acceptedAnswer: {
             '@type': 'Answer',
-            text: `Acceso completo al plan que elijas — incluyendo todas las funcionalidades del Plan PRO si decides empezar con él. Sin restricciones ni versión reducida durante los ${PRICING.freePeriodMonths} meses.`,
+            text: `Acceso completo al plan que elijas — incluyendo todas las funcionalidades del Plan PRO si decides empezar con él. Sin restricciones ni versión reducida.`,
           },
         },
         {
@@ -157,7 +157,7 @@ const schemaData = {
           name: '¿Necesito tarjeta de crédito para registrarme?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: `No. Solo necesitas tu dirección de email. No pedimos ningún dato de pago durante los ${PRICING.freePeriodMonths} meses gratuitos. Añades tu método de pago cuando decidas continuar.`,
+            text: `No. Solo necesitas tu dirección de email. No pedimos ningún dato de pago hasta 2027. Añades tu método de pago cuando decidas continuar.`,
           },
         },
         {
@@ -255,7 +255,7 @@ const comparisonRows = [
   { label: 'VeriFactu automático', starter: false, pro: true, excel: false, otros: false },
   { label: 'Hash encadenado + QR', starter: false, pro: true, excel: false, otros: '€€ extra' },
   { label: 'Envío AEAT integrado', starter: false, pro: true, excel: false, otros: '€€ extra' },
-  { label: '6 meses gratuitos', starter: true, pro: true, excel: false, otros: false },
+  { label: 'Gratis hasta 2027', starter: true, pro: true, excel: false, otros: false },
   { label: 'Sin tarjeta al registrarte', starter: true, pro: true, excel: true, otros: false },
   { label: 'Soporte en español', starter: true, pro: true, excel: false, otros: '€€ extra' },
   { label: 'Sin permanencia', starter: true, pro: true, excel: true, otros: false },
@@ -267,7 +267,7 @@ const testimonials = [
     name: 'Laura García',
     role: 'Diseñadora freelance',
     location: 'Madrid',
-    text: 'Conseguí una de las plazas gratuitas y llevo 4 meses sin preocuparme por Hacienda. Cuando acaben los 6 meses pagaré los 24,90€ del plan anual encantada, porque el ahorro en tiempo y nervios es brutal.',
+    text: 'Conseguí una de las plazas gratuitas y llevo 4 meses sin preocuparme por Hacienda. Cuando pase 2027 pagaré los 24,90€ del plan anual encantada, porque el ahorro en tiempo y nervios es brutal.',
     stars: 5,
     initials: 'LG',
     saving: 'Ahorra ~3h/semana',
@@ -285,7 +285,7 @@ const testimonials = [
     name: 'Patricia Gurrea',
     role: 'Consultora de negocio',
     location: 'Pamplona',
-    text: 'El precio de 24,90€ al mes (anual) me parece muy justo para todo lo que incluye. Y que los primeros 6 meses sean gratis me convenció para probarlo sin ningún riesgo.',
+    text: 'El precio de 24,90€ al mes (anual) me parece muy justo para todo lo que incluye. Y que sea gratis hasta 2027 me convenció para probarlo sin ningún riesgo.',
     stars: 5,
     initials: 'PG',
     saving: 'ROI positivo en 1 mes',
@@ -295,7 +295,7 @@ const testimonials = [
 // ─── FAQs ─────────────────────────────────────────────────────────────────────
 const faqs = [
   {
-    q: `¿Cuánto cuesta ${brandConfig.app.name} después de los ${PRICING.freePeriodMonths} meses gratuitos?`,
+    q: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
     a: `Tienes dos planes: Plan Starter a ${PRICING.starter.monthly}€/mes (${PRICING.starter.annualMonthly}€/mes anual) para facturar sin VeriFactu, y Plan PRO a ${PRICING.pro.monthly}€/mes (${PRICING.pro.annualMonthly}€/mes anual) con VeriFactu automático y envío AEAT incluido. Sin permanencia en ningún caso.`,
   },
   {
@@ -303,8 +303,8 @@ const faqs = [
     a: `El Plan Starter incluye todo lo necesario para facturar: facturas ilimitadas, clientes, PDF profesional, presupuestos y facturas recurrentes. El Plan PRO añade VeriFactu 100% automático — hash encadenado, código QR y envío directo a la AEAT en cada factura — para cumplir con la Ley Antifraude 11/2021 cuando sea obligatorio.`,
   },
   {
-    q: `¿Qué incluyen exactamente los ${PRICING.freePeriodMonths} meses gratuitos?`,
-    a: `Acceso completo al plan que elijas — incluyendo todas las funcionalidades del Plan PRO si decides empezar con él. Sin restricciones ni versión reducida durante los ${PRICING.freePeriodMonths} meses.`,
+    q: `¿Qué incluye el acceso gratuito hasta 2027?`,
+    a: `Acceso completo al plan que elijas — incluyendo todas las funcionalidades del Plan PRO si decides empezar con él. Sin restricciones ni versión reducida.`,
   },
   {
     q: '¿Puedo cambiar de Starter a PRO más adelante?',
@@ -312,7 +312,7 @@ const faqs = [
   },
   {
     q: '¿Necesito tarjeta de crédito para registrarme?',
-    a: `No. Solo necesitas tu dirección de email. No pedimos ningún dato de pago durante los ${PRICING.freePeriodMonths} meses gratuitos. Añades tu método de pago cuando decidas continuar.`,
+    a: `No. Solo necesitas tu dirección de email. No pedimos ningún dato de pago hasta 2027. Añades tu método de pago cuando decidas continuar.`,
   },
   {
     q: '¿Cuánto ahorro eligiendo el plan anual?',
@@ -503,7 +503,7 @@ export default function Precios() {
                   Precio de NovaFactura
                 </span>
                 <span className="relative inline-block text-blue-600">
-                  0€ durante 6 meses.
+                  0€ hasta 2027.
                   <svg
                     className="absolute -bottom-1 left-0 w-full"
                     viewBox="0 0 400 10"
@@ -534,7 +534,7 @@ export default function Precios() {
                   className="group flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-blue-600 px-10 text-base font-bold text-white shadow-xl shadow-blue-200 transition-all duration-200 hover:bg-blue-700 hover:shadow-2xl hover:shadow-blue-300 hover:-translate-y-0.5 sm:w-auto"
                 >
                   <Sparkles className="h-5 w-5 transition-transform group-hover:rotate-12" />
-                  Empezar gratis — 6 meses
+                  Empezar gratis — Hasta 2027
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Link>
                 <Link
@@ -630,7 +630,7 @@ export default function Precios() {
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                     <p className="mb-6 text-center text-xs text-slate-400">
-                      {PRICING.freePeriodMonths} meses gratis · Sin tarjeta al registrarte
+                      Gratis hasta 2027 · Sin tarjeta al registrarte
                     </p>
 
                     {/* Features */}
@@ -762,7 +762,7 @@ export default function Precios() {
                       <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </Link>
                     <p className="mb-6 text-center text-xs text-slate-400">
-                      {PRICING.freePeriodMonths} meses gratis · Sin tarjeta al registrarte
+                      Gratis hasta 2027 · Sin tarjeta al registrarte
                     </p>
 
                     {/* Features */}
@@ -784,8 +784,7 @@ export default function Precios() {
               </div>
 
               <p className="mt-6 text-center text-xs text-slate-400">
-                Ambos planes incluyen los {PRICING.freePeriodMonths} meses gratuitos iniciales. ·
-                Sin tarjeta al registrarte.
+                Ambos planes incluyen el acceso gratuito hasta 2027. · Sin tarjeta al registrarte.
               </p>
             </div>
           </section>
@@ -797,8 +796,10 @@ export default function Precios() {
             <div className="mx-auto max-w-4xl px-4">
               <div className="grid gap-8 sm:grid-cols-3 text-center">
                 <div>
-                  <div className="text-5xl font-black text-blue-600 tabular-nums">{months}</div>
-                  <p className="mt-1.5 font-semibold text-slate-700">meses completamente gratis</p>
+                  <div className="text-5xl font-black text-blue-600 tabular-nums">2027</div>
+                  <p className="mt-1.5 font-semibold text-slate-700">
+                    Hasta 2027 completamente gratis
+                  </p>
                   <p className="text-sm text-slate-400">Para las primeras 5.000 inscripciones</p>
                 </div>
                 <div>
@@ -1252,10 +1253,10 @@ export default function Precios() {
               <h2 className="mb-4 text-4xl font-extrabold text-slate-900 sm:text-5xl leading-tight">
                 Empieza gratis hoy.
                 <br />
-                <span className="text-blue-600">Decide si quieres seguir en 6 meses.</span>
+                <span className="text-blue-600">Gratis hasta 2027, sin compromiso.</span>
               </h2>
               <p className="mx-auto mb-8 max-w-xl text-lg text-slate-500">
-                0€ durante los primeros 6 meses. Luego, plan{' '}
+                0€ hasta 2027. Luego, plan{' '}
                 <strong className="text-slate-800">
                   Starter desde{' '}
                   {annual
@@ -1293,7 +1294,8 @@ export default function Precios() {
 
               <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-400">
                 <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-blue-500" />6 meses completamente gratis
+                  <CheckCircle2 className="h-4 w-4 text-blue-500" />
+                  Gratis hasta 2027
                 </span>
                 <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="h-4 w-4 text-blue-500" />

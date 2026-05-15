@@ -285,7 +285,7 @@ export default function ContactoPage() {
                     <Sparkles className="h-5 w-5 text-blue-200" />
                     <span className="text-sm font-bold text-blue-100">Oferta limitada</span>
                   </div>
-                  <h3 className="mb-2 text-xl font-extrabold">6 meses completamente gratis</h3>
+                  <h3 className="mb-2 text-xl font-extrabold">Gratis hasta 2027</h3>
                   <p className="mb-4 text-sm text-blue-100">
                     Sin tarjeta al registrarte. Añádela cuando quieras continuar.
                   </p>
@@ -418,7 +418,7 @@ export default function ContactoPage() {
               ¿Prefieres probarlo directamente?
             </h2>
             <p className="mx-auto mb-8 max-w-lg text-lg text-slate-500">
-              Regístrate gratis y explora NovaFactura sin compromiso. 6 meses sin coste para los
+              Regístrate gratis y explora NovaFactura sin compromiso. Gratis hasta 2027 para los
               primeros 5.000.
             </p>
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">

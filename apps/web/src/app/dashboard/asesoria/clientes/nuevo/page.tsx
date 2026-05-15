@@ -15,12 +15,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { AnadirClienteModal } from '@/app/dashboard/asesoria/_components/anadir-cliente-modal';
+import { VincularClienteModal } from '@/app/dashboard/asesoria/_components/vincular-cliente-modal';
 import {
   AlertCircle,
   ArrowLeft,
+  ArrowRight,
   Briefcase,
   Building2,
   CheckCircle2,
+  LayoutDashboard,
+  List,
   Loader2,
   Mail,
   Network,
@@ -180,24 +185,97 @@ function NifConflictBanner({
 
 // ==================== SUCCESS BANNER ====================
 
-function SuccessBanner({ email, businessName }: { email: string; businessName: string }) {
+interface SuccessBannerProps {
+  email: string;
+  businessName: string;
+  clientTenantId: string;
+  onAnadirCliente: () => void;
+}
+
+function SuccessBanner({
+  email,
+  businessName,
+  clientTenantId,
+  onAnadirCliente,
+}: SuccessBannerProps) {
+  const router = useRouter();
+
   return (
-    <div className="rounded-xl border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30 p-5">
-      <div className="flex items-start gap-3">
-        <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
-        <div className="min-w-0">
-          <p className="text-base font-semibold text-green-900 dark:text-green-200">
-            Cliente añadido correctamente
-          </p>
-          <p className="mt-1.5 text-sm text-green-700 dark:text-green-300 leading-relaxed">
-            Se ha enviado un email de activación a{' '}
-            <span className="font-mono font-medium">{email}</span>. Cuando{' '}
-            <span className="font-medium">{businessName}</span> haga clic en el enlace, podrá crear
-            su contraseña y completar su perfil desde el onboarding.
-          </p>
-          <p className="mt-2 text-xs text-green-600 dark:text-green-400">
-            Ya puedes gestionar su cuenta desde el panel.
-          </p>
+    <div className="space-y-5">
+      <div className="rounded-xl border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30 p-5">
+        <div className="flex items-start gap-3">
+          <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
+          <div className="min-w-0">
+            <p className="text-base font-semibold text-green-900 dark:text-green-200">
+              Cliente añadido correctamente
+            </p>
+            <p className="mt-1.5 text-sm text-green-700 dark:text-green-300 leading-relaxed">
+              Se ha enviado un email de activación a{' '}
+              <span className="font-mono font-medium">{email}</span>. Cuando{' '}
+              <span className="font-medium">{businessName}</span> haga clic en el enlace, podrá
+              crear su contraseña y completar su perfil desde el onboarding.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Next steps */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          ¿Qué quieres hacer ahora?
+        </p>
+        <div className="grid gap-2">
+          <button
+            type="button"
+            onClick={() => router.push(`/dashboard/asesoria/clientes/${clientTenantId}`)}
+            className="flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition-colors hover:border-agency-400 hover:bg-agency-50 dark:hover:bg-agency-950/30"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-agency-100 text-agency-600 dark:bg-agency-950 dark:text-agency-400">
+              <LayoutDashboard className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">Gestionar nuevo cliente</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Accede al panel de <span className="font-medium">{businessName}</span> para
+                completar sus datos y emitir facturas.
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => router.push('/dashboard/asesoria/clientes')}
+            className="flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-muted/40"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <List className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">Ver mis clientes</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Vuelve al listado general de tu cartera de clientes.
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+          </button>
+
+          <button
+            type="button"
+            onClick={onAnadirCliente}
+            className="flex items-center gap-3 rounded-xl border bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-muted/40"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              <UserPlus className="h-4 w-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">Añadir otro cliente</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Registra un nuevo cliente o vincula uno que ya tenga cuenta.
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+          </button>
         </div>
       </div>
     </div>
@@ -218,7 +296,11 @@ export default function NuevoClienteAsesoriaPage() {
   const [successInfo, setSuccessInfo] = useState<{
     email: string;
     businessName: string;
+    clientTenantId: string;
   } | null>(null);
+
+  const [isAnadirModalOpen, setIsAnadirModalOpen] = useState(false);
+  const [isVincularModalOpen, setIsVincularModalOpen] = useState(false);
 
   const {
     register,
@@ -255,14 +337,18 @@ export default function NuevoClienteAsesoriaPage() {
       if (hasConflict) return;
 
       try {
-        await createMutation.mutateAsync({
+        const result = await createMutation.mutateAsync({
           accountType: data.accountType,
           businessName: data.businessName.trim(),
           nif: data.nif.trim().toUpperCase(),
           email: data.email.trim(),
           notes: data.notes?.trim() || undefined,
         });
-        setSuccessInfo({ email: data.email.trim(), businessName: data.businessName.trim() });
+        setSuccessInfo({
+          email: data.email.trim(),
+          businessName: data.businessName.trim(),
+          clientTenantId: result.clientTenantId,
+        });
       } catch (err) {
         const code = getApiErrorCode(err);
         if (code === 'EMAIL_EXISTS') {
@@ -432,7 +518,12 @@ export default function NuevoClienteAsesoriaPage() {
           {successInfo ? (
             <div className="flex flex-1 items-center justify-center p-8">
               <div className="w-full max-w-lg">
-                <SuccessBanner email={successInfo.email} businessName={successInfo.businessName} />
+                <SuccessBanner
+                  email={successInfo.email}
+                  businessName={successInfo.businessName}
+                  clientTenantId={successInfo.clientTenantId}
+                  onAnadirCliente={() => setIsAnadirModalOpen(true)}
+                />
               </div>
             </div>
           ) : (
@@ -608,6 +699,19 @@ export default function NuevoClienteAsesoriaPage() {
           )}
         </div>
       </div>
+
+      <AnadirClienteModal
+        isOpen={isAnadirModalOpen}
+        onClose={() => setIsAnadirModalOpen(false)}
+        onVincularClick={() => {
+          setIsAnadirModalOpen(false);
+          setIsVincularModalOpen(true);
+        }}
+      />
+      <VincularClienteModal
+        isOpen={isVincularModalOpen}
+        onClose={() => setIsVincularModalOpen(false)}
+      />
     </div>
   );
 }

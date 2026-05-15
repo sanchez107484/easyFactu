@@ -32,7 +32,7 @@ export function HomeStickyCtaBanner() {
         <span className="font-bold text-amber-600">
           {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas restantes
         </span>
-        {' · '}6 meses gratis · Sin tarjeta al registrarte
+        {' · '}Gratis hasta 2027 · Sin tarjeta al registrarte
       </p>
     </div>
   );

@@ -911,11 +911,10 @@ export default function VerifactuPage() {
 
             <div className="mt-10 rounded-3xl bg-blue-600 p-8 text-center text-white shadow-xl dark:bg-blue-700">
               <h3 className="mb-2 text-2xl font-bold">
-                {PRICING.freePeriodMonths} meses gratis. Sin tarjeta.
+                Gratis hasta 2027. Sin tarjeta.
               </h3>
               <p className="mb-6 text-blue-100">
-                Empieza a facturar con VeriFactu hoy. Completamente gratuito durante{' '}
-                {PRICING.freePeriodMonths} meses.
+                Empieza a facturar con VeriFactu hoy. Completamente gratuito hasta 2027.
               </p>
               <Link
                 href="/registro"
@@ -964,7 +963,7 @@ export default function VerifactuPage() {
                 {
                   href: '/precios',
                   title: 'Planes y precios',
-                  desc: `Desde ${PRICING.starter.monthly}€/mes. ${PRICING.freePeriodMonths} meses gratis para empezar.`,
+                  desc: `Desde ${PRICING.starter.monthly}€/mes. Gratis hasta 2027 para empezar.`,
                 },
                 {
                   href: '/asesoria',

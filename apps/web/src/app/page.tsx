@@ -55,7 +55,7 @@ const testimonials = [
     name: 'Patricia Gurrea',
     role: 'Consultora de negocio',
     location: 'Pamplona',
-    text: `Funciona todo muy bien, igual de bien que otras más caras que he usado. Y lo mejor es que es gratis durante 6 meses, una oportunidad que no podía dejar pasar.`,
+    text: `Funciona todo muy bien, igual de bien que otras más caras que he usado. Y lo mejor es que es gratis hasta 2027, una oportunidad que no podía dejar pasar.`,
     stars: 5,
     initials: 'PG',
   },
@@ -127,7 +127,7 @@ const comparisonRows = [
   { feature: 'Hash encadenado automático', them: false, us: true },
   { feature: 'Envío a AEAT integrado', them: false, us: true },
   { feature: 'Código QR normativo', them: false, us: true },
-  { feature: '6 meses sin coste (plazas limitadas)', them: false, us: true },
+  { feature: 'Gratis hasta 2027 (plazas limitadas)', them: false, us: true },
   { feature: 'Sin instalación requerida', them: false, us: true },
   { feature: 'Migración desde otros programas', them: false, us: true },
   { feature: 'Soporte técnico incluido', them: 'Coste adicional', us: true },
@@ -136,14 +136,14 @@ const comparisonRows = [
 const faqs = [
   {
     q: '¿Cuántas plazas gratuitas quedan disponibles?',
-    a: `Ofrecemos 6 meses de acceso gratuito a las primeras ${PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones. Actualmente quedan ${PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas disponibles. Una vez alcanzado el límite, el período gratuito dejará de estar disponible para nuevos usuarios.`,
+    a: `Ofrecemos acceso gratuito hasta 2027 a las primeras ${PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones. Actualmente quedan ${PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas disponibles. Una vez alcanzado el límite, el período gratuito dejará de estar disponible para nuevos usuarios.`,
   },
   {
     q: '¿Cuándo es obligatorio VeriFactu para autónomos?',
-    a: 'Desde el 1 de julio de 2025 para nuevos autónomos y desde el 1 de julio de 2026 para los existentes.',
+    a: 'Desde el 1 de julio de 2025 para nuevos contribuyentes. Para los autónomos persona física ya dados de alta, el plazo es el 1 de julio de 2027. Para sociedades (SL, SA), el 1 de enero de 2027 (Real Decreto 254/2025).',
   },
   {
-    q: '¿Cuánto cuesta después de los 6 meses gratuitos?',
+    q: '¿Cuánto cuesta después de 2027?',
     a: `Plan Starter (sin VeriFactu): ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.starter.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Plan PRO con VeriFactu automático: ${PRICING.pro.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.pro.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Sin permanencia.`,
   },
   {
@@ -185,7 +185,7 @@ const homepageFaqJsonLd = {
       name: '¿Cuántas plazas gratuitas quedan disponibles?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `Ofrecemos 6 meses de acceso gratuito a las primeras ${PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones. Actualmente quedan ${PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas disponibles. Una vez alcanzado el límite, el período gratuito dejará de estar disponible para nuevos usuarios.`,
+        text: `Ofrecemos acceso gratuito hasta 2027 a las primeras ${PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones. Actualmente quedan ${PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas disponibles. Una vez alcanzado el límite, el período gratuito dejará de estar disponible para nuevos usuarios.`,
       },
     },
     {
@@ -198,7 +198,7 @@ const homepageFaqJsonLd = {
     },
     {
       '@type': 'Question',
-      name: `¿Cuánto cuesta ${brandConfig.app.name} después de los 6 meses gratuitos?`,
+      name: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
       acceptedAnswer: {
         '@type': 'Answer',
         text: `Plan Starter (sin VeriFactu): ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.starter.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Plan PRO con VeriFactu automático: ${PRICING.pro.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.pro.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Sin permanencia en ningún caso.`,
@@ -303,7 +303,7 @@ const homepageSoftwareJsonLd = {
 // ─────────────────────────────────────────────────────────────────────────────
 export const metadata: Metadata = {
   title: `Software de facturación VeriFactu para autónomos y pymes | ${brandConfig.app.name}`,
-  description: `${brandConfig.app.name} es el software de facturación con VeriFactu integrado para autónomos y pymes. Cumplimiento automático con la Ley Antifraude 11/2021. ${PRICING.freePeriodMonths} meses gratis. Sin tarjeta.`,
+  description: `${brandConfig.app.name} es el software de facturación con VeriFactu integrado para autónomos y pymes. Cumplimiento automático con la Ley Antifraude 11/2021. Gratis hasta 2027. Sin tarjeta.`,
   alternates: {
     canonical: brandConfig.app.url,
   },
@@ -312,7 +312,7 @@ export const metadata: Metadata = {
     locale: 'es_ES',
     url: brandConfig.app.url,
     title: `Software de facturación VeriFactu para autónomos | ${brandConfig.app.name}`,
-    description: `Cumple con la Ley Antifraude 11/2021 de forma automática. Hash encadenado, código QR y envío a la AEAT incluidos. ${PRICING.freePeriodMonths} meses gratis. Sin tarjeta.`,
+    description: `Cumple con la Ley Antifraude 11/2021 de forma automática. Hash encadenado, código QR y envío a la AEAT incluidos. Gratis hasta 2027. Sin tarjeta.`,
     siteName: brandConfig.app.name,
     images: [
       {
@@ -326,7 +326,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: `Software de facturación VeriFactu para autónomos | ${brandConfig.app.name}`,
-    description: `Cumplimiento automático con Hacienda. ${PRICING.freePeriodMonths} meses gratis. Sin tarjeta.`,
+    description: `Cumplimiento automático con Hacienda. Gratis hasta 2027. Sin tarjeta.`,
     images: [`${brandConfig.app.url}/og-image.jpg`],
   },
 };
@@ -417,9 +417,7 @@ export default function HomePage() {
               <div className="mx-auto mb-8 max-w-md rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 px-6 py-5">
                 <div className="mb-4 flex items-center justify-center gap-2">
                   <Sparkles className="h-5 w-5 text-blue-600" />
-                  <span className="text-base font-bold text-slate-900">
-                    6 meses completamente gratuitos
-                  </span>
+                  <span className="text-base font-bold text-slate-900">Gratis hasta 2027</span>
                 </div>
                 <div className="mb-1.5 flex items-center justify-between text-xs font-medium text-slate-600">
                   <span className="flex items-center gap-1.5">
@@ -724,7 +722,7 @@ export default function HomePage() {
                 </div>
 
                 <h2 className="mb-2 text-3xl font-extrabold text-slate-900 sm:text-4xl">
-                  6 meses de acceso gratuito
+                  Gratis hasta 2027
                 </h2>
                 <p className="mb-2 text-lg font-bold text-blue-600">Sin tarjeta al registrarte</p>
                 <p className="mb-6 text-slate-500">
@@ -760,7 +758,7 @@ export default function HomePage() {
                 {/* Value props */}
                 <div className="mb-8 grid gap-4 sm:grid-cols-3">
                   {[
-                    { icon: Clock, value: '6 meses', label: 'Acceso completo' },
+                    { icon: Clock, value: 'Hasta 2027', label: 'Acceso completo' },
                     { icon: CreditCard, value: '0€', label: 'Sin tarjeta al registrarte' },
                     { icon: TrendingUp, value: 'desde 9,90€', label: 'Starter o PRO · por mes' },
                   ].map(({ icon: Icon, value, label }) => (
@@ -999,7 +997,8 @@ export default function HomePage() {
             <p className="mb-8 text-lg text-slate-500">
               Únete a más de {PLAZAS_CONFIG.ocupadas.toLocaleString('es-ES')} profesionales que ya
               cumplen con VeriFactu.
-              <br />6 meses sin coste. Sin tarjeta al registrarte. Sin compromiso.
+              <br />
+              Gratis hasta 2027. Sin tarjeta al registrarte. Sin compromiso.
             </p>
 
             <Link
@@ -1012,7 +1011,8 @@ export default function HomePage() {
 
             <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-500">
               <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4 text-blue-600" />6 meses gratis
+                <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                Gratis hasta 2027
               </span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-blue-600" />

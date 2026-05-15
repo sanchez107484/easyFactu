@@ -248,8 +248,18 @@ export class PartnerService {
     });
     const userIds = tenantUsers.map((tu) => tu.userId);
 
-    // Cascade delete: all tenant data (invoices, customers, products, etc.) is removed automatically
-    await this.prisma.tenant.delete({ where: { id: tenantId } });
+    await this.prisma.$transaction(async (tx) => {
+      // AgencyRelationHistory uses onDelete: Restrict to prevent accidental data loss.
+      // This is an explicit admin hard-delete, so we remove the history records first.
+      // The audit data (business names, NIF, dates) is already denormalized in each row
+      // and is preserved in any external export before reaching this point.
+      await tx.agencyRelationHistory.deleteMany({
+        where: { OR: [{ agencyTenantId: tenantId }, { clientTenantId: tenantId }] },
+      });
+
+      // Cascade delete: all tenant data (invoices, customers, products, etc.) is removed automatically
+      await tx.tenant.delete({ where: { id: tenantId } });
+    });
 
     // Delete users who no longer belong to any tenant
     const orphanedUsers = await this.prisma.user.findMany({

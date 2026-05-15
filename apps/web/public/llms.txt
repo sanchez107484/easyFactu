@@ -10,7 +10,7 @@ NovaFactura es el software de facturación nativo VeriFactu para autónomos, pym
 - **Tipo**: SaaS de facturación electrónica VeriFactu
 - **Mercado**: España (autónomos, pymes, asesorías, gestorías)
 - **Normativa**: Ley Antifraude 11/2021, Reglamento VeriFactu, AEAT
-- **Precio autónomos/pymes**: Gratis 6 meses, después desde 9,90€/mes
+- **Precio autónomos/pymes**: Gratis hasta 2027, después desde 9,90€/mes
 - **Precio asesorías**: Gratis para siempre
 
 ## Para autónomos y pymes

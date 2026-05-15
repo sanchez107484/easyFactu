@@ -1066,10 +1066,8 @@ export class AgencyService {
   // ─── All invitations (for agency dashboard) ──────────────────────────────
 
   async findAllInvitations(agencyTenantId: string) {
-    // Fetch all rows ordered by most recent first, then deduplicate by email
-    // keeping only the latest invitation per address. This way the history modal
-    // shows the current state of each contact, not every individual attempt.
-    const all = await this.prisma.agencyInvitation.findMany({
+    // ── 1. Fetch agency invitations, deduplicate by email (keep latest) ──────
+    const allInvitations = await this.prisma.agencyInvitation.findMany({
       where: { agencyTenantId },
       orderBy: { createdAt: 'desc' },
       select: {
@@ -1085,11 +1083,74 @@ export class AgencyService {
     });
 
     const seen = new Set<string>();
-    return all.filter((inv) => {
-      if (seen.has(inv.inviteeEmail)) return false;
-      seen.add(inv.inviteeEmail);
-      return true;
+    const dedupedInvitations = allInvitations
+      .filter((inv) => {
+        if (seen.has(inv.inviteeEmail)) return false;
+        seen.add(inv.inviteeEmail);
+        return true;
+      })
+      .map((inv) => ({
+        ...inv,
+        entryType: 'INVITATION' as const,
+        clientTenantId: undefined as string | undefined,
+      }));
+
+    // ── 2. Fetch direct clients who haven't activated their account yet ──────
+    const pendingActivations = await this.prisma.agencyClientRelation.findMany({
+      where: {
+        agencyTenantId,
+        clientTenant: {
+          tenantUsers: {
+            some: {
+              isOwner: true,
+              user: { emailVerified: false, accountActivationExpires: { not: null } },
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        clientTenantId: true,
+        createdAt: true,
+        updatedAt: true,
+        clientTenant: {
+          select: {
+            businessName: true,
+            email: true,
+            tenantUsers: {
+              where: { isOwner: true },
+              select: { user: { select: { accountActivationExpires: true } } },
+              take: 1,
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
     });
+
+    const activationEntries = pendingActivations
+      .filter((rel) => !!rel.clientTenant.email && !seen.has(rel.clientTenant.email))
+      .map((rel) => {
+        const expires = rel.clientTenant.tenantUsers?.[0]?.user?.accountActivationExpires;
+        const isExpired = !!expires && expires < new Date();
+        return {
+          id: rel.id,
+          inviteeEmail: rel.clientTenant.email!,
+          inviteeName: rel.clientTenant.businessName,
+          status: (isExpired ? 'EXPIRED' : 'PENDING') as 'EXPIRED' | 'PENDING',
+          expiresAt: expires ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          rejectedAt: null as null,
+          createdAt: rel.createdAt,
+          updatedAt: rel.updatedAt,
+          entryType: 'ACTIVATION' as const,
+          clientTenantId: rel.clientTenantId,
+        };
+      });
+
+    // ── 3. Combine and sort by most-recent first ─────────────────────────────
+    return [...dedupedInvitations, ...activationEntries].sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+    );
   }
 
   async cancelInvitation(agencyTenantId: string, invitationId: string) {

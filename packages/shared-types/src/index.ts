@@ -1172,6 +1172,13 @@ export interface AgencyInvitationFull {
   rejectedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /**
+   * 'INVITATION' = standard agency invitation (AgencyInvitation record).
+   * 'ACTIVATION' = direct client created by agency, awaiting account activation.
+   */
+  entryType: 'INVITATION' | 'ACTIVATION';
+  /** Only present for ACTIVATION entries — used to trigger resend-activation. */
+  clientTenantId?: string;
 }
 
 export interface CreateDirectClientInput {

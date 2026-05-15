@@ -102,8 +102,17 @@ function ClientActivationBadge({
   // No activation token at all → invited client (already had an account). No badge needed.
   if (!activationTokenExpires) return null;
 
+  // Direct client — activation email sent but not yet actioned
   const hoursSinceCreation = (now - new Date(createdAt).getTime()) / (1000 * 60 * 60);
-  if (hoursSinceCreation < 24) return null; // Fresh — no need to warn yet
+
+  if (hoursSinceCreation < 24) {
+    return (
+      <span className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+        <Mail className="h-2.5 w-2.5" />
+        Correo enviado
+      </span>
+    );
+  }
 
   return (
     <span className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-proforma-600 dark:text-proforma-400">

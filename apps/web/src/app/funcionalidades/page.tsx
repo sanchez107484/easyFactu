@@ -70,7 +70,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: `Funcionalidades de ${brandConfig.app.name} — Software de facturación VeriFactu`,
-    description: `Todas las herramientas que necesitas para facturar correctamente: VeriFactu automático, gestión de clientes, presupuestos, PDF profesionales, dashboard y más. ${PRICING.freePeriodMonths} meses gratis.`,
+    description: `Todas las herramientas que necesitas para facturar correctamente: VeriFactu automático, gestión de clientes, presupuestos, PDF profesionales, dashboard y más. Gratis hasta 2027.`,
     url: `${brandConfig.app.url}/funcionalidades`,
     type: 'website',
     siteName: brandConfig.app.name,
@@ -87,7 +87,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: `Funcionalidades de ${brandConfig.app.name} — Facturación VeriFactu`,
-    description: `Descubre todo lo que incluye ${brandConfig.app.name}: VeriFactu, clientes, presupuestos, PDF, dashboard y más. ${PRICING.freePeriodMonths} meses gratis.`,
+    description: `Descubre todo lo que incluye ${brandConfig.app.name}: VeriFactu, clientes, presupuestos, PDF, dashboard y más. Gratis hasta 2027.`,
     images: [`${brandConfig.app.url}/og-image.jpg`],
   },
 };
@@ -107,7 +107,7 @@ const softwareAppJsonLd = {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'EUR',
-    description: `${PRICING.freePeriodMonths} meses completamente gratuitos para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscripciones.`,
+    description: `Gratis hasta 2027 para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscripciones.`,
     availability: 'https://schema.org/LimitedAvailability',
   },
   featureList: [
@@ -345,14 +345,14 @@ const comparisonRows = [
 const faqs = [
   {
     q: '¿Qué es VeriFactu y por qué lo necesito?',
-    a: 'VeriFactu es el sistema de verificación de facturas establecido por la Ley Antifraude 11/2021. Desde julio de 2025 es obligatorio para los nuevos autónomos (y desde julio de 2026 para los existentes). Exige que cada factura lleve hash encadenado, código QR y sea enviada automáticamente a la AEAT. Sin un software homologado, las sanciones pueden llegar a 50.000€.',
+    a: 'VeriFactu es el sistema de verificación de facturas establecido por la Ley Antifraude 11/2021 y desarrollado por el Real Decreto 254/2025. Es obligatorio desde julio de 2025 para nuevos contribuyentes, desde el 1 de enero de 2027 para sociedades (SL, SA) y desde el 1 de julio de 2027 para autónomos persona física ya dados de alta. Exige que cada factura lleve hash encadenado, código QR y sea enviada automáticamente a la AEAT. Sin un software homologado, las sanciones pueden llegar a 50.000€.',
   },
   {
     q: '¿Necesito conocimientos de contabilidad para usar el software?',
     a: 'No. La plataforma está diseñada para profesionales sin formación contable. Tú introduces los datos básicos (cliente, concepto e importe) y el software calcula el IVA, el IRPF, genera el PDF y lo envía a Hacienda automáticamente.',
   },
   {
-    q: '¿Qué incluyen los 6 meses gratuitos?',
+    q: '¿Qué incluye el acceso gratuito hasta 2027?',
     a: `Acceso completo a todas las funcionalidades: facturación VeriFactu, gestión de clientes, presupuestos, catálogo de productos, dashboard, generación de PDF, plantilla personalizable y soporte técnico. Sin restricciones ni límite de facturas durante el período gratuito.`,
   },
   {
@@ -479,7 +479,7 @@ export default function FuncionalidadesPage(): JSX.Element {
                   className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-8 py-3.5 text-base font-bold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl"
                 >
                   <Sparkles className="h-4 w-4" />
-                  Pruébalo gratis {PRICING.freePeriodMonths} meses
+                  Pruébalo gratis hasta 2027
                 </Link>
                 <Link
                   href="/precios"

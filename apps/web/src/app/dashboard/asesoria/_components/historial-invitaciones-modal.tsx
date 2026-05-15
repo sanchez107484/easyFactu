@@ -21,8 +21,13 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { History, Mail, XCircle, RefreshCw, Loader2 } from 'lucide-react';
-import { useAllInvitations, useCancelInvitation, useInviteClient } from '@/hooks/use-agency';
+import { History, Mail, XCircle, RefreshCw, Loader2, UserCheck } from 'lucide-react';
+import {
+  useAllInvitations,
+  useCancelInvitation,
+  useInviteClient,
+  useResendActivation,
+} from '@/hooks/use-agency';
 import { AgencyInvitationStatus } from '@easyfactura/shared-types';
 import type { AgencyInvitationFull } from '@easyfactura/shared-types';
 import { cn } from '@/lib/utils';
@@ -73,6 +78,16 @@ function formatDate(dateStr: string): string {
     month: 'short',
     year: 'numeric',
   });
+}
+
+function getStatusBadge(inv: AgencyInvitationFull): { label: string; className: string } {
+  if (inv.entryType === 'ACTIVATION' && inv.status === AgencyInvitationStatus.PENDING) {
+    return {
+      label: 'Sin activar',
+      className: STATUS_BADGE[AgencyInvitationStatus.PENDING].className,
+    };
+  }
+  return STATUS_BADGE[inv.status];
 }
 
 function getSecondaryDate(inv: AgencyInvitationFull): string {
@@ -128,16 +143,27 @@ function InvitationRow({
   onCancel: (inv: AgencyInvitationFull) => void;
   onResend: (inv: AgencyInvitationFull) => void;
 }) {
-  const canCancel = inv.status === AgencyInvitationStatus.PENDING;
-  const canResend =
-    inv.status === AgencyInvitationStatus.EXPIRED ||
-    inv.status === AgencyInvitationStatus.REJECTED ||
-    inv.status === AgencyInvitationStatus.CANCELLED;
+  const isActivation = (inv.entryType ?? 'INVITATION') === 'ACTIVATION';
+
+  // Invitations: PENDING → Cancel; Expired/Rejected/Cancelled → Resend invitation
+  // Activations: PENDING or EXPIRED → Resend activation link; no cancel option
+  const canCancel = !isActivation && inv.status === AgencyInvitationStatus.PENDING;
+  const canResend = isActivation
+    ? inv.status === AgencyInvitationStatus.PENDING || inv.status === AgencyInvitationStatus.EXPIRED
+    : inv.status === AgencyInvitationStatus.EXPIRED ||
+      inv.status === AgencyInvitationStatus.REJECTED ||
+      inv.status === AgencyInvitationStatus.CANCELLED;
+
+  const badge = getStatusBadge(inv);
 
   return (
     <div className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5">
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
-        <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+        {isActivation ? (
+          <UserCheck className="h-3.5 w-3.5 text-muted-foreground" />
+        ) : (
+          <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+        )}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -153,12 +179,13 @@ function InvitationRow({
           {inv.inviteeEmail}
         </p>
         <p className="mt-0.5 text-xs text-muted-foreground">
+          {isActivation ? 'Cuenta nueva · ' : 'Invitación · '}
           Enviada el {formatDate(inv.createdAt)} · {getSecondaryDate(inv)}
         </p>
       </div>
 
-      <Badge variant="outline" className={STATUS_BADGE[inv.status].className}>
-        {STATUS_BADGE[inv.status].label}
+      <Badge variant="outline" className={badge.className}>
+        {badge.label}
       </Badge>
 
       {canCancel && (
@@ -176,7 +203,7 @@ function InvitationRow({
       {canResend && (
         <Button variant="outline" size="sm" className="shrink-0" onClick={() => onResend(inv)}>
           <RefreshCw className="mr-1 h-3.5 w-3.5" />
-          Reenviar
+          {isActivation ? 'Reenviar enlace' : 'Reenviar'}
         </Button>
       )}
     </div>
@@ -216,7 +243,9 @@ export function HistorialInvitacionesModal({ isOpen, onClose }: HistorialInvitac
 
   const { data: invitations = [], isLoading } = useAllInvitations(isOpen);
   const { mutate: cancelInvitation, isPending: isCancelling } = useCancelInvitation();
-  const { mutate: inviteClient, isPending: isResending } = useInviteClient();
+  const { mutate: inviteClient, isPending: isResendingInvite } = useInviteClient();
+  const { mutate: resendActivation, isPending: isResendingActivation } = useResendActivation();
+  const isResending = isResendingInvite || isResendingActivation;
 
   // Group invitations by tab
   const pending = invitations.filter((i) => i.status === AgencyInvitationStatus.PENDING);
@@ -250,10 +279,17 @@ export function HistorialInvitacionesModal({ isOpen, onClose }: HistorialInvitac
 
   function handleConfirmResend() {
     if (!resendTarget) return;
-    inviteClient(
-      { inviteeEmail: resendTarget.inviteeEmail },
-      { onSuccess: () => setResendTarget(null) },
-    );
+    if ((resendTarget.entryType ?? 'INVITATION') === 'ACTIVATION') {
+      resendActivation(
+        { clientTenantId: resendTarget.clientTenantId!, data: {} },
+        { onSuccess: () => setResendTarget(null) },
+      );
+    } else {
+      inviteClient(
+        { inviteeEmail: resendTarget.inviteeEmail },
+        { onSuccess: () => setResendTarget(null) },
+      );
+    }
   }
 
   return (
@@ -271,7 +307,7 @@ export function HistorialInvitacionesModal({ isOpen, onClose }: HistorialInvitac
               Invitaciones enviadas
             </DialogTitle>
             <DialogDescription>
-              Todas las invitaciones que has enviado a potenciales clientes, agrupadas por estado.
+              Invitaciones enviadas y clientes pendientes de activar, agrupados por estado.
             </DialogDescription>
           </DialogHeader>
 
@@ -339,11 +375,21 @@ export function HistorialInvitacionesModal({ isOpen, onClose }: HistorialInvitac
       <AlertDialog open={!!resendTarget} onOpenChange={() => setResendTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Reenviar invitación</AlertDialogTitle>
+            <AlertDialogTitle>Reenviar enlace de acceso</AlertDialogTitle>
             <AlertDialogDescription>
-              Se enviará una nueva invitación a{' '}
-              <strong>{resendTarget?.inviteeName || resendTarget?.inviteeEmail}</strong>. El nuevo
-              enlace será válido durante 7 días.
+              {(resendTarget?.entryType ?? 'INVITATION') === 'ACTIVATION' ? (
+                <>
+                  Se enviará un nuevo enlace de activación a{' '}
+                  <strong>{resendTarget?.inviteeName || resendTarget?.inviteeEmail}</strong>. El
+                  enlace anterior dejará de funcionar.
+                </>
+              ) : (
+                <>
+                  Se enviará una nueva invitación a{' '}
+                  <strong>{resendTarget?.inviteeName || resendTarget?.inviteeEmail}</strong>. El
+                  nuevo enlace será válido durante 7 días.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

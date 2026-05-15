@@ -131,7 +131,8 @@ export default function RegisterPage() {
         {/* Desktop top bar */}
         <div className="hidden items-center justify-between p-4 lg:flex">
           <div className="flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700 dark:border-green-800 dark:bg-green-950/50 dark:text-green-400">
-            <Sparkles className="h-4 w-4" />6 meses gratis · Sin tarjeta
+            <Sparkles className="h-4 w-4" />
+            Gratis hasta 2027 · Sin tarjeta
           </div>
 
           <div className="flex items-center gap-4">
@@ -354,7 +355,8 @@ export default function RegisterPage() {
                 {/* Trust badges */}
                 <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />6 meses gratis
+                    <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                    Gratis hasta 2027
                   </span>
                   <span className="flex items-center gap-1">
                     <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
