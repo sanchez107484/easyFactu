@@ -1547,6 +1547,8 @@ export class AgencyService {
             setupCompleted: true,
             isActive: true,
             createdAt: true,
+            taxRegime: true,
+            reaypRate: true,
             tenantUsers: {
               where: { isOwner: true },
               select: {

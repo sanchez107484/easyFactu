@@ -15,7 +15,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Package, Wrench, Euro, Tag, FileText, Hash, Ruler } from 'lucide-react';
+import {
+  ArrowLeft,
+  Package,
+  Wrench,
+  Euro,
+  Tag,
+  FileText,
+  Hash,
+  Ruler,
+  Loader2,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useCreateProduct } from '@/hooks/use-products';
 import { ProductType } from '@easyfactura/shared-types';
@@ -29,7 +39,7 @@ const productSchema = z.object({
   unit: z.string().optional(),
   type: z.nativeEnum(ProductType),
   unitPrice: z
-    .number({ invalid_type_error: 'Introduce un precio valido' })
+    .number({ invalid_type_error: 'Introduce un precio válido' })
     .min(0, 'El precio no puede ser negativo'),
   taxRate: z.number().min(0).max(100),
 });
@@ -41,14 +51,14 @@ const TYPE_OPTIONS = [
     value: ProductType.SERVICE,
     icon: Wrench,
     label: 'Servicio',
-    description: 'Consultoria, diseno, desarrollo, asesoria...',
+    description: 'Consultoría, diseño, desarrollo, asesoría...',
     tip: 'Ideal para facturar por horas o proyectos',
   },
   {
     value: ProductType.PRODUCT,
     icon: Package,
     label: 'Producto',
-    description: 'Articulo fisico, material, mercancia...',
+    description: 'Artículo físico, material, mercancía...',
     tip: 'Ideal si vendes bienes tangibles',
   },
 ] as const;
@@ -89,7 +99,7 @@ export default function NuevoProductoPage() {
   };
 
   return (
-    <div className="pb-10">
+    <div className="pb-24 lg:pb-10">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <Link href="/dashboard/productos">
@@ -98,14 +108,16 @@ export default function NuevoProductoPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Nuevo producto / servicio</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {selectedType === ProductType.SERVICE ? 'Nuevo servicio' : 'Nuevo producto'}
+          </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Anade un elemento a tu catalogo para usarlo rapidamente en tus facturas
+            Añade un elemento a tu catálogo para usarlo rápidamente en tus facturas
           </p>
         </div>
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <form id="product-form" onSubmit={form.handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main form */}
           <div className="lg:col-span-2 space-y-6">
@@ -157,7 +169,7 @@ export default function NuevoProductoPage() {
                             <p className="text-xs text-muted-foreground">{description}</p>
                           </div>
                         </div>
-                        <p className="text-xs text-muted-foreground pl-[52px]">{tip}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{tip}</p>
                         {active && (
                           <div className="absolute top-3 right-3 h-2.5 w-2.5 rounded-full bg-primary" />
                         )}
@@ -171,9 +183,9 @@ export default function NuevoProductoPage() {
             {/* Seccion 2: Informacion basica */}
             <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b bg-muted/30">
-                <h2 className="text-sm font-semibold">Informacion basica</h2>
+                <h2 className="text-sm font-semibold">Información básica</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Estos datos apareceran en tus facturas
+                  Estos datos aparecerán en tus facturas
                 </p>
               </div>
               <div className="p-6 space-y-5">
@@ -188,7 +200,7 @@ export default function NuevoProductoPage() {
                     {...form.register('name')}
                     placeholder={
                       selectedType === ProductType.SERVICE
-                        ? 'Ej: Consultoria tecnica mensual'
+                        ? 'Ej: Consultoría técnica mensual'
                         : 'Ej: Camiseta algodon talla M'
                     }
                     disabled={createMutation.isPending}
@@ -230,7 +242,7 @@ export default function NuevoProductoPage() {
                       className="text-sm font-medium flex items-center gap-2"
                     >
                       <Hash className="h-3.5 w-3.5 text-muted-foreground" />
-                      Referencia / Codigo{' '}
+                      Referencia / Código{' '}
                       <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
                     </Label>
                     <Input
@@ -347,7 +359,7 @@ export default function NuevoProductoPage() {
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
-                      La mayoria de autonomos usan el 21%
+                      La mayoría de autónomos usan el 21%
                     </p>
                   </div>
                 </div>
@@ -357,34 +369,30 @@ export default function NuevoProductoPage() {
 
           {/* Sidebar */}
           <div className="flex flex-col gap-5">
-            <div className="rounded-xl border bg-card shadow-sm overflow-hidden sticky top-4">
+            <div className="rounded-xl border bg-card shadow-sm overflow-hidden lg:sticky lg:top-4">
               <div className="px-5 py-4 border-b bg-muted/30">
                 <p className="text-sm font-semibold">Resumen del precio</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Calculo en tiempo real</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Cálculo en tiempo real</p>
               </div>
-              <div className="p-5 space-y-3">
-                <div className="flex justify-between text-sm">
+              <div className="p-5 space-y-2.5">
+                <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Precio base</span>
                   <span className="font-medium tabular-nums">
                     {unitPrice.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">IVA ({taxRate}%)</span>
                   <span className="font-medium tabular-nums text-muted-foreground">
                     +{taxAmount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
                   </span>
                 </div>
-                <div className="border-t pt-3">
-                  <div className="flex justify-between items-baseline">
-                    <span className="font-semibold text-sm">Total al cliente</span>
-                    <span className="text-2xl font-extrabold tabular-nums text-primary">
-                      {pvp.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Precio final con todos los impuestos
+                <div className="rounded-lg bg-primary/5 border border-primary/15 px-4 py-3 mt-1">
+                  <p className="text-xs text-muted-foreground mb-0.5">Total al cliente</p>
+                  <p className="text-3xl font-extrabold tabular-nums text-primary leading-none">
+                    {pvp.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1">IVA incluido</p>
                 </div>
               </div>
               <div className="px-5 pb-5 space-y-2 border-t pt-4">
@@ -393,7 +401,16 @@ export default function NuevoProductoPage() {
                   disabled={createMutation.isPending}
                   className="w-full h-11 font-semibold"
                 >
-                  {createMutation.isPending ? 'Guardando...' : 'Guardar en el catalogo'}
+                  {createMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Guardando...
+                    </>
+                  ) : selectedType === ProductType.SERVICE ? (
+                    'Guardar servicio'
+                  ) : (
+                    'Guardar producto'
+                  )}
                 </Button>
                 <Link href="/dashboard/productos" className="block">
                   <Button
@@ -408,18 +425,50 @@ export default function NuevoProductoPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-dashed bg-product-50 dark:bg-product-950/20 border-product-200 dark:border-product-800 px-4 py-4 text-xs leading-relaxed">
-              <p className="font-semibold text-product-800 dark:text-product-300 mb-1.5">
-                Para que sirve el catalogo
-              </p>
-              <p className="text-product-700 dark:text-product-400">
-                Guarda aqui tus servicios y productos habituales. La proxima vez que hagas una
-                factura, podras anadirlos con un solo clic sin tener que escribir nada a mano.
+            <div className="rounded-xl border border-dashed bg-muted/30 px-4 py-4 text-xs leading-relaxed">
+              <p className="font-semibold text-foreground mb-1.5">¿Para qué sirve el catálogo?</p>
+              <p className="text-muted-foreground">
+                Guarda aquí tus servicios y productos habituales. La próxima vez que hagas una
+                factura, podrás añadirlos con un solo clic sin tener que escribir nada a mano.
               </p>
             </div>
           </div>
         </div>
       </form>
+
+      {/* Sticky bottom action bar — only visible below lg where sidebar is below the fold */}
+      <div className="fixed bottom-0 inset-x-0 z-20 flex items-center justify-between gap-3 border-t bg-background/95 backdrop-blur px-4 py-3 lg:hidden">
+        <div className="text-right">
+          <p className="text-xs text-muted-foreground">Total al cliente</p>
+          <p className="text-lg font-bold tabular-nums text-primary leading-tight">
+            {pvp.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard/productos">
+            <Button type="button" variant="outline" size="sm" disabled={createMutation.isPending}>
+              Cancelar
+            </Button>
+          </Link>
+          <Button
+            type="submit"
+            form="product-form"
+            disabled={createMutation.isPending}
+            className="font-semibold"
+          >
+            {createMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Guardando...
+              </>
+            ) : selectedType === ProductType.SERVICE ? (
+              'Guardar servicio'
+            ) : (
+              'Guardar producto'
+            )}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

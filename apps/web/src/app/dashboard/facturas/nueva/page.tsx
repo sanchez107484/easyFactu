@@ -759,6 +759,7 @@ export default function NuevaFacturaPage() {
   });
 
   const { data: invoiceDefaults, isLoading: loadingDefaults } = useInvoiceDefaults();
+  const { data: tenantPageData } = useTenant();
 
   if ((sourceId && loadingSource) || loadingDefaults) {
     return (
@@ -811,6 +812,10 @@ export default function NuevaFacturaPage() {
         discountPercent: undefined,
         irpfPercent:
           invoiceDefaults?.irpfPercent != null ? Number(invoiceDefaults.irpfPercent) : undefined,
+        compensacionPercent:
+          tenantPageData?.taxRegime === TaxRegime.REAGYP && tenantPageData.reaypRate != null
+            ? Number(tenantPageData.reaypRate)
+            : undefined,
         notes: invoiceDefaults?.notes ?? undefined,
         lines: [{ ...EMPTY_LINE }] as ExtendedLineData[],
       };

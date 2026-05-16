@@ -64,6 +64,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
+import { TaxRegime } from '@easyfactura/shared-types';
 import type {
   FiscalAlert,
   AgencyExportLogEntry,
@@ -601,6 +602,21 @@ export default function AgencyClientDetailPage({ params }: PageProps) {
                       .filter(Boolean)
                       .join(', ')}
                   </span>
+                </div>
+              )}
+              {client.taxRegime === TaxRegime.REAGYP && (
+                <div className="flex items-start gap-2 rounded-lg border border-secondary-200 bg-secondary-50 px-3 py-2 dark:border-secondary-800/50 dark:bg-secondary-950/20">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-secondary-800 dark:text-secondary-300">
+                      Régimen Especial Agrario (REAGYP)
+                    </p>
+                    <p className="mt-0.5 text-xs text-secondary-600 dark:text-secondary-400">
+                      Tasa de compensación:{' '}
+                      <span className="font-medium">
+                        {client.reaypRate != null ? `${client.reaypRate} %` : 'No configurada'}
+                      </span>
+                    </p>
+                  </div>
                 </div>
               )}
               <div className="pt-1 border-t">

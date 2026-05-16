@@ -3,7 +3,7 @@ import { brandConfig, PRICING } from '@easyfactura/brand-config';
 
 export const metadata: Metadata = {
   title: `Precios — Software de facturación desde ${PRICING.starter.monthly}€/mes | Gratis hasta 2027`,
-  description: `Consulta los precios de ${brandConfig.app.name}. Gratis hasta 2027 sin tarjeta. Plan Starter desde ${PRICING.starter.monthly}€/mes y Plan PRO con VeriFactu desde ${PRICING.pro.monthly}€/mes. Sin permanencia. Para autónomos y pymes.`,
+  description: `Consulta los precios de ${brandConfig.app.name}. Gratis hasta 2027 sin tarjeta. Plan Starter con VeriFactu incluido desde ${PRICING.starter.monthly}€/mes. Plan PRO con facturas ilimitadas desde ${PRICING.pro.monthly}€/mes. Sin permanencia. Para autónomos y pymes.`,
   keywords: [
     'precio software facturación autónomos',
     'programa facturación gratis',
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: `Precios de ${brandConfig.app.name} — Gratis hasta 2027, después desde ${PRICING.starter.monthly}€/mes`,
-    description: `Gratis hasta 2027 para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} plazas. Plan Starter ${PRICING.starter.monthly}€/mes. Plan PRO con VeriFactu ${PRICING.pro.monthly}€/mes. Sin tarjeta. Sin permanencia.`,
+    description: `Gratis hasta 2027 para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} plazas. Plan Starter con VeriFactu ${PRICING.starter.monthly}€/mes. Plan PRO con facturas ilimitadas ${PRICING.pro.monthly}€/mes. Sin tarjeta. Sin permanencia.`,
     url: `${brandConfig.app.url}/precios`,
     type: 'website',
     siteName: brandConfig.app.name,

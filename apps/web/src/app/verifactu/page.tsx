@@ -454,7 +454,7 @@ export default function VerifactuPage() {
                 href="/registro"
                 className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-7 py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-blue-700"
               >
-                Empezar gratis — {PRICING.freePeriodMonths} meses sin coste
+                Empezar gratis — hasta 2027 sin coste
                 <ArrowRight className="h-5 w-5" />
               </Link>
               <Link

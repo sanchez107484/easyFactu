@@ -202,8 +202,8 @@ export function ExportModal({ open, onOpenChange, clientTenantId, clientName }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col gap-0 p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
+      <DialogContent className="max-w-2xl max-h-[88vh] flex flex-col gap-0 p-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <DialogTitle className="text-lg">
             Exportar facturas —{' '}
             <span className="text-muted-foreground font-normal">{clientName}</span>
@@ -211,7 +211,7 @@ export function ExportModal({ open, onOpenChange, clientTenantId, clientName }: 
           <StepIndicator step={step} />
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           {step === 'config' && (
             <ConfigStep
               config={config}
@@ -242,7 +242,7 @@ export function ExportModal({ open, onOpenChange, clientTenantId, clientName }: 
           )}
         </div>
 
-        <div className="px-6 py-4 border-t flex items-center justify-between gap-3">
+        <div className="px-6 py-4 border-t flex flex-wrap items-center justify-between gap-3 shrink-0">
           {step === 'done' ? (
             <>
               <span className="text-sm text-muted-foreground">
@@ -361,101 +361,99 @@ function ConfigStep({ config, today, onChange }: ConfigStepProps) {
     return shortcuts;
   }, []);
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="px-6 py-5 space-y-6">
-        {/* Format */}
-        <div className="space-y-2">
-          <Label>Software de contabilidad</Label>
-          <Select
-            value={config.format}
-            onValueChange={(v) => onChange({ format: v as ExportFormat })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.keys(FORMAT_LABELS) as ExportFormat[]).map((f) => (
-                <SelectItem key={f} value={f} disabled={f !== 'CONTAPLUS'}>
-                  {FORMAT_LABELS[f]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Mode */}
-        <div className="space-y-2">
-          <Label>¿Qué facturas quieres exportar?</Label>
-          <div className="grid grid-cols-1 gap-2">
-            {(Object.keys(MODE_LABELS) as ExportMode[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => onChange({ mode: m })}
-                className={cn(
-                  'text-left rounded-lg border p-3 transition-colors',
-                  config.mode === m
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-muted-foreground/40',
-                )}
-              >
-                <div className="font-medium text-sm">{MODE_LABELS[m]}</div>
-                <div className="text-xs text-muted-foreground mt-0.5">{MODE_DESCRIPTIONS[m]}</div>
-              </button>
+    <div className="px-6 py-5 space-y-6">
+      {/* Format */}
+      <div className="space-y-2">
+        <Label>Software de contabilidad</Label>
+        <Select
+          value={config.format}
+          onValueChange={(v) => onChange({ format: v as ExportFormat })}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.keys(FORMAT_LABELS) as ExportFormat[]).map((f) => (
+              <SelectItem key={f} value={f} disabled={f !== 'CONTAPLUS'}>
+                {FORMAT_LABELS[f]}
+              </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Mode */}
+      <div className="space-y-2">
+        <Label>¿Qué facturas quieres exportar?</Label>
+        <div className="grid grid-cols-1 gap-2">
+          {(Object.keys(MODE_LABELS) as ExportMode[]).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => onChange({ mode: m })}
+              className={cn(
+                'text-left rounded-lg border p-3 transition-colors',
+                config.mode === m
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-muted-foreground/40',
+              )}
+            >
+              <div className="font-medium text-sm">{MODE_LABELS[m]}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">{MODE_DESCRIPTIONS[m]}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Date range (only for PERIOD) */}
+      {config.mode === 'PERIOD' && (
+        <div className="space-y-3">
+          {/* Quick-select shortcuts */}
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Selección rápida</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {quickPeriods.map((p) => (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => onChange({ dateFrom: p.dateFrom, dateTo: p.dateTo })}
+                  className={cn(
+                    'text-xs px-2.5 py-1 rounded-md border transition-colors',
+                    config.dateFrom === p.dateFrom && config.dateTo === p.dateTo
+                      ? 'border-primary bg-primary/10 text-primary font-medium'
+                      : 'border-border hover:border-muted-foreground/40 text-muted-foreground',
+                  )}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="dateFrom">Desde</Label>
+              <Input
+                id="dateFrom"
+                type="date"
+                value={config.dateFrom}
+                onChange={(e) => onChange({ dateFrom: e.target.value })}
+                max={config.dateTo || today}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dateTo">Hasta</Label>
+              <Input
+                id="dateTo"
+                type="date"
+                value={config.dateTo}
+                onChange={(e) => onChange({ dateTo: e.target.value })}
+                min={config.dateFrom}
+                max={today}
+              />
+            </div>
           </div>
         </div>
-
-        {/* Date range (only for PERIOD) */}
-        {config.mode === 'PERIOD' && (
-          <div className="space-y-3">
-            {/* Quick-select shortcuts */}
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Selección rápida</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {quickPeriods.map((p) => (
-                  <button
-                    key={p.label}
-                    type="button"
-                    onClick={() => onChange({ dateFrom: p.dateFrom, dateTo: p.dateTo })}
-                    className={cn(
-                      'text-xs px-2.5 py-1 rounded-md border transition-colors',
-                      config.dateFrom === p.dateFrom && config.dateTo === p.dateTo
-                        ? 'border-primary bg-primary/10 text-primary font-medium'
-                        : 'border-border hover:border-muted-foreground/40 text-muted-foreground',
-                    )}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="dateFrom">Desde</Label>
-                <Input
-                  id="dateFrom"
-                  type="date"
-                  value={config.dateFrom}
-                  onChange={(e) => onChange({ dateFrom: e.target.value })}
-                  max={config.dateTo || today}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dateTo">Hasta</Label>
-                <Input
-                  id="dateTo"
-                  type="date"
-                  value={config.dateTo}
-                  onChange={(e) => onChange({ dateTo: e.target.value })}
-                  min={config.dateFrom}
-                  max={today}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
@@ -522,7 +520,7 @@ function PreviewStep({
   const allSelected = invoices.every((i) => selectedIds.has(i.id));
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       {/* Already-exported warning for PERIOD mode */}
       {alreadyExportedCount > 0 && (
         <div className="px-6 py-2.5 bg-amber-50 border-b border-amber-200 flex items-center gap-2 text-amber-800 dark:bg-amber-950/20 dark:border-amber-800/50 dark:text-amber-400">
@@ -560,7 +558,7 @@ function PreviewStep({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div>
         <div className="divide-y">
           {invoices.map((inv) => (
             <InvoicePreviewRow

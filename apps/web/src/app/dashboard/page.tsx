@@ -639,7 +639,7 @@ export default function DashboardPage() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium leading-tight">Nuevo cliente</p>
-              <p className="text-xs text-muted-foreground leading-tight mt-0.5">Anadir cliente</p>
+              <p className="text-xs text-muted-foreground leading-tight mt-0.5">Añadir cliente</p>
             </div>
           </div>
         </Link>
@@ -828,13 +828,13 @@ export default function DashboardPage() {
               <Link href="/dashboard/clientes/nuevo">
                 <Button variant="outline" size="sm">
                   <UserPlus className="mr-1.5 h-3.5 w-3.5" />
-                  Anadir cliente
+                  Añadir cliente
                 </Button>
               </Link>
               <Link href="/dashboard/productos/nuevo">
                 <Button variant="outline" size="sm">
                   <Package className="mr-1.5 h-3.5 w-3.5" />
-                  Anadir producto
+                  Añadir producto
                 </Button>
               </Link>
               <Link href="/dashboard/facturas/nueva?tipo=standard">

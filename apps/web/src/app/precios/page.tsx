@@ -16,7 +16,6 @@ import {
   Star,
   BadgeCheck,
   Headphones,
-  Download,
   Lock,
   Smartphone,
   FileText,
@@ -44,7 +43,7 @@ const schemaData = {
     {
       '@type': 'Product',
       name: `${brandConfig.app.name} — Plan Starter`,
-      description: `Software de facturación para autónomos y pymes. Gratis hasta 2027, luego ${PRICING.starter.monthly}€/mes o ${PRICING.starter.annualMonthly}€/mes con pago anual. Sin tarjeta al registrarte. Compatible con VeriFactu cuando sea obligatorio.`,
+      description: `Software de facturación con VeriFactu incluido para autónomos y pymes. Gratis hasta 2027, luego ${PRICING.starter.monthly}€/mes o ${PRICING.starter.annualMonthly}€/mes con pago anual. Sin tarjeta al registrarte. Hasta 60 facturas al año.`,
       brand: { '@type': 'Brand', name: brandConfig.app.name },
       offers: [
         {
@@ -125,7 +124,7 @@ const schemaData = {
           name: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
           acceptedAnswer: {
             '@type': 'Answer',
-            text: `Tienes dos planes: Plan Starter a ${PRICING.starter.monthly}€/mes (${PRICING.starter.annualMonthly}€/mes anual) para facturar sin VeriFactu, y Plan PRO a ${PRICING.pro.monthly}€/mes (${PRICING.pro.annualMonthly}€/mes anual) con VeriFactu automático y envío AEAT incluido. Sin permanencia en ningún caso.`,
+            text: `Tienes dos planes: Plan Starter a ${PRICING.starter.monthly}€/mes (${PRICING.starter.annualMonthly}€/mes anual) con VeriFactu incluido y hasta 60 facturas al año, y Plan PRO a ${PRICING.pro.monthly}€/mes (${PRICING.pro.annualMonthly}€/mes anual) con VeriFactu automático, facturas ilimitadas y envío AEAT incluido. Sin permanencia en ningún caso.`,
           },
         },
         {
@@ -133,7 +132,7 @@ const schemaData = {
           name: '¿Cuál es la diferencia entre Plan Starter y Plan PRO?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: `El Plan Starter incluye todo lo necesario para facturar: facturas ilimitadas, clientes, PDF profesional, presupuestos y facturas recurrentes. El Plan PRO añade VeriFactu 100% automático — hash encadenado, código QR y envío directo a la AEAT en cada factura — para cumplir con la Ley Antifraude 11/2021.`,
+            text: `Ambos planes incluyen VeriFactu automático, hash encadenado, código QR y envío directo a la AEAT. La diferencia es el límite de facturas: el Plan Starter permite hasta 60 facturas al año, ideal para autónomos con actividad moderada. El Plan PRO ofrece facturas ilimitadas para autónomos más activos.`,
           },
         },
         {
@@ -149,7 +148,7 @@ const schemaData = {
           name: '¿Puedo cambiar de Starter a PRO más adelante?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Sí. Puedes hacer upgrade en cualquier momento desde el panel de ajustes con un clic. Si cuando VeriFactu sea obligatorio para tu actividad quieres activarlo automáticamente, también puedes configurarlo para que se haga de forma automática.',
+            text: 'Sí. Puedes hacer upgrade en cualquier momento desde el panel de ajustes con un clic. Si en algún momento superas las 60 facturas anuales o simplemente quieres facturas ilimitadas, el cambio a PRO se hace en segundos.',
           },
         },
         {
@@ -189,72 +188,38 @@ const schemaData = {
   ],
 };
 
-// ─── Feature list — Starter ───────────────────────────────────────────────────
-const starterFeatures = [
-  { text: 'Facturas ilimitadas', detail: 'Sin límite mensual.', included: true },
-  { text: 'Clientes ilimitados', detail: 'Sin restricciones.', included: true },
-  {
-    text: 'PDF profesional personalizable',
-    detail: 'Tu logo, colores y datos fiscales.',
-    included: true,
-  },
-  {
-    text: 'Presupuestos y proformas',
-    detail: 'Conviértelos en factura en un clic.',
-    included: true,
-  },
-  { text: 'Facturas recurrentes automáticas', detail: 'Programa y olvídate.', included: true },
-  { text: 'Importación desde Excel / CSV', detail: 'Migra en minutos.', included: true },
-  { text: 'App web + móvil', detail: 'Desde cualquier dispositivo.', included: true },
-  { text: 'Seguridad y cifrado RGPD', detail: 'SSL 256 bits. Servidores UE.', included: true },
-  { text: 'VeriFactu automático', detail: 'Disponible en Plan PRO.', included: false },
-  { text: 'Envío directo a la AEAT', detail: 'Disponible en Plan PRO.', included: false },
-];
-
-// ─── Feature list — PRO ───────────────────────────────────────────────────────
-const proFeatures = [
-  {
-    text: 'Todo lo del Plan Starter',
-    detail: 'Facturas, clientes, PDF, recurrentes, presupuestos…',
-    icon: CheckCircle2,
-  },
-  {
-    text: 'VeriFactu 100% automático',
-    detail: 'Hash encadenado en cada factura, sin configuración.',
-    icon: Shield,
-  },
-  {
-    text: 'Código QR en cada factura',
-    detail: 'Verificación instantánea por tus clientes y la AEAT.',
-    icon: BadgeCheck,
-  },
-  {
-    text: 'Envío automático a la AEAT',
-    detail: 'Cumplimiento garantizado con la Ley Antifraude 11/2021.',
-    icon: Send,
-  },
-  {
-    text: 'Homologado por la AEAT',
-    detail: 'Conexión API directa con la Agencia Tributaria.',
-    icon: BadgeCheck,
-  },
-  {
-    text: 'Soporte prioritario en español',
-    detail: 'Respuesta en menos de 2 horas.',
-    icon: Headphones,
-  },
+// ─── Características compartidas (idénticas en ambos planes) ─────────────────
+// La ÚNICA diferencia entre planes es el límite de facturas.
+const sharedFeatures = [
+  { text: 'Clientes ilimitados', icon: Users },
+  { text: 'PDF profesional personalizable', icon: FileText },
+  { text: 'Presupuestos y proformas', icon: CheckCircle2 },
+  { text: 'Facturas recurrentes automáticas', icon: Zap },
+  { text: 'VeriFactu automático (hash + QR)', icon: Shield },
+  { text: 'Envío directo a la AEAT', icon: Send },
+  { text: 'App web + móvil', icon: Smartphone },
+  { text: 'Seguridad y cifrado RGPD', icon: Lock },
+  { text: 'Homologado por la AEAT', icon: BadgeCheck },
+  { text: 'Soporte en español', icon: Headphones },
 ];
 
 // ─── Comparison ───────────────────────────────────────────────────────────────
 const comparisonRows = [
-  { label: 'Facturas ilimitadas', starter: true, pro: true, excel: true, otros: true },
+  { label: 'Facturas ilimitadas', starter: false, pro: true, excel: true, otros: true },
+  {
+    label: 'Hasta 60 facturas/año (Starter)',
+    starter: true,
+    pro: false,
+    excel: false,
+    otros: false,
+  },
   { label: 'Clientes ilimitados', starter: true, pro: true, excel: true, otros: true },
   { label: 'PDF profesional', starter: true, pro: true, excel: false, otros: true },
   { label: 'Presupuestos / proformas', starter: true, pro: true, excel: false, otros: '€€ extra' },
   { label: 'Facturas recurrentes', starter: true, pro: true, excel: false, otros: '€€ extra' },
-  { label: 'VeriFactu automático', starter: false, pro: true, excel: false, otros: false },
-  { label: 'Hash encadenado + QR', starter: false, pro: true, excel: false, otros: '€€ extra' },
-  { label: 'Envío AEAT integrado', starter: false, pro: true, excel: false, otros: '€€ extra' },
+  { label: 'VeriFactu automático', starter: true, pro: true, excel: false, otros: false },
+  { label: 'Hash encadenado + QR', starter: true, pro: true, excel: false, otros: '€€ extra' },
+  { label: 'Envío AEAT integrado', starter: true, pro: true, excel: false, otros: '€€ extra' },
   { label: 'Gratis hasta 2027', starter: true, pro: true, excel: false, otros: false },
   { label: 'Sin tarjeta al registrarte', starter: true, pro: true, excel: true, otros: false },
   { label: 'Soporte en español', starter: true, pro: true, excel: false, otros: '€€ extra' },
@@ -296,11 +261,11 @@ const testimonials = [
 const faqs = [
   {
     q: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
-    a: `Tienes dos planes: Plan Starter a ${PRICING.starter.monthly}€/mes (${PRICING.starter.annualMonthly}€/mes anual) para facturar sin VeriFactu, y Plan PRO a ${PRICING.pro.monthly}€/mes (${PRICING.pro.annualMonthly}€/mes anual) con VeriFactu automático y envío AEAT incluido. Sin permanencia en ningún caso.`,
+    a: `Tienes dos planes: Plan Starter a ${PRICING.starter.monthly}€/mes (${PRICING.starter.annualMonthly}€/mes anual) con VeriFactu incluido y hasta 60 facturas al año, y Plan PRO a ${PRICING.pro.monthly}€/mes (${PRICING.pro.annualMonthly}€/mes anual) con VeriFactu automático, facturas ilimitadas y envío AEAT incluido. Sin permanencia en ningún caso.`,
   },
   {
     q: '¿Cuál es la diferencia entre Plan Starter y Plan PRO?',
-    a: `El Plan Starter incluye todo lo necesario para facturar: facturas ilimitadas, clientes, PDF profesional, presupuestos y facturas recurrentes. El Plan PRO añade VeriFactu 100% automático — hash encadenado, código QR y envío directo a la AEAT en cada factura — para cumplir con la Ley Antifraude 11/2021 cuando sea obligatorio.`,
+    a: `Ambos planes incluyen VeriFactu automático, hash encadenado, código QR y envío directo a la AEAT. La diferencia es el límite de facturas: el Plan Starter permite hasta 60 facturas al año, ideal para autónomos con actividad moderada. El Plan PRO ofrece facturas ilimitadas para autónomos más activos.`,
   },
   {
     q: `¿Qué incluye el acceso gratuito hasta 2027?`,
@@ -308,7 +273,7 @@ const faqs = [
   },
   {
     q: '¿Puedo cambiar de Starter a PRO más adelante?',
-    a: 'Sí. Puedes hacer upgrade en cualquier momento desde el panel de ajustes con un clic. Si cuando VeriFactu sea obligatorio para tu actividad quieres activarlo automáticamente, también puedes configurarlo para que se haga de forma automática.',
+    a: 'Sí. Puedes hacer upgrade en cualquier momento desde el panel de ajustes con un clic. Si en algún momento superas las 60 facturas anuales o simplemente quieres facturas ilimitadas, el cambio a PRO se hace en segundos.',
   },
   {
     q: '¿Necesito tarjeta de crédito para registrarme?',
@@ -519,7 +484,7 @@ export default function Precios() {
                     />
                   </svg>
                 </span>{' '}
-                <span className="text-slate-900">Luego, desde 9,90€/mes.</span>
+                <span className="text-slate-900">Luego, desde 12,90€/mes.</span>
               </h1>
 
               <p className="mx-auto mb-8 max-w-2xl text-lg text-slate-500 sm:text-xl leading-relaxed">
@@ -580,9 +545,12 @@ export default function Precios() {
                       </span>
                       <h3 className="mt-3 text-2xl font-extrabold text-slate-900">Plan Starter</h3>
                       <p className="mt-1 text-sm text-slate-500 leading-snug">
-                        Factura sin complicaciones. Sin VeriFactu — te avisamos cuando sea
-                        obligatorio para ti.
+                        VeriFactu incluido. Perfecto para autónomos con actividad moderada.
                       </p>
+                      <div className="mt-3 inline-flex items-center gap-2 rounded-xl border-2 border-slate-800 bg-slate-900 px-3 py-1.5">
+                        <span className="text-sm font-black text-white">Hasta 60 facturas/año</span>
+                        <span className="text-xs text-slate-400">— única limitación</span>
+                      </div>
                     </div>
 
                     {/* Price */}
@@ -634,35 +602,21 @@ export default function Precios() {
                     </p>
 
                     {/* Features */}
-                    <div className="border-t border-slate-100 pt-5 space-y-3">
-                      {starterFeatures.map((f) => (
-                        <div key={f.text} className="flex items-start gap-2.5">
-                          {f.included ? (
-                            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
-                          ) : (
-                            <X className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" />
-                          )}
-                          <div>
-                            <p
-                              className={`text-sm font-medium leading-snug ${f.included ? 'text-slate-700' : 'text-slate-400'}`}
-                            >
-                              {f.text}
-                            </p>
-                            {f.detail && (
-                              <p className="text-xs text-slate-400 leading-tight">{f.detail}</p>
-                            )}
-                          </div>
+                    <div className="border-t border-slate-100 pt-5 space-y-2">
+                      {/* Diferenciador: límite de facturas */}
+                      <div className="flex items-center justify-between rounded-xl border-2 border-slate-200 bg-slate-50 px-3 py-2.5 mb-4">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Facturas al año
+                        </span>
+                        <span className="text-sm font-black text-slate-900">Hasta 60</span>
+                      </div>
+                      {/* Características compartidas */}
+                      {sharedFeatures.map(({ text, icon: Icon }) => (
+                        <div key={text} className="flex items-center gap-2.5 py-0.5">
+                          <Icon className="h-4 w-4 shrink-0 text-slate-400" />
+                          <span className="text-sm text-slate-600">{text}</span>
                         </div>
                       ))}
-                    </div>
-
-                    {/* VeriFactu note */}
-                    <div className="mt-5 flex gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3">
-                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                      <p className="text-xs text-amber-700 leading-relaxed">
-                        <strong>VeriFactu no incluido.</strong> Te avisaremos cuando sea obligatorio
-                        para ti — con opción de activarlo de forma automática o manual.
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -681,13 +635,13 @@ export default function Precios() {
                     {/* Header */}
                     <div className="mb-6">
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
-                        <Shield className="h-3.5 w-3.5" />
-                        Con VeriFactu · Todo incluido
+                        <Zap className="h-3.5 w-3.5" />
+                        Facturas ilimitadas · Todo incluido
                       </span>
                       <h3 className="mt-3 text-2xl font-extrabold text-slate-900">Plan PRO</h3>
                       <p className="mt-1 text-sm text-slate-500 leading-snug">
-                        VeriFactu automático, envío AEAT y tranquilidad fiscal total desde el primer
-                        día.
+                        Facturas ilimitadas con VeriFactu automático y tranquilidad fiscal total
+                        desde el primer día.
                       </p>
                     </div>
 
@@ -727,31 +681,6 @@ export default function Precios() {
                       )}
                     </div>
 
-                    {/* Progress bar (urgency) */}
-                    <div className="mb-6 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4">
-                      <div className="mb-2 flex items-center justify-between text-sm font-medium">
-                        <span className="flex items-center gap-1.5 text-amber-800">
-                          <Clock className="h-4 w-4" />
-                          Plazas gratuitas ocupadas
-                        </span>
-                        <span className="font-bold text-amber-700">
-                          {PLAZAS_CONFIG.porcentaje}%
-                        </span>
-                      </div>
-                      <div className="h-2.5 overflow-hidden rounded-full bg-amber-200">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-700"
-                          style={{ width: `${PLAZAS_CONFIG.porcentaje}%` }}
-                        />
-                      </div>
-                      <div className="mt-1.5 flex justify-between text-xs text-amber-700">
-                        <span>{PLAZAS_CONFIG.ocupadas.toLocaleString('es-ES')} inscritos</span>
-                        <span className="font-bold">
-                          {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas restantes
-                        </span>
-                      </div>
-                    </div>
-
                     {/* CTA */}
                     <Link
                       href="/registro?plan=pro"
@@ -766,16 +695,19 @@ export default function Precios() {
                     </p>
 
                     {/* Features */}
-                    <div className="border-t border-blue-100 pt-5 space-y-3">
-                      {proFeatures.map((f) => (
-                        <div key={f.text} className="flex items-start gap-2.5">
-                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
-                          <div>
-                            <p className="text-sm font-medium text-slate-800 leading-snug">
-                              {f.text}
-                            </p>
-                            <p className="text-xs text-slate-400 leading-tight">{f.detail}</p>
-                          </div>
+                    <div className="border-t border-blue-100 pt-5 space-y-2">
+                      {/* Diferenciador: facturas ilimitadas */}
+                      <div className="flex items-center justify-between rounded-xl bg-blue-600 px-3 py-2.5 mb-4">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-blue-200">
+                          Facturas al año
+                        </span>
+                        <span className="text-sm font-black text-white">Ilimitadas</span>
+                      </div>
+                      {/* Características compartidas */}
+                      {sharedFeatures.map(({ text, icon: Icon }) => (
+                        <div key={text} className="flex items-center gap-2.5 py-0.5">
+                          <Icon className="h-4 w-4 shrink-0 text-blue-400" />
+                          <span className="text-sm text-slate-700">{text}</span>
                         </div>
                       ))}
                     </div>
@@ -834,8 +766,7 @@ export default function Precios() {
                 ¿Cuál plan es para ti?
               </h2>
               <p className="mx-auto mb-10 max-w-xl text-center text-slate-500">
-                Ambos incluyen facturación ilimitada. La diferencia clave es VeriFactu — obligatorio
-                en el futuro, opcional hoy.
+                Ambos planes incluyen <strong className="text-slate-700">VeriFactu automático</strong> y envío AEAT. La única diferencia es el número de facturas al año.
               </p>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -860,7 +791,7 @@ export default function Precios() {
                   <ul className="space-y-2 text-sm text-slate-600">
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 shrink-0 text-slate-400" />
-                      Facturas + clientes ilimitados
+                      Hasta 60 facturas al año · Clientes ilimitados
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 shrink-0 text-slate-400" />
@@ -868,15 +799,15 @@ export default function Precios() {
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 shrink-0 text-slate-400" />
-                      Recurrentes + importación CSV
+                      Facturas recurrentes automáticas
                     </li>
                     <li className="flex items-center gap-2">
-                      <X className="h-4 w-4 shrink-0 text-slate-300" />
-                      <span className="text-slate-400">Sin VeriFactu (disponible en PRO)</span>
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-slate-400" />
+                      VeriFactu + envío AEAT incluido
                     </li>
                   </ul>
                   <p className="mt-4 rounded-lg bg-slate-50 p-2.5 text-xs text-slate-500 text-center">
-                    Ideal si aún no necesitas VeriFactu
+                    Ideal para autónomos con actividad moderada
                   </p>
                 </div>
 
@@ -904,23 +835,23 @@ export default function Precios() {
                   <ul className="space-y-2 text-sm text-slate-700">
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-500" />
-                      Todo lo del plan Starter
+                      Todo lo del plan Starter incluido
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-500" />
-                      VeriFactu 100% automático
+                      <strong>Facturas ilimitadas al año</strong>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-500" />
-                      Hash encadenado + código QR
+                      Sin tope — crece sin restricciones
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-500" />
-                      <strong>Envío automático a la AEAT</strong>
+                      Ideal para alta facturación
                     </li>
                   </ul>
                   <p className="mt-4 rounded-lg bg-blue-100 p-2.5 text-xs text-blue-700 text-center font-semibold">
-                    Cumplimiento total · Tranquilidad garantizada
+                    Sin límite de facturas · Para negocios en crecimiento
                   </p>
                 </div>
               </div>
@@ -943,7 +874,7 @@ export default function Precios() {
                 </span>
               </div>
               <h2 className="mb-4 text-center text-3xl font-extrabold text-slate-900 sm:text-4xl">
-                Desde 24,90€/mes es lo que cuesta{' '}
+                Desde 12,90€/mes es lo que cuesta{' '}
                 <span className="text-blue-600">no tener problemas con Hacienda</span>
               </h2>
               <p className="mx-auto mb-12 max-w-2xl text-center text-slate-500">
@@ -1319,7 +1250,7 @@ export default function Precios() {
                 <div className="flex items-center justify-between">
                   <div className="text-left">
                     <p className="text-xs text-slate-400 font-medium">
-                      Meses 1–6 · Todos los planes
+                      Hasta 2027 · Todos los planes
                     </p>
                   </div>
                   <span className="text-2xl font-black text-blue-600">0€</span>
@@ -1332,8 +1263,8 @@ export default function Precios() {
                       <p className="text-xs font-semibold text-slate-700">Starter</p>
                       <p className="text-xs text-slate-400">
                         {annual
-                          ? `${STARTER.annualTotal}€/año · Sin VeriFactu`
-                          : 'Sin VeriFactu · Sin permanencia'}
+                          ? `${STARTER.annualTotal}€/año · Hasta 60 facturas/año`
+                          : 'VeriFactu incluido · Sin permanencia'}
                       </p>
                     </div>
                     <div className="text-right">
@@ -1351,7 +1282,7 @@ export default function Precios() {
                       <p className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                         PRO
                         <span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] text-white">
-                          Con VeriFactu
+                          Ilimitadas
                         </span>
                       </p>
                       <p className="text-xs text-slate-400">

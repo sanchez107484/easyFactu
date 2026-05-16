@@ -89,14 +89,14 @@ export const PLAZAS_CONFIG = {
 
 // ============================================================
 // PRICING CONFIG — única fuente de precios
-// Dos planes: Starter (sin VeriFactu) y PRO (con VeriFactu)
+// Dos planes: Starter (VeriFactu incluido, hasta 60 facturas/año) y PRO (VeriFactu incluido, facturas ilimitadas)
 // ============================================================
 export const PRICING = {
   starter: {
-    monthly: 9.9,
-    annualMonthly: 7.9,
-    annualTotal: 94.8, // 7.9 × 12
-    annualSaving: 24, // (9.9 - 7.9) × 12
+    monthly: 15.9,
+    annualMonthly: 12.9,
+    annualTotal: 154.8, // 12.9 × 12
+    annualSaving: 36, // (15.9 - 12.9) × 12
   },
   pro: {
     monthly: 29.9,

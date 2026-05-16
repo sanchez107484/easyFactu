@@ -1244,6 +1244,8 @@ export interface AgencyClientDetail extends Omit<
     | 'setupCompleted'
     | 'isActive'
     | 'createdAt'
+    | 'taxRegime'
+    | 'reaypRate'
   >;
   activationStatus: ClientActivationStatus;
   stats: {

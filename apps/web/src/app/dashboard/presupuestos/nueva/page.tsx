@@ -670,6 +670,7 @@ export default function NuevoPresupuestoPage() {
     enabled: !!editId,
   });
   const { data: invoiceDefaults, isLoading: loadingDefaults } = useInvoiceDefaults();
+  const { data: tenantPageData } = useTenant();
 
   const isLoading = (!!editId && loadingQuote) || loadingDefaults;
 
@@ -740,6 +741,10 @@ export default function NuevoPresupuestoPage() {
         discountPercent: undefined,
         irpfPercent:
           invoiceDefaults?.irpfPercent != null ? Number(invoiceDefaults.irpfPercent) : undefined,
+        compensacionPercent:
+          tenantPageData?.taxRegime === TaxRegime.REAGYP && tenantPageData.reaypRate != null
+            ? Number(tenantPageData.reaypRate)
+            : undefined,
         paymentMethod: (invoiceDefaults?.paymentMethod as PaymentMethod) ?? undefined,
         paymentDetails:
           (invoiceDefaults?.paymentDetails as Record<string, string | undefined>) ?? {},

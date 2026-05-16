@@ -966,6 +966,7 @@ export default function NuevaRecurrentePage() {
 
   const { data: editRecurring, isLoading: loadingEdit } = useRecurringInvoice(editId ?? '');
   const { data: invoiceDefaults, isLoading: loadingDefaults } = useInvoiceDefaults();
+  const { data: tenantPageData } = useTenant();
 
   if ((editId && loadingEdit) || loadingDefaults) {
     return (
@@ -1021,6 +1022,10 @@ export default function NuevaRecurrentePage() {
         irpfPercent:
           invoiceDefaults?.irpfPercent != null ? Number(invoiceDefaults.irpfPercent) : undefined,
         discountPercent: undefined,
+        compensacionPercent:
+          tenantPageData?.taxRegime === TaxRegime.REAGYP && tenantPageData.reaypRate != null
+            ? Number(tenantPageData.reaypRate)
+            : undefined,
         paymentMethod: (invoiceDefaults?.paymentMethod as PaymentMethod) ?? undefined,
         paymentDetails:
           (invoiceDefaults?.paymentDetails as Record<string, string | undefined>) ?? {},

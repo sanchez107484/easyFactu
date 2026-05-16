@@ -144,7 +144,7 @@ const faqs = [
   },
   {
     q: '¿Cuánto cuesta después de 2027?',
-    a: `Plan Starter (sin VeriFactu): ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.starter.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Plan PRO con VeriFactu automático: ${PRICING.pro.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.pro.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Sin permanencia.`,
+    a: `Plan Starter (con VeriFactu, hasta 60 facturas/año): ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.starter.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Plan PRO con VeriFactu automático y facturas ilimitadas: ${PRICING.pro.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.pro.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Sin permanencia.`,
   },
   {
     q: '¿Qué sanciones existen por no usar software certificado?',
@@ -201,7 +201,7 @@ const homepageFaqJsonLd = {
       name: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `Plan Starter (sin VeriFactu): ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.starter.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Plan PRO con VeriFactu automático: ${PRICING.pro.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.pro.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Sin permanencia en ningún caso.`,
+        text: `Plan Starter (con VeriFactu, hasta 60 facturas/año): ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.starter.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Plan PRO con VeriFactu automático y facturas ilimitadas: ${PRICING.pro.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.pro.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Sin permanencia en ningún caso.`,
       },
     },
     {
@@ -786,10 +786,10 @@ export default function HomePage() {
                     </div>
                     <ul className="space-y-1.5">
                       {[
-                        { text: 'Facturas y presupuestos ilimitados', ok: true },
+                        { text: 'Hasta 60 facturas al año', ok: true },
                         { text: 'PDF, envío por email y app móvil', ok: true },
                         { text: 'Importación desde Excel / CSV', ok: true },
-                        { text: 'VeriFactu / Envío AEAT', ok: false },
+                        { text: 'VeriFactu / Envío AEAT incluido', ok: true },
                       ].map(({ text, ok }) => (
                         <li key={text} className="flex items-center gap-2 text-xs">
                           {ok ? (

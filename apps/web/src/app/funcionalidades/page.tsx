@@ -716,7 +716,7 @@ export default function FuncionalidadesPage(): JSX.Element {
                 className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-10 py-4 text-base font-bold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl"
               >
                 <Sparkles className="h-5 w-5" />
-                Reservar mi plaza gratuita
+                Registrarme ahora — gratis
                 <ArrowRight className="h-4 w-4" />
               </Link>
 
