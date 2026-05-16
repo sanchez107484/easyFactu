@@ -1,16 +1,16 @@
 # NovaFactura — Software de facturación VeriFactu para autónomos y pymes en España
 
-> Software de facturación VeriFactu certificado por la AEAT. Cumplimiento automático con la Ley Antifraude 11/2021. Completamente gratuito durante 6 meses para autónomos y pymes. Gratis para siempre para asesorías y gestorías.
+> Software de facturación VeriFactu certificado por la AEAT. Cumplimiento automático con la Ley Antifraude 11/2021. Completamente gratuito hasta 2027 para autónomos y pymes. Gratis para siempre para asesorías y gestorías.
 
 NovaFactura es el software de facturación nativo VeriFactu para autónomos, pymes y asesorías en España. Automatiza el hash encadenado SHA-256, la firma electrónica, el código QR y el envío directo al endpoint de la AEAT.
 
 ## ¿Qué es NovaFactura?
 
-- **URL**: https://www.novafactura.es
+- **URL**: [https://www.novafactura.es](https://www.novafactura.es)
 - **Tipo**: SaaS de facturación electrónica VeriFactu
 - **Mercado**: España (autónomos, pymes, asesorías, gestorías)
 - **Normativa**: Ley Antifraude 11/2021, Reglamento VeriFactu, AEAT
-- **Precio autónomos/pymes**: Gratis hasta 2027, después desde 9,90€/mes
+- **Precio autónomos/pymes**: Gratis hasta 2027, después Plan Starter desde 12,90€/mes (anual) / 15,90€/mes (mensual) y Plan PRO desde 24,90€/mes (anual) / 29,90€/mes (mensual)
 - **Precio asesorías**: Gratis para siempre
 
 ## Para autónomos y pymes
@@ -38,10 +38,21 @@ VeriFactu es el sistema de verificación de facturas de la Agencia Tributaria es
 
 ## Páginas de referencia
 
-- Inicio: https://www.novafactura.es
-- Funcionalidades: https://www.novafactura.es/funcionalidades
-- Precios: https://www.novafactura.es/precios
-- Para asesorías: https://www.novafactura.es/asesoria
-- Blog (recursos VeriFactu): https://www.novafactura.es/blog
-- Contacto: https://www.novafactura.es/contacto
-- Registro gratuito: https://www.novafactura.es/registro
+- [Inicio](https://www.novafactura.es)
+- [Funcionalidades](https://www.novafactura.es/funcionalidades)
+- [VeriFactu — qué es y cómo funciona](https://www.novafactura.es/verifactu)
+- [Precios](https://www.novafactura.es/precios)
+- [Para asesorías y gestorías](https://www.novafactura.es/asesoria)
+- [Blog (recursos VeriFactu)](https://www.novafactura.es/blog)
+- [Contacto](https://www.novafactura.es/contacto)
+- [Registro gratuito](https://www.novafactura.es/registro)
+
+## Artículos del blog
+
+- [Qué debe tener una factura válida con VeriFactu](https://www.novafactura.es/blog/que-debe-tener-una-factura-valida-con-verifactu) — Requisitos obligatorios: QR, hash encadenado, trazabilidad y comunicación a la AEAT.
+- [¿Cómo saber si tu software cumple con VeriFactu?](https://www.novafactura.es/blog/como-saber-si-tu-software-cumple-con-verifactu) — Cómo comprobar si tu programa de facturación está homologado por la AEAT.
+- [¿Excel dejará de ser válido con VeriFactu?](https://www.novafactura.es/blog/excel-dejara-de-ser-valido-con-verifactu) — Por qué Excel deja de ser legal para facturar y qué alternativas existen.
+- [Multas y sanciones de VeriFactu: lo que puedes llegar a pagar si no cumples](https://www.novafactura.es/blog/multas-y-sanciones-de-verifactu-lo-que-puedes-llegar-a-pagar-si-no-cumples) — Sanciones de hasta 50.000€ al año por incumplimiento de la Ley Antifraude 11/2021.
+- [VeriFactu en 2026: lo que nadie te está explicando (y cómo prepararte sin complicarte)](https://www.novafactura.es/blog/verifactu-en-2026-lo-que-nadie-te-esta-explicando-y-como-prepararte-sin-complicarte) — Guía práctica para autónomos y pymes sobre los cambios de VeriFactu en 2026.
+- [Cómo cumplir con VeriFactu sin complicaciones (paso a paso)](https://www.novafactura.es/blog/como-cumplir-con-verifactu-sin-complicaciones-paso-a-paso) — Proceso claro y rápido para adaptarte a VeriFactu: requisitos y software compatible.
+- [VeriFactu 2025: qué es y cómo afecta a tu negocio — guía completa](https://www.novafactura.es/blog/verifactu-2025-que-es-y-como-afecta-a-tu-negocio-guia-completa) — Todo lo que debes saber sobre VeriFactu: cuándo es obligatorio y cómo te afecta.

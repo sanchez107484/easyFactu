@@ -80,8 +80,6 @@ const MODE_DESCRIPTIONS: Record<ExportMode, string> = {
   MANUAL: 'Empieza con la lista vacía y elige tú qué incluir.',
 };
 
-const DONT_SHOW_GUIDE_KEY = 'export-guide-dismissed';
-
 // ─── Module-level constants (computed once at load, not re-evaluated per render) ─
 
 const TODAY = format(new Date(), 'yyyy-MM-dd');
@@ -231,8 +229,7 @@ export default function ExportarFacturasPage() {
         onSuccess: ({ blob, filename }: { blob: Blob; filename: string }) => {
           triggerBlobDownload(blob, filename);
           setDownloadedFile({ blob, filename });
-          const dismissed = localStorage.getItem(DONT_SHOW_GUIDE_KEY) === '1';
-          if (!dismissed) setSuccessModalOpen(true);
+          setSuccessModalOpen(true);
         },
       },
     );
@@ -619,11 +616,6 @@ export default function ExportarFacturasPage() {
           downloadedFile && triggerBlobDownload(downloadedFile.blob, downloadedFile.filename)
         }
         onClose={() => setSuccessModalOpen(false)}
-        showDontShowAgain
-        onDontShowAgain={() => {
-          localStorage.setItem(DONT_SHOW_GUIDE_KEY, '1');
-          setSuccessModalOpen(false);
-        }}
       />
       <ImportGuideModal
         open={infoModalOpen}

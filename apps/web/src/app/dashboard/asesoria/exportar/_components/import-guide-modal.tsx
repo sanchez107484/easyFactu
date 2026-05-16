@@ -8,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -43,23 +42,23 @@ export function ImportGuideModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg p-0 overflow-hidden gap-0">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-lg p-0 overflow-hidden gap-0">
         {/* Header */}
         <div
           className={cn(
-            'px-6 pt-6 pb-5',
+            'px-4 pt-4 pb-4 sm:px-6 sm:pt-6 sm:pb-5',
             variant === 'success'
               ? 'bg-emerald-50 dark:bg-emerald-950/20 border-b border-emerald-200 dark:border-emerald-800/40'
               : 'border-b',
           )}
         >
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-3">
             {variant === 'success' ? (
-              <div className="h-11 w-11 rounded-full bg-emerald-600 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="h-6 w-6 text-white" />
+              <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-full bg-emerald-600 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
             ) : info.logoUrl ? (
-              <div className="h-11 w-11 rounded-lg shrink-0 overflow-hidden">
+              <div className="h-9 w-9 sm:h-11 sm:w-11 rounded-lg shrink-0 overflow-hidden">
                 <Image
                   src={info.logoUrl}
                   alt={info.name}
@@ -71,7 +70,7 @@ export function ImportGuideModal({
             ) : (
               <div
                 className={cn(
-                  'h-11 w-11 rounded-lg flex items-center justify-center shrink-0 font-bold text-sm',
+                  'h-9 w-9 sm:h-11 sm:w-11 rounded-lg flex items-center justify-center shrink-0 font-bold text-sm',
                   info.brandBg,
                   info.brandText,
                 )}
@@ -81,12 +80,12 @@ export function ImportGuideModal({
             )}
             <div className="flex-1 min-w-0">
               <DialogHeader>
-                <DialogTitle className="text-base">
+                <DialogTitle className="text-sm sm:text-base leading-snug">
                   {variant === 'success'
                     ? `¡Exportación completada!`
                     : `Cómo importar en ${info.name}`}
                 </DialogTitle>
-                <DialogDescription className="mt-1 text-sm">
+                <DialogDescription className="mt-1 text-xs sm:text-sm leading-relaxed">
                   {variant === 'success'
                     ? `Tu archivo ya se ha descargado. Sigue estos pasos para importarlo en ${info.name}.`
                     : info.tagline}
@@ -97,28 +96,28 @@ export function ImportGuideModal({
         </div>
 
         {/* Steps */}
-        <div className="px-6 py-5 max-h-[50vh] overflow-y-auto">
+        <div className="px-4 py-4 sm:px-6 sm:py-5 max-h-[45vh] sm:max-h-[50vh] overflow-y-auto">
           <ol className="space-y-3">
             {info.steps.map((step, i) => (
-              <li key={i} className="flex items-start gap-3">
+              <li key={i} className="flex items-start gap-2.5">
                 <span
                   className={cn(
-                    'h-6 w-6 rounded-full text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5',
+                    'h-5 w-5 sm:h-6 sm:w-6 rounded-full text-[10px] sm:text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5',
                     'bg-primary/10 text-primary',
                   )}
                 >
                   {i + 1}
                 </span>
-                <span className="text-sm leading-relaxed">{step}</span>
+                <span className="text-xs sm:text-sm leading-relaxed">{step}</span>
               </li>
             ))}
           </ol>
 
           {info.tips && info.tips.length > 0 && (
-            <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-950/20 p-3">
+            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-950/20 p-3">
               <div className="flex items-start gap-2">
-                <Lightbulb className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                <div className="space-y-1.5">
+                <Lightbulb className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-1.5 min-w-0">
                   <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
                     Consejos
                   </p>
@@ -139,7 +138,7 @@ export function ImportGuideModal({
         </div>
 
         {/* Reopen hint */}
-        <div className="mx-6 mb-4 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800/50 dark:bg-blue-950/20 px-3 py-2.5">
+        <div className="mx-4 sm:mx-6 mb-4 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800/50 dark:bg-blue-950/20 px-3 py-2.5">
           <HelpCircle className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-px" />
           <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
             Puedes consultar esta guía en cualquier momento desde el botón{' '}
@@ -151,35 +150,35 @@ export function ImportGuideModal({
         </div>
 
         {/* Footer */}
-        <DialogFooter className="px-6 py-4 border-t bg-muted/20 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="text-xs text-muted-foreground min-w-0">
-            {variant === 'success' && downloadedFilename ? (
-              <span className="font-mono truncate block" title={downloadedFilename}>
-                {downloadedFilename}
-              </span>
-            ) : showDontShowAgain && onDontShowAgain ? (
-              <button
-                type="button"
-                onClick={onDontShowAgain}
-                className="hover:text-foreground transition-colors"
-              >
-                No volver a mostrar
-              </button>
-            ) : null}
-          </div>
-          <div className="flex items-center gap-2 sm:shrink-0">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t bg-muted/20 flex flex-col gap-2.5">
+          {/* Filename — own row, always truncated */}
+          {variant === 'success' && downloadedFilename && (
+            <p
+              className="text-[11px] font-mono text-muted-foreground truncate w-full"
+              title={downloadedFilename}
+            >
+              {downloadedFilename}
+            </p>
+          )}
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-2">
             {variant === 'success' && onReDownload && (
-              <Button variant="outline" size="sm" onClick={onReDownload}>
-                <Download className="h-4 w-4 mr-1.5" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onReDownload}
+                className="text-xs sm:text-sm"
+              >
+                <Download className="h-3.5 w-3.5 mr-1.5" />
                 Volver a descargar
               </Button>
             )}
-            <Button size="sm" onClick={onClose}>
+            <Button size="sm" onClick={onClose} className="text-xs sm:text-sm">
               {variant === 'success' ? 'Entendido' : 'Cerrar'}
-              {variant !== 'success' && <X className="h-4 w-4 ml-1.5" />}
+              {variant !== 'success' && <X className="h-3.5 w-3.5 ml-1.5" />}
             </Button>
           </div>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
