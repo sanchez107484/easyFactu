@@ -24,7 +24,15 @@ export default function SiteHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-neutral-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+    <header
+      className="sticky top-0 z-50 border-b border-neutral-100 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80"
+      style={
+        {
+          '--brand-highlight': brandConfig.colors.highlight,
+          '--brand-highlight-bg': brandConfig.colors.highlightBg,
+        } as React.CSSProperties
+      }
+    >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         {/* Logo */}
         <Link href="/" className="flex-shrink-0" onClick={() => setMobileOpen(false)}>
@@ -48,8 +56,8 @@ export default function SiteHeader() {
               className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 link.highlight
                   ? pathname === link.href
-                    ? 'bg-customer-100 text-customer-700'
-                    : 'text-customer-600 hover:bg-customer-50 hover:text-customer-700'
+                    ? 'bg-[var(--brand-highlight-bg)] text-[var(--brand-highlight)]'
+                    : 'text-[var(--brand-highlight)] hover:bg-[var(--brand-highlight-bg)]'
                   : pathname === link.href
                     ? 'bg-primary-50 text-primary-600'
                     : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
@@ -105,8 +113,8 @@ export default function SiteHeader() {
                 className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   link.highlight
                     ? pathname === link.href
-                      ? 'bg-customer-100 text-customer-700'
-                      : 'text-customer-600 hover:bg-customer-50'
+                      ? 'bg-[var(--brand-highlight-bg)] text-[var(--brand-highlight)]'
+                      : 'text-[var(--brand-highlight)] hover:bg-[var(--brand-highlight-bg)]'
                     : pathname === link.href
                       ? 'bg-primary-50 text-primary-600'
                       : 'text-neutral-700 hover:bg-neutral-50'
