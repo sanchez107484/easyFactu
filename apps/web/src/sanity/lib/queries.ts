@@ -16,6 +16,7 @@ export interface SanityBlogPostCard {
   title: string;
   slug: string;
   excerpt: string;
+  bodyText: string | null;
   publishedAt: string;
   author: SanityBlogAuthor | null;
   categories: SanityBlogCategory[] | null;
@@ -37,6 +38,7 @@ export const POSTS_QUERY = groq`
     title,
     "slug": slug.current,
     excerpt,
+    "bodyText": pt::text(body),
     publishedAt,
     "author": author->{ name, "imageUrl": image.asset->url },
     "categories": categories[]->{ title, "slug": slug.current },

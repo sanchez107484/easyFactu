@@ -420,6 +420,9 @@ importers:
 
   packages/brand-config:
     devDependencies:
+      '@types/node':
+        specifier: '>=20.0.0'
+        version: 22.19.11
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.18.2
         version: 8.56.0(@typescript-eslint/parser@8.56.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)

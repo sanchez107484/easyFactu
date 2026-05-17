@@ -1,10 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { VerifactuHashService } from './verifactu-hash.service';
-import { VerifactuXmlService } from './verifactu-xml.service';
-import { VerifactuSignerService } from './verifactu-signer.service';
-import { VerifactuSenderService } from './verifactu-sender.service';
-import { VerifactuQrService } from './verifactu-qr.service';
+import { HACIENDA_ADAPTER, IHaciendaAdapter } from '../interfaces/hacienda-adapter.interface';
 import { InvoiceStatus, VerifactuStatus } from '@easyfactura/shared-types';
 
 @Injectable()
@@ -14,10 +11,7 @@ export class VerifactuService {
   constructor(
     private prisma: PrismaService,
     private hashService: VerifactuHashService,
-    private xmlService: VerifactuXmlService,
-    private signerService: VerifactuSignerService,
-    private senderService: VerifactuSenderService,
-    private qrService: VerifactuQrService
+    @Inject(HACIENDA_ADAPTER) private haciendaAdapter: IHaciendaAdapter
   ) {}
 
   /**
@@ -87,19 +81,19 @@ export class VerifactuService {
       this.logger.log(`Hash generated for invoice ${invoiceId}: ${hash}`);
 
       // Step 2: Generate XML
-      const xml = await this.xmlService.generateXml(tenantId, invoiceId);
+      const xml = await this.haciendaAdapter.generateXml(tenantId, invoiceId);
       this.logger.log(`XML generated for invoice ${invoiceId}`);
 
-      // Step 3: Sign XML (TODO: implement with tenant certificate)
-      const signedXml = await this.signerService.signXml(xml);
+      // Step 3: Sign XML with the tenant's digital certificate
+      const signedXml = await this.haciendaAdapter.signXml(xml, tenantId);
       this.logger.log(`XML signed for invoice ${invoiceId}`);
 
-      // Step 4: Send to AEAT
-      await this.senderService.sendToAeat(tenantId, invoiceId, signedXml);
-      this.logger.log(`Invoice ${invoiceId} sent to AEAT`);
+      // Step 4: Send to Hacienda
+      await this.haciendaAdapter.sendToHacienda(tenantId, invoiceId, signedXml);
+      this.logger.log(`Invoice ${invoiceId} sent to Hacienda`);
 
       // Step 5: Generate QR code
-      const qrUrl = await this.qrService.generateQrUrl(tenantId, invoiceId);
+      const qrUrl = await this.haciendaAdapter.generateQrUrl(tenantId, invoiceId);
       await this.prisma.invoice.update({
         where: { id: invoiceId },
         data: { verifactuQr: qrUrl },
@@ -142,10 +136,10 @@ export class VerifactuService {
       throw new Error('Solo se pueden reintentar facturas con error');
     }
 
-    // Regenerate XML and retry
-    const xml = await this.xmlService.generateXml(tenantId, invoiceId);
-    const signedXml = await this.signerService.signXml(xml);
-    await this.senderService.retryFailedSubmission(tenantId, invoiceId, signedXml);
+    // Regenerate XML and retry via the active Hacienda adapter
+    const xml = await this.haciendaAdapter.generateXml(tenantId, invoiceId);
+    const signedXml = await this.haciendaAdapter.signXml(xml, tenantId);
+    await this.haciendaAdapter.retrySubmission(tenantId, invoiceId, signedXml);
   }
 
   /**

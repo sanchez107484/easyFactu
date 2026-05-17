@@ -10,7 +10,7 @@ interface BlogCardFeaturedProps {
 }
 
 export function BlogCardFeatured({ post }: BlogCardFeaturedProps) {
-  const readingTime = estimateReadingTime(post.excerpt);
+  const readingTime = estimateReadingTime(post.bodyText ?? post.excerpt);
 
   return (
     <article className="group grid overflow-hidden rounded-2xl border bg-card transition-all duration-200 hover:shadow-xl lg:grid-cols-[1fr_45%]">

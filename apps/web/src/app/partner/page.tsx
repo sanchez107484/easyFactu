@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
+import { brandConfig } from '@easyfactura/brand-config';
 import {
   Users,
   FileText,
@@ -677,8 +678,8 @@ function LoginForm({ onSuccess }: { onSuccess: (key: string) => void }) {
         <div className="text-center">
           <div className="mx-auto mb-6 flex justify-center">
             <Image
-              src="/brand/logo-white.png"
-              alt="NovaFactura"
+              src={brandConfig.logos.white}
+              alt={brandConfig.app.name}
               width={180}
               height={48}
               priority
@@ -840,8 +841,8 @@ function Dashboard({
       <header className="sticky top-0 z-10 border-b border-white/5 bg-gray-950/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <Image
-            src="/brand/logo-white.png"
-            alt="NovaFactura"
+            src={brandConfig.logos.white}
+            alt={brandConfig.app.name}
             width={130}
             height={34}
             className="h-8 w-auto"

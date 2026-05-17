@@ -10,7 +10,7 @@ interface BlogCardProps {
 }
 
 export function BlogCard({ post }: BlogCardProps) {
-  const readingTime = estimateReadingTime(post.excerpt);
+  const readingTime = estimateReadingTime(post.bodyText ?? post.excerpt);
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border bg-card transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
