@@ -3,20 +3,34 @@
   "remoteCache": {
     "enabled": true
   },
-  "globalDependencies": ["**/.env.*local"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "dist/**"],
-      "env": [
-        "SANITY_REVALIDATE_SECRET",
-        "NEXT_PUBLIC_API_URL",
-        "NEXT_PUBLIC_APP_URL",
-        "NEXT_PUBLIC_SANITY_PROJECT_ID",
-        "NEXT_PUBLIC_SANITY_DATASET",
-        "NEXT_PUBLIC_SANITY_API_VERSION",
-        "NEXT_PUBLIC_GTM_ID",
-        "NEXT_PUBLIC_WEB3FORMS_KEY"
+      "passThroughEnv": [
+        "NODE_ENV",
+        "DATABASE_URL",
+        "DIRECT_URL",
+        "SUPABASE_URL",
+        "SUPABASE_ANON_KEY",
+        "SUPABASE_SERVICE_KEY",
+        "REDIS_URL",
+        "JWT_ACCESS_SECRET",
+        "JWT_REFRESH_SECRET",
+        "JWT_ACCESS_EXPIRATION",
+        "JWT_REFRESH_EXPIRATION",
+        "APP_PORT",
+        "APP_URL",
+        "FRONTEND_URL",
+        "RESEND_API_KEY",
+        "EMAIL_FROM",
+        "VERIFACTU_ENVIRONMENT",
+        "VERIFACTU_ENDPOINT_SANDBOX",
+        "VERIFACTU_ENDPOINT_PRODUCTION",
+        "CERTIFICATE_ENCRYPTION_KEY",
+        "UPLOAD_DIR",
+        "SCHEDULER_SECRET",
+        "PARTNER_SECRET"
       ]
     },
     "dev": {

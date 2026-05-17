@@ -1,6 +1,7 @@
 {
   "buildCommand": "cd ../.. && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 turbo build --filter=@easyfactura/web",
   "installCommand": "pnpm install --frozen-lockfile --prefer-offline",
+  "ignoreCommand": "npx turbo-ignore @easyfactura/web",
   "functions": {
     "src/app/api/invoices/[id]/pdf/route.ts": {
       "memory": 1024,
