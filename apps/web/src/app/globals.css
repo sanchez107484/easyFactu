@@ -5,6 +5,29 @@
 /* CSS custom properties are injected by RootLayout from theme.config.ts */
 /* See: apps/web/src/app/layout.tsx */
 
+/*
+ * Dashboard color override — Opción A (solo NaFactura)
+ * El rojo de marca se mantiene intacto en la landing.
+ * El dashboard usa indigo para evitar la sensación de error/alerta.
+ * NovaFactura no se ve afectada (su --primary azul sigue siendo el global).
+ * Selector: [data-brand] lo inyecta RootLayout desde NEXT_PUBLIC_BRAND.
+ */
+[data-brand='nafactura'] [data-section='dashboard'] {
+  --primary: 205 75% 35%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 205 75% 35%;
+  --accent: 205 40% 94%;
+  --accent-foreground: 205 75% 20%;
+}
+
+.dark [data-brand='nafactura'] [data-section='dashboard'] {
+  --primary: 205 70% 55%;
+  --primary-foreground: 205 75% 8%;
+  --ring: 205 70% 55%;
+  --accent: 205 40% 18%;
+  --accent-foreground: 205 60% 90%;
+}
+
 @layer base {
   * {
     @apply border-border;

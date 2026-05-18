@@ -189,7 +189,11 @@ export default function RootLayout({
   const themeCss = buildThemeCss(themeConfig.cssVars.light, themeConfig.cssVars.dark);
 
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html
+      lang="es"
+      data-brand={process.env.NEXT_PUBLIC_BRAND ?? 'novafactura'}
+      suppressHydrationWarning
+    >
       <head>
         {/* Preconnect to external origins for faster resource loading */}
         <link rel="preconnect" href="https://cdn.sanity.io" />
