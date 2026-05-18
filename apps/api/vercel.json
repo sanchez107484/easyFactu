@@ -1,8 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "pnpm run vercel:build",
+  "buildCommand": "prisma migrate deploy --schema=./prisma/schema.prisma && turbo run build --filter=@easyfactura/backend",
   "installCommand": "pnpm install --frozen-lockfile --prefer-offline",
-  "ignoreCommand": "npx turbo-ignore @easyfactura/backend",
   "functions": {
     "api/index.ts": {
       "includeFiles": "dist/**,node_modules/.prisma/**,node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/**,node_modules/@easyfactura/**",
