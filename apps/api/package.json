@@ -7,7 +7,7 @@
   "scripts": {
     "postinstall": "prisma generate --schema=./prisma/schema.prisma && node scripts/sync-prisma-client.js",
     "build": "nest build",
-    "vercel:build": "prisma migrate deploy --schema=./prisma/schema.prisma && turbo run build --filter=@easyfactura/backend",
+    "vercel:build": "node scripts/migrate-deploy.js && turbo run build --filter=@easyfactura/backend",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "dev": "nest start --watch",

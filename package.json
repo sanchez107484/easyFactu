@@ -10,7 +10,9 @@
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
     "clean": "turbo clean && rm -rf node_modules",
-    "test": "turbo test"
+    "test": "turbo test",
+    "migrate:prod": "powershell -ExecutionPolicy Bypass -File scripts/migrate-prod.ps1",
+    "migrate:prod:force": "powershell -ExecutionPolicy Bypass -File scripts/migrate-prod.ps1 -Force"
   },
   "dependencies": {
     "pg": "^8.20.0",
