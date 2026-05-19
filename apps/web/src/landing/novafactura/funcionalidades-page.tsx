@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
   Shield,
@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { brandConfig, PRICING, PLAZAS_CONFIG } from '@easyfactura/brand-config';
 import SiteHeader from '@/components/site-header';
+import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
 
 export const novafacturaFuncionalidadesMetadata: Metadata = {
@@ -68,7 +69,7 @@ export const novafacturaFuncionalidadesMetadata: Metadata = {
     locale: 'es_ES',
     images: [
       {
-        url: `${brandConfig.app.url}/og-image.jpg`,
+        url: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
         width: 1200,
         height: 630,
         alt: `${brandConfig.app.name} — Funcionalidades del software de facturación VeriFactu`,
@@ -79,7 +80,7 @@ export const novafacturaFuncionalidadesMetadata: Metadata = {
     card: 'summary_large_image',
     title: `Funcionalidades de ${brandConfig.app.name} — Facturación VeriFactu`,
     description: `Descubre todo lo que incluye ${brandConfig.app.name}: VeriFactu, clientes, presupuestos, PDF, dashboard y más. Gratis hasta 2027.`,
-    images: [`${brandConfig.app.url}/og-image.jpg`],
+    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
 
@@ -315,32 +316,36 @@ const comparisonRows = [
 
 const faqs = [
   {
-    q: '¿Qué es VeriFactu y por qué lo necesito?',
-    a: 'VeriFactu es el sistema de verificación de facturas establecido por la Ley Antifraude 11/2021. Es obligatorio para autónomos persona física desde el 1 de julio de 2027 y para sociedades desde el 1 de enero de 2027. Exige que cada factura lleve hash encadenado, código QR y sea enviada automáticamente a la AEAT. Sin un software homologado, las sanciones pueden llegar a 50.000€.',
+    q: '¿Qué es VeriFactu y por qué es obligatorio para autónomos?',
+    a: 'VeriFactu es el sistema de verificación de facturas de la AEAT creado por la Ley Antifraude 11/2021. Es obligatorio porque elimina el fraude del "software de doble uso" que permitía llevar dos contabilidades paralelas. Cada factura lleva un hash SHA-256 encadenado con la anterior y se transmite en tiempo real a la Agencia Tributaria. Para autónomos persona física, la obligación arranca el 1 de julio de 2027; para sociedades (SL, SA), el 1 de enero de 2027. Las sanciones por incumplimiento pueden alcanzar los 50.000€ por ejercicio.',
   },
   {
-    q: '¿Necesito conocimientos de contabilidad para usar el software?',
-    a: 'No. La plataforma está diseñada para profesionales sin formación contable. Tú introduces los datos básicos y el software calcula el IVA, el IRPF, genera el PDF y lo envía a Hacienda automáticamente.',
+    q: '¿Necesito conocimientos de contabilidad o fiscal para usar el software?',
+    a: 'No. La plataforma está diseñada para profesionales sin formación contable. Introduces el cliente, el concepto y el importe — el software calcula el IVA (21%, 10% o 4%), aplica la retención de IRPF si procede (7% los primeros 3 años, 15% después), genera el PDF con el QR VeriFactu y lo registra en la AEAT automáticamente. También puedes ver un resumen de tus ingresos y del IVA pendiente para preparar el modelo 303 trimestral.',
   },
   {
     q: '¿Qué incluye el acceso gratuito hasta 2027?',
-    a: `Acceso completo a todas las funcionalidades: facturación VeriFactu, gestión de clientes, presupuestos, catálogo de productos, dashboard, generación de PDF, plantilla personalizable y soporte técnico. Sin restricciones ni límite de facturas.`,
+    a: 'Acceso completo sin restricciones: facturación con VeriFactu, gestión de clientes y productos, presupuestos, facturas proforma, facturas recurrentes, dashboard de ingresos, generación de PDF, QR verificable, plantilla personalizable con tu logo y colores, y soporte técnico. Sin límite de facturas, sin funciones bloqueadas ni letra pequeña. El acceso gratuito es por tiempo limitado para las primeras plazas disponibles.',
   },
   {
-    q: '¿Puedo migrar mis facturas y clientes desde otro programa?',
-    a: 'Sí. Puedes importar clientes y facturas desde Excel, CSV o directamente desde Holded. La migración es gratuita y nuestro equipo te asiste durante el proceso.',
+    q: '¿Puedo migrar mis datos desde otro programa de facturación?',
+    a: 'Sí. Puedes importar clientes y facturas desde Excel, CSV o directamente desde Holded. El proceso es sencillo: exportas tus datos del programa anterior, los subes a NovaFactura y en minutos tienes todo disponible. El historial de facturas importadas queda en tu cuenta para consulta. La migración es gratuita y nuestro equipo te asiste en el proceso.',
   },
   {
-    q: '¿Qué pasa con mis datos si cancelo?',
-    a: 'Tus datos son tuyos. Puedes exportar todas tus facturas y clientes en cualquier momento en formato PDF, Excel o CSV.',
+    q: '¿Qué pasa con mis datos si cancelo la suscripción?',
+    a: 'Tus datos son tuyos. Puedes exportar todas tus facturas, clientes y productos en cualquier momento en formato PDF, Excel o CSV. Los datos quedan almacenados 90 días adicionales tras la cancelación por si quieres recuperarlos. No eliminamos registros fiscales sin tu confirmación explícita, dado que la normativa obliga a conservarlos entre 4 y 6 años.',
   },
   {
     q: '¿El software cumple con el RGPD?',
-    a: 'Sí. Los servidores están ubicados en la Unión Europea, los datos se cifran con SSL de 256 bits y cumplimos íntegramente el RGPD.',
+    a: 'Sí. Los servidores están ubicados en la Unión Europea, los datos se cifran con TLS 1.3 en tránsito y AES-256 en reposo, y cumplimos íntegramente el RGPD. Nunca cedemos datos a terceros para fines comerciales. Puedes ejercer tu derecho de acceso, rectificación y portabilidad desde tu cuenta.',
   },
   {
-    q: '¿Puedo personalizar la plantilla de mis facturas?',
-    a: 'Sí. Puedes añadir tu logo, personalizar los colores, añadir el número de cuenta bancaria y el pie de página.',
+    q: '¿Puedo personalizar las facturas con mi logo y marca?',
+    a: 'Sí. Puedes subir tu logo (JPG, PNG o SVG), elegir el color principal de la plantilla, añadir el número de cuenta IBAN para domiciliación, incluir un pie de página personalizado con tus condiciones o datos de contacto, y elegir entre varias plantillas de diseño. Todas las facturas incluyen automáticamente el QR VeriFactu y el hash encadenado requerido por la AEAT.',
+  },
+  {
+    q: '¿Es posible configurar facturas recurrentes automáticas?',
+    a: 'Sí. Puedes configurar facturas recurrentes para clientes con contratos fijos (mensual, trimestral, anual). El software genera y registra automáticamente cada factura en la fecha indicada, la incluye en la cadena VeriFactu y te notifica por email. Es especialmente útil para autónomos con clientes de tarifa plana o servicios de mantenimiento.',
   },
 ];
 
@@ -584,41 +589,11 @@ export function NovafacturaFuncionalidadesPage(): React.JSX.Element {
           </section>
 
           {/* FAQ */}
-          <section className="border-t border-slate-100 bg-slate-50 py-16 md:py-24">
-            <div className="mx-auto max-w-3xl px-4">
-              <div className="mb-12 text-center">
-                <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">
-                  Preguntas frecuentes
-                </h2>
-                <p className="mt-4 text-slate-500">
-                  Resuelve tus dudas sobre las funcionalidades y el cumplimiento legal.
-                </p>
-              </div>
-              <div className="space-y-3">
-                {faqs.map(({ q, a }) => (
-                  <details
-                    key={q}
-                    className="group rounded-xl border-2 border-slate-200 bg-white open:border-blue-200"
-                  >
-                    <summary className="flex cursor-pointer select-none list-none items-center justify-between px-5 py-4 text-base font-semibold text-slate-900 hover:text-blue-600">
-                      <span>{q}</span>
-                      <span className="ml-4 shrink-0 transition-transform duration-200 group-open:rotate-45">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                          <path
-                            d="M10 4v12M4 10h12"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                      </span>
-                    </summary>
-                    <div className="px-5 pb-4 text-sm leading-relaxed text-slate-500">{a}</div>
-                  </details>
-                ))}
-              </div>
-            </div>
-          </section>
+          <FaqSection
+            faqs={faqs}
+            title="Preguntas frecuentes"
+            subtitle="Resuelve tus dudas sobre las funcionalidades y el cumplimiento legal."
+          />
 
           {/* Final CTA */}
           <section className="py-16 md:py-24">

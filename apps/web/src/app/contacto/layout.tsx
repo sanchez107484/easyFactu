@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { brandConfig } from '@easyfactura/brand-config';
 
 export const metadata: Metadata = {
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     locale: 'es_ES',
     images: [
       {
-        url: `${brandConfig.app.url}/og-image.jpg`,
+        url: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
         width: 1200,
         height: 630,
         alt: `${brandConfig.app.name} — Contacto`,
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: `Contacto — ${brandConfig.app.name}`,
     description: `¿Dudas sobre facturación o VeriFactu? Nuestro equipo responde en menos de 2 horas. Soporte en español.`,
-    images: [`${brandConfig.app.url}/og-image.jpg`],
+    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
 

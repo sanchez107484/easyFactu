@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
   Shield,
@@ -61,7 +61,7 @@ export const nafacturaFuncionalidadesMetadata: Metadata = {
     locale: 'es_ES',
     images: [
       {
-        url: `${brandConfig.app.url}/og-image.jpg`,
+        url: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
         width: 1200,
         height: 630,
         alt: `${brandConfig.app.name} — Software de facturación para autónomos navarros`,
@@ -72,7 +72,7 @@ export const nafacturaFuncionalidadesMetadata: Metadata = {
     card: 'summary_large_image',
     title: `Funcionalidades de ${brandConfig.app.name} — Facturación para Navarra`,
     description: `Descubre todo lo que incluye ${brandConfig.app.name} para autónomos navarros. Gratis hasta 2027.`,
-    images: [`${brandConfig.app.url}/og-image.jpg`],
+    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
 

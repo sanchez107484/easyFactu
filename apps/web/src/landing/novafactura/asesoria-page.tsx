@@ -1,8 +1,40 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 import SiteHeader from '@/components/site-header';
+import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
 import { brandConfig } from '@easyfactura/brand-config';
+
+const faqs = [
+  {
+    q: '¿Necesito que mis clientes creen una cuenta para gestionar su facturación?',
+    a: 'No es necesario. Puedes dar de alta a cada cliente directamente desde tu panel de asesoría con sus datos fiscales (NIF, razón social, domicilio). El cliente no necesita saber que usas NovaFactura para operar. Si en el futuro quiere gestionar sus facturas directamente, puedes transferirle el control de su cuenta sin perder ningún dato.',
+  },
+  {
+    q: '¿Las facturas quedan registradas bajo el NIF de cada cliente?',
+    a: `Sí, y es la parte más importante desde el punto de vista fiscal. Aunque tú operas desde tu panel de asesoría, cada factura pertenece al tenant fiscal del cliente: tiene su NIF, su serie correlativa propia, su cadena VeriFactu y se transmite a la AEAT como emitida por ese cliente. Hacienda las ve exactamente igual que si el cliente las hubiera emitido él mismo.`,
+  },
+  {
+    q: `¿Qué pasa si un cliente ya tiene cuenta en ${brandConfig.app.name}?`,
+    a: 'Puedes vincularte a su cuenta existente mediante invitación por email. El cliente te otorga un rol de gestor y tú puedes operar en su nombre desde tu panel de asesoría. Todos los datos previos (facturas, clientes, configuración VeriFactu) se conservan íntegramente.',
+  },
+  {
+    q: '¿Mis clientes pueden ver las acciones que realizo en su cuenta?',
+    a: 'Todas las acciones quedan registradas en el log de auditoría interno. Cuando actúas en nombre de un cliente, cada factura creada o modificada queda marcada con tu usuario y la fecha/hora de la acción. El cliente puede consultar este log desde su panel en cualquier momento, lo que aporta transparencia y trazabilidad completa.',
+  },
+  {
+    q: '¿Cuánto cuesta el software para asesorías?',
+    a: `${brandConfig.app.name} es completamente gratuito para asesorías y gestorías durante el periodo de lanzamiento hasta 2027. Sin límite de clientes gestionados, sin coste mensual por cliente adicional, sin restricciones funcionales. A partir de 2027, el modelo de precios para asesorías se confirmará con antelación suficiente.`,
+  },
+  {
+    q: '¿Puedo gestionar clientes con diferentes regímenes fiscales?',
+    a: 'Sí. La plataforma soporta autónomos en estimación directa normal y simplificada, sociedades (SL, SA), arrendadores y otros regímenes habituales. Cada cliente tiene configurada su propia serie de facturación, sus tipos de IVA y su retención de IRPF. Puedes gestionar simultáneamente un autónomo con IRPF al 7%, una SL sin IRPF y un profesional con IRPF al 15%, cada uno con sus propias reglas.',
+  },
+  {
+    q: '¿El software emite las facturas en nombre del cliente o en el mío?',
+    a: 'Siempre en nombre del cliente. Cuando tú, como asesor, emites una factura para el cliente A, esa factura sale con el NIF, la razón social, el domicilio y la serie de facturación del cliente A. Tú actúas como operador autorizado, pero el emisor legal es siempre el cliente. Esto es fundamental para que la cadena VeriFactu y los registros de la AEAT sean correctos.',
+  },
+];
 import {
   ArrowRight,
   CheckCircle2,
@@ -46,7 +78,7 @@ export const novafacturaAsesoriaMetadata: Metadata = {
     locale: 'es_ES',
     images: [
       {
-        url: `${brandConfig.app.url}/og-image.jpg`,
+        url: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
         width: 1200,
         height: 630,
         alt: `${brandConfig.app.name} para asesorías — Software VeriFactu gratis`,
@@ -58,7 +90,7 @@ export const novafacturaAsesoriaMetadata: Metadata = {
     title: `Software VeriFactu para asesorías | ${brandConfig.app.name}`,
     description:
       'Panel centralizado para gestionar la facturación VeriFactu de todos tus clientes. Gratis para siempre.',
-    images: [`${brandConfig.app.url}/og-image.jpg`],
+    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
 
@@ -101,40 +133,11 @@ const breadcrumbJsonLd = {
 const faqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
-  mainEntity: [
-    {
-      '@type': 'Question',
-      name: '¿Necesito que mis clientes creen también una cuenta?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'No es necesario. Puedes dar de alta a tus clientes directamente tú mismo con sus datos fiscales.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: '¿Las facturas que emito quedan registradas bajo el NIF de cada cliente?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Sí. Aunque las emites desde tu panel, cada factura pertenece al tenant fiscal del cliente con su NIF, su serie y su cadena VeriFactu. Hacienda las ve como emitidas por el cliente.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: `¿Qué pasa si un cliente ya tiene cuenta en ${brandConfig.app.name}?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Puedes invitarle por email y vincularte a su cuenta existente. No se pierde ningún dato previo.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: '¿Cuánto cuesta el software para asesorías?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `${brandConfig.app.name} es completamente gratuito para asesorías y gestorías. Sin límite de clientes, sin coste mensual, sin letra pequeña.`,
-      },
-    },
-  ],
+  mainEntity: faqs.map(({ q, a }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
 };
 
 const FEATURES = [
@@ -372,45 +375,7 @@ export function NovafacturaAsesoriaPage() {
         </section>
 
         {/* FAQ */}
-        <section className="bg-gray-50 py-20 dark:bg-gray-900/50 md:py-28">
-          <div className="mx-auto max-w-3xl px-6">
-            <h2 className="mb-12 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-              Preguntas frecuentes
-            </h2>
-            <div className="space-y-6">
-              {[
-                {
-                  q: '¿Necesito que mis clientes creen también una cuenta?',
-                  a: 'No es necesario. Puedes dar de alta a tus clientes directamente tú mismo con sus datos fiscales. Si quieren acceder a su propio dashboard en el futuro, pueden hacerlo en cualquier momento.',
-                },
-                {
-                  q: '¿Las facturas que emito quedan registradas bajo el NIF de cada cliente?',
-                  a: 'Sí. Aunque tú las emites desde tu panel, cada factura pertenece al tenant fiscal del cliente — con su NIF, su serie y su cadena VeriFactu. Hacienda las ve como emitidas por el cliente.',
-                },
-                {
-                  q: '¿Qué pasa si un cliente ya tiene cuenta en ' + brandConfig.app.name + '?',
-                  a: 'Puedes invitarle por email y vincularte a su cuenta existente. No se pierde ningún dato previo.',
-                },
-                {
-                  q: '¿Mis clientes pueden ver que yo accedo a su cuenta?',
-                  a: 'Cada acción queda registrada internamente. Cuando actúas en nombre de un cliente, todas las facturas que creas quedan marcadas con tu usuario para auditoría.',
-                },
-                {
-                  q: '¿Cuánto cuesta el software para asesorías?',
-                  a: `${brandConfig.app.name} es completamente gratuito para asesorías y gestorías. Sin límite de clientes, sin coste mensual, sin letra pequeña.`,
-                },
-              ].map(({ q, a }) => (
-                <div
-                  key={q}
-                  className="rounded-2xl border border-gray-100 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"
-                >
-                  <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">{q}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{a}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <FaqSection faqs={faqs} title="Preguntas frecuentes sobre el plan para asesorías" />
 
         <FooterLanding />
       </div>

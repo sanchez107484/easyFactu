@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
@@ -46,7 +46,7 @@ export const nafacturaAsesoriaMetadata: Metadata = {
     locale: 'es_ES',
     images: [
       {
-        url: `${brandConfig.app.url}/og-image.jpg`,
+        url: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
         width: 1200,
         height: 630,
         alt: `${brandConfig.app.name} para asesorías — Software fiscal Navarra gratis`,
@@ -58,7 +58,7 @@ export const nafacturaAsesoriaMetadata: Metadata = {
     title: `Software fiscal para asesorías en Navarra | ${brandConfig.app.name}`,
     description:
       'Panel centralizado para gestionar el cumplimiento fiscal de todos tus clientes navarros. Gratis para siempre.',
-    images: [`${brandConfig.app.url}/og-image.jpg`],
+    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
 

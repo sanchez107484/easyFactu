@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { brandConfig, PRICING } from '@easyfactura/brand-config';
 
 export const metadata: Metadata = {
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     locale: 'es_ES',
     images: [
       {
-        url: `${brandConfig.app.url}/og-image.jpg`,
+        url: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
         width: 1200,
         height: 630,
         alt: `${brandConfig.app.name} — Precios del software de facturación`,
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: `Precios de ${brandConfig.app.name} — Gratis hasta 2027`,
     description: `Desde ${PRICING.starter.monthly}€/mes. Gratis hasta 2027. Sin tarjeta. Sin permanencia. Plan PRO con VeriFactu desde ${PRICING.pro.monthly}€/mes.`,
-    images: [`${brandConfig.app.url}/og-image.jpg`],
+    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
 

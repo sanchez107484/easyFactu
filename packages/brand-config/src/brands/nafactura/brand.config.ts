@@ -17,6 +17,7 @@ export const nafacturaBrandConfig = {
     tagline: 'Factura sin complicaciones. Cumplimiento foral automático.',
     url: 'https://www.nafactura.es',
     domain: 'www.nafactura.es',
+    ogImage: '/brand/nafactura/og-image.png',
     supportEmail: 'info@nafactura.es',
     legalEntity: 'NaFactura S.L.',
     nif: '[NIF/CIF]',

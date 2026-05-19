@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
   Shield,
@@ -25,11 +25,8 @@ import {
 import { brandConfig, PLAZAS_CONFIG, PRICING } from '@easyfactura/brand-config';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
-import {
-  HomeStickyCtaBanner,
-  HomeAnimatedStats,
-  HomeFaqAccordion,
-} from '@/components/home/home-client';
+import { HomeStickyCtaBanner, HomeAnimatedStats } from '@/components/home/home-client';
+import FaqSection from '@/components/FaqSection';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data
@@ -135,32 +132,32 @@ const comparisonRows = [
 
 const faqs = [
   {
-    q: '¿Cuántas plazas gratuitas quedan disponibles?',
-    a: `Ofrecemos acceso gratuito hasta 2027 a las primeras ${PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones. Actualmente quedan ${PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas disponibles. Una vez alcanzado el límite, el período gratuito dejará de estar disponible para nuevos usuarios.`,
+    q: '¿Cuándo es obligatorio VeriFactu para autónomos?',
+    a: 'Desde el 1 de julio de 2025 para nuevos contribuyentes que se den de alta en el Censo de Empresarios. Para los autónomos persona física ya dados de alta antes de esa fecha, el plazo es el 1 de julio de 2027. Para sociedades (SL, SA) y otras personas jurídicas, el 1 de enero de 2027 (Real Decreto 254/2025). A partir de esas fechas, emitir facturas con Excel o software no certificado puede acarrear multas de hasta 50.000€.',
   },
   {
-    q: '¿Cuándo es obligatorio VeriFactu para autónomos?',
-    a: 'Desde el 1 de julio de 2025 para nuevos contribuyentes. Para los autónomos persona física ya dados de alta, el plazo es el 1 de julio de 2027. Para sociedades (SL, SA), el 1 de enero de 2027 (Real Decreto 254/2025).',
+    q: `¿${brandConfig.app.name} está homologado por la AEAT como software garante?`,
+    a: `Sí. ${brandConfig.app.name} está certificado como software garante VeriFactu por la Agencia Tributaria. Genera automáticamente el hash encadenado SHA-256, el código QR verificable por la AEAT y transmite cada factura al registro fiscal en tiempo real. No necesitas configurar nada: desde la primera factura, ya cumples.`,
   },
   {
     q: '¿Cuánto cuesta después de 2027?',
-    a: `Plan Starter (con VeriFactu, hasta 60 facturas/año): ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.starter.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Plan PRO con VeriFactu automático y facturas ilimitadas: ${PRICING.pro.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.pro.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Sin permanencia.`,
+    a: `Durante el periodo gratuito (hasta 2027) tienes acceso completo sin restricciones. A partir de entonces: Plan Starter ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes (hasta 60 facturas/año, con VeriFactu incluido) o ${PRICING.starter.annualMonthly.toFixed(2).replace('.', ',')}€/mes si pagas anual. Plan PRO ${PRICING.pro.monthly.toFixed(2).replace('.', ',')}€/mes (facturas ilimitadas, VeriFactu automático, soporte prioritario) o ${PRICING.pro.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Sin permanencia.`,
   },
   {
-    q: '¿Qué sanciones existen por no usar software certificado?',
-    a: 'La Ley General Tributaria establece sanciones de hasta 50.000€.',
+    q: '¿Qué sanciones existen por no usar software certificado VeriFactu?',
+    a: 'La Ley General Tributaria y la Ley Antifraude 11/2021 establecen multas de hasta 50.000€ por ejercicio fiscal. El uso de software que permita modificar o eliminar facturas sin rastro (como Excel) puede tipificarse como infracción tributaria grave. Además, la AEAT puede iniciar comprobaciones e inspecciones al cruzar tus declaraciones de IVA con el registro VeriFactu.',
   },
   {
-    q: `¿${brandConfig.app.name} está homologado por la AEAT?`,
-    a: 'Sí. Conexión API directa con la Agencia Tributaria. Cumplimiento íntegro del Reglamento de facturación.',
+    q: '¿Es posible migrar facturas y clientes desde otro software?',
+    a: 'Sí. Importación desde Excel, CSV o directamente desde Holded. Puedes subir tu base de clientes en un archivo estructurado y todas tus facturas históricas quedan disponibles en tu cuenta. La migración es gratuita y nuestro equipo te asiste durante el proceso sin coste adicional.',
   },
   {
-    q: '¿Es posible migrar facturas desde otro software?',
-    a: 'Sí. Importación desde Excel, CSV o Holded. Migración gratuita y asistida.',
+    q: '¿Se necesitan conocimientos de contabilidad para usar el software?',
+    a: 'No. La plataforma está diseñada para profesionales sin formación contable ni fiscal. Introduces los datos básicos — cliente, concepto, cantidad — y el software calcula automáticamente el IVA, aplica la retención de IRPF si corresponde, genera el PDF con el QR VeriFactu y lo registra en la AEAT. También emite recordatorios para la declaración trimestral de IVA (modelo 303).',
   },
   {
-    q: '¿Se requieren conocimientos de contabilidad?',
-    a: 'No. Diseñado para profesionales sin formación contable.',
+    q: `¿Puedo emitir presupuestos y facturas proforma además de facturas?`,
+    a: `Sí. ${brandConfig.app.name} incluye gestión de presupuestos, facturas proforma y facturas recurrentes. Puedes convertir un presupuesto en factura con un solo clic. Las facturas recurrentes se generan y envían automáticamente cada mes, trimestre o año según configures.`,
   },
 ];
 
@@ -177,64 +174,11 @@ const trustBadges = [
 const homepageFaqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
-  mainEntity: [
-    {
-      '@type': 'Question',
-      name: '¿Cuántas plazas gratuitas quedan disponibles?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `Ofrecemos acceso gratuito hasta 2027 a las primeras ${PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones. Actualmente quedan ${PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas disponibles.`,
-      },
-    },
-    {
-      '@type': 'Question',
-      name: '¿Cuándo es obligatorio VeriFactu para autónomos?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Desde el 1 de julio de 2027 para autónomos. La Ley Antifraude 11/2021 exige que todas las facturas emitidas con software incluyan hash encadenado, código QR y sean enviadas automáticamente a la AEAT.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `Plan Starter (con VeriFactu, hasta 60 facturas/año): ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes. Plan PRO: ${PRICING.pro.monthly.toFixed(2).replace('.', ',')}€/mes. Sin permanencia.`,
-      },
-    },
-    {
-      '@type': 'Question',
-      name: '¿Qué sanciones existen por no usar software VeriFactu certificado?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'La Ley General Tributaria establece sanciones de hasta 50.000€.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: `¿${brandConfig.app.name} está homologado por la AEAT?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `Sí. ${brandConfig.app.name} tiene conexión API directa con la Agencia Tributaria y cumple íntegramente el Reglamento de facturación.`,
-      },
-    },
-    {
-      '@type': 'Question',
-      name: '¿Es posible migrar facturas desde otro software?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `Sí. ${brandConfig.app.name} permite importar clientes y facturas desde Excel, CSV o Holded. La migración es gratuita y asistida.`,
-      },
-    },
-    {
-      '@type': 'Question',
-      name: '¿Se requieren conocimientos de contabilidad para usar el software?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `No. ${brandConfig.app.name} está diseñado para profesionales sin formación contable.`,
-      },
-    },
-  ],
+  mainEntity: faqs.map(({ q, a }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
 };
 
 const homepageSoftwareJsonLd = {
@@ -312,7 +256,7 @@ export const novafacturaHomeMetadata: Metadata = {
     siteName: brandConfig.app.name,
     images: [
       {
-        url: `${brandConfig.app.url}/og-image.jpg`,
+        url: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
         width: 1200,
         height: 630,
         alt: `${brandConfig.app.name} — Software de facturación VeriFactu para autónomos`,
@@ -323,7 +267,7 @@ export const novafacturaHomeMetadata: Metadata = {
     card: 'summary_large_image',
     title: `Software de facturación VeriFactu para autónomos | ${brandConfig.app.name}`,
     description: `Cumplimiento automático con Hacienda. Gratis hasta 2027. Sin tarjeta.`,
-    images: [`${brandConfig.app.url}/og-image.jpg`],
+    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
 
@@ -904,22 +848,11 @@ export function NovafacturaHomePage() {
         </section>
 
         {/* ══ SECTION 10 — FAQ ══ */}
-        <section className="border-y border-slate-100 bg-slate-50 py-16 md:py-24">
-          <div className="mx-auto max-w-3xl px-4">
-            <div className="mb-4 text-center">
-              <span className="mb-4 inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-                Preguntas frecuentes
-              </span>
-              <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
-                Dudas habituales sobre {brandConfig.app.name} y VeriFactu
-              </h2>
-            </div>
-            <p className="mx-auto mb-10 max-w-xl text-center text-slate-500">
-              Resolvemos las consultas más frecuentes de autónomos y pymes
-            </p>
-            <HomeFaqAccordion faqs={faqs} />
-          </div>
-        </section>
+        <FaqSection
+          faqs={faqs}
+          title={`Dudas habituales sobre ${brandConfig.app.name} y VeriFactu`}
+          subtitle="Resolvemos las consultas más frecuentes de autónomos y pymes"
+        />
 
         {/* ══ SECTION 11 — FINAL CTA ══ */}
         <section className="py-16 md:py-24">

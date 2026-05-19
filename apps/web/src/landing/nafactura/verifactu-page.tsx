@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
   Shield,
@@ -49,7 +49,7 @@ export const nafacturaVerifactuMetadata: Metadata = {
     locale: 'es_ES',
     images: [
       {
-        url: `${brandConfig.app.url}/og-image.jpg`,
+        url: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
         width: 1200,
         height: 630,
         alt: `Cumplimiento fiscal Navarra — Guía para autónomos | ${brandConfig.app.name}`,
@@ -61,7 +61,7 @@ export const nafacturaVerifactuMetadata: Metadata = {
     title: `Cumplimiento fiscal autónomos Navarra 2027 | ${brandConfig.app.name}`,
     description:
       'VeriFactu y Hacienda Foral de Navarra: qué necesitas saber y cómo cumplir con software certificado.',
-    images: [`${brandConfig.app.url}/og-image.jpg`],
+    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
 

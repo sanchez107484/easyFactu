@@ -1,4 +1,4 @@
-// app/layout.tsx
+﻿// app/layout.tsx
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { Inter, JetBrains_Mono } from 'next/font/google';
@@ -132,7 +132,7 @@ export const metadata: Metadata = {
     siteName: brandConfig.app.name,
     images: [
       {
-        url: `${brandConfig.app.url}/og-image.jpg`, // Crea esta imagen: mockup + texto "Gratis hasta 2027"
+        url: `${brandConfig.app.url}${brandConfig.app.ogImage}`, // Crea esta imagen: mockup + texto "Gratis hasta 2027"
         width: 1200,
         height: 630,
         alt: `${brandConfig.app.name} - Software de facturación VeriFactu`,
@@ -143,7 +143,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: `${brandConfig.app.name} | Factura sin preocuparte de VeriFactu`,
     description: `Gratis hasta 2027. Sin tarjeta. Cumplimiento automático con Hacienda.`,
-    images: [`${brandConfig.app.url}/og-image.jpg`],
+    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   icons: {
     icon: [

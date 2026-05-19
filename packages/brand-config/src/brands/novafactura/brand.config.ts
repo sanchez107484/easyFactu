@@ -16,6 +16,7 @@ export const novafacturaBrandConfig = {
     tagline: 'Factura sin complicaciones. VeriFactu automático.',
     url: 'https://www.novafactura.es',
     domain: 'www.novafactura.es',
+    ogImage: '/brand/novafactura/og-image.png',
     supportEmail: 'info@novafactura.es',
     legalEntity: 'NovaFactura S.L.',
     nif: '[NIF/CIF]',

@@ -38,14 +38,32 @@ VeriFactu es el sistema de verificación de facturas de la Agencia Tributaria es
 
 ## Páginas de referencia
 
-- [Inicio](https://www.novafactura.es)
-- [Funcionalidades](https://www.novafactura.es/funcionalidades)
-- [VeriFactu — qué es y cómo funciona](https://www.novafactura.es/verifactu)
-- [Precios](https://www.novafactura.es/precios)
-- [Para asesorías y gestorías](https://www.novafactura.es/asesoria)
-- [Blog (recursos VeriFactu)](https://www.novafactura.es/blog)
-- [Contacto](https://www.novafactura.es/contacto)
-- [Registro gratuito](https://www.novafactura.es/registro)
+- [Inicio](https://www.novafactura.es): Software de facturación VeriFactu para autónomos y pymes
+- [Software de facturación online](https://www.novafactura.es/facturacion-online): Programa de facturación con VeriFactu automático, gratis hasta 2027
+- [Funcionalidades](https://www.novafactura.es/funcionalidades): Todas las funcionalidades del software
+- [VeriFactu — qué es y cómo funciona](https://www.novafactura.es/verifactu): Guía completa sobre el sistema de verificación de facturas de la AEAT
+- [Precios](https://www.novafactura.es/precios): Planes y precios de NovaFactura
+- [Para asesorías y gestorías](https://www.novafactura.es/asesoria): Panel centralizado para gestionar múltiples clientes, gratis para siempre
+- [Blog (recursos VeriFactu)](https://www.novafactura.es/blog): Artículos sobre VeriFactu, facturación y fiscalidad en España
+- [Contacto](https://www.novafactura.es/contacto): Contactar con el equipo de NovaFactura
+- [Registro gratuito](https://www.novafactura.es/registro): Crear cuenta gratuita
+
+## Páginas VeriFactu
+
+- [¿Cuándo es obligatorio VeriFactu?](https://www.novafactura.es/verifactu/cuando-es-obligatorio): Plazos por perfil según el Real Decreto 254/2025: software (29 julio 2025), grandes empresas IS >8M€ (1 enero 2027), autónomos y pymes (1 julio 2027)
+- [Software garante VeriFactu](https://www.novafactura.es/verifactu/software-garante): Qué es un software garante, cómo se certifica y cómo verificar si tu software cumple con la AEAT
+- [Sanciones por no cumplir VeriFactu](https://www.novafactura.es/verifactu/sanciones): Multas de hasta 50.000€ por incumplimiento de la Ley Antifraude 11/2021
+
+## Guías de facturación
+
+- [Guías de facturación en España](https://www.novafactura.es/facturas): Índice de todos los tipos de facturas y cómo emitirlas correctamente
+- [Cómo hacer una factura](https://www.novafactura.es/facturas/como-hacer-una-factura): Datos obligatorios, número de serie, cálculo de IVA e IRPF, errores comunes
+- [Factura con IRPF](https://www.novafactura.es/facturas/con-irpf): Cuándo aplicar retención, porcentajes (7% o 15%), quién está obligado
+- [Factura rectificativa](https://www.novafactura.es/facturas/rectificativa): Cómo corregir o anular una factura incorrecta según la normativa española
+- [Factura proforma](https://www.novafactura.es/facturas/proforma): Qué es, para qué sirve y diferencias con la factura ordinaria
+- [Factura simplificada](https://www.novafactura.es/facturas/simplificada): Cuándo se puede emitir, límites de importe y requisitos legales
+- [Factura intracomunitaria](https://www.novafactura.es/facturas/intracomunitaria): Cómo facturar a empresas de la UE, exención de IVA y ROI
+- [Factura electrónica](https://www.novafactura.es/factura-electronica): Diferencias entre factura electrónica y VeriFactu, obligaciones y plazos
 
 ## Artículos del blog
 

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
   Shield,
@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { brandConfig, PRICING } from '@easyfactura/brand-config';
 import SiteHeader from '@/components/site-header';
+import RelatedLinksSection from '@/components/RelatedLinksSection';
+import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
 
 export const novafacturaVerifactuMetadata: Metadata = {
@@ -52,7 +54,7 @@ export const novafacturaVerifactuMetadata: Metadata = {
     locale: 'es_ES',
     images: [
       {
-        url: `${brandConfig.app.url}/og-image.jpg`,
+        url: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
         width: 1200,
         height: 630,
         alt: `VeriFactu — Guía completa para autónomos | ${brandConfig.app.name}`,
@@ -64,7 +66,7 @@ export const novafacturaVerifactuMetadata: Metadata = {
     title: `¿Qué es VeriFactu? Guía completa 2027 | ${brandConfig.app.name}`,
     description:
       'VeriFactu es obligatorio para autónomos y empresas. Descubre qué es, cuándo entra en vigor y cómo cumplir sin complicaciones.',
-    images: [`${brandConfig.app.url}/og-image.jpg`],
+    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
 
@@ -299,32 +301,36 @@ const WHO_IS_AFFECTED = [
 
 const FAQS = [
   {
-    q: '¿Qué es VeriFactu?',
-    a: 'VeriFactu es el sistema de verificación de facturas de la Agencia Tributaria española (AEAT), creado por la Ley Antifraude 11/2021. Obliga a que cada factura incluya un hash encadenado SHA-256, un código QR verificable y sea transmitida en tiempo real a la AEAT. Su objetivo es eliminar el fraude fiscal que permite modificar o eliminar facturas sin dejar rastro.',
+    q: '¿Qué es VeriFactu exactamente?',
+    a: 'VeriFactu (Verificación de Facturas) es el sistema de control fiscal de la Agencia Tributaria española creado por la Ley Antifraude 11/2021 y desarrollado por el Real Decreto 254/2025. Obliga a que cada factura lleve un hash encadenado SHA-256 que la vincula con la anterior, un código QR verificable por cualquier persona y sea enviada automáticamente al registro de la AEAT. Su objetivo principal es eliminar el fraude del "software de doble uso", que permitía a los negocios mantener dos contabilidades paralelas eliminando facturas sin dejar rastro.',
   },
   {
-    q: '¿Cuándo es obligatorio VeriFactu?',
-    a: 'Desde el 1 de julio de 2025 para nuevos contribuyentes. Desde el 1 de enero de 2027 para sociedades (SL, SA) y desde el 1 de julio de 2027 para autónomos persona física en estimación directa (Orden HAC/1177/2024).',
+    q: '¿Cuándo es obligatorio VeriFactu en España?',
+    a: 'Desde el 1 de julio de 2025 para nuevos contribuyentes que se den de alta en el Censo de Empresarios. Desde el 1 de enero de 2027 para sociedades (SL, SA, cooperativas y demás personas jurídicas). Desde el 1 de julio de 2027 para autónomos persona física en estimación directa. Estas fechas están fijadas por la Orden HAC/1177/2024 y el Real Decreto 254/2025 y son definitivas.',
   },
   {
-    q: '¿Cuáles son las sanciones por no cumplir?',
-    a: 'Las sanciones pueden llegar hasta 50.000€ por ejercicio fiscal. El uso de software que permita modificar o eliminar facturas sin rastro puede considerarse además una infracción tributaria grave.',
+    q: '¿Cuáles son las sanciones concretas por no cumplir con VeriFactu?',
+    a: 'Las sanciones oscilan entre 1.000€ por incidente aislado y 50.000€ por ejercicio fiscal si la conducta es reiterada o grave. El uso de software que permita modificar o eliminar facturas —lo que la ley denomina "software de doble uso"— puede tipificarse como infracción muy grave con multas proporcionales al volumen de negocio oculto. Además, la AEAT puede reclamar las cuotas de IVA e IRPF no declaradas con sus correspondientes recargos e intereses de demora.',
   },
   {
-    q: '¿Puedo seguir usando Excel?',
-    a: 'No. Excel, Word y cualquier software no certificado como "software garante" deja de ser legal para emitir facturas una vez entre en vigor VeriFactu. Solo los programas homologados por la AEAT pueden generar facturas válidas.',
+    q: '¿Puedo seguir usando Excel o Word para emitir facturas?',
+    a: 'No. Excel, Word y cualquier software no certificado como "software garante" dejan de ser válidos legalmente a partir de los plazos establecidos. La razón es técnica: Excel permite modificar o borrar filas sin dejar rastro, lo que es incompatible con el requisito de inalterabilidad del registro. Tampoco puede generar el hash encadenado SHA-256 ni conectarse a la API de la AEAT. Usar Excel después del plazo puede derivar en sanciones de hasta 50.000€.',
   },
   {
-    q: '¿Qué es el hash encadenado?',
-    a: 'Es una firma digital SHA-256 que vincula cada factura con la anterior, creando una cadena inalterable. Si alguien intentara modificar o eliminar una factura, la cadena se rompería y sería detectable por la AEAT.',
+    q: '¿Qué es el hash encadenado SHA-256 de VeriFactu?',
+    a: 'El hash encadenado es una firma digital que se genera para cada factura incluyendo los datos de la factura anterior. Si alguien intentara modificar o eliminar una factura, la cadena se rompería y la AEAT lo detectaría inmediatamente al comparar el registro. El algoritmo SHA-256 es el estándar de seguridad utilizado también en la firma de contratos electrónicos y certificados digitales. Es el mecanismo técnico central que hace que VeriFactu sea a prueba de fraude.',
   },
   {
-    q: '¿VeriFactu es lo mismo que la factura electrónica?',
-    a: 'No. La factura electrónica (Ley Crea y Crece) obliga a emitir facturas en formato digital entre empresas. VeriFactu añade hash encadenado y QR a cualquier factura, incluyendo las impresas en papel. Son normativas complementarias.',
+    q: '¿VeriFactu es lo mismo que la factura electrónica (Ley Crea y Crece)?',
+    a: 'No, son normativas distintas y complementarias. VeriFactu (Ley Antifraude 11/2021) añade hash encadenado y QR a cualquier factura — incluso las impresas en papel — y afecta a todos los negocios. La factura electrónica (Ley Crea y Crece, pendiente de reglamento definitivo) obligará a intercambiar facturas en formato digital estructurado (Facturae XML) entre empresas (B2B). Deberás cumplir con ambas normativas, aunque los plazos y el ámbito de aplicación son distintos.',
   },
   {
-    q: `¿${brandConfig.app.name} es software garante?`,
-    a: `Sí. ${brandConfig.app.name} está certificado como software garante por la AEAT. Genera automáticamente el hash encadenado SHA-256, el código QR y transmite cada factura al registro de la Agencia Tributaria en tiempo real. No necesitas configurar nada.`,
+    q: '¿Qué información muestra el código QR de VeriFactu?',
+    a: 'El código QR incluye el número de la factura, el NIF del emisor, la fecha, el importe total y el hash encadenado. Cualquier persona — tus clientes, la AEAT o un inspector — puede escanearlo para verificar que la factura está registrada correctamente en el sistema de la Agencia Tributaria. Si el QR no encuentra el registro, la factura puede considerarse inválida y tu cliente podría denunciarlo.',
+  },
+  {
+    q: `¿${brandConfig.app.name} es software garante certificado por la AEAT?`,
+    a: `Sí. ${brandConfig.app.name} está certificado como software garante VeriFactu por la Agencia Tributaria. Genera automáticamente el hash encadenado SHA-256, el código QR verificable y transmite cada factura al registro de la AEAT en tiempo real, cumpliendo íntegramente el Real Decreto 254/2025. No necesitas configurar ningún parámetro técnico: el cumplimiento es automático desde la primera factura que emites.`,
   },
 ];
 
@@ -685,60 +691,60 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
         </section>
 
         {/* FAQ */}
-        <section className="border-t border-slate-100 bg-slate-50 py-16 md:py-24">
-          <div className="mx-auto max-w-4xl px-6">
-            <h2 className="mb-10 text-3xl font-bold text-slate-900">
-              Preguntas frecuentes sobre VeriFactu
-            </h2>
-            <div className="space-y-4">
-              {FAQS.map(({ q, a }) => (
-                <div key={q} className="rounded-2xl border border-slate-100 bg-white p-6">
-                  <h3 className="mb-2 font-semibold text-slate-900">{q}</h3>
-                  <p className="text-sm leading-relaxed text-slate-500">{a}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <FaqSection faqs={FAQS} title="Preguntas frecuentes sobre VeriFactu" />
 
-        {/* Interlinks */}
-        <section className="border-t border-slate-100 bg-white py-12">
+        {/* Sub-páginas VeriFactu */}
+        <section className="py-10">
           <div className="mx-auto max-w-4xl px-6">
-            <p className="mb-6 text-center text-sm font-semibold uppercase tracking-wider text-slate-400">
-              También te puede interesar
-            </p>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <p className="mb-4 text-sm font-medium text-slate-500">Profundiza en VeriFactu</p>
+            <div className="grid gap-3 sm:grid-cols-3">
               {[
                 {
-                  href: '/funcionalidades',
-                  title: 'Todas las funcionalidades',
-                  desc: 'Descubre qué incluye el software más allá de VeriFactu.',
+                  href: '/verifactu/cuando-es-obligatorio',
+                  label: '¿Cuándo es obligatorio VeriFactu?',
                 },
                 {
-                  href: '/precios',
-                  title: 'Planes y precios',
-                  desc: `Desde ${PRICING.starter.monthly}€/mes. Gratis hasta 2027 para empezar.`,
+                  href: '/verifactu/software-garante',
+                  label: 'Requisitos del software garante AEAT',
                 },
                 {
-                  href: '/asesoria',
-                  title: 'Para asesorías',
-                  desc: 'Gestiona el VeriFactu de todos tus clientes. Gratis para asesorías.',
+                  href: '/verifactu/sanciones',
+                  label: 'Sanciones por incumplimiento — hasta 50.000€',
                 },
-              ].map(({ href, title, desc }) => (
+              ].map((l) => (
                 <Link
-                  key={href}
-                  href={href}
-                  className="group rounded-2xl border border-slate-100 bg-slate-50 p-5 transition hover:border-blue-200 hover:shadow-md"
+                  key={l.href}
+                  href={l.href}
+                  className="flex items-center gap-2 rounded-xl border border-neutral-100 px-4 py-3 text-sm font-medium text-slate-700 hover:border-blue-200 hover:text-blue-600 transition-colors"
                 >
-                  <p className="font-semibold text-slate-900 group-hover:text-blue-600">
-                    {title} →
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500">{desc}</p>
+                  <ArrowRight className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                  {l.label}
                 </Link>
               ))}
             </div>
           </div>
         </section>
+
+        <RelatedLinksSection
+          title="También te puede interesar"
+          links={[
+            {
+              href: '/funcionalidades',
+              label: 'Todas las funcionalidades',
+              description: 'Descubre qué incluye el software más allá de VeriFactu.',
+            },
+            {
+              href: '/precios',
+              label: 'Planes y precios',
+              description: `Desde ${PRICING.starter.monthly}€/mes. Gratis hasta 2027 para empezar.`,
+            },
+            {
+              href: '/asesoria',
+              label: 'Para asesorías',
+              description: 'Gestiona el VeriFactu de todos tus clientes. Gratis para asesorías.',
+            },
+          ]}
+        />
 
         <FooterLanding />
       </div>

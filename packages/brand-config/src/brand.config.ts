@@ -45,6 +45,7 @@ export interface BrandConfig {
     tagline: string;
     url: string;
     domain: string;
+    ogImage: string;
     supportEmail: string;
     legalEntity: string;
     nif: string;

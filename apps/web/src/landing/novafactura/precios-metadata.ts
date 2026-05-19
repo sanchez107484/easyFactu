@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { brandConfig, PRICING } from '@easyfactura/brand-config';
 
 export const novafacturaPreciosMetadata: Metadata = {
@@ -21,12 +21,12 @@ export const novafacturaPreciosMetadata: Metadata = {
     type: 'website',
     siteName: brandConfig.app.name,
     locale: 'es_ES',
-    images: [{ url: `${brandConfig.app.url}/og-image.jpg`, width: 1200, height: 630 }],
+    images: [{ url: `${brandConfig.app.url}${brandConfig.app.ogImage}`, width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary_large_image',
     title: `Precios | ${brandConfig.app.name}`,
     description: `Software VeriFactu gratis hasta 2027. Desde ${PRICING.starter.monthly}€/mes.`,
-    images: [`${brandConfig.app.url}/og-image.jpg`],
+    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };

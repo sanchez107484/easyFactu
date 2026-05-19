@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
   Shield,
@@ -312,7 +312,7 @@ export const nafacturaHomeMetadata: Metadata = {
     siteName: brandConfig.app.name,
     images: [
       {
-        url: `${brandConfig.app.url}/og-image.jpg`,
+        url: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
         width: 1200,
         height: 630,
         alt: `${brandConfig.app.name} — Software de facturación para autónomos navarros`,
@@ -323,7 +323,7 @@ export const nafacturaHomeMetadata: Metadata = {
     card: 'summary_large_image',
     title: `Software de facturación para autónomos navarros | ${brandConfig.app.name}`,
     description: `Cumplimiento automático con Hacienda Navarra. Gratis hasta 2027. Sin tarjeta.`,
-    images: [`${brandConfig.app.url}/og-image.jpg`],
+    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
 
