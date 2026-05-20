@@ -28,6 +28,8 @@ import {
 // Tipos compartidos (misma forma para todas las marcas)
 // ============================================================
 
+export type AuthBenefitIconName = 'Shield' | 'Clock' | 'Zap' | 'Users' | 'MapPin';
+
 export interface BrandConfig {
   /** Brand accent colors — used for highlighted nav links, banners, and key UI elements */
   colors: {
@@ -65,6 +67,22 @@ export interface BrandConfig {
       icon512: string;
       maskable: string;
     };
+  };
+  /** Auth screens (login/register) — brand-specific content */
+  auth: {
+    testimonial: {
+      text: string;
+      author: string;
+      role: string;
+      rating: number;
+    };
+    benefits: Array<{
+      iconName: AuthBenefitIconName;
+      title: string;
+      description: string;
+    }>;
+    /** CSS color value for the testimonial card background (inline style) */
+    testimonialCardBg: string;
   };
 }
 
