@@ -37,6 +37,37 @@ export const nafacturaBrandConfig = {
       maskable: '/brand/nafactura/pwa-maskable-512x512.png',
     },
   },
+  auth: {
+    testimonial: {
+      text: 'Llevo un taller mecánico en Pamplona y nunca había conseguido facturar bien con Hacienda Navarra. Con NaFactura todo funciona solo y mis facturas cumplen el régimen foral sin que yo tenga que entender nada de leyes.',
+      author: 'Mikel Iriarte',
+      role: 'Mecánico autónomo, Pamplona',
+      rating: 5,
+    },
+    benefits: [
+      {
+        iconName: 'Shield' as const,
+        title: 'Cumplimiento foral automático',
+        description: 'Conectado a Hacienda Navarra',
+      },
+      {
+        iconName: 'Clock' as const,
+        title: 'Gratis los primeros 6 meses',
+        description: 'Sin tarjeta de crédito',
+      },
+      {
+        iconName: 'Zap' as const,
+        title: 'Facturas en 60 segundos',
+        description: 'Sin conocimientos técnicos',
+      },
+      {
+        iconName: 'MapPin' as const,
+        title: 'Hecho para Navarra',
+        description: 'Régimen foral sin complicaciones',
+      },
+    ],
+    testimonialCardBg: 'rgba(186, 230, 253, 0.12)',
+  },
 };
 
 export const nafacturaPlazasConfig = {

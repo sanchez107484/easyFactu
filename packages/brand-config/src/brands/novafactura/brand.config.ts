@@ -39,6 +39,37 @@ export const novafacturaBrandConfig = {
       maskable: '/brand/novafactura/pwa-maskable-512x512.png',
     },
   },
+  auth: {
+    testimonial: {
+      text: 'Llevaba meses preocupada por VeriFactu. Con NovaFactura me despreocupé en 10 minutos. Lo mejor es que es completamente gratis.',
+      author: 'Laura García',
+      role: 'Diseñadora freelance',
+      rating: 5,
+    },
+    benefits: [
+      {
+        iconName: 'Shield' as const,
+        title: 'VeriFactu automático',
+        description: 'Cumplimiento garantizado con Hacienda',
+      },
+      {
+        iconName: 'Clock' as const,
+        title: 'Gratis hasta 2027',
+        description: 'Sin tarjeta de crédito requerida',
+      },
+      {
+        iconName: 'Zap' as const,
+        title: 'Facturas en 60 segundos',
+        description: 'Sin conocimientos técnicos',
+      },
+      {
+        iconName: 'Users' as const,
+        title: '+3.000 profesionales',
+        description: 'Ya confían en nosotros',
+      },
+    ],
+    testimonialCardBg: 'rgba(255, 255, 255, 0.10)',
+  },
 };
 
 export const novafacturaPlazasConfig = {
