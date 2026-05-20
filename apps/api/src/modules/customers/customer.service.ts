@@ -223,15 +223,30 @@ export class CustomerService {
 
     const customers = await this.prisma.customer.findMany({
       where,
-      orderBy: { name: 'asc' },
-      take: 50,
+      // Fetch all matching records; deduplication by NIF happens below.
+      // Do NOT apply take here — we need the full set to pick the most-recent per NIF.
+      orderBy: { updatedAt: 'desc' },
     });
 
-    return customers.map((c) => ({
-      ...c,
-      sourceTenantId: c.tenantId,
-      sourceTenantName: tenantNameMap.get(c.tenantId) ?? '',
-    }));
+    // Deduplicate by NIF: keep only the most recently updated record per NIF.
+    // A customer can appear in multiple tenants (agency + sibling clients).
+    // The first record wins because we ordered by updatedAt DESC.
+    const seenNifs = new Map<string, (typeof customers)[0]>();
+    for (const customer of customers) {
+      const normalizedNif = customer.nif.toUpperCase();
+      if (!seenNifs.has(normalizedNif)) {
+        seenNifs.set(normalizedNif, customer);
+      }
+    }
+
+    return Array.from(seenNifs.values())
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+      .slice(0, 50)
+      .map((c) => ({
+        ...c,
+        sourceTenantId: c.tenantId,
+        sourceTenantName: tenantNameMap.get(c.tenantId) ?? '',
+      }));
   }
 
   /**
