@@ -210,7 +210,11 @@ export class InvoicePdfService {
     // Prefer snapshot name so the PDF metadata title is consistent with the rendered content.
     const customerDisplayName = invoice.customerSnapshotName ?? invoice.customer?.name;
     const pdfTitle = [invoice.number, customerDisplayName].filter(Boolean).join(' - ');
-    const doc = new PDFDocument({ size: 'A4', margin: 40, info: { Title: pdfTitle } });
+    const doc: PDFKit.PDFDocument = new PDFDocument({
+      size: 'A4',
+      margin: 40,
+      info: { Title: pdfTitle },
+    });
     const buffers: Buffer[] = [];
     doc.on('data', buffers.push.bind(buffers));
 
