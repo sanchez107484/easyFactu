@@ -9,12 +9,16 @@ import { brandConfig } from '@easyfactura/brand-config';
 import { useAuthStore } from '@/store/auth-store';
 import {
   AlertTriangle,
+  ArrowLeftRight,
+  Award,
   BookOpen,
   ChevronDown,
   Clock,
   FileCheck,
   FileText,
   Globe,
+  Layers,
+  MapPin,
   Menu,
   Percent,
   Receipt,
@@ -104,13 +108,32 @@ const navLinks = [
   { href: '/blog', label: 'Blog' },
 ];
 
-// Flat nav for NaFactura — no dropdown, no blog
-const nafacturaNavLinks = [
-  { href: '/funcionalidades', label: 'Funcionalidades' },
-  { href: '/verifactu', label: 'VeriFactu' },
-  { href: '/asesoria', label: 'Asesorías', highlight: true },
-  { href: '/precios', label: 'Precios' },
-  { href: '/blog', label: 'Blog' },
+// NaFactura Navarra dropdown items
+const nafacturaNavarraItems = [
+  {
+    href: '/naticket',
+    label: 'NaTicket Navarra',
+    description: 'El sistema de Hacienda Foral explicado',
+    icon: Layers,
+  },
+  {
+    href: '/alternativa-holded-navarra',
+    label: 'Alternativa a Holded',
+    description: 'Por qué los navarros prefieren NaFactura',
+    icon: ArrowLeftRight,
+  },
+  {
+    href: '/mejor-software-facturacion-navarra',
+    label: 'Mejor software Navarra 2027',
+    description: 'Comparativa de los 4 mejores programas',
+    icon: Award,
+  },
+  {
+    href: '/software-facturacion-pamplona',
+    label: 'Software para Pamplona',
+    description: 'Especializado para la capital navarra',
+    icon: MapPin,
+  },
 ];
 
 export default function SiteHeader() {
@@ -118,13 +141,17 @@ export default function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileVerifactuOpen, setMobileVerifactuOpen] = useState(false);
   const [mobileRecursosOpen, setMobileRecursosOpen] = useState(false);
+  const [mobileNavarraOpen, setMobileNavarraOpen] = useState(false);
   const [verifactuOpen, setVerifactuOpen] = useState(false);
   const [recursosOpen, setRecursosOpen] = useState(false);
+  const [navarraOpen, setNavarraOpen] = useState(false);
   const pathname = usePathname();
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recursosLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const navarraLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isVerifactuActive = pathname.startsWith('/verifactu');
   const isRecursosActive = pathname.startsWith('/facturas') || pathname === '/factura-electronica';
+  const isNavarraActive = nafacturaNavarraItems.some((item) => item.href === pathname);
 
   const handleVerifactuEnter = () => {
     if (leaveTimer.current) clearTimeout(leaveTimer.current);
@@ -144,6 +171,15 @@ export default function SiteHeader() {
 
   const handleRecursosLeave = () => {
     recursosLeaveTimer.current = setTimeout(() => setRecursosOpen(false), 150);
+  };
+
+  const handleNavarraEnter = () => {
+    if (navarraLeaveTimer.current) clearTimeout(navarraLeaveTimer.current);
+    setNavarraOpen(true);
+  };
+
+  const handleNavarraLeave = () => {
+    navarraLeaveTimer.current = setTimeout(() => setNavarraOpen(false), 150);
   };
 
   return (
@@ -173,23 +209,112 @@ export default function SiteHeader() {
         {/* Desktop nav */}
         <nav className="hidden items-center gap-1 md:flex">
           {BRAND === 'nafactura' ? (
-            nafacturaNavLinks.map((link) => (
+            <>
               <Link
-                key={link.href}
-                href={link.href}
+                href="/funcionalidades"
                 className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  link.highlight
-                    ? pathname === link.href
-                      ? 'bg-[var(--brand-highlight-bg)] text-[var(--brand-highlight)]'
-                      : 'text-[var(--brand-highlight)] hover:bg-[var(--brand-highlight-bg)]'
-                    : pathname === link.href
-                      ? 'bg-primary-50 text-primary-600'
-                      : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
+                  pathname === '/funcionalidades'
+                    ? 'bg-primary-50 text-primary-600'
+                    : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
                 }`}
               >
-                {link.label}
+                Funcionalidades
               </Link>
-            ))
+
+              {/* Navarra dropdown — NaFactura only */}
+              <div
+                className="relative"
+                onMouseEnter={handleNavarraEnter}
+                onMouseLeave={handleNavarraLeave}
+              >
+                <button
+                  className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isNavarraActive
+                      ? 'bg-primary-50 text-primary-600'
+                      : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
+                  }`}
+                  aria-expanded={navarraOpen}
+                  onClick={() => setNavarraOpen((o) => !o)}
+                >
+                  Navarra
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform ${navarraOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
+
+                {navarraOpen && (
+                  <div className="absolute left-1/2 top-full -translate-x-1/2 pt-2">
+                    <div className="w-72 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-lg">
+                      {nafacturaNavarraItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setNavarraOpen(false)}
+                            className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 ${
+                              pathname === item.href ? 'bg-red-50' : ''
+                            }`}
+                          >
+                            <div className="mt-0.5 flex-shrink-0 rounded-md bg-red-50 p-1.5">
+                              <Icon className="h-4 w-4 text-red-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-neutral-900">{item.label}</p>
+                              <p className="text-xs text-neutral-500">{item.description}</p>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Link
+                href="/verifactu"
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname === '/verifactu'
+                    ? 'bg-primary-50 text-primary-600'
+                    : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
+                }`}
+              >
+                VeriFactu
+              </Link>
+
+              <Link
+                href="/asesoria"
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname === '/asesoria'
+                    ? 'bg-[var(--brand-highlight-bg)] text-[var(--brand-highlight)]'
+                    : 'text-[var(--brand-highlight)] hover:bg-[var(--brand-highlight-bg)]'
+                }`}
+              >
+                Asesorías
+              </Link>
+
+              <Link
+                href="/precios"
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname === '/precios'
+                    ? 'bg-primary-50 text-primary-600'
+                    : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
+                }`}
+              >
+                Precios
+              </Link>
+
+              <Link
+                href="/blog"
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname === '/blog'
+                    ? 'bg-primary-50 text-primary-600'
+                    : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
+                }`}
+              >
+                Blog
+              </Link>
+            </>
           ) : (
             <>
               <Link
@@ -371,22 +496,94 @@ export default function SiteHeader() {
         <div className="border-t border-neutral-100 bg-white px-4 pb-4 pt-2 md:hidden">
           <nav className="flex flex-col gap-1">
             {BRAND === 'nafactura' ? (
-              nafacturaNavLinks.map((link) => (
+              <>
                 <Link
-                  key={link.href}
-                  href={link.href}
+                  href="/funcionalidades"
                   className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                    link.highlight
-                      ? 'text-[var(--brand-highlight)] hover:bg-[var(--brand-highlight-bg)]'
-                      : pathname === link.href
-                        ? 'bg-primary-50 text-primary-600'
-                        : 'text-neutral-700 hover:bg-neutral-50'
+                    pathname === '/funcionalidades'
+                      ? 'bg-primary-50 text-primary-600'
+                      : 'text-neutral-700 hover:bg-neutral-50'
                   }`}
                   onClick={() => setMobileOpen(false)}
                 >
-                  {link.label}
+                  Funcionalidades
                 </Link>
-              ))
+
+                {/* Navarra collapsible — NaFactura only */}
+                <div>
+                  <button
+                    onClick={() => setMobileNavarraOpen((o) => !o)}
+                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      isNavarraActive
+                        ? 'bg-primary-50 text-primary-600'
+                        : 'text-neutral-700 hover:bg-neutral-50'
+                    }`}
+                  >
+                    Navarra
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${mobileNavarraOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  {mobileNavarraOpen && (
+                    <div className="ml-3 mt-1 flex flex-col gap-0.5 border-l border-neutral-100 pl-3">
+                      {nafacturaNavarraItems.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setMobileOpen(false)}
+                          className="rounded-lg px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-50"
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <Link
+                  href="/verifactu"
+                  className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    pathname === '/verifactu'
+                      ? 'bg-primary-50 text-primary-600'
+                      : 'text-neutral-700 hover:bg-neutral-50'
+                  }`}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  VeriFactu
+                </Link>
+
+                <Link
+                  href="/asesoria"
+                  className="rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--brand-highlight)] transition-colors hover:bg-[var(--brand-highlight-bg)]"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Asesorías
+                </Link>
+
+                <Link
+                  href="/precios"
+                  className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    pathname === '/precios'
+                      ? 'bg-primary-50 text-primary-600'
+                      : 'text-neutral-700 hover:bg-neutral-50'
+                  }`}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Precios
+                </Link>
+
+                <Link
+                  href="/blog"
+                  className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    pathname === '/blog'
+                      ? 'bg-primary-50 text-primary-600'
+                      : 'text-neutral-700 hover:bg-neutral-50'
+                  }`}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Blog
+                </Link>
+              </>
             ) : (
               <>
                 <Link

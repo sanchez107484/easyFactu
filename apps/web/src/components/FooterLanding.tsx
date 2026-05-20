@@ -45,6 +45,15 @@ const nafacturaFooterColumns = [
       { href: '/blog', label: 'Blog' },
     ],
   },
+  {
+    title: 'Navarra',
+    links: [
+      { href: '/naticket', label: 'NaTicket Navarra' },
+      { href: '/alternativa-holded-navarra', label: 'Alternativa a Holded' },
+      { href: '/mejor-software-facturacion-navarra', label: 'Mejor software Navarra' },
+      { href: '/software-facturacion-pamplona', label: 'Software Pamplona' },
+    ],
+  },
 ];
 
 const footerColumns = BRAND === 'nafactura' ? nafacturaFooterColumns : novafacturaFooterColumns;
@@ -58,14 +67,16 @@ export default function FooterLanding(): JSX.Element {
           <div
             className={`mb-10 grid grid-cols-2 gap-8 ${
               BRAND === 'nafactura'
-                ? 'sm:grid-cols-2 lg:grid-cols-2'
+                ? 'sm:grid-cols-3 lg:grid-cols-3'
                 : 'sm:grid-cols-3 lg:grid-cols-4'
             }`}
           >
             {/* Brand column */}
             <div
               className={
-                BRAND === 'nafactura' ? 'col-span-1' : 'col-span-2 sm:col-span-3 lg:col-span-1'
+                BRAND === 'nafactura'
+                  ? 'col-span-2 sm:col-span-1'
+                  : 'col-span-2 sm:col-span-3 lg:col-span-1'
               }
             >
               <div className="flex items-center gap-2 mb-4">

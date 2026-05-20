@@ -20,7 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: BASE_URL, lastModified: UPDATED_RECENT, changeFrequency: 'weekly', priority: 1.0 },
     {
       url: `${BASE_URL}/funcionalidades`,
-      lastModified: UPDATED_STABLE,
+      lastModified: UPDATED_RECENT,
       changeFrequency: 'monthly',
       priority: 0.8,
     },
@@ -174,7 +174,38 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         ]
       : [];
 
-  const staticRoutes = [...sharedRoutes, ...novafacturaRoutes];
+  // Routes exclusive to NaFactura
+  const nafacturaRoutes: MetadataRoute.Sitemap =
+    BRAND === 'nafactura'
+      ? [
+          {
+            url: `${BASE_URL}/naticket`,
+            lastModified: UPDATED_RECENT,
+            changeFrequency: 'monthly',
+            priority: 0.95,
+          },
+          {
+            url: `${BASE_URL}/alternativa-holded-navarra`,
+            lastModified: UPDATED_RECENT,
+            changeFrequency: 'monthly',
+            priority: 0.8,
+          },
+          {
+            url: `${BASE_URL}/mejor-software-facturacion-navarra`,
+            lastModified: UPDATED_RECENT,
+            changeFrequency: 'monthly',
+            priority: 0.8,
+          },
+          {
+            url: `${BASE_URL}/software-facturacion-pamplona`,
+            lastModified: UPDATED_RECENT,
+            changeFrequency: 'monthly',
+            priority: 0.75,
+          },
+        ]
+      : [];
+
+  const staticRoutes = [...sharedRoutes, ...novafacturaRoutes, ...nafacturaRoutes];
 
   let blogRoutes: MetadataRoute.Sitemap = [];
 

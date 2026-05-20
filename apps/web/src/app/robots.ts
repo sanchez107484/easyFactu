@@ -30,6 +30,7 @@ export default function robots(): MetadataRoute.Robots {
           'anthropic-ai',
           'PerplexityBot',
           'Google-Extended',
+          'Applebot-Extended',
           'cohere-ai',
         ],
         allow: '/',

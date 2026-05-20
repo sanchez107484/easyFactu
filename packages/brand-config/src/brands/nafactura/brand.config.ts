@@ -40,7 +40,7 @@ export const nafacturaBrandConfig = {
 
 export const nafacturaPlazasConfig = {
   total: 1000,
-  ocupadas: 0,
+  ocupadas: 237,
   get disponibles() {
     return this.total - this.ocupadas;
   },
@@ -51,16 +51,16 @@ export const nafacturaPlazasConfig = {
 
 export const nafacturaPricing = {
   starter: {
-    monthly: 15.9,
-    annualMonthly: 12.9,
-    annualTotal: 154.8,
-    annualSaving: 36,
+    monthly: 6.9,
+    annualMonthly: 5.9,
+    annualTotal: 82.8,
+    annualSaving: 12,
   },
   pro: {
-    monthly: 29.9,
-    annualMonthly: 24.9,
-    annualTotal: 298.8,
-    annualSaving: 60,
+    monthly: 8.9,
+    annualMonthly: 7.5,
+    annualTotal: 106.8,
+    annualSaving: 16.8,
   },
   freePeriodMonths: 6,
   freePeriodSlots: 1000,

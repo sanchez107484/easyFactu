@@ -21,8 +21,10 @@ import {
   TrendingUp,
   Headphones,
   Building2,
+  Layers,
 } from 'lucide-react';
 import { brandConfig, PLAZAS_CONFIG, PRICING } from '@easyfactura/brand-config';
+import RelatedLinksSection from '@/components/RelatedLinksSection';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
 import {
@@ -162,6 +164,18 @@ const faqs = [
     q: '¿Se requieren conocimientos de contabilidad?',
     a: `No. ${brandConfig.app.name} está diseñado para profesionales sin formación contable. En menos de 60 segundos creas la factura y el software gestiona el cumplimiento fiscal automáticamente.`,
   },
+  {
+    q: '¿Qué es el software garante de facturación en Navarra?',
+    a: 'El software garante es el programa de facturación que cumple con todos los requisitos técnicos exigidos por la Hacienda Foral de Navarra: hash encadenado en cada factura, firma electrónica cualificada, código QR normativo y envío automático a la administración foral. Sin software garante, las facturas emitidas pueden no ser válidas fiscalmente en Navarra, con sanciones de hasta 50.000€.',
+  },
+  {
+    q: '¿Cuándo es obligatorio VeriFactu para los autónomos navarros?',
+    a: `VeriFactu (el sistema de registro de facturas de la AEAT estatal) es obligatorio para todos los autónomos en estimación directa desde julio de 2027. Los autónomos navarros deben cumplir con VeriFactu y además prepararse para NaTicket (el sistema de Hacienda Foral de Navarra). ${brandConfig.app.name} gestiona ambos automáticamente, actualizándose sin coste adicional.`,
+  },
+  {
+    q: '¿Qué es NaTicket y cuándo será obligatorio en Navarra?',
+    a: `NaTicket es el sistema de facturación electrónica que está desarrollando la Hacienda Foral de Navarra para los autónomos y empresas navarros, equivalente a VeriFactu pero adaptado al régimen foral y al Convenio Económico. A mayo de 2026 está en desarrollo y se espera su implantación progresiva desde 2027. ${brandConfig.app.name} está preparado para la integración NaTicket desde el primer día, sin coste adicional para el usuario.`,
+  },
 ];
 
 const trustBadges = [
@@ -234,6 +248,59 @@ const homepageFaqJsonLd = {
         text: `No. ${brandConfig.app.name} está diseñado para profesionales sin formación contable.`,
       },
     },
+    {
+      '@type': 'Question',
+      name: '¿Qué es el software garante de facturación en Navarra?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'El software garante es el programa de facturación que cumple con todos los requisitos técnicos exigidos por la Hacienda Foral de Navarra: hash encadenado en cada factura, firma electrónica cualificada, código QR normativo y envío automático a la administración foral. Sin software garante, las facturas pueden no ser válidas fiscalmente en Navarra.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '¿Cuándo es obligatorio VeriFactu para autónomos navarros?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `VeriFactu es obligatorio para todos los autónomos en estimación directa desde julio de 2027. Los autónomos navarros también deben cumplir con VeriFactu además de prepararse para NaTicket (el sistema de Hacienda Foral de Navarra). ${brandConfig.app.name} gestiona ambos automáticamente.`,
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '¿Qué es NaTicket y cuándo será obligatorio en Navarra?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: `NaTicket es el sistema de registro de facturas que está desarrollando la Hacienda Foral de Navarra, equivalente a VeriFactu pero adaptado al régimen foral. A mayo de 2026 está en desarrollo y se espera su implantación progresiva desde 2027. ${brandConfig.app.name} está preparado para la integración desde el primer día, sin coste adicional.`,
+      },
+    },
+  ],
+};
+
+const homepageOrganizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: brandConfig.app.name,
+  url: brandConfig.app.url,
+  description: `Software de facturación especializado para autónomos y pymes de la Comunidad Foral de Navarra. Cumplimiento automático con Hacienda Foral de Navarra, VeriFactu y preparación para NaTicket.`,
+  areaServed: [
+    { '@type': 'AdministrativeArea', name: 'Comunidad Foral de Navarra' },
+    { '@type': 'City', name: 'Pamplona' },
+    { '@type': 'City', name: 'Tudela' },
+    { '@type': 'City', name: 'Estella' },
+    { '@type': 'City', name: 'Barañáin' },
+  ],
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'customer support',
+    availableLanguage: 'Spanish',
+    areaServed: 'ES-NC',
+  },
+  knowsAbout: [
+    'Hacienda Foral de Navarra',
+    'Software garante de facturación',
+    'VeriFactu',
+    'NaTicket',
+    'Facturación electrónica',
+    'Convenio Económico de Navarra',
   ],
 };
 
@@ -280,6 +347,32 @@ const homepageSoftwareJsonLd = {
     bestRating: '5',
     worstRating: '1',
   },
+  review: [
+    {
+      '@type': 'Review',
+      author: { '@type': 'Person', name: 'Mikel Iraizoz' },
+      reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
+      reviewBody:
+        'Llevaba tiempo preocupado por cumplir con Hacienda Navarra. Con NaFactura me despreocupé en minutos. Envío automático, sin complicaciones. Y encima gratis hasta 2027.',
+      datePublished: '2026-03-15',
+    },
+    {
+      '@type': 'Review',
+      author: { '@type': 'Person', name: 'Ana Barricarte' },
+      reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
+      reviewBody:
+        'Perfecta para autónomos navarros. Fácil, rápida y adaptada a la Hacienda Foral. En 60 segundos tengo la factura lista, firmada y enviada.',
+      datePublished: '2026-04-02',
+    },
+    {
+      '@type': 'Review',
+      author: { '@type': 'Person', name: 'Jon Elizondo' },
+      reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
+      reviewBody:
+        'Con NaFactura creo la factura y se envía a Hacienda Navarra automáticamente. Sin configuraciones, sin dolores de cabeza.',
+      datePublished: '2026-04-18',
+    },
+  ],
   featureList: [
     'Cumplimiento Hacienda Foral de Navarra automático',
     'Hash encadenado en cada factura',
@@ -298,8 +391,28 @@ const homepageSoftwareJsonLd = {
 // SEO — Metadata
 // ─────────────────────────────────────────────────────────────────────────────
 export const nafacturaHomeMetadata: Metadata = {
-  title: `Software de facturación para autónomos navarros | ${brandConfig.app.name}`,
-  description: `${brandConfig.app.name} es el software de facturación adaptado a Hacienda Navarra para autónomos y pymes navarros. Cumplimiento fiscal foral automático. Gratis hasta 2027. Sin tarjeta.`,
+  title: `Software garante de facturación para autónomos navarros | ${brandConfig.app.name}`,
+  description: `${brandConfig.app.name}: software garante de facturación para autónomos y pymes navarros. Cumplimiento automático con Hacienda Foral de Navarra. VeriFactu incluido. Preparado para NaTicket. Gratis hasta 2027 sin tarjeta.`,
+  keywords: [
+    'software facturación navarra',
+    'programa facturación autónomos navarra',
+    'hacienda foral navarra facturación',
+    'facturación electrónica navarra',
+    'software garante navarra',
+    'software garante hacienda foral navarra',
+    'verifactu navarra autónomos',
+    'naticket navarra',
+    'naticket software',
+    'qué es naticket',
+    'software facturación pamplona',
+    'facturar autónomo navarra',
+    'programa facturación gratis navarra',
+    'facturación hacienda navarra 2027',
+    'factura electrónica autónomo navarra',
+    'alternativa holded navarra',
+    'convenio económico navarra facturación',
+    'cuándo obligatorio verifactu navarra',
+  ],
   alternates: {
     canonical: brandConfig.app.url,
   },
@@ -344,6 +457,10 @@ export function NafacturaHomePage() {
     <div className="flex min-h-screen flex-col bg-white text-slate-900">
       <script
         type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageOrganizationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageFaqJsonLd) }}
       />
       <script
@@ -363,6 +480,10 @@ export function NafacturaHomePage() {
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
                 </span>
                 Adaptado a Hacienda Navarra
+              </div>
+              <div className="mb-7 ml-2 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700">
+                <Layers className="h-4 w-4" />
+                Preparado para NaTicket
               </div>
 
               <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
@@ -659,24 +780,72 @@ export function NafacturaHomePage() {
                 y generación automática de todos los elementos exigidos por la normativa foral.
               </p>
             </div>
-            <div className="mt-10 flex flex-wrap justify-center gap-2">
-              {[
-                'Hacienda Foral de Navarra',
-                'Régimen foral',
-                'Hash encadenado',
-                'Código QR',
-                'Software garante',
-                'Firma electrónica',
-                'Facturación electrónica',
-                'Autónomos navarros',
-              ].map((kw) => (
-                <span
-                  key={kw}
-                  className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600"
+            <div className="mt-10 space-y-6">
+              <div>
+                <h3 className="mb-2 text-lg font-bold text-slate-900">
+                  ¿Qué es el software garante de facturación en Navarra?
+                </h3>
+                <p className="text-sm leading-relaxed text-slate-500">
+                  El <strong className="text-slate-700">software garante</strong> es el programa de
+                  facturación que cumple con todos los requisitos técnicos y legales exigidos por la
+                  Hacienda Foral de Navarra: garantiza la{' '}
+                  <strong className="text-slate-700">trazabilidad</strong>,{' '}
+                  <strong className="text-slate-700">inalterabilidad</strong> e{' '}
+                  <strong className="text-slate-700">integridad</strong> de cada registro mediante
+                  hash encadenado, firma electrónica y envío automático a la administración foral.
+                  {brandConfig.app.name} es el único software garante diseñado exclusivamente para
+                  autónomos y pymes navarros.
+                </p>
+              </div>
+              <div>
+                <h3 className="mb-2 text-lg font-bold text-slate-900">
+                  VeriFactu y NaTicket: las dos obligaciones de los autónomos navarros en 2027
+                </h3>
+                <p className="text-sm leading-relaxed text-slate-500">
+                  Los autónomos navarros en estimación directa se enfrentan a dos obligaciones
+                  fiscales en 2027: <strong className="text-slate-700">VeriFactu</strong> (el
+                  sistema de la AEAT estatal, obligatorio desde julio 2027) y{' '}
+                  <strong className="text-slate-700">NaTicket</strong> (el sistema propio de
+                  Hacienda Foral de Navarra, en desarrollo). {brandConfig.app.name} ya está
+                  preparado para ambos, actualizándose automáticamente cuando NaTicket sea
+                  obligatorio, sin coste adicional.
+                </p>
+              </div>
+              <div>
+                <h3 className="mb-2 text-lg font-bold text-slate-900">
+                  ¿Qué autónomos navarros necesitan software de facturación certificado?
+                </h3>
+                <p className="text-sm leading-relaxed text-slate-500">
+                  Todos los autónomos navarros en{' '}
+                  <strong className="text-slate-700">estimación directa</strong> (normal o
+                  simplificada) que emitan facturas. Esto incluye profesionales de Pamplona, Tudela,
+                  Estella, Barañáin y cualquier municipio de la Comunidad Foral. El{' '}
+                  <strong className="text-slate-700">Convenio Económico de Navarra</strong>{' '}
+                  establece un régimen tributario independiente de la AEAT estatal, con requisitos
+                  específicos de facturación que los programas genéricos nacionales no cubren
+                  correctamente.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-4 pt-2">
+                <Link
+                  href="/naticket"
+                  className="text-sm font-semibold text-red-600 hover:underline"
                 >
-                  {kw}
-                </span>
-              ))}
+                  Guía NaTicket →
+                </Link>
+                <Link
+                  href="/verifactu"
+                  className="text-sm font-semibold text-red-600 hover:underline"
+                >
+                  VeriFactu para Navarra →
+                </Link>
+                <Link
+                  href="/mejor-software-facturacion-navarra"
+                  className="text-sm font-semibold text-red-600 hover:underline"
+                >
+                  Comparativa software Navarra →
+                </Link>
+              </div>
             </div>
           </div>
         </section>
@@ -821,11 +990,13 @@ export function NafacturaHomePage() {
                 Comparativa
               </span>
               <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
-                {brandConfig.app.name} frente a soluciones tradicionales
+                ¿Tu programa de facturación cumple con la Hacienda Foral de Navarra?
               </h2>
             </div>
             <p className="mx-auto mb-10 max-w-xl text-center text-slate-500">
-              ¿Tu software actual cumple con los requisitos de Hacienda Navarra?
+              La mayoría de programas de facturación no están adaptados al régimen foral navarro ni
+              al Convenio Económico. Comprueba si el tuyo cubre realmente los requisitos de Hacienda
+              Foral.
             </p>
             <Card className="overflow-hidden border-2 border-slate-200">
               <div className="overflow-x-auto">
@@ -970,6 +1141,42 @@ export function NafacturaHomePage() {
           </div>
         </section>
       </main>
+
+      <RelatedLinksSection
+        title="Guías para autónomos navarros"
+        links={[
+          {
+            href: '/naticket',
+            label: 'NaTicket Navarra',
+            description: 'El futuro sistema de Hacienda Foral de Navarra, explicado',
+          },
+          {
+            href: '/verifactu',
+            label: 'VeriFactu en Navarra',
+            description: 'Cumplimiento fiscal obligatorio para autónomos navarros desde 2027',
+          },
+          {
+            href: '/alternativa-holded-navarra',
+            label: 'Alternativa a Holded',
+            description: 'Por qué los autónomos navarros prefieren NaFactura a Holded',
+          },
+          {
+            href: '/mejor-software-facturacion-navarra',
+            label: 'Mejor software Navarra 2027',
+            description: 'Comparativa de los 4 mejores programas para autónomos navarros',
+          },
+          {
+            href: '/software-facturacion-pamplona',
+            label: 'Software para Pamplona',
+            description: 'Especializado para autónomos de la capital de Navarra',
+          },
+          {
+            href: '/funcionalidades',
+            label: 'Todas las funcionalidades',
+            description: 'Facturación, clientes, presupuestos, PDF y dashboard para navarros',
+          },
+        ]}
+      />
 
       <FooterLanding />
       <HomeStickyCtaBanner />

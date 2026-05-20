@@ -16,6 +16,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { brandConfig, PRICING } from '@easyfactura/brand-config';
+import RelatedLinksSection from '@/components/RelatedLinksSection';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
 
@@ -37,6 +38,9 @@ export const nafacturaVerifactuMetadata: Metadata = {
     'programa facturación navarra',
     'hacienda navarra irpf autónomo',
     'registro factura navarra',
+    'naticket navarra',
+    'naticket verifactu diferencia',
+    'qué es naticket navarra',
   ],
   alternates: { canonical: `${brandConfig.app.url}/verifactu` },
   openGraph: {
@@ -138,6 +142,14 @@ const faqJsonLd = {
       acceptedAnswer: {
         '@type': 'Answer',
         text: `Sí. ${brandConfig.app.name} está diseñado específicamente para autónomos navarros y cumple con todos los requisitos de Hacienda Foral de Navarra y el sistema VeriFactu de la AEAT.`,
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '¿Qué es NaTicket y cómo afecta a los autónomos navarros?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'NaTicket es el sistema de trazabilidad de facturas que la Hacienda Foral de Navarra está desarrollando, complementario a VeriFactu. Cuando entre en vigor (previsiblemente a partir de 2027), los autónomos navarros deberán reportar tanto a la AEAT (VeriFactu) como a Hacienda Foral (NaTicket). NaFactura está siendo preparado para gestionar ambas obligaciones automáticamente.',
       },
     },
   ],
@@ -317,6 +329,10 @@ const FAQS = [
   {
     q: `¿${brandConfig.app.name} es válido para autónomos navarros?`,
     a: `Sí. ${brandConfig.app.name} está diseñado específicamente para autónomos navarros: incluye los tipos impositivos navarros, se integra con el sistema VeriFactu de la AEAT, y cumple con todos los requisitos de Hacienda Foral de Navarra.`,
+  },
+  {
+    q: '¿Qué es NaTicket y cómo afecta a los autónomos navarros?',
+    a: 'NaTicket es el sistema de trazabilidad de facturas que la Hacienda Foral de Navarra está desarrollando. Es complementario a VeriFactu (no lo sustituye): los autónomos navarros podrían necesitar cumplir con ambos cuando NaTicket entre en vigor. NaFactura está siendo preparado para gestionar los dos sistemas automáticamente.',
   },
 ];
 
@@ -686,6 +702,51 @@ export function NafacturaVerifactuPage(): React.JSX.Element {
           </div>
         </section>
 
+        {/* NaTicket */}
+        <section id="naticket-navarra" className="py-16 md:py-24">
+          <div className="mx-auto max-w-4xl px-6">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700">
+              <span className="flex h-2 w-2 rounded-full bg-amber-500" />
+              Próximamente · En desarrollo
+            </div>
+            <h2 className="mb-4 text-3xl font-bold text-slate-900">
+              NaTicket: el futuro sistema de Hacienda Foral de Navarra
+            </h2>
+            <div className="space-y-4 text-slate-500 leading-relaxed">
+              <p>
+                Más allá de VeriFactu, la Hacienda Foral de Navarra está desarrollando{' '}
+                <strong className="text-slate-900">NaTicket</strong>: su propio sistema de
+                trazabilidad de facturas, complementario a VeriFactu y específico para el territorio
+                navarro.
+              </p>
+              <p>
+                A diferencia de VeriFactu (que reporta a la AEAT), NaTicket reportará directamente a
+                Hacienda Foral de Navarra. Los autónomos navarros podrían necesitar cumplir con
+                ambos sistemas simultáneamente cuando NaTicket entre en vigor, previsiblemente a
+                partir de 2027.
+              </p>
+            </div>
+            <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+              <p className="text-sm text-amber-800">
+                <strong>Importante:</strong> NaTicket no sustituye a VeriFactu. Son sistemas
+                complementarios. Como autónomo navarro, seguirás necesitando VeriFactu (AEAT) y,
+                cuando esté listo, también NaTicket (Hacienda Navarra).{' '}
+                <strong>{brandConfig.app.name}</strong> está siendo preparado para gestionar ambas
+                obligaciones automáticamente sin que tengas que hacer nada.
+              </p>
+            </div>
+            <div className="mt-6">
+              <Link
+                href="/naticket"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-red-200 hover:text-red-600"
+              >
+                Guía completa sobre NaTicket para autónomos navarros
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+
         {/* FAQ */}
         <section className="border-t border-slate-100 bg-slate-50 py-16 md:py-24">
           <div className="mx-auto max-w-4xl px-6">
@@ -704,41 +765,41 @@ export function NafacturaVerifactuPage(): React.JSX.Element {
         </section>
 
         {/* Interlinks */}
-        <section className="border-t border-slate-100 bg-white py-12">
-          <div className="mx-auto max-w-4xl px-6">
-            <p className="mb-6 text-center text-sm font-semibold uppercase tracking-wider text-slate-400">
-              También te puede interesar
-            </p>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {[
-                {
-                  href: '/funcionalidades',
-                  title: 'Todas las funcionalidades',
-                  desc: 'Descubre todo lo que incluye el software para autónomos navarros.',
-                },
-                {
-                  href: '/precios',
-                  title: 'Planes y precios',
-                  desc: `Desde ${PRICING.starter.monthly}€/mes. Gratis hasta 2027 para empezar.`,
-                },
-                {
-                  href: '/asesoria',
-                  title: 'Para asesorías en Navarra',
-                  desc: 'Gestiona la facturación de todos tus clientes navarros. Gratis para asesorías.',
-                },
-              ].map(({ href, title, desc }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="group rounded-2xl border border-slate-100 bg-slate-50 p-5 transition hover:border-red-200 hover:shadow-md"
-                >
-                  <p className="font-semibold text-slate-900 group-hover:text-red-600">{title} →</p>
-                  <p className="mt-1 text-sm text-slate-500">{desc}</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
+        <RelatedLinksSection
+          title="También te puede interesar"
+          links={[
+            {
+              href: '/naticket',
+              label: 'NaTicket para autónomos navarros',
+              description: 'El futuro sistema de Hacienda Foral de Navarra, explicado',
+            },
+            {
+              href: '/funcionalidades',
+              label: 'Todas las funcionalidades',
+              description: 'Descubre todo lo que incluye el software para autónomos navarros.',
+            },
+            {
+              href: '/alternativa-holded-navarra',
+              label: 'Alternativa a Holded en Navarra',
+              description: 'Por qué los autónomos navarros prefieren NaFactura a Holded.',
+            },
+            {
+              href: '/mejor-software-facturacion-navarra',
+              label: 'Mejor software de facturación Navarra',
+              description: 'Comparativa de los 4 mejores programas para autónomos navarros.',
+            },
+            {
+              href: '/precios',
+              label: 'Planes y precios',
+              description: `Desde ${PRICING.starter.monthly}€/mes. Gratis hasta 2027.`,
+            },
+            {
+              href: '/asesoria',
+              label: 'Para asesorías en Navarra',
+              description: 'Gestiona la facturación de todos tus clientes navarros.',
+            },
+          ]}
+        />
 
         <FooterLanding />
       </div>

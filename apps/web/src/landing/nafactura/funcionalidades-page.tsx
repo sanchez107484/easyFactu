@@ -29,6 +29,7 @@ import {
   BarChart3,
   RefreshCcw,
   Globe,
+  Layers,
 } from 'lucide-react';
 import { brandConfig, PRICING, PLAZAS_CONFIG } from '@easyfactura/brand-config';
 import SiteHeader from '@/components/site-header';
@@ -130,6 +131,14 @@ const mainFeatures = [
       'Tu facturación cumple automáticamente con la normativa de Hacienda Foral de Navarra. Sin configuraciones técnicas, sin preocupaciones fiscales.',
     highlight: true,
     badge: 'Hacienda Navarra',
+  },
+  {
+    icon: Layers,
+    title: 'Preparado para NaTicket',
+    description:
+      'Arquitectura preparada para NaTicket, el futuro sistema de Hacienda Foral de Navarra. Cuando entre en vigor, tu software estará listo sin migraciones ni costes adicionales.',
+    highlight: false,
+    badge: 'Próximamente',
   },
   {
     icon: Zap,
