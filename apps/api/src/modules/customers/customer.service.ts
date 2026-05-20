@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma, CustomerType as PrismaCustomerType } from '@prisma/client';
+import { Prisma, AccountType, CustomerType as PrismaCustomerType } from '@prisma/client';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
@@ -174,39 +174,83 @@ export class CustomerService {
   // ─── Agency shared pool ─────────────────────────────────────────────────────
 
   /**
-   * Returns customers from sibling tenants that share the same managing agency.
-   * Only works if the calling tenant is an active client of an agency.
-   * Returns an empty array (not an error) if no agency relation exists.
+   * Returns the shared customer pool visible to the calling tenant.
+   *
+   * Two paths — determined exclusively from the DB (never from request data):
+   *
+   *   PATH A — tenant is a CLIENT of an agency:
+   *     Returns the agency's own directory + all sibling client tenants (minus self).
+   *
+   *   PATH B — tenant IS the agency acting on its own behalf:
+   *     Returns all managed client tenants' directories.
+   *     (The agency's own customers are already in "Tus contactos".)
+   *
+   *   NORMAL USERS (INDIVIDUAL / BUSINESS / COLLABORATIVE not linked to any agency):
+   *     Returns [] immediately — zero extra DB queries, no data leakage.
    */
   async findAgencySharedPool(tenantId: string, search?: string) {
-    const relation = await this.prisma.agencyClientRelation.findFirst({
-      where: { clientTenantId: tenantId },
-      select: {
-        agencyTenantId: true,
-        agencyTenant: { select: { businessName: true } },
-      },
-    });
-
-    if (!relation) return [];
-
-    const siblings = await this.prisma.agencyClientRelation.findMany({
-      where: {
-        agencyTenantId: relation.agencyTenantId,
-        clientTenantId: { not: tenantId },
-      },
-      select: {
-        clientTenantId: true,
-        clientTenant: { select: { businessName: true } },
-      },
-    });
-
-    // Include the agency's own customer directory + all sibling client tenants
-    const allSourceIds = [relation.agencyTenantId, ...siblings.map((s) => s.clientTenantId)];
-
-    const tenantNameMap = new Map<string, string>([
-      [relation.agencyTenantId, relation.agencyTenant.businessName],
-      ...siblings.map((s): [string, string] => [s.clientTenantId, s.clientTenant.businessName]),
+    // Resolve the calling tenant's role in a single parallel round-trip.
+    // accountType is read from the DB — never trusted from the request.
+    const [clientRelation, tenant] = await Promise.all([
+      this.prisma.agencyClientRelation.findFirst({
+        where: { clientTenantId: tenantId },
+        select: {
+          agencyTenantId: true,
+          agencyTenant: { select: { businessName: true } },
+        },
+      }),
+      this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { accountType: true },
+      }),
     ]);
+
+    const isAgency = tenant?.accountType === AccountType.AGENCY;
+
+    // Normal users are not a client of any agency AND are not an agency themselves.
+    if (!clientRelation && !isAgency) return [];
+
+    const allSourceIds: string[] = [];
+    const tenantNameMap = new Map<string, string>();
+
+    if (clientRelation) {
+      // PATH A: calling tenant is a managed client.
+      // Pool = agency own directory + all sibling clients (not self).
+      const siblings = await this.prisma.agencyClientRelation.findMany({
+        where: {
+          agencyTenantId: clientRelation.agencyTenantId,
+          clientTenantId: { not: tenantId },
+        },
+        select: {
+          clientTenantId: true,
+          clientTenant: { select: { businessName: true } },
+        },
+      });
+
+      allSourceIds.push(clientRelation.agencyTenantId, ...siblings.map((s) => s.clientTenantId));
+      tenantNameMap.set(clientRelation.agencyTenantId, clientRelation.agencyTenant.businessName);
+      for (const s of siblings) {
+        tenantNameMap.set(s.clientTenantId, s.clientTenant.businessName);
+      }
+    } else {
+      // PATH B: calling tenant is the agency itself.
+      // Pool = all managed client directories. Agency's own customers are already
+      // shown in "Tus contactos", so we exclude the agency tenant from the pool.
+      const clients = await this.prisma.agencyClientRelation.findMany({
+        where: { agencyTenantId: tenantId },
+        select: {
+          clientTenantId: true,
+          clientTenant: { select: { businessName: true } },
+        },
+      });
+
+      if (!clients.length) return [];
+
+      allSourceIds.push(...clients.map((c) => c.clientTenantId));
+      for (const c of clients) {
+        tenantNameMap.set(c.clientTenantId, c.clientTenant.businessName);
+      }
+    }
 
     const where: Prisma.CustomerWhereInput = {
       tenantId: { in: allSourceIds },
@@ -229,8 +273,7 @@ export class CustomerService {
     });
 
     // Deduplicate by NIF: keep only the most recently updated record per NIF.
-    // A customer can appear in multiple tenants (agency + sibling clients).
-    // The first record wins because we ordered by updatedAt DESC.
+    // The first record encountered wins because we ordered by updatedAt DESC.
     const seenNifs = new Map<string, (typeof customers)[0]>();
     for (const customer of customers) {
       const normalizedNif = customer.nif.toUpperCase();
@@ -250,29 +293,41 @@ export class CustomerService {
   }
 
   /**
-   * Copies a customer from any sibling tenant (same agency) into the current tenant.
-   * If a customer with the same NIF already exists in the current tenant, returns it.
-   * The source is identified by NIF — safe canonical identifier across tenants.
+   * Copies a customer from the shared pool into the calling tenant's own directory.
+   * If a customer with the same NIF already exists in this tenant, returns it as-is
+   * (or reactivates it if it was soft-deleted).
+   *
+   * Mirrors the two-path logic of findAgencySharedPool:
+   *   PATH A — tenant is a client → pool is agency + sibling directories.
+   *   PATH B — tenant is the agency → pool is all managed client directories.
    */
   async importFromAgencyPool(tenantId: string, nif: string) {
-    const relation = await this.prisma.agencyClientRelation.findFirst({
-      where: { clientTenantId: tenantId },
-      select: { agencyTenantId: true },
-    });
+    // accountType is read from the DB — never trusted from request input.
+    const [clientRelation, tenant] = await Promise.all([
+      this.prisma.agencyClientRelation.findFirst({
+        where: { clientTenantId: tenantId },
+        select: { agencyTenantId: true },
+      }),
+      this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { accountType: true },
+      }),
+    ]);
 
-    if (!relation) {
-      throw new ForbiddenException('Este tenant no pertenece a ninguna asesoría');
+    const isAgency = tenant?.accountType === AccountType.AGENCY;
+
+    if (!clientRelation && !isAgency) {
+      throw new ForbiddenException('Este tenant no tiene acceso al directorio compartido');
     }
 
     const normalizedNif = nif.toUpperCase().trim();
 
     // Return existing customer if already present in this tenant (active or inactive)
-    // Checking regardless of isActive to avoid the unique constraint on (tenant_id, nif)
+    // to avoid the unique constraint on (tenant_id, nif).
     const existing = await this.prisma.customer.findFirst({
       where: { tenantId, nif: { equals: normalizedNif, mode: 'insensitive' } },
     });
     if (existing) {
-      // Reactivate if it was soft-deleted
       if (!existing.isActive) {
         return this.prisma.customer.update({
           where: { id: existing.id },
@@ -282,16 +337,26 @@ export class CustomerService {
       return existing;
     }
 
-    const siblings = await this.prisma.agencyClientRelation.findMany({
-      where: {
-        agencyTenantId: relation.agencyTenantId,
-        clientTenantId: { not: tenantId },
-      },
-      select: { clientTenantId: true },
-    });
+    let allSourceIds: string[];
 
-    // Include the agency's own customers in the import source pool
-    const allSourceIds = [relation.agencyTenantId, ...siblings.map((s) => s.clientTenantId)];
+    if (clientRelation) {
+      // PATH A: tenant is a managed client.
+      const siblings = await this.prisma.agencyClientRelation.findMany({
+        where: {
+          agencyTenantId: clientRelation.agencyTenantId,
+          clientTenantId: { not: tenantId },
+        },
+        select: { clientTenantId: true },
+      });
+      allSourceIds = [clientRelation.agencyTenantId, ...siblings.map((s) => s.clientTenantId)];
+    } else {
+      // PATH B: tenant is the agency itself.
+      const clients = await this.prisma.agencyClientRelation.findMany({
+        where: { agencyTenantId: tenantId },
+        select: { clientTenantId: true },
+      });
+      allSourceIds = clients.map((c) => c.clientTenantId);
+    }
 
     const source = await this.prisma.customer.findFirst({
       where: {
@@ -299,6 +364,8 @@ export class CustomerService {
         nif: { equals: normalizedNif, mode: 'insensitive' },
         isActive: true,
       },
+      // Pick the most recently updated record if the NIF exists in multiple tenants.
+      orderBy: { updatedAt: 'desc' },
     });
 
     if (!source) {
