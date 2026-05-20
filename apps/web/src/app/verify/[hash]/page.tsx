@@ -23,9 +23,7 @@ interface Props {
 
 const HASH_REGEX = /^[0-9a-f]{64}$/;
 
-const STATUS_META: Partial<
-  Record<InvoiceStatus, { label: string; chip: string; dot: string }>
-> = {
+const STATUS_META: Partial<Record<InvoiceStatus, { label: string; chip: string; dot: string }>> = {
   [InvoiceStatus.CONFIRMED]: {
     label: 'Emitida',
     chip: 'bg-slate-100 border-slate-300 text-slate-700 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300',
@@ -144,8 +142,6 @@ export default async function VerifyPage({ params }: Props) {
               {status.label}
             </StatusChip>
           </div>
-
-
         </div>
       </section>
 
@@ -175,12 +171,7 @@ export default async function VerifyPage({ params }: Props) {
             />
             <Row label="Base imponible" value={fmtCurrency(data.invoice.subtotal)} numeric />
             <Row label="IVA" value={fmtCurrency(data.invoice.taxTotal)} numeric />
-            <Row
-              label="Importe total"
-              value={fmtCurrency(data.invoice.total)}
-              numeric
-              emphasis
-            />
+            <Row label="Importe total" value={fmtCurrency(data.invoice.total)} numeric emphasis />
             <Row label="Estado" value={status.label} />
           </Card>
         </section>
@@ -210,7 +201,6 @@ export default async function VerifyPage({ params }: Props) {
                 <Hash className="h-3.5 w-3.5" aria-hidden="true" />
                 <span className="text-xs font-medium">SHA-256</span>
               </div>
-
             </div>
             <code
               className="block select-all break-all rounded-md bg-muted/50 px-3 py-2 font-mono text-[10px] leading-relaxed text-foreground sm:text-[11px]"
@@ -247,13 +237,7 @@ function Chip({ children }: { children: React.ReactNode }) {
   );
 }
 
-function StatusChip({
-  status,
-  children,
-}: {
-  status: InvoiceStatus;
-  children: React.ReactNode;
-}) {
+function StatusChip({ status, children }: { status: InvoiceStatus; children: React.ReactNode }) {
   const meta = STATUS_META[status];
   return (
     <span

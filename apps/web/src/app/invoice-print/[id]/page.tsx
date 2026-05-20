@@ -147,7 +147,12 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
             : {}),
         }
       : baseLayout;
-  const { page, typography, colors } = layout;
+  // Quotes are not official confirmed invoices — suppress the VeriFactu QR entirely.
+  const isQuote = invoice.invoiceType === 'quote';
+  const effectiveLayout: InvoiceLayout = isQuote
+    ? { ...layout, footer: { ...layout.footer, showVerifactuQr: false } }
+    : layout;
+  const { page, typography, colors } = effectiveLayout;
   const fontFamily = FONT_FAMILY_MAP[typography.fontFamily] ?? FONT_FAMILY_MAP['helvetica'];
   const paymentDetails = invoice.paymentDetails as PaymentDetails | undefined;
   const documentTitle = resolveDocumentTitle(invoice.isRectificative ?? false, invoice.invoiceType);
@@ -330,7 +335,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
 
         {/* 7 — Footer */}
         <div style={{ marginTop: '16px' }}>
-          <FooterBlock layout={layout} invoice={invoice} tenant={tenant} />
+          <FooterBlock layout={effectiveLayout} invoice={invoice} tenant={tenant} />
         </div>
       </div>
     </>

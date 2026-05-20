@@ -369,7 +369,16 @@ export function LiveInvoicePreview({
               onSectionClick={onSectionClick}
               className="mt-4"
             >
-              <FooterBlock layout={layout} invoice={invoice} tenant={effectiveTenant} previewMode />
+              <FooterBlock
+                layout={
+                  invoiceType === 'quote'
+                    ? { ...layout, footer: { ...layout.footer, showVerifactuQr: false } }
+                    : layout
+                }
+                invoice={invoice}
+                tenant={effectiveTenant}
+                previewMode
+              />
             </PreviewSection>
           </div>
         </div>
