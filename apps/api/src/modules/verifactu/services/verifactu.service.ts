@@ -1,6 +1,8 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { VerifactuHashService } from './verifactu-hash.service';
+import { VerifactuQrService } from './verifactu-qr.service';
 import { HACIENDA_ADAPTER, IHaciendaAdapter } from '../interfaces/hacienda-adapter.interface';
 import { InvoiceStatus, VerifactuStatus } from '@easyfactura/shared-types';
 
@@ -11,16 +13,21 @@ export class VerifactuService {
   constructor(
     private prisma: PrismaService,
     private hashService: VerifactuHashService,
+    private qrService: VerifactuQrService,
+    private config: ConfigService,
     @Inject(HACIENDA_ADAPTER) private haciendaAdapter: IHaciendaAdapter
   ) {}
 
   /**
    * Process invoice for VeriFactu:
    * 1. Generate hash chain
-   * 2. Generate XML
-   * 3. Sign XML
-   * 4. Send to AEAT
-   * 5. Generate QR code
+   * 2. Generate QR code (always, independent of signing/sending)
+   * 3. Generate XML
+   * 4. Sign XML
+   * 5. Send to Hacienda
+   *
+   * Steps 3-5 are wrapped in their own try-catch so that a sign/send failure
+   * does not roll back the already-stored QR code or hash.
    */
   async processInvoice(tenantId: string, invoiceId: string): Promise<void> {
     try {
@@ -80,28 +87,45 @@ export class VerifactuService {
 
       this.logger.log(`Hash generated for invoice ${invoiceId}: ${hash}`);
 
-      // Step 2: Generate XML
-      const xml = await this.haciendaAdapter.generateXml(tenantId, invoiceId);
-      this.logger.log(`XML generated for invoice ${invoiceId}`);
-
-      // Step 3: Sign XML with the tenant's digital certificate
-      const signedXml = await this.haciendaAdapter.signXml(xml, tenantId);
-      this.logger.log(`XML signed for invoice ${invoiceId}`);
-
-      // Step 4: Send to Hacienda
-      await this.haciendaAdapter.sendToHacienda(tenantId, invoiceId, signedXml);
-      this.logger.log(`Invoice ${invoiceId} sent to Hacienda`);
-
-      // Step 5: Generate QR code
-      const qrUrl = await this.haciendaAdapter.generateQrUrl(tenantId, invoiceId);
+      // Step 2: Generate and store QR code immediately after hash.
+      // This runs before sign/send so the QR is always persisted even if
+      // the signing step is not yet implemented or the AEAT send fails.
+      const qrUrl = this.buildQrUrl(hash, tenantId, invoiceId);
       await this.prisma.invoice.update({
         where: { id: invoiceId },
         data: { verifactuQr: qrUrl },
       });
 
       this.logger.log(`QR code generated for invoice ${invoiceId}`);
-    } catch (error: any) {
-      this.logger.error(`Error processing invoice ${invoiceId} for VeriFactu:`, error.message);
+
+      // Steps 3-5: XML generation, signing, and AEAT submission.
+      // Wrapped in a separate try-catch so that failures here do not
+      // invalidate the hash and QR already stored above.
+      try {
+        // Step 3: Generate XML
+        const xml = await this.haciendaAdapter.generateXml(tenantId, invoiceId);
+        this.logger.log(`XML generated for invoice ${invoiceId}`);
+
+        // Step 4: Sign XML with the tenant's digital certificate
+        const signedXml = await this.haciendaAdapter.signXml(xml, tenantId);
+        this.logger.log(`XML signed for invoice ${invoiceId}`);
+
+        // Step 5: Send to Hacienda
+        await this.haciendaAdapter.sendToHacienda(tenantId, invoiceId, signedXml);
+        this.logger.log(`Invoice ${invoiceId} sent to Hacienda`);
+      } catch (sendError: unknown) {
+        const message = sendError instanceof Error ? sendError.message : String(sendError);
+        this.logger.warn(
+          `[VeriFactu] Sign/send failed for invoice ${invoiceId} (hash and QR already stored): ${message}`
+        );
+        await this.prisma.invoice.update({
+          where: { id: invoiceId },
+          data: { verifactuStatus: VerifactuStatus.ERROR },
+        });
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Error processing invoice ${invoiceId} for VeriFactu: ${message}`);
 
       // Update invoice status to error
       await this.prisma.invoice.update({
@@ -111,6 +135,37 @@ export class VerifactuService {
 
       throw error;
     }
+  }
+
+  /**
+   * Build the QR URL content based on QR_MODE env var.
+   * - internal (default): internal verification page using the invoice hash.
+   * - verifactu: AEAT validation URL (only valid once the invoice is registered at AEAT).
+   * - naticket: Hacienda Foral de Navarra (not yet implemented — falls back to internal).
+   */
+  private buildQrUrl(hash: string, tenantId: string, invoiceId: string): string {
+    const mode = this.config.get<string>('QR_MODE', 'internal');
+
+    if (mode === 'verifactu') {
+      // AEAT URL is built asynchronously — handled by the adapter.
+      // Since this method is synchronous, schedule a fire-and-forget update.
+      this.haciendaAdapter
+        .generateQrUrl(tenantId, invoiceId)
+        .then((url) =>
+          this.prisma.invoice.update({ where: { id: invoiceId }, data: { verifactuQr: url } })
+        )
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          this.logger.warn(`[VeriFactu] Could not generate AEAT QR URL for ${invoiceId}: ${msg}`);
+        });
+
+      // Return the internal URL as an immediate value while the async one resolves.
+      // It will be overwritten by the update above once the adapter resolves.
+      return this.qrService.generateInternalQrUrl(hash);
+    }
+
+    // Default: internal verification page
+    return this.qrService.generateInternalQrUrl(hash);
   }
 
   /**

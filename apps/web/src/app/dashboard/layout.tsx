@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import { useUIStore } from '@/store/ui-store';
+import { useResponsiveSidebar } from '@/hooks/use-responsive-sidebar';
 import { DashboardSidebar } from '@/components/dashboard/sidebar';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { ActingAsBanner } from '@/components/dashboard/acting-as-banner';
@@ -25,6 +26,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const { isAuthenticated, checkAuth } = useAuthStore();
   const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
+
+  // Auto-collapse the sidebar on viewports < xl so dashboard tables get the full width.
+  useResponsiveSidebar();
 
   // Start with true on both server and client to avoid:
   // 1) Hydration mismatch (same value on both sides)

@@ -271,6 +271,27 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
     return src ? ({ ...src, logoUrl: resolveUrl(src.logoUrl) ?? null } as Tenant) : null;
   }, [tenantData, currentTenant]);
 
+  // Merge recurring.layoutOverride into the template so the preview reflects QR and other
+  // per-recurring overrides (e.g. footer.showVerifactuQr saved when creating/editing).
+  const effectiveTemplate = useMemo(() => {
+    if (!defaultTemplate) return null;
+    const override = recurring?.layoutOverride as
+      | { footer?: { showVerifactuQr?: boolean } }
+      | null
+      | undefined;
+    if (!override?.footer) return defaultTemplate;
+    return {
+      ...defaultTemplate,
+      layout: {
+        ...defaultTemplate.layout,
+        footer: {
+          ...defaultTemplate.layout.footer,
+          ...override.footer,
+        },
+      },
+    };
+  }, [defaultTemplate, recurring?.layoutOverride]);
+
   if (isLoading) return <RecurrenteDetailSkeleton />;
 
   if (error || !recurring) {
@@ -389,7 +410,7 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
           </>
         }
         invoice={previewInvoice!}
-        template={defaultTemplate ?? null}
+        template={effectiveTemplate}
         tenant={previewTenant}
         invoiceType={null}
       >

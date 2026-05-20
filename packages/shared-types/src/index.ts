@@ -782,6 +782,7 @@ export interface InvoiceLayout {
 
 export type LayoutOverride = {
   itemsTable?: Partial<InvoiceLayout['itemsTable']>;
+  footer?: Partial<Pick<InvoiceLayout['footer'], 'showVerifactuQr'>>;
 };
 
 // ==================== INVOICE DEFAULTS ====================
@@ -902,6 +903,7 @@ export interface RecurringInvoice {
   paymentMethod: PaymentMethod | null;
   paymentDetails: Record<string, unknown> | null;
   notes: string | null;
+  layoutOverride?: LayoutOverride | null;
   createdAt: string;
   updatedAt: string;
   customer?: Customer;
@@ -946,6 +948,7 @@ export interface CreateRecurringInvoiceInput {
   lines: CreateRecurringInvoiceLineInput[];
   /** When provided, links this original invoice to the new recurring invoice */
   sourceInvoiceId?: string;
+  layoutOverride?: LayoutOverride;
 }
 
 export interface UpdateRecurringInvoiceInput {
@@ -961,6 +964,7 @@ export interface UpdateRecurringInvoiceInput {
   paymentDetails?: Record<string, unknown> | null;
   notes?: string | null;
   lines?: CreateRecurringInvoiceLineInput[];
+  layoutOverride?: LayoutOverride | null;
 }
 
 export interface QueryRecurringInvoicesInput {

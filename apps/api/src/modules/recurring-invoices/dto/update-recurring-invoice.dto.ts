@@ -6,6 +6,7 @@ import {
   IsArray,
   IsEnum,
   IsBoolean,
+  IsObject,
   ValidateNested,
   ArrayMinSize,
   Min,
@@ -75,4 +76,8 @@ export class UpdateRecurringInvoiceDto {
   @Type(() => CreateRecurringInvoiceLineDto)
   @ArrayMinSize(1)
   lines?: CreateRecurringInvoiceLineDto[];
+
+  @IsOptional()
+  @IsObject()
+  layoutOverride?: object | null;
 }

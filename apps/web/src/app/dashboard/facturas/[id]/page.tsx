@@ -72,6 +72,7 @@ import { useInvoiceTemplate, useDefaultTemplate } from '@/hooks/use-invoice-temp
 import { useAuthStore } from '@/store/auth-store';
 import { useTenant } from '@/hooks/use-tenant';
 import { resolveUrl, parseNum } from '@/lib/utils';
+import { VerifactuQrImage } from '@/components/invoice/VerifactuQrImage';
 
 // ==================== CONSTANTS ====================
 
@@ -246,16 +247,29 @@ export default function FacturaDetailPage() {
   // When the invoice has no templateId (existing data), fall back to the tenant's default template
   const baseTemplate = specificTemplate ?? defaultTemplate;
   const invoiceLayoutOverride = invoice.layoutOverride;
+  const hasAnyOverride = invoiceLayoutOverride?.itemsTable || invoiceLayoutOverride?.footer;
   const template =
-    baseTemplate && invoiceLayoutOverride?.itemsTable
+    baseTemplate && hasAnyOverride
       ? {
           ...baseTemplate,
           layout: {
             ...baseTemplate.layout,
-            itemsTable: {
-              ...baseTemplate.layout.itemsTable,
-              ...invoiceLayoutOverride.itemsTable,
-            },
+            ...(invoiceLayoutOverride?.itemsTable
+              ? {
+                  itemsTable: {
+                    ...baseTemplate.layout.itemsTable,
+                    ...invoiceLayoutOverride.itemsTable,
+                  },
+                }
+              : {}),
+            ...(invoiceLayoutOverride?.footer
+              ? {
+                  footer: {
+                    ...baseTemplate.layout.footer,
+                    ...invoiceLayoutOverride.footer,
+                  },
+                }
+              : {}),
           },
         }
       : baseTemplate;
@@ -550,15 +564,30 @@ export default function FacturaDetailPage() {
             {/* VeriFactu */}
             {invoice.verifactuQr && (
               <div className="rounded-xl border bg-card p-5">
-                <SectionLabel>Verificación VeriFactu</SectionLabel>
-                <a
-                  href={invoice.verifactuQr}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline"
-                >
-                  Verificar en la AEAT →
-                </a>
+                <SectionLabel>Verificación</SectionLabel>
+                <div className="flex items-start gap-4 mt-2">
+                  <a
+                    href={invoice.verifactuQr}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Escanea para verificar esta factura"
+                  >
+                    <VerifactuQrImage value={invoice.verifactuQr} size={96} />
+                  </a>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm text-muted-foreground">
+                      Escanea el código QR para verificar la autenticidad de esta factura.
+                    </p>
+                    <a
+                      href={invoice.verifactuQr}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline mt-1"
+                    >
+                      Abrir enlace de verificación →
+                    </a>
+                  </div>
+                </div>
               </div>
             )}
           </div>

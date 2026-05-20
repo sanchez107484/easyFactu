@@ -1,17 +1,32 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../prisma/prisma.service';
 import * as QRCode from 'qrcode';
 
 @Injectable()
 export class VerifactuQrService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private config: ConfigService
+  ) {}
 
   /**
-   * Generate VeriFactu QR code URL according to AEAT specification
+   * Generate internal verification URL using the invoice hash.
+   * Used when QR_MODE=internal (default — before VeriFactu/Naticket is operational).
+   * Format: {PUBLIC_VERIFY_URL}/{hash}
+   */
+  generateInternalQrUrl(hash: string): string {
+    const baseUrl = this.config.get<string>('PUBLIC_VERIFY_URL', 'http://localhost:3000/verify');
+    // Always use lowercase hash in URLs for consistent routing
+    return `${baseUrl}/${hash.toLowerCase()}`;
+  }
+
+  /**
+   * Generate VeriFactu QR code URL according to AEAT specification.
+   * Used when QR_MODE=verifactu.
    * Format: https://prewww1.aeat.es/wlpl/TIKE-CONT/ValidarQR?nif=X&numserie=Y&fecha=DDMMYYYY&importe=Z
    */
   async generateQrUrl(tenantId: string, invoiceId: string): Promise<string> {
-    // Get invoice data
     const invoice = await this.prisma.invoice.findFirst({
       where: { id: invoiceId, tenantId },
     });
@@ -24,7 +39,6 @@ export class VerifactuQrService {
       throw new Error('Solo se puede generar QR para facturas con número asignado (confirmadas)');
     }
 
-    // Get tenant NIF
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       select: { nif: true },
@@ -34,7 +48,6 @@ export class VerifactuQrService {
       throw new Error('El tenant no tiene NIF configurado');
     }
 
-    // Build QR URL parameters
     const params = new URLSearchParams({
       nif: tenant.nif,
       numserie: invoice.number,
@@ -42,9 +55,9 @@ export class VerifactuQrService {
       importe: invoice.total.toFixed(2),
     });
 
-    // AEAT QR validation endpoint (sandbox for development)
+    const environment = this.config.get<string>('VERIFACTU_ENVIRONMENT', 'sandbox');
     const baseUrl =
-      process.env.NODE_ENV === 'production'
+      environment === 'production'
         ? 'https://www.agenciatributaria.gob.es/wlpl/TIKE-CONT/ValidarQR'
         : 'https://prewww1.aeat.es/wlpl/TIKE-CONT/ValidarQR';
 

@@ -100,6 +100,7 @@ interface InvoiceFormProps {
   editDraftId?: string;
   initialInvoiceType?: InvoiceTypeOption;
   invoiceDefaults?: InvoiceDefaults | null;
+  initialShowQr?: boolean;
   /** Abre el modal de selección de tipo al montar (cuando la URL no trae ?tipo=) */
   showTypeModalOnMount?: boolean;
 }
@@ -111,6 +112,7 @@ function InvoiceForm({
   editDraftId,
   initialInvoiceType,
   invoiceDefaults,
+  initialShowQr,
   showTypeModalOnMount = false,
 }: InvoiceFormProps) {
   const router = useRouter();
@@ -128,6 +130,7 @@ function InvoiceForm({
   const [showQuickClient, setShowQuickClient] = useState(false);
   const [pendingCustomerId, setPendingCustomerId] = useState<string | null>(null);
   const [simplifyTable, setSimplifyTable] = useState(false);
+  const [showQr, setShowQr] = useState(initialShowQr ?? true);
 
   // ── Recurring option (subtle toggle) ──
   const [isRecurring, setIsRecurring] = useState(false);
@@ -266,6 +269,14 @@ function InvoiceForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveTemplate?.id]);
 
+  // Sync showQr from template default when creating a fresh invoice (no explicit initialShowQr)
+  useEffect(() => {
+    if (isDuplicate || editDraftId || initialShowQr !== undefined) return;
+    const templateDefault = effectiveTemplate?.layout?.footer?.showVerifactuQr ?? true;
+    setShowQr(templateDefault);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveTemplate?.id]);
+
   const previewTemplate: typeof effectiveTemplate = effectiveTemplate
     ? {
         ...effectiveTemplate,
@@ -282,6 +293,10 @@ function InvoiceForm({
             showLineTotal: simplifyTable
               ? false
               : (effectiveTemplate.layout.itemsTable.showLineTotal ?? true),
+          },
+          footer: {
+            ...effectiveTemplate.layout.footer,
+            showVerifactuQr: showQr,
           },
         },
       }
@@ -327,9 +342,12 @@ function InvoiceForm({
 
   const handleSaveDraft = async (data: FormData) => {
     try {
-      const layoutOverride = simplifyTable
-        ? { itemsTable: { showUnitPrice: false, showTaxColumn: false, showLineTotal: false } }
-        : undefined;
+      const layoutOverride = {
+        ...(simplifyTable
+          ? { itemsTable: { showUnitPrice: false, showTaxColumn: false, showLineTotal: false } }
+          : {}),
+        footer: { showVerifactuQr: showQr },
+      };
       const input = buildCreateInput({
         ...data,
         seriesId: data.seriesId || defaultSeriesId,
@@ -370,9 +388,12 @@ function InvoiceForm({
 
     if (isProforma) {
       try {
-        const layoutOverride = simplifyTable
-          ? { itemsTable: { showUnitPrice: false, showTaxColumn: false, showLineTotal: false } }
-          : undefined;
+        const layoutOverride = {
+          ...(simplifyTable
+            ? { itemsTable: { showUnitPrice: false, showTaxColumn: false, showLineTotal: false } }
+            : {}),
+          footer: { showVerifactuQr: showQr },
+        };
         const input = buildCreateInput({
           ...resolvedData,
           invoiceType: 'proforma',
@@ -396,9 +417,12 @@ function InvoiceForm({
 
     let draftId = pendingDraftId;
     try {
-      const layoutOverride = simplifyTable
-        ? { itemsTable: { showUnitPrice: false, showTaxColumn: false, showLineTotal: false } }
-        : undefined;
+      const layoutOverride = {
+        ...(simplifyTable
+          ? { itemsTable: { showUnitPrice: false, showTaxColumn: false, showLineTotal: false } }
+          : {}),
+        footer: { showVerifactuQr: showQr },
+      };
       const input = buildCreateInput({
         ...resolvedData,
         invoiceType: invoiceType ?? 'standard',
@@ -660,6 +684,21 @@ function InvoiceForm({
                       />
                     </div>
                   )}
+
+                  {/* ── QR toggle ── */}
+                  <div className="flex items-center justify-between rounded-lg border border-dashed bg-muted/30 px-3 py-2.5">
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-medium leading-tight">Código QR de verificación</p>
+                      <p className="text-[11px] text-muted-foreground leading-tight">
+                        Se incluye en el PDF cuando la factura esté confirmada
+                      </p>
+                    </div>
+                    <Switch
+                      checked={showQr}
+                      onCheckedChange={setShowQr}
+                      aria-label="Mostrar código QR de verificación"
+                    />
+                  </div>
                 </CardContent>
               </Card>
 
@@ -832,6 +871,7 @@ export default function NuevaFacturaPage() {
           : initialTypeFromParam
       }
       invoiceDefaults={invoiceDefaults ?? null}
+      initialShowQr={sourceInvoice?.layoutOverride?.footer?.showVerifactuQr ?? undefined}
       showTypeModalOnMount={showTypeModalOnMount}
     />
   );

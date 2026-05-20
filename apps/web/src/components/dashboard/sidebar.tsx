@@ -137,16 +137,45 @@ export function DashboardSidebar() {
         isActingAsClient && 'border-customer-200 dark:border-customer-800',
       )}
     >
-      {/* Logo */}
-      <div className="flex h-16 shrink-0 items-center justify-between border-b px-4">
+      {/* Floating rail toggle — overlaps the right border for a clean look at any state */}
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={toggleSidebarCollapsed}
+        aria-label={sidebarCollapsed ? 'Expandir menú lateral' : 'Recoger menú lateral'}
+        title={sidebarCollapsed ? 'Expandir menú' : 'Recoger menú'}
+        className={cn(
+          'absolute top-5 -right-3 z-50 h-6 w-6 rounded-full border bg-card shadow-sm',
+          'hover:bg-accent hover:text-accent-foreground',
+        )}
+      >
         {sidebarCollapsed ? (
-          <Link href="/dashboard" className="flex items-center justify-center">
+          <ChevronRight className="h-3.5 w-3.5" />
+        ) : (
+          <ChevronLeft className="h-3.5 w-3.5" />
+        )}
+      </Button>
+
+      {/* Logo */}
+      <div
+        className={cn(
+          'flex h-16 shrink-0 items-center border-b',
+          sidebarCollapsed ? 'justify-center px-2' : 'px-4',
+        )}
+      >
+        {sidebarCollapsed ? (
+          <Link
+            href="/dashboard"
+            className="flex items-center justify-center"
+            title={brandConfig.app.name}
+          >
             <Image
               src={brandConfig.logos.icon}
               alt={brandConfig.app.shortName}
-              width={32}
-              height={32}
+              width={36}
+              height={36}
               className="object-contain"
+              priority
             />
           </Link>
         ) : (
@@ -158,21 +187,10 @@ export function DashboardSidebar() {
               height={80}
               className="object-contain"
               style={{ width: 'auto', height: '40px' }}
+              priority
             />
           </Link>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleSidebarCollapsed}
-          className={cn('h-8 w-8 shrink-0', sidebarCollapsed && 'mx-auto')}
-        >
-          {sidebarCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </Button>
       </div>
 
       {/* "Acting as" return button — shown when managing a client tenant */}

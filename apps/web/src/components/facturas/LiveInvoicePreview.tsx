@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useLayoutEffect, useCallback } from 'react';
 import {
   Invoice,
   InvoiceLayout,
@@ -19,7 +19,7 @@ import {
 
 export type { PaymentDetails };
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ==================== CONSTANTS ====================
@@ -27,6 +27,10 @@ import { cn } from '@/lib/utils';
 const MIN_SCALE = 0.35;
 const MAX_SCALE = 1.0;
 const SCALE_STEP = 0.1;
+/** A4 page width in pixels (96 dpi) used to compute auto-fit scale */
+const PAGE_WIDTH_PX = 595;
+/** Horizontal padding (px) of the scrollable preview container — must match Tailwind `px-2` (8px) */
+const PREVIEW_HORIZONTAL_PADDING = 8 * 2;
 
 const FONT_FAMILY_MAP: Record<string, string> = {
   helvetica: 'Helvetica, Arial, sans-serif',
@@ -162,6 +166,7 @@ export function LiveInvoicePreview({
   invoiceType,
 }: LiveInvoicePreviewProps) {
   const [scale, setScale] = useState(1.0);
+  const [isAutoFit, setIsAutoFit] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const layout = (template?.layout ?? DEFAULT_INVOICE_LAYOUT) as InvoiceLayout;
@@ -169,10 +174,38 @@ export function LiveInvoicePreview({
   const fontFamily = FONT_FAMILY_MAP[typography.fontFamily] ?? FONT_FAMILY_MAP['helvetica'];
   const effectiveTenant = tenant ?? FALLBACK_TENANT;
 
-  const handleZoomIn = () =>
+  const computeFitScale = useCallback((containerWidth: number): number => {
+    const available = containerWidth - PREVIEW_HORIZONTAL_PADDING;
+    if (available <= 0) return MIN_SCALE;
+    const fit = available / PAGE_WIDTH_PX;
+    return Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.round(fit * 100) / 100));
+  }, []);
+
+  // Auto-fit: observe container width and adjust scale until the user manually zooms
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el || !isAutoFit) return;
+
+    setScale(computeFitScale(el.clientWidth));
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setScale(computeFitScale(entry.contentRect.width));
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isAutoFit, computeFitScale]);
+
+  const handleZoomIn = () => {
+    setIsAutoFit(false);
     setScale((s) => Math.min(MAX_SCALE, Math.round((s + SCALE_STEP) * 10) / 10));
-  const handleZoomOut = () =>
+  };
+  const handleZoomOut = () => {
+    setIsAutoFit(false);
     setScale((s) => Math.max(MIN_SCALE, Math.round((s - SCALE_STEP) * 10) / 10));
+  };
+  const handleFit = () => setIsAutoFit(true);
 
   return (
     <div className="flex flex-col h-full">
@@ -186,10 +219,11 @@ export function LiveInvoicePreview({
             className="h-7 w-7 p-0"
             onClick={handleZoomOut}
             disabled={scale <= MIN_SCALE}
+            title="Reducir zoom"
           >
             <ZoomOut className="h-3.5 w-3.5" />
           </Button>
-          <span className="text-xs text-muted-foreground w-10 text-center">
+          <span className="text-xs text-muted-foreground w-10 text-center tabular-nums">
             {Math.round(scale * 100)}%
           </span>
           <Button
@@ -198,8 +232,19 @@ export function LiveInvoicePreview({
             className="h-7 w-7 p-0"
             onClick={handleZoomIn}
             disabled={scale >= MAX_SCALE}
+            title="Aumentar zoom"
           >
             <ZoomIn className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant={isAutoFit ? 'default' : 'ghost'}
+            size="sm"
+            className="h-7 w-7 p-0 ml-1"
+            onClick={handleFit}
+            title={isAutoFit ? 'Ajuste automático activo' : 'Ajustar al ancho'}
+            aria-pressed={isAutoFit}
+          >
+            <Maximize2 className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
@@ -207,7 +252,7 @@ export function LiveInvoicePreview({
       {/* Preview scrollable area */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-auto bg-neutral-100 dark:bg-neutral-900 p-4"
+        className="flex-1 overflow-auto bg-neutral-100 dark:bg-neutral-900 px-2 py-4"
       >
         {/* Scaled A4 document */}
         <div
@@ -369,7 +414,16 @@ export function LiveInvoicePreview({
               onSectionClick={onSectionClick}
               className="mt-4"
             >
-              <FooterBlock layout={layout} invoice={invoice} tenant={effectiveTenant} />
+              <FooterBlock
+                layout={
+                  invoiceType === 'quote'
+                    ? { ...layout, footer: { ...layout.footer, showVerifactuQr: false } }
+                    : layout
+                }
+                invoice={invoice}
+                tenant={effectiveTenant}
+                previewMode
+              />
             </PreviewSection>
           </div>
         </div>
