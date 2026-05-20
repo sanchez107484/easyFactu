@@ -53,16 +53,8 @@ function formatDuration(startedAt: string, endedAt: string | null): string {
   return `${seconds}s`;
 }
 
-/** Truncate User-Agent strings so they don't blow up the table layout. */
-function shortenUserAgent(ua: string | null): string {
-  if (!ua) return '—';
-  if (ua.length <= 60) return ua;
-  return `${ua.slice(0, 57)}…`;
-}
-
 export default function AgencyAuditoriaPage() {
   const [clientTenantId, setClientTenantId] = useState<string>(ALL_VALUE);
-  const [actorUserId, setActorUserId] = useState<string>(ALL_VALUE);
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   const [page, setPage] = useState<number>(1);
@@ -71,16 +63,15 @@ export default function AgencyAuditoriaPage() {
   // Reset to page 1 whenever any filter changes
   useEffect(() => {
     setPage(1);
-  }, [clientTenantId, actorUserId, dateFrom, dateTo]);
+  }, [clientTenantId, dateFrom, dateTo]);
 
   const query = useMemo<AgencyImpersonationLogQuery>(() => {
     const q: AgencyImpersonationLogQuery = { page, limit };
     if (clientTenantId !== ALL_VALUE) q.clientTenantId = clientTenantId;
-    if (actorUserId !== ALL_VALUE) q.actorUserId = actorUserId;
     if (dateFrom) q.dateFrom = dateFrom;
     if (dateTo) q.dateTo = dateTo;
     return q;
-  }, [clientTenantId, actorUserId, dateFrom, dateTo, page, limit]);
+  }, [clientTenantId, dateFrom, dateTo, page, limit]);
 
   const { data, isLoading, isFetching, error, refetch } = useImpersonationLogs(query);
 
@@ -88,28 +79,17 @@ export default function AgencyAuditoriaPage() {
   const { data: clientsData } = useAgencyClients({ page: 1, limit: 500 });
   const clientOptions = clientsData?.data ?? [];
   const [clientComboOpen, setClientComboOpen] = useState(false);
-  const [actorComboOpen, setActorComboOpen] = useState(false);
 
   const selectedClientOption =
     clientTenantId === ALL_VALUE
       ? null
       : (clientOptions.find((c) => c.clientTenantId === clientTenantId) ?? null);
 
-  // Build a unique list of actors from the current page (best-effort filter)
-  const actorOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    (data?.data ?? []).forEach((row) => {
-      if (!map.has(row.actorUserId)) map.set(row.actorUserId, row.actorEmail);
-    });
-    return Array.from(map.entries()).map(([id, email]) => ({ id, email }));
-  }, [data]);
-
   const hasActiveFilters =
-    clientTenantId !== ALL_VALUE || actorUserId !== ALL_VALUE || dateFrom !== '' || dateTo !== '';
+    clientTenantId !== ALL_VALUE || dateFrom !== '' || dateTo !== '';
 
   const resetFilters = () => {
     setClientTenantId(ALL_VALUE);
-    setActorUserId(ALL_VALUE);
     setDateFrom('');
     setDateTo('');
   };
@@ -137,7 +117,7 @@ export default function AgencyAuditoriaPage() {
 
       {/* Filters */}
       <div className="rounded-xl border bg-card p-4">
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-3">
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Cliente</label>
             <Popover open={clientComboOpen} onOpenChange={setClientComboOpen}>
@@ -208,77 +188,7 @@ export default function AgencyAuditoriaPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Usuario</label>
-            <Popover open={actorComboOpen} onOpenChange={setActorComboOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={actorComboOpen}
-                  disabled={actorOptions.length === 0}
-                  className="w-full h-10 px-3 text-sm font-normal justify-between"
-                >
-                  <span className="truncate">
-                    {actorUserId === ALL_VALUE
-                      ? 'Todos los usuarios'
-                      : (actorOptions.find((u) => u.id === actorUserId)?.email ??
-                        'Todos los usuarios')}
-                  </span>
-                  <ChevronsUpDown className="ml-1.5 h-3.5 w-3.5 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[280px] p-0" align="start">
-                <Command
-                  filter={(value, search) =>
-                    value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
-                  }
-                >
-                  <CommandInput placeholder="Buscar usuario..." />
-                  <CommandList>
-                    <CommandEmpty>No se encontró ningún usuario.</CommandEmpty>
-                    <CommandGroup>
-                      <CommandItem
-                        value="todos-los-usuarios"
-                        onSelect={() => {
-                          setActorUserId(ALL_VALUE);
-                          setActorComboOpen(false);
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            'mr-2 h-4 w-4 shrink-0',
-                            actorUserId === ALL_VALUE ? 'opacity-100' : 'opacity-0',
-                          )}
-                        />
-                        Todos los usuarios
-                      </CommandItem>
-                      {actorOptions.map((u) => (
-                        <CommandItem
-                          key={u.id}
-                          value={u.email}
-                          onSelect={() => {
-                            setActorUserId(u.id);
-                            setActorComboOpen(false);
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              'mr-2 h-4 w-4 shrink-0',
-                              actorUserId === u.id ? 'opacity-100' : 'opacity-0',
-                            )}
-                          />
-                          {u.email}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Desde</label>
+            <label className="text-xs font-medium text-muted-foreground">Fecha Desde</label>
             <input
               type="date"
               value={dateFrom}
@@ -288,7 +198,7 @@ export default function AgencyAuditoriaPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Hasta</label>
+            <label className="text-xs font-medium text-muted-foreground">Fecha Hasta</label>
             <input
               type="date"
               value={dateTo}
@@ -343,10 +253,7 @@ export default function AgencyAuditoriaPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[170px]">Inicio</TableHead>
-                <TableHead>Usuario</TableHead>
                 <TableHead>Cliente</TableHead>
-                <TableHead className="w-[140px]">IP</TableHead>
-                <TableHead>Navegador</TableHead>
                 <TableHead className="w-[120px] text-right">Duración</TableHead>
               </TableRow>
             </TableHeader>
@@ -356,15 +263,7 @@ export default function AgencyAuditoriaPage() {
                   <TableCell className="font-mono text-xs tabular-nums">
                     {formatDateTime(row.startedAt)}
                   </TableCell>
-                  <TableCell className="text-sm">{row.actorEmail}</TableCell>
                   <TableCell className="text-sm font-medium">{row.clientBusinessName}</TableCell>
-                  <TableCell className="font-mono text-xs">{row.ipAddress ?? '—'}</TableCell>
-                  <TableCell
-                    className="max-w-[260px] truncate text-xs text-muted-foreground"
-                    title={row.userAgent ?? undefined}
-                  >
-                    {shortenUserAgent(row.userAgent)}
-                  </TableCell>
                   <TableCell className="text-right text-sm tabular-nums">
                     {formatDuration(row.startedAt, row.endedAt)}
                   </TableCell>
