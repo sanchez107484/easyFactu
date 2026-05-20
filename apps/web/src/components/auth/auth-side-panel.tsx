@@ -1,42 +1,23 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { brandConfig } from '@easyfactura/brand-config';
+import type { AuthBenefitIconName } from '@easyfactura/brand-config';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Shield, Zap, Users, Clock, BadgeCheck, Star } from 'lucide-react';
+import { CheckCircle2, Shield, Zap, Users, Clock, BadgeCheck, Star, MapPin } from 'lucide-react';
 
 interface AuthSidePanelProps {
   variant?: 'login' | 'register';
 }
 
-const benefits = [
-  {
-    icon: Shield,
-    title: 'VeriFactu automático',
-    description: 'Cumplimiento garantizado con Hacienda',
-  },
-  {
-    icon: Clock,
-    title: 'Gratis hasta 2027',
-    description: 'Sin tarjeta de crédito requerida',
-  },
-  {
-    icon: Zap,
-    title: 'Facturas en 60 segundos',
-    description: 'Sin conocimientos técnicos',
-  },
-  {
-    icon: Users,
-    title: '+3.000 profesionales',
-    description: 'Ya confían en nosotros',
-  },
-];
-
-const testimonial = {
-  text: `Llevaba meses preocupada por VeriFactu. Con ${brandConfig.app.name} me despreocupé en 10 minutos. Lo mejor es que es completamente gratis.`,
-  author: 'Laura García',
-  role: 'Diseñadora freelance',
-  rating: 5,
+const BENEFIT_ICONS: Record<AuthBenefitIconName, React.ElementType> = {
+  Shield,
+  Clock,
+  Zap,
+  Users,
+  MapPin,
 };
+
+const { testimonial, benefits, testimonialCardBg } = brandConfig.auth;
 
 export function AuthSidePanel({ variant = 'login' }: AuthSidePanelProps) {
   return (
@@ -98,24 +79,30 @@ export function AuthSidePanel({ variant = 'login' }: AuthSidePanelProps) {
         {/* Benefits list */}
         {variant === 'register' && (
           <div className="mt-10 space-y-4">
-            {benefits.map((benefit) => (
-              <div key={benefit.title} className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
-                  <benefit.icon className="h-5 w-5" />
+            {benefits.map((benefit) => {
+              const Icon = BENEFIT_ICONS[benefit.iconName];
+              return (
+                <div key={benefit.title} className="flex items-start gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">{benefit.title}</h3>
+                    <p className="text-sm text-white/70">{benefit.description}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold">{benefit.title}</h3>
-                  <p className="text-sm text-white/70">{benefit.description}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
       {/* Testimonial */}
       <div className="relative z-10 mt-auto">
-        <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
+        <div
+          className="rounded-2xl p-6 backdrop-blur-sm"
+          style={{ backgroundColor: testimonialCardBg }}
+        >
           {/* Stars */}
           <div className="mb-3 flex gap-1">
             {Array.from({ length: testimonial.rating }).map((_, i) => (

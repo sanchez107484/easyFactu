@@ -1,5 +1,5 @@
 export { brandConfig } from './brand.config';
-export type { BrandConfig } from './brand.config';
+export type { BrandConfig, AuthBenefitIconName } from './brand.config';
 
 export { PLAZAS_CONFIG, PRICING } from './brand.config';
 
