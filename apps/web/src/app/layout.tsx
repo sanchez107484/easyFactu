@@ -33,10 +33,7 @@ const organizationJsonLd = {
     contactType: 'customer support',
     availableLanguage: 'Spanish',
   },
-  sameAs: [
-    'https://www.linkedin.com/company/novafactura',
-    'https://www.instagram.com/nova.factura',
-  ],
+  sameAs: brandConfig.app.sameAs,
 };
 
 // WebSite schema enables Google Sitelinks Searchbox and signals the canonical
@@ -95,7 +92,9 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: {
     default: `${brandConfig.app.name} | Factura sin preocuparte de VeriFactu | Gratis hasta 2027`,
-    template: `%s | ${brandConfig.app.name}`,
+    // %s is the page title — brand suffix is already included in each page’s metadata.title string.
+    // Using bare "%s" prevents the double-brand duplication: "Page | Brand | Brand".
+    template: `%s`,
   },
   description: `Tú haces tu factura, nosotros nos encargamos de VeriFactu. Software de facturación para autónomos y pymes. 100% Gratis hasta 2027. Sin tarjeta. Sin complicaciones.`,
   keywords: [

@@ -30,6 +30,7 @@ const novafacturaFooterColumns = [
       { href: '/facturas/proforma', label: 'Factura proforma' },
       { href: '/facturas/simplificada', label: 'Factura simplificada' },
       { href: '/facturas/intracomunitaria', label: 'Factura intracomunitaria' },
+      { href: '/facturacion-autonomo-agricola', label: 'Autónomos agrícolas (REAGYP)' },
     ],
   },
 ];
@@ -52,6 +53,7 @@ const nafacturaFooterColumns = [
       { href: '/alternativa-holded-navarra', label: 'Alternativa a Holded' },
       { href: '/mejor-software-facturacion-navarra', label: 'Mejor software Navarra' },
       { href: '/software-facturacion-pamplona', label: 'Software Pamplona' },
+      { href: '/facturacion-autonomo-agricola', label: 'Autónomos agrícolas' },
     ],
   },
 ];

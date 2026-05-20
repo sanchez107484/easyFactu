@@ -18,6 +18,7 @@ import {
   FileText,
   Globe,
   Layers,
+  Leaf,
   MapPin,
   Menu,
   Percent,
@@ -98,6 +99,12 @@ const recursosItems = [
     description: 'Operaciones dentro de la UE',
     icon: Globe,
   },
+  {
+    href: '/facturacion-autonomo-agricola',
+    label: 'Autónomos agrícolas (REAGYP)',
+    description: 'Facturar sin VeriFactu en el sector primario',
+    icon: Leaf,
+  },
 ];
 
 const BRAND = process.env.NEXT_PUBLIC_BRAND ?? 'novafactura';
@@ -134,6 +141,12 @@ const nafacturaNavarraItems = [
     description: 'Especializado para la capital navarra',
     icon: MapPin,
   },
+  {
+    href: '/facturacion-autonomo-agricola',
+    label: 'Autónomos agrícolas REAGYP',
+    description: 'Facturación para el sector primario navarro',
+    icon: Leaf,
+  },
 ];
 
 export default function SiteHeader() {
@@ -150,7 +163,10 @@ export default function SiteHeader() {
   const recursosLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navarraLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isVerifactuActive = pathname.startsWith('/verifactu');
-  const isRecursosActive = pathname.startsWith('/facturas') || pathname === '/factura-electronica';
+  const isRecursosActive =
+    pathname.startsWith('/facturas') ||
+    pathname === '/factura-electronica' ||
+    pathname === '/facturacion-autonomo-agricola';
   const isNavarraActive = nafacturaNavarraItems.some((item) => item.href === pathname);
 
   const handleVerifactuEnter = () => {

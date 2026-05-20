@@ -22,6 +22,10 @@ export const novafacturaBrandConfig = {
     nif: '[NIF/CIF]',
     address: '[Dirección fiscal completa]',
     city: '[Ciudad]',
+    sameAs: [
+      'https://www.linkedin.com/company/novafactura',
+      'https://www.instagram.com/nova.factura',
+    ],
   },
   logos: {
     main: '/brand/novafactura/logo.png',

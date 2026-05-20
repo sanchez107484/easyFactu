@@ -140,6 +140,27 @@ const faqJsonLd = {
   })),
 };
 
+const serviceJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  name: `${brandConfig.app.name} para Asesorías y Gestorías`,
+  serviceType: 'Software de facturación VeriFactu para gestorías',
+  description:
+    'Software de facturación VeriFactu gratuito para asesorías y gestorías. Panel centralizado, VeriFactu automático bajo el NIF de cada cliente y directorio de empresas compartido sin coste.',
+  provider: {
+    '@type': 'Organization',
+    name: brandConfig.app.name,
+    url: brandConfig.app.url,
+  },
+  areaServed: { '@type': 'Country', name: 'España' },
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'EUR',
+    description: 'Completamente gratuito para asesorías y gestorías',
+  },
+};
+
 const FEATURES = [
   {
     icon: LayoutDashboard,
@@ -207,6 +228,78 @@ const HOW_IT_WORKS = [
   },
 ];
 
+const USE_CASES = [
+  {
+    icon: UserCheck,
+    title: 'La asesoría con 5-15 autónomos en cartera',
+    description:
+      'Llevas la facturación de varios autónomos en paralelo. Antes saltabas entre cuentas y perdías tiempo. Ahora tienes un panel único y emites facturas bajo cada NIF en segundos.',
+    points: [
+      'Accede a cada cliente en un clic sin cerrar sesión',
+      'VeriFactu configurado automáticamente bajo cada NIF',
+      'Directorio de proveedores compartido entre todos tus clientes',
+    ],
+  },
+  {
+    icon: LayoutDashboard,
+    title: 'El contable freelance con múltiples clientes',
+    description:
+      'Trabajas solo y gestionas más de 20 clientes. La herramienta tiene que ser rápida, sin complicaciones y sin coste que reduzca tu margen.',
+    points: [
+      'Panel de cartera con visión global de todos tus clientes',
+      'Alertas de facturas pendientes de cobro por cliente',
+      'Gratis para siempre — sin coste que te reste margen',
+    ],
+  },
+  {
+    icon: Shield,
+    title: 'La gestoría que quiere cumplir VeriFactu ya',
+    description:
+      'VeriFactu es obligatorio para tus clientes desde julio de 2027. Con NovaFactura, cumples desde el primer día y controlas la transición a tu ritmo.',
+    points: [
+      'Cada factura cumple la Ley Antifraude 11/2021 desde el inicio',
+      'Hash encadenado y envío AEAT bajo el NIF del cliente',
+      'Sin configuración extra — funciona desde el registro',
+    ],
+  },
+  {
+    icon: TrendingUp,
+    title: 'La asesoría en crecimiento que escala su cartera',
+    description:
+      'Tienes 30 clientes hoy y quieres llegar a 80. Sin límite de clientes en cartera y sin precio que escale contigo.',
+    points: [
+      'Sin límite de clientes gestionados en tu cuenta de asesoría',
+      'Onboarding de nuevos clientes en menos de 3 minutos',
+      'Vista agregada de toda la cartera en tiempo real',
+    ],
+  },
+];
+
+const ASESOR_COMPARISON: {
+  label: string;
+  novafactura: string | boolean;
+  holded: string | boolean;
+  quipu: string | boolean;
+}[] = [
+  {
+    label: 'Precio para la asesoría',
+    novafactura: 'Gratis para siempre',
+    holded: '40-90€/mes',
+    quipu: '25€+/mes',
+  },
+  { label: 'Panel multi-cliente centralizado', novafactura: true, holded: true, quipu: false },
+  { label: 'VeriFactu bajo NIF de cada cliente', novafactura: true, holded: true, quipu: false },
+  { label: 'Directorio de clientes compartido', novafactura: true, holded: false, quipu: false },
+  { label: 'Cambio de contexto en un clic', novafactura: true, holded: false, quipu: false },
+  {
+    label: 'Sin límite de clientes en cartera',
+    novafactura: true,
+    holded: 'Según plan',
+    quipu: 'Según plan',
+  },
+  { label: 'Log de auditoría por cliente', novafactura: true, holded: false, quipu: false },
+];
+
 export function NovafacturaAsesoriaPage() {
   return (
     <>
@@ -221,6 +314,10 @@ export function NovafacturaAsesoriaPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd) }}
       />
 
       <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950">
@@ -371,6 +468,140 @@ export function NovafacturaAsesoriaPage() {
                 <ChevronRight className="h-5 w-5" />
               </Link>
             </div>
+          </div>
+        </section>
+
+        {/* Casos de uso */}
+        <section className="bg-gray-50 py-20 dark:bg-gray-900/50 md:py-28">
+          <div className="mx-auto max-w-5xl px-6">
+            <div className="mb-16 text-center">
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+                ¿Para qué tipo de asesoría es {brandConfig.app.name}?
+              </h2>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">
+                Desde el contable freelance con 5 clientes hasta la gestoría con 100 autónomos.
+              </p>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2">
+              {USE_CASES.map((useCase) => {
+                const Icon = useCase.icon;
+                return (
+                  <div
+                    key={useCase.title}
+                    className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+                  >
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950">
+                      <Icon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">
+                      {useCase.title}
+                    </h3>
+                    <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                      {useCase.description}
+                    </p>
+                    <ul className="space-y-2">
+                      {useCase.points.map((point) => (
+                        <li
+                          key={point}
+                          className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400"
+                        >
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
+                          {point}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Comparativa para asesorías */}
+        <section className="py-20 md:py-28">
+          <div className="mx-auto max-w-4xl px-6">
+            <div className="mb-12 text-center">
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+                {brandConfig.app.name} vs. otras soluciones para asesorías
+              </h2>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">
+                Comparativa honesta. Sin asteriscos.
+              </p>
+            </div>
+            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+                    <th className="px-4 py-4 text-left font-semibold text-gray-600 dark:text-gray-400">
+                      Característica
+                    </th>
+                    <th className="bg-indigo-50 px-4 py-4 text-center font-bold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                      {brandConfig.app.name}
+                    </th>
+                    <th className="px-4 py-4 text-center font-semibold text-gray-500 dark:text-gray-400">
+                      Holded
+                    </th>
+                    <th className="px-4 py-4 text-center font-semibold text-gray-500 dark:text-gray-400">
+                      Quipu
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ASESOR_COMPARISON.map((row, i) => (
+                    <tr
+                      key={i}
+                      className={`border-b border-gray-50 last:border-0 dark:border-gray-800 ${
+                        i % 2 === 0 ? '' : 'bg-gray-50/50 dark:bg-gray-800/30'
+                      }`}
+                    >
+                      <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">
+                        {row.label}
+                      </td>
+                      {(
+                        [
+                          { col: 'novafactura', val: row.novafactura, isNova: true },
+                          { col: 'holded', val: row.holded, isNova: false },
+                          { col: 'quipu', val: row.quipu, isNova: false },
+                        ] as const
+                      ).map(({ col, val, isNova }) => (
+                        <td
+                          key={col}
+                          className={`px-4 py-3 text-center ${
+                            isNova ? 'bg-indigo-50/50 dark:bg-indigo-950/30' : ''
+                          }`}
+                        >
+                          {typeof val === 'boolean' ? (
+                            val ? (
+                              <CheckCircle2
+                                className={`mx-auto h-4 w-4 ${
+                                  isNova ? 'text-indigo-600' : 'text-gray-400'
+                                }`}
+                              />
+                            ) : (
+                              <span className="text-gray-300 dark:text-gray-600">—</span>
+                            )
+                          ) : (
+                            <span
+                              className={`text-xs font-semibold ${
+                                isNova
+                                  ? 'text-indigo-700 dark:text-indigo-300'
+                                  : 'text-gray-500 dark:text-gray-400'
+                              }`}
+                            >
+                              {val}
+                            </span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-4 text-center text-xs text-gray-400">
+              * Datos basados en análisis de mercado a mayo de 2026. Los competidores pueden
+              actualizar precios y funcionalidades en cualquier momento.
+            </p>
           </div>
         </section>
 

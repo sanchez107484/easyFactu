@@ -104,10 +104,18 @@ const faqJsonLd = {
   mainEntity: [
     {
       '@type': 'Question',
-      name: '¿Necesito que mis clientes creen también una cuenta?',
+      name: '¿NaFactura gestiona el NaTicket de mis clientes autónomos navarros?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'No es necesario. Puedes dar de alta a tus clientes directamente tú mismo con sus datos fiscales.',
+        text: 'Sí. Cuando emites facturas en nombre de tus clientes autónomos navarros desde tu panel de asesoría, el sistema aplica automáticamente el régimen NaTicket bajo el NIF de cada cliente. Hacienda Foral recibe las facturas como si el propio autónomo las hubiera emitido.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '¿Necesito que mis clientes navarros creen también una cuenta?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'No es necesario. Puedes dar de alta a tus clientes directamente tú mismo con sus datos fiscales. Si quieren acceder a su propio dashboard en el futuro, pueden hacerlo en cualquier momento.',
       },
     },
     {
@@ -115,7 +123,15 @@ const faqJsonLd = {
       name: '¿Las facturas quedan registradas bajo el NIF de cada cliente ante Hacienda Navarra?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Sí. Aunque las emites desde tu panel, cada factura pertenece al tenant fiscal del cliente con su NIF y su serie. Hacienda Foral las ve como emitidas por el cliente.',
+        text: 'Sí. Aunque tú las emites desde tu panel, cada factura pertenece al tenant fiscal del cliente con su NIF y su serie. Hacienda Foral las ve como emitidas por el cliente, con cumplimiento NaTicket incluido.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '¿Cuántos clientes navarros puedo añadir a mi panel de asesoría?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'No hay límite. Puedes gestionar la cartera completa de tu asesoría, con decenas o cientos de clientes navarros, desde el mismo panel y sin coste adicional.',
       },
     },
     {
@@ -124,6 +140,22 @@ const faqJsonLd = {
       acceptedAnswer: {
         '@type': 'Answer',
         text: 'Puedes invitarle por email y vincularte a su cuenta existente. No se pierde ningún dato previo.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '¿Mis clientes pueden ver que yo accedo a su cuenta?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Cada acción queda registrada internamente. Cuando actúas en nombre de un cliente, todas las facturas que creas quedan marcadas con tu usuario para auditoría.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: '¿Es compatible con otros programas de contabilidad que ya utilizo?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Puedes exportar todas las facturas de cada cliente en PDF o CSV para importarlas en tu software de contabilidad habitual.',
       },
     },
     {
@@ -236,9 +268,9 @@ export function NafacturaAsesoriaPage() {
             </div>
 
             <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl md:text-6xl">
-              Gestiona la facturación
+              Software de facturación para asesorías
               <br />
-              <span className="text-red-600 dark:text-red-400">de todos tus clientes navarros</span>
+              <span className="text-red-600 dark:text-red-400">y gestorías en Navarra</span>
             </h1>
 
             <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600 dark:text-gray-400">
@@ -335,6 +367,62 @@ export function NafacturaAsesoriaPage() {
           </div>
         </section>
 
+        {/* NaTicket for asesoria */}
+        <section className="py-20 md:py-28">
+          <div className="mx-auto max-w-5xl px-6">
+            <div className="overflow-hidden rounded-3xl border border-red-100 bg-red-50 dark:border-red-900/50 dark:bg-red-950/20">
+              <div className="grid md:grid-cols-5">
+                <div className="p-10 md:col-span-3 md:p-14">
+                  <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-700 dark:bg-red-900 dark:text-red-300">
+                    <Shield className="h-4 w-4" />
+                    NaTicket para asesorías
+                  </div>
+                  <h2 className="mb-4 text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
+                    El NaTicket de tus clientes, bajo control desde tu panel
+                  </h2>
+                  <p className="mb-6 text-gray-600 dark:text-gray-400">
+                    Tus clientes autónomos en Navarra están obligados a emitir con NaTicket ante
+                    Hacienda Foral. Desde tu panel de asesoría,{' '}
+                    <strong className="font-semibold text-gray-900 dark:text-white">
+                      cada factura que emites en su nombre cumple automáticamente con NaTicket
+                    </strong>{' '}
+                    bajo el NIF de cada cliente. Lo configuras una vez, el sistema gestiona el
+                    resto.
+                  </p>
+                  <ul className="space-y-3">
+                    {[
+                      'NaTicket aplicado automáticamente bajo el NIF de cada cliente',
+                      'Hacienda Foral recibe las facturas como si el cliente las emitiera',
+                      'Sin configuración extra por cada autónomo que añadas a tu cartera',
+                    ].map((item) => (
+                      <li
+                        key={item}
+                        className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400"
+                      >
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-600" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="flex items-center justify-center bg-red-100 p-10 md:col-span-2 dark:bg-red-900/20">
+                  <div className="text-center">
+                    <p className="mb-1 text-sm font-medium uppercase tracking-widest text-red-500 dark:text-red-400">
+                      Módulo NaTicket
+                    </p>
+                    <div className="mb-3 text-7xl font-bold text-red-600 dark:text-red-400">0€</div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Incluido en el plan gratuito
+                      <br />
+                      para asesorías navarras
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Free plan callout */}
         <section className="py-20 md:py-28">
           <div className="mx-auto max-w-3xl px-6">
@@ -383,12 +471,20 @@ export function NafacturaAsesoriaPage() {
             <div className="space-y-6">
               {[
                 {
+                  q: '¿NaFactura gestiona el NaTicket de mis clientes autónomos navarros?',
+                  a: 'Sí. Cuando emites facturas en nombre de tus clientes autónomos navarros desde tu panel de asesoría, el sistema aplica automáticamente el régimen NaTicket bajo el NIF de cada cliente. Hacienda Foral recibe las facturas como si el propio autónomo las hubiera emitido.',
+                },
+                {
                   q: '¿Necesito que mis clientes navarros creen también una cuenta?',
                   a: 'No es necesario. Puedes dar de alta a tus clientes directamente tú mismo con sus datos fiscales. Si quieren acceder a su propio dashboard en el futuro, pueden hacerlo en cualquier momento.',
                 },
                 {
                   q: '¿Las facturas quedan registradas bajo el NIF de cada cliente ante Hacienda Navarra?',
-                  a: 'Sí. Aunque tú las emites desde tu panel, cada factura pertenece al tenant fiscal del cliente — con su NIF y su serie. Hacienda Foral las ve como emitidas por el cliente.',
+                  a: 'Sí. Aunque tú las emites desde tu panel, cada factura pertenece al tenant fiscal del cliente — con su NIF y su serie. Hacienda Foral las ve como emitidas por el cliente, con cumplimiento NaTicket incluido.',
+                },
+                {
+                  q: '¿Cuántos clientes navarros puedo añadir a mi panel de asesoría?',
+                  a: 'No hay límite. Puedes gestionar la cartera completa de tu asesoría, con decenas o cientos de clientes navarros, desde el mismo panel y sin coste adicional.',
                 },
                 {
                   q: '¿Qué pasa si un cliente ya tiene cuenta en ' + brandConfig.app.name + '?',
@@ -397,6 +493,10 @@ export function NafacturaAsesoriaPage() {
                 {
                   q: '¿Mis clientes pueden ver que yo accedo a su cuenta?',
                   a: 'Cada acción queda registrada internamente. Cuando actúas en nombre de un cliente, todas las facturas que creas quedan marcadas con tu usuario para auditoría.',
+                },
+                {
+                  q: '¿Es compatible con otros programas de contabilidad que ya utilizo?',
+                  a: 'Puedes exportar todas las facturas de cada cliente en PDF o CSV para importarlas en tu software de contabilidad habitual.',
                 },
                 {
                   q: '¿Cuánto cuesta el software para asesorías en Navarra?',

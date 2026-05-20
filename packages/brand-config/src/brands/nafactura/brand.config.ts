@@ -23,6 +23,7 @@ export const nafacturaBrandConfig = {
     nif: '[NIF/CIF]',
     address: '[Dirección fiscal completa]',
     city: '[Ciudad]',
+    sameAs: ['https://www.linkedin.com/company/nafactura', 'https://www.instagram.com/na.factura'],
   },
   logos: {
     main: '/brand/nafactura/logo.png',

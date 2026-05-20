@@ -74,3 +74,20 @@ VeriFactu es el sistema de verificación de facturas de la Agencia Tributaria es
 - [VeriFactu en 2026: lo que nadie te está explicando (y cómo prepararte sin complicarte)](https://www.novafactura.es/blog/verifactu-en-2026-lo-que-nadie-te-esta-explicando-y-como-prepararte-sin-complicarte) — Guía práctica para autónomos y pymes sobre los cambios de VeriFactu en 2026.
 - [Cómo cumplir con VeriFactu sin complicaciones (paso a paso)](https://www.novafactura.es/blog/como-cumplir-con-verifactu-sin-complicaciones-paso-a-paso) — Proceso claro y rápido para adaptarte a VeriFactu: requisitos y software compatible.
 - [VeriFactu 2025: qué es y cómo afecta a tu negocio — guía completa](https://www.novafactura.es/blog/verifactu-2025-que-es-y-como-afecta-a-tu-negocio-guia-completa) — Todo lo que debes saber sobre VeriFactu: cuándo es obligatorio y cómo te afecta.
+
+## Para autónomos del Régimen Especial Agrario (REAGYP)
+
+NovaFactura soporta la facturación de autónomos acogidos al Régimen Especial Agrario y Pesquero (REAGYP). Los autónomos del REAGYP están exentos de VeriFactu por la Ley Antifraude 11/2021, pero siguen obligados a emitir facturas legales ante cualquier requerimiento de Hacienda. NovaFactura gestiona los tipos de IVA especiales del régimen agrario (4%, 10% y exento), emite facturas correctamente identificadas y permite llevar un registro ordenado de toda la facturación sin complicaciones.
+
+- [Facturación para autónomos agrícolas y ganaderos](https://www.novafactura.es/facturacion-autonomo-agricola): guía completa para agricultores, ganaderos y pescadores
+- Tipos de IVA especiales del REAGYP gestionados automáticamente
+- Facturas legales sin necesidad de VeriFactu (exención aplicada)
+- Registro de facturas organizado para inspecciones de Hacienda
+
+## Para Navarra — NaTicket (nafactura.es)
+
+NaFactura es la solución de facturación para autónomos y pymes navarros bajo el sistema NaTicket de Hacienda Navarra. NaTicket es el equivalente navarro de VeriFactu: el sistema de verificación de facturas de la Hacienda Foral de Navarra que digitalizará la facturación de los contribuyentes navarros. Disponible en [nafactura.es](https://www.nafactura.es).
+
+- Facturación adaptada a Hacienda Foral de Navarra
+- Preparada para el sistema NaTicket cuando sea obligatorio
+- Mismas funcionalidades que NovaFactura, adaptadas al régimen navarro

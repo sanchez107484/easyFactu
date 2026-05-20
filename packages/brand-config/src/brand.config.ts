@@ -51,6 +51,8 @@ export interface BrandConfig {
     nif: string;
     address: string;
     city: string;
+    /** Social/entity profile URLs for Schema.org sameAs — brand-specific */
+    sameAs: string[];
   };
   logos: {
     main: string;
