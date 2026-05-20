@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { createHash } from 'crypto';
+import * as QRCode from 'qrcode';
 import {
   DEFAULT_INVOICE_LAYOUT,
   Invoice,
@@ -337,6 +338,42 @@ export class InvoicePdfService {
     if (invoice.notes) {
       doc.moveDown(1);
       doc.fontSize(10).text(`Notas: ${invoice.notes}`);
+    }
+
+    // QR de verificación en el footer
+    const templateLayout = (template?.layout as InvoiceLayout) ?? DEFAULT_INVOICE_LAYOUT;
+    const overrideFooter = (invoice.layoutOverride as LayoutOverride | null)?.footer;
+    const showQr =
+      overrideFooter?.showVerifactuQr ?? templateLayout.footer?.showVerifactuQr ?? false;
+    const isConfirmedStatus =
+      invoice.status === 'CONFIRMED' || invoice.status === 'SENT' || invoice.status === 'PAID';
+
+    if (showQr && invoice.verifactuQr && isConfirmedStatus) {
+      try {
+        const qrBuffer = await QRCode.toBuffer(invoice.verifactuQr, {
+          errorCorrectionLevel: 'M',
+          margin: 1,
+          width: 80,
+        });
+
+        doc.moveDown(1);
+        const qrSize = 60;
+        // Place QR on the right side of the page
+        const qrX = doc.page.width - doc.page.margins.right - qrSize;
+        const qrY = doc.y;
+
+        doc.image(qrBuffer, qrX, qrY, { width: qrSize, height: qrSize });
+        doc
+          .fontSize(6)
+          .fillColor('#888888')
+          .text('Verifica esta factura', qrX, qrY + qrSize + 2, {
+            width: qrSize,
+            align: 'center',
+          })
+          .fillColor('#000000');
+      } catch {
+        // QR rendering is non-critical — continue without it
+      }
     }
 
     doc.end();

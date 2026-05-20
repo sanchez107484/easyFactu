@@ -411,6 +411,7 @@ export class RecurringInvoiceService {
           paymentMethod: dto.paymentMethod ?? null,
           paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : Prisma.JsonNull,
           notes: dto.notes ?? null,
+          layoutOverride: dto.layoutOverride ? { ...dto.layoutOverride } : Prisma.JsonNull,
           createdByUserId: resolvedCreatedByUserId,
           lines: {
             createMany: {
@@ -494,6 +495,9 @@ export class RecurringInvoiceService {
             ? { paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : Prisma.JsonNull }
             : {}),
           ...(dto.notes !== undefined ? { notes: dto.notes } : {}),
+          ...(dto.layoutOverride !== undefined
+            ? { layoutOverride: dto.layoutOverride ? { ...dto.layoutOverride } : Prisma.JsonNull }
+            : {}),
         },
         include: {
           lines: { orderBy: { sortOrder: 'asc' } },

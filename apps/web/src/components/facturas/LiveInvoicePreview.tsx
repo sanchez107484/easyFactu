@@ -369,7 +369,7 @@ export function LiveInvoicePreview({
               onSectionClick={onSectionClick}
               className="mt-4"
             >
-              <FooterBlock layout={layout} invoice={invoice} tenant={effectiveTenant} />
+              <FooterBlock layout={layout} invoice={invoice} tenant={effectiveTenant} previewMode />
             </PreviewSection>
           </div>
         </div>

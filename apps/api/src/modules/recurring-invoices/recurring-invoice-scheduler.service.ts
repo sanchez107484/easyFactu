@@ -23,6 +23,7 @@ type RecurringWithLines = {
   paymentMethod: string | null;
   paymentDetails: unknown;
   notes: string | null;
+  layoutOverride: unknown;
   lines: Array<{
     description: string;
     quantity: unknown;
@@ -127,6 +128,7 @@ export class RecurringInvoiceSchedulerService {
       paymentMethod: recurring.paymentMethod as CreateInvoiceDto['paymentMethod'],
       paymentDetails: recurring.paymentDetails as Record<string, unknown> | undefined,
       notes: recurring.notes ?? undefined,
+      layoutOverride: recurring.layoutOverride as Record<string, unknown> | undefined,
       lines: recurring.lines.map((line) => ({
         productId: line.productId ?? undefined,
         description: line.description,

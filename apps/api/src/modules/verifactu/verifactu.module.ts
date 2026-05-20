@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { VerifactuController } from './verifactu.controller';
+import { PublicVerifyController } from './controllers/public-verify.controller';
 import { VerifactuService } from './services/verifactu.service';
 import { VerifactuHashService } from './services/verifactu-hash.service';
 import { VerifactuXmlService } from './services/verifactu-xml.service';
@@ -14,7 +15,7 @@ import { HACIENDA_ADAPTER } from './interfaces/hacienda-adapter.interface';
 
 @Module({
   imports: [HttpModule, ConfigModule],
-  controllers: [VerifactuController],
+  controllers: [VerifactuController, PublicVerifyController],
   providers: [
     VerifactuService,
     VerifactuHashService,

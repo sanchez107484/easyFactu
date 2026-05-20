@@ -211,6 +211,7 @@ interface RecurringInvoiceFormProps {
   readonlyStartDate?: string;
   readonlySeriesName?: string;
   invoiceDefaults?: InvoiceDefaults | null;
+  initialShowQr?: boolean;
 }
 
 function RecurringInvoiceForm({
@@ -220,6 +221,7 @@ function RecurringInvoiceForm({
   readonlyStartDate,
   readonlySeriesName,
   invoiceDefaults,
+  initialShowQr,
 }: RecurringInvoiceFormProps) {
   const router = useRouter();
   const currentTenant = useAuthStore((s) => s.currentTenant);
@@ -232,6 +234,7 @@ function RecurringInvoiceForm({
   const [lastAddedIndex, setLastAddedIndex] = useState<number | null>(null);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [simplifyTable, setSimplifyTable] = useState(false);
+  const [showQr, setShowQr] = useState(initialShowQr ?? true);
 
   const createMutation = useCreateRecurringInvoice();
   const updateMutation = useUpdateRecurringInvoice();
@@ -298,6 +301,14 @@ function RecurringInvoiceForm({
     if (!showSimplifyToggle) setSimplifyTable(false);
   }, [showSimplifyToggle]);
 
+  // Sync showQr from template default when creating a fresh recurring invoice (no explicit initialShowQr)
+  useEffect(() => {
+    if (isEdit || initialShowQr !== undefined) return;
+    const templateDefault = defaultTemplate?.layout?.footer?.showVerifactuQr ?? true;
+    setShowQr(templateDefault);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultTemplate?.id]);
+
   const hasEndDate = watchedValues.hasEndDate;
   const activePaymentMethod = watchedValues.paymentMethod as PaymentMethod | undefined;
 
@@ -359,6 +370,10 @@ function RecurringInvoiceForm({
               ? false
               : (defaultTemplate.layout.itemsTable.showLineTotal ?? true),
           },
+          footer: {
+            ...defaultTemplate.layout.footer,
+            showVerifactuQr: showQr,
+          },
         },
       }
     : null;
@@ -413,6 +428,7 @@ function RecurringInvoiceForm({
           paymentDetails: paymentDetailsPayload ?? null,
           notes: data.notes ?? null,
           lines: mappedLines,
+          layoutOverride: { footer: { showVerifactuQr: showQr } },
         },
       });
       router.push(`/dashboard/recurrentes/${editId}`);
@@ -432,6 +448,7 @@ function RecurringInvoiceForm({
         paymentDetails: paymentDetailsPayload,
         notes: data.notes || undefined,
         lines: mappedLines,
+        layoutOverride: { footer: { showVerifactuQr: showQr } },
       });
       router.push('/dashboard/recurrentes');
     }
@@ -898,6 +915,21 @@ function RecurringInvoiceForm({
                   />
                 </div>
               )}
+
+              {/* ── QR toggle ── */}
+              <div className="flex items-center justify-between rounded-lg border border-dashed bg-muted/30 px-3 py-2.5">
+                <div className="space-y-0.5">
+                  <p className="text-xs font-medium leading-tight">Código QR de verificación</p>
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    Se incluye en el PDF de cada factura generada
+                  </p>
+                </div>
+                <Switch
+                  checked={showQr}
+                  onCheckedChange={setShowQr}
+                  aria-label="Mostrar código QR de verificación"
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -1049,6 +1081,14 @@ export default function NuevaRecurrentePage() {
       readonlyStartDate={editRecurring?.startDate?.split('T')[0]}
       readonlySeriesName={editRecurring?.series?.name}
       invoiceDefaults={invoiceDefaults ?? null}
+      initialShowQr={
+        (
+          editRecurring?.layoutOverride as
+            | { footer?: { showVerifactuQr?: boolean } }
+            | null
+            | undefined
+        )?.footer?.showVerifactuQr ?? undefined
+      }
     />
   );
 }
