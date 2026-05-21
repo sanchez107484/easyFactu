@@ -1,12 +1,15 @@
-import { InvoiceLayout, Invoice, Tenant } from '@easyfactura/shared-types';
+import { InvoiceLayout, Invoice, Tenant, InvoiceStatus } from '@easyfactura/shared-types';
+import { VerifactuQrBlock } from './VerifactuQrBlock';
 
 interface FooterBlockProps {
   layout: InvoiceLayout;
   invoice: Invoice;
   tenant: Tenant;
+  /** When true, passes isPreview to VerifactuQrBlock so it shows a placeholder on DRAFT invoices */
+  previewMode?: boolean;
 }
 
-export function FooterBlock({ layout, invoice, tenant }: FooterBlockProps) {
+export function FooterBlock({ layout, invoice, tenant, previewMode = false }: FooterBlockProps) {
   const { showPaymentInfo, showVerifactuQr, text } = layout.footer;
 
   const hasContent = showPaymentInfo || showVerifactuQr || text;
@@ -26,23 +29,17 @@ export function FooterBlock({ layout, invoice, tenant }: FooterBlockProps) {
 
       {text && <p className="text-[9px] text-neutral-500 mt-0.5">{text}</p>}
 
-      {/* {showVerifactuQr && invoice.verifactuQr && (
-          <p className="text-[9px] text-neutral-400 mt-1">
-          Verificación VeriFactu: {invoice.verifactuQr}
-        </p>
-      )}
-
-      {showVerifactuQr && !invoice.verifactuQr && (
+      {showVerifactuQr && (
         <div className="flex justify-center mt-1">
-          <div className="w-10 h-10 bg-neutral-100 border border-dashed border-neutral-300 rounded flex items-center justify-center">
-            <span className="text-[8px] text-neutral-400 text-center leading-tight">
-              QR
-              <br />
-              VeriFactu
-            </span>
-          </div>
+          <VerifactuQrBlock
+            verifactuQr={invoice.verifactuQr ?? null}
+            status={invoice.status as InvoiceStatus}
+            showVerifactuQr={showVerifactuQr}
+            mode="footer"
+            isPreview={previewMode}
+          />
         </div>
-      )} */}
+      )}
     </div>
   );
 }

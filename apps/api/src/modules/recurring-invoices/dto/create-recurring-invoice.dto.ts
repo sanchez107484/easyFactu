@@ -7,6 +7,7 @@ import {
   IsArray,
   IsEnum,
   IsBoolean,
+  IsObject,
   ValidateNested,
   ArrayMinSize,
   Min,
@@ -129,6 +130,10 @@ export class CreateRecurringInvoiceDto {
   @IsOptional()
   @IsUUID()
   sourceInvoiceId?: string;
+
+  @IsOptional()
+  @IsObject()
+  layoutOverride?: object;
 
   @IsArray()
   @ValidateNested({ each: true })
