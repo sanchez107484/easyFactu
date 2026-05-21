@@ -684,21 +684,6 @@ function InvoiceForm({
                       />
                     </div>
                   )}
-
-                  {/* ── QR toggle ── */}
-                  <div className="flex items-center justify-between rounded-lg border border-dashed bg-muted/30 px-3 py-2.5">
-                    <div className="space-y-0.5">
-                      <p className="text-xs font-medium leading-tight">Código QR de verificación</p>
-                      <p className="text-[11px] text-muted-foreground leading-tight">
-                        Se incluye en el PDF cuando la factura esté confirmada
-                      </p>
-                    </div>
-                    <Switch
-                      checked={showQr}
-                      onCheckedChange={setShowQr}
-                      aria-label="Mostrar código QR de verificación"
-                    />
-                  </div>
                 </CardContent>
               </Card>
 
@@ -737,7 +722,7 @@ function InvoiceForm({
               </Card>
 
               {/* ── Notas ── */}
-              <Card className="mb-5">
+              <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Notas</CardTitle>
                 </CardHeader>
@@ -749,6 +734,28 @@ function InvoiceForm({
                       rows={3}
                     />
                   </section>
+                </CardContent>
+              </Card>
+
+              {/* ── Verificación ── */}
+              <Card className="mb-5">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Verificación</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between rounded-lg border border-dashed bg-muted/30 px-3 py-2.5">
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-medium leading-tight">Código QR de verificación</p>
+                      <p className="text-[11px] text-muted-foreground leading-tight">
+                        Se incluye en el PDF cuando la factura esté confirmada
+                      </p>
+                    </div>
+                    <Switch
+                      checked={showQr}
+                      onCheckedChange={setShowQr}
+                      aria-label="Mostrar código QR de verificación"
+                    />
+                  </div>
                 </CardContent>
               </Card>
             </form>

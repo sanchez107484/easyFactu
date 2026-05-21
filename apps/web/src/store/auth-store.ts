@@ -130,18 +130,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const response = await apiClient.get('/auth/me');
       const userData = unwrapApiResponse<
-        User & { tenants: TenantWithRole[]; lastActiveTenantId?: string }
+        User & {
+          tenants: TenantWithRole[];
+          lastActiveTenantId?: string;
+          actingAsClient?: boolean;
+          currentTenant?: Tenant;
+        }
       >(response);
 
-      // Extraer el tenant actual del lastActiveTenantId
-      const currentTenantData =
-        userData.tenants?.find(
-          (t: TenantWithRole) => t.tenant.id === userData.lastActiveTenantId,
-        ) || userData.tenants?.[0];
+      // When the agency is impersonating a client the backend returns the impersonated
+      // tenant directly as currentTenant (it's not in the user's own tenants list).
+      // In the normal case we look it up from the tenants list by lastActiveTenantId.
+      let resolvedCurrentTenant: Tenant | null;
+      if (userData.actingAsClient && userData.currentTenant) {
+        resolvedCurrentTenant = userData.currentTenant;
+      } else {
+        const currentTenantData =
+          userData.tenants?.find(
+            (t: TenantWithRole) => t.tenant.id === userData.lastActiveTenantId,
+          ) || userData.tenants?.[0];
+        resolvedCurrentTenant = currentTenantData?.tenant || null;
+      }
 
       set({
         user: userData,
-        currentTenant: currentTenantData?.tenant || null,
+        currentTenant: resolvedCurrentTenant,
         tenants: userData.tenants || [],
         isAuthenticated: true,
         isLoading: false,
