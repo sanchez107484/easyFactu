@@ -13,10 +13,11 @@ export class VerifactuQrService {
   /**
    * Generate internal verification URL using the invoice hash.
    * Used when QR_MODE=internal (default — before VeriFactu/Naticket is operational).
-   * Format: {PUBLIC_VERIFY_URL}/{hash}
+   * Format: {FRONTEND_URL}/verify/{hash}
    */
   generateInternalQrUrl(hash: string): string {
-    const baseUrl = this.config.get<string>('PUBLIC_VERIFY_URL', 'http://localhost:3000/verify');
+    const frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3000');
+    const baseUrl = frontendUrl.replace(/\/$/, '') + '/verify';
     // Always use lowercase hash in URLs for consistent routing
     return `${baseUrl}/${hash.toLowerCase()}`;
   }
