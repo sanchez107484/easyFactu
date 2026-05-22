@@ -120,18 +120,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // state: 'attached' — the sentinel is intentionally display:none, so the
     // default 'visible' wait would time out.
     await page.waitForSelector('[data-pdf-ready]', { state: 'attached', timeout: 10_000 });
-    await page.evaluate(
-      () =>
-        Promise.all(
-          Array.from(document.images).map((img) =>
-            img.complete
-              ? Promise.resolve()
-              : new Promise<void>((resolve) => {
-                  img.addEventListener('load', () => resolve(), { once: true });
-                  img.addEventListener('error', () => resolve(), { once: true });
-                })
-          )
-        )
+    await page.evaluate(() =>
+      Promise.all(
+        Array.from(document.images).map((img) =>
+          img.complete
+            ? Promise.resolve()
+            : new Promise<void>((resolve) => {
+                img.addEventListener('load', () => resolve(), { once: true });
+                img.addEventListener('error', () => resolve(), { once: true });
+              }),
+        ),
+      ),
     );
 
     // Read the filename metadata injected by the print page server component.
