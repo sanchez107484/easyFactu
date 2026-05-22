@@ -650,7 +650,10 @@ export class AuthService {
     return { message: 'Email verificado correctamente' };
   }
 
-  async getMe(userId: string, context?: { actingAsClient: boolean; impersonatedTenantId?: string }) {
+  async getMe(
+    userId: string,
+    context?: { actingAsClient: boolean; impersonatedTenantId?: string }
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {

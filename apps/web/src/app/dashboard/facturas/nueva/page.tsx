@@ -537,7 +537,7 @@ function InvoiceForm({
         }
       />
 
-      <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
+      <div className="-m-6 flex flex-col h-[calc(100%+3rem)]">
         {/* ── Header ── */}
         <InvoiceFormHeader
           editDraftId={editDraftId}
@@ -721,24 +721,8 @@ function InvoiceForm({
                 </CardContent>
               </Card>
 
-              {/* ── Notas ── */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Notas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <section id="field-notes" onFocus={() => setActiveSection('notes')}>
-                    <Textarea
-                      {...form.register('notes')}
-                      placeholder="Información adicional para el cliente..."
-                      rows={3}
-                    />
-                  </section>
-                </CardContent>
-              </Card>
-
               {/* ── Verificación ── */}
-              <Card className="mb-5">
+              <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Verificación</CardTitle>
                 </CardHeader>
@@ -756,6 +740,22 @@ function InvoiceForm({
                       aria-label="Mostrar código QR de verificación"
                     />
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* ── Notas ── */}
+              <Card className="mb-5">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Notas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <section id="field-notes" onFocus={() => setActiveSection('notes')}>
+                    <Textarea
+                      {...form.register('notes')}
+                      placeholder="Información adicional para el cliente..."
+                      rows={3}
+                    />
+                  </section>
                 </CardContent>
               </Card>
             </form>
@@ -809,7 +809,7 @@ export default function NuevaFacturaPage() {
 
   if ((sourceId && loadingSource) || loadingDefaults) {
     return (
-      <div className="flex h-[calc(100vh-64px)] items-center justify-center flex-col gap-4">
+      <div className="flex h-full items-center justify-center flex-col gap-4">
         <Skeleton className="h-12 w-12 rounded-full" />
         <p className="text-muted-foreground animate-pulse">Cargando datos de la factura...</p>
       </div>

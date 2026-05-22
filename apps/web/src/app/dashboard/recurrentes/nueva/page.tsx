@@ -915,21 +915,6 @@ function RecurringInvoiceForm({
                   />
                 </div>
               )}
-
-              {/* ── QR toggle ── */}
-              <div className="flex items-center justify-between rounded-lg border border-dashed bg-muted/30 px-3 py-2.5">
-                <div className="space-y-0.5">
-                  <p className="text-xs font-medium leading-tight">Código QR de verificación</p>
-                  <p className="text-[11px] text-muted-foreground leading-tight">
-                    Se incluye en el PDF de cada factura generada
-                  </p>
-                </div>
-                <Switch
-                  checked={showQr}
-                  onCheckedChange={setShowQr}
-                  aria-label="Mostrar código QR de verificación"
-                />
-              </div>
             </CardContent>
           </Card>
 
@@ -964,6 +949,28 @@ function RecurringInvoiceForm({
                   onFocus={() => setActiveSection('discountPercent')}
                 />
               )}
+            </CardContent>
+          </Card>
+
+          {/* ── Verificación ── */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Verificación</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between rounded-lg border border-dashed bg-muted/30 px-3 py-2.5">
+                <div className="space-y-0.5">
+                  <p className="text-xs font-medium leading-tight">Código QR de verificación</p>
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    Se incluye en el PDF de cada factura generada
+                  </p>
+                </div>
+                <Switch
+                  checked={showQr}
+                  onCheckedChange={setShowQr}
+                  aria-label="Mostrar código QR de verificación"
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -1002,7 +1009,7 @@ export default function NuevaRecurrentePage() {
 
   if ((editId && loadingEdit) || loadingDefaults) {
     return (
-      <div className="flex h-[calc(100vh-64px)] items-center justify-center flex-col gap-4">
+      <div className="flex h-full items-center justify-center flex-col gap-4">
         <Skeleton className="h-12 w-12 rounded-full" />
         <p className="text-muted-foreground animate-pulse">
           {editId ? 'Cargando configuración...' : 'Preparando formulario...'}
