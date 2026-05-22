@@ -67,6 +67,20 @@ function buildSafeFilename(invoiceNumber: string, customerName: string): string 
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const url = new URL(request.url);
+
+  // Warmup mode: pre-launch Chromium and return 204 without generating a PDF.
+  // Called from the dashboard on mount to eliminate the ~2-4s cold start
+  // (Vercel function boot + @sparticuz/chromium extraction + Chromium launch)
+  // that otherwise hits the user on the first PDF download.
+  if (url.searchParams.get('warmup') === '1') {
+    try {
+      await getBrowser();
+      return new NextResponse(null, { status: 204 });
+    } catch {
+      return new NextResponse(null, { status: 204 });
+    }
+  }
 
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
@@ -86,16 +100,39 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Forward the bearer token so the server component can authenticate with the NestJS API
     await page.setExtraHTTPHeaders({ authorization: authHeader });
 
-    // Block web-font downloads — the invoice uses system fonts (Helvetica / Times / Courier)
-    // only. Aborting these requests removes them from the critical path of the load event.
+    // Aggressively block any request the PDF does not need:
+    // - Web fonts: invoice uses system fonts only (Helvetica / Times / Courier).
+    // - Next.js client JS chunks: the print page is 100% server-rendered, the
+    //   framework runtime / prefetch / hydration scripts add 500ms-2s without
+    //   affecting the rendered output.
+    // NOTE: CSS chunks are NOT blocked — the invoice blocks (HeaderBlock,
+    // ItemsTableBlock, …) rely on Tailwind utilities served from /_next/static/css.
     await page.route(/\.(woff2?|ttf|otf|eot)(\?.*)?$/i, (route) => route.abort());
+    await page.route(/\/_next\/static\/chunks\/.*\.js(\?.*)?$/i, (route) => route.abort());
 
     const { origin } = new URL(request.url);
 
-    // 'load' fires once the DOM + stylesheets + images are ready.
-    // Unlike 'networkidle', it does NOT wait for Next.js background prefetch requests,
-    // which can hold networkidle for 1-3 extra seconds on every request.
-    await page.goto(`${origin}/invoice-print/${id}`, { waitUntil: 'load' });
+    // Use 'domcontentloaded' (fires as soon as the SSR HTML is parsed) instead
+    // of 'load' (which waits for all subresources including Next.js prefetches).
+    // Then explicitly wait for the [data-pdf-ready] sentinel — guaranteed in the
+    // initial HTML — plus any <img> the page renders (logo, signature, etc.).
+    await page.goto(`${origin}/invoice-print/${id}`, { waitUntil: 'domcontentloaded' });
+    // state: 'attached' — the sentinel is intentionally display:none, so the
+    // default 'visible' wait would time out.
+    await page.waitForSelector('[data-pdf-ready]', { state: 'attached', timeout: 10_000 });
+    await page.evaluate(
+      () =>
+        Promise.all(
+          Array.from(document.images).map((img) =>
+            img.complete
+              ? Promise.resolve()
+              : new Promise<void>((resolve) => {
+                  img.addEventListener('load', () => resolve(), { once: true });
+                  img.addEventListener('error', () => resolve(), { once: true });
+                })
+          )
+        )
+    );
 
     // Read the filename metadata injected by the print page server component.
     // This replaces the earlier parallel fetch to /v1/invoices/:id that existed
