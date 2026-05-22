@@ -24,8 +24,9 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
   const isReagyp = invoice.compensacionPercent != null;
   const showTaxColumn = !isReagyp && (layout.itemsTable.showTaxColumn ?? true);
   const showLineTotal = layout.itemsTable.showLineTotal ?? true;
-  // Discount column is data-driven: only shown when at least one line has a discount
-  const showDiscount = lines.some((l) => (l.discountPercent ?? 0) > 0);
+  // Respect the user's toggle, but never hide real discounts that exist in the data.
+  const hasDiscountData = lines.some((l) => (l.discountPercent ?? 0) > 0);
+  const showDiscount = layout.itemsTable.showDiscount || hasDiscountData;
   const { tableHeader, primary } = layout.colors;
 
   const isGrid = style === 'grid';

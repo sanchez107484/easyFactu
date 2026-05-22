@@ -1,10 +1,22 @@
 ﻿'use client';
 
 import { useRef, useState } from 'react';
-import { Building2, FileText, Image as ImageIcon, Palette, RotateCcw, Table } from 'lucide-react';
+import {
+  Building2,
+  FileText,
+  Image as ImageIcon,
+  Loader2,
+  Palette,
+  RotateCcw,
+  Table,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { InvoiceLayout } from '@easyfactura/shared-types';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { useUploadTenantLogo, useDeleteTenantLogo } from '@/hooks/use-tenant';
 import { TemplateMiniPreview } from './template-mini-preview';
 import {
   BASE_TEMPLATES,
@@ -416,12 +428,31 @@ function SenderTab({
   logoUrl?: string | null;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadLogo = useUploadTenantLogo();
+  const deleteLogo = useDeleteTenantLogo();
+  const isBusy = uploadLogo.isPending || deleteLogo.isPending;
 
   function patchLogo(patch: Partial<InvoiceLayout['logo']>) {
     onChange({ logo: { ...layout.logo, ...patch } });
   }
   function patchHeader(patch: Partial<InvoiceLayout['header']>) {
     onChange({ header: { ...layout.header, ...patch } });
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    uploadLogo.mutate(file);
+    e.target.value = '';
+  }
+
+  function handleUploadClick() {
+    fileInputRef.current?.click();
+  }
+
+  function handleDeleteClick() {
+    if (!window.confirm('¿Seguro que quieres eliminar el logo?')) return;
+    deleteLogo.mutate();
   }
 
   return (
@@ -438,18 +469,61 @@ function SenderTab({
             <div className="min-w-0 flex-1">
               <div className="text-xs font-medium">Logo actual</div>
               <div className="text-[10px] text-muted-foreground">
-                Cambialo en Ajustes &rsaquo; Empresa
+                Se guarda automáticamente en tus datos de empresa
               </div>
+            </div>
+            <div className="flex shrink-0 gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={handleUploadClick}
+                disabled={isBusy}
+              >
+                {uploadLogo.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Upload className="h-3 w-3" />
+                )}
+                <span className="ml-1">Cambiar</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                onClick={handleDeleteClick}
+                disabled={isBusy}
+              >
+                {deleteLogo.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3 w-3" />
+                )}
+              </Button>
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3 text-muted-foreground">
-            <ImageIcon className="h-4 w-4 shrink-0" />
-            <div className="text-xs">
-              Sin logo &mdash; añadelo en{' '}
-              <span className="font-medium text-foreground">Ajustes &rsaquo; Empresa</span>
+          <button
+            type="button"
+            onClick={handleUploadClick}
+            disabled={isBusy}
+            className="flex w-full items-center gap-3 rounded-lg border border-dashed bg-muted/30 p-3 text-left transition-colors hover:border-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-background">
+              {uploadLogo.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              ) : (
+                <ImageIcon className="h-4 w-4 text-muted-foreground" />
+              )}
             </div>
-          </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-medium">Subir logo</div>
+              <div className="text-[10px] text-muted-foreground">PNG, JPG o SVG · máximo 2 MB</div>
+            </div>
+            <Upload className="h-4 w-4 shrink-0 text-muted-foreground" />
+          </button>
         )}
 
         <div className="divide-y">
@@ -577,7 +651,13 @@ function SenderTab({
         </div>
       </FieldGroup>
 
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
     </>
   );
 }

@@ -251,8 +251,9 @@ export function createInvoicePdfElement(
   const showUnitPrice = layout.itemsTable.showUnitPrice ?? true;
   const showTaxColumn = layout.itemsTable.showTaxColumn ?? true;
   const showLineTotal = layout.itemsTable.showLineTotal ?? true;
-  // Discount column is data-driven: only shown when at least one line has a discount
-  const showDiscount = lines.some((line) => (Number(line.discountPercent) || 0) > 0);
+  // Respect the user's toggle, but never hide real discounts present in the data.
+  const hasDiscountData = lines.some((line) => (Number(line.discountPercent) || 0) > 0);
+  const showDiscount = layout.itemsTable.showDiscount || hasDiscountData;
 
   // Prefer immutable snapshot fields; fall back to live tenant relation for backwards compat.
   const senderName = invoice.issuerSnapshotName ?? tenant.businessName;
@@ -452,7 +453,7 @@ export function createInvoicePdfElement(
               );
             })()}
 
-          {(invoice.irpfTotal ?? 0) > 0 && (
+          {layout.totals.showIrpf && (invoice.irpfTotal ?? 0) > 0 && (
             <View style={styles.totalsRow}>
               <Text style={styles.totalsLabel}>
                 IRPF ({formatPercent(invoice.irpfPercent ?? 0)})

@@ -40,11 +40,6 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
   const ivaLabel = taxRates.length === 1 ? `IVA (${taxRates[0]}%)` : 'IVA';
   const isReagyp = invoice.compensacionPercent != null;
 
-  // When IRPF is configured (irpfPercent > 0) it must always appear — legal requirement
-  // and matches PDF generator behavior (invoice-pdf.document.tsx never checks showIrpf).
-  // The template showIrpf toggle only controls the empty-IRPF cosmetic row.
-  const effectiveShowIrpf = showIrpf || Number(invoice.irpfPercent) > 0;
-
   return (
     <div className="flex justify-end">
       <div className="w-52">
@@ -70,7 +65,7 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
               <TotalsRow label={ivaLabel} value={formatCurrency(invoice.taxTotal)} />
             )}
 
-        {effectiveShowIrpf &&
+        {showIrpf &&
           (isReagyp
             ? // In REAGYP: show IRPF only when a rate > 0 has been configured
               Number(invoice.irpfPercent) > 0 && (
