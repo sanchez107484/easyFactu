@@ -6,6 +6,7 @@ import { LegalSection } from '@/components/legal/LegalSection';
 export const metadata: Metadata = {
   title: 'Política de Cookies',
   description: `Información sobre el uso de cookies en el sitio web de ${brandConfig.app.name}.`,
+  alternates: { canonical: `${brandConfig.app.url}/cookies` },
 };
 
 export default function CookiesPage() {
@@ -19,9 +20,9 @@ export default function CookiesPage() {
     >
       <LegalSection number="1." heading="Qué son las cookies">
         <p>
-          Las cookies son pequeños archivos de texto que se almacenan en el dispositivo del
-          usuario cuando visita un sitio web. Permiten recordar información sobre la navegación
-          para mejorar la experiencia del usuario.
+          Las cookies son pequeños archivos de texto que se almacenan en el dispositivo del usuario
+          cuando visita un sitio web. Permiten recordar información sobre la navegación para mejorar
+          la experiencia del usuario.
         </p>
       </LegalSection>
 
@@ -41,8 +42,7 @@ export default function CookiesPage() {
 
         <h3 className="mt-5 font-semibold text-slate-700">Cookies de análisis</h3>
         <p>
-          Permiten analizar el comportamiento de los usuarios en la web para mejorar el
-          servicio:
+          Permiten analizar el comportamiento de los usuarios en la web para mejorar el servicio:
         </p>
         <ul className="ml-4 mt-2 list-inside list-disc space-y-1">
           <li>páginas visitadas</li>
@@ -60,9 +60,9 @@ export default function CookiesPage() {
 
       <LegalSection number="3." heading="Gestión de cookies">
         <p>
-          El usuario puede aceptar, rechazar o configurar el uso de cookies a través del banner
-          de cookies del sitio web. También puede eliminarlas o bloquearlas desde la
-          configuración de su navegador.
+          El usuario puede aceptar, rechazar o configurar el uso de cookies a través del banner de
+          cookies del sitio web. También puede eliminarlas o bloquearlas desde la configuración de
+          su navegador.
         </p>
       </LegalSection>
 

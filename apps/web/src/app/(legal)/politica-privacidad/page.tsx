@@ -6,6 +6,7 @@ import { LegalSection } from '@/components/legal/LegalSection';
 export const metadata: Metadata = {
   title: 'Política de Privacidad',
   description: `Conoce cómo ${brandConfig.app.name} trata tus datos personales conforme al RGPD y la LOPDGDD.`,
+  alternates: { canonical: `${brandConfig.app.url}/politica-privacidad` },
 };
 
 export default function PoliticaPrivacidadPage() {
@@ -50,9 +51,7 @@ export default function PoliticaPrivacidadPage() {
         <p>El tratamiento de datos personales se realiza conforme a:</p>
         <ul className="ml-4 mt-2 list-inside list-disc space-y-1">
           <li>Reglamento General de Protección de Datos (RGPD)</li>
-          <li>
-            Ley Orgánica de Protección de Datos y Garantía de Derechos Digitales (LOPDGDD)
-          </li>
+          <li>Ley Orgánica de Protección de Datos y Garantía de Derechos Digitales (LOPDGDD)</li>
         </ul>
       </LegalSection>
 
@@ -124,9 +123,7 @@ export default function PoliticaPrivacidadPage() {
           <li>administraciones públicas cuando exista obligación legal</li>
           <li>sistemas de cumplimiento fiscal cuando la normativa lo requiera</li>
         </ul>
-        <p className="mt-3 font-medium text-slate-700">
-          Los datos no serán vendidos a terceros.
-        </p>
+        <p className="mt-3 font-medium text-slate-700">Los datos no serán vendidos a terceros.</p>
       </LegalSection>
 
       <LegalSection number="8." heading="Derechos del usuario">

@@ -5,6 +5,8 @@ const PRIVATE_DISALLOW = [
   '/dashboard/',
   '/invoice-print/',
   '/setup/',
+  '/partner',
+  '/invitacion/',
   '/login',
   '/recuperar-password',
   '/nueva-password',

@@ -57,6 +57,12 @@ const nextConfig: NextConfig = {
         destination: 'https://www.novafactura.es/:path*',
         permanent: true,
       },
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'nafactura.es' }],
+        destination: 'https://www.nafactura.es/:path*',
+        permanent: true,
+      },
     ];
   },
   async headers() {
