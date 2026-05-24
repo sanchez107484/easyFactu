@@ -121,7 +121,9 @@ export function useConfirmInvoice() {
     mutationFn: (id: string) => invoiceApi.confirm(id),
     onSuccess: (invoice) => {
       queryClient.invalidateQueries({ queryKey: invoiceKeys.lists() });
-      queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
+      // Invalidate (not set) the detail query so the page refetches fresh data from the
+      // server — this ensures verifactuQr and hash are present in the rendered detail.
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.detail(invoice.id) });
       toast.success(`Factura ${invoice.number} confirmada correctamente`);
     },
     onError: (error: unknown) => {

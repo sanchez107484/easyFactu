@@ -42,7 +42,7 @@ export function InvoiceSplitLayout({
   invoiceType,
 }: InvoiceSplitLayoutProps) {
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
+    <div className="-m-6 flex flex-col h-[calc(100%+3rem)]">
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-6 py-3 border-b bg-background shrink-0">
         <div className="flex items-center gap-3">

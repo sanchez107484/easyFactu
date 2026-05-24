@@ -6,6 +6,7 @@ import { LegalSection } from '@/components/legal/LegalSection';
 export const metadata: Metadata = {
   title: 'Contrato de Tratamiento de Datos',
   description: `Acuerdo de encargo de tratamiento (DPA) entre ${brandConfig.app.name} y sus clientes, conforme al artículo 28 del RGPD.`,
+  alternates: { canonical: `${brandConfig.app.url}/tratamiento-datos` },
 };
 
 export default function TratamientoDatosPage() {
@@ -18,9 +19,9 @@ export default function TratamientoDatosPage() {
       lastUpdated="14 de abril de 2026"
     >
       <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800">
-        Este documento regula el tratamiento de datos personales realizado por {name} en nombre
-        de sus clientes, en calidad de encargado del tratamiento conforme al artículo 28 del
-        Reglamento General de Protección de Datos (RGPD).
+        Este documento regula el tratamiento de datos personales realizado por {name} en nombre de
+        sus clientes, en calidad de encargado del tratamiento conforme al artículo 28 del Reglamento
+        General de Protección de Datos (RGPD).
       </div>
 
       <LegalSection number="1." heading="Partes">
@@ -116,8 +117,8 @@ export default function TratamientoDatosPage() {
 
       <LegalSection number="8." heading="Seguridad">
         <p>
-          {name} aplicará medidas técnicas y organizativas adecuadas para garantizar la seguridad
-          de los datos, según lo establecido en el artículo 32 del RGPD.
+          {name} aplicará medidas técnicas y organizativas adecuadas para garantizar la seguridad de
+          los datos, según lo establecido en el artículo 32 del RGPD.
         </p>
       </LegalSection>
 
@@ -132,8 +133,8 @@ export default function TratamientoDatosPage() {
       <LegalSection number="10." heading="Cumplimiento de normativa de facturación">
         <p>
           {name} es un software diseñado para facilitar la gestión de facturación conforme a la
-          normativa vigente. El software puede incorporar funcionalidades destinadas a cumplir
-          con sistemas de control fiscal como los exigidos por la legislación española.
+          normativa vigente. El software puede incorporar funcionalidades destinadas a cumplir con
+          sistemas de control fiscal como los exigidos por la legislación española.
         </p>
         <p className="mt-3">No obstante:</p>
         <ul className="ml-4 mt-2 list-inside list-disc space-y-1">
@@ -148,8 +149,8 @@ export default function TratamientoDatosPage() {
       <LegalSection number="11." heading="Sistemas de facturación verificable">
         <p>
           Cuando la normativa lo requiera, {name} podrá integrar funcionalidades para la
-          comunicación de registros de facturación a las administraciones públicas competentes.
-          El usuario autoriza a {name} a realizar las comunicaciones técnicas necesarias para el
+          comunicación de registros de facturación a las administraciones públicas competentes. El
+          usuario autoriza a {name} a realizar las comunicaciones técnicas necesarias para el
           funcionamiento de dichas integraciones.
         </p>
       </LegalSection>

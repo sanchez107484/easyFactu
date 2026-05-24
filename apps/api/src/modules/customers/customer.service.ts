@@ -178,17 +178,19 @@ export class CustomerService {
    *
    * Two paths — determined exclusively from the DB (never from request data):
    *
-   *   PATH A — tenant is a CLIENT of an agency:
+   *   PATH A — tenant is a CLIENT of an agency AND the agency is impersonating them:
    *     Returns the agency's own directory + all sibling client tenants (minus self).
+   *     If actingAsClient=false (the client logs in directly to their own account), the pool
+   *     is hidden — the client must not see the agency's directory in their own workspace.
    *
-   *   PATH B — tenant IS the agency acting on its own behalf:
+   *   PATH B — tenant IS the agency itself, working in its own account:
    *     Returns all managed client tenants' directories.
    *     (The agency's own customers are already in "Tus contactos".)
    *
    *   NORMAL USERS (INDIVIDUAL / BUSINESS / COLLABORATIVE not linked to any agency):
    *     Returns [] immediately — zero extra DB queries, no data leakage.
    */
-  async findAgencySharedPool(tenantId: string, search?: string) {
+  async findAgencySharedPool(tenantId: string, actingAsClient: boolean, search?: string) {
     // Resolve the calling tenant's role in a single parallel round-trip.
     // accountType is read from the DB — never trusted from the request.
     const [clientRelation, tenant] = await Promise.all([
@@ -206,6 +208,11 @@ export class CustomerService {
     ]);
 
     const isAgency = tenant?.accountType === AccountType.AGENCY;
+
+    // A client of an agency who logs in to their own account (not impersonated by the
+    // agency) must NOT see the agency's directory. Only the agency can see/copy from the
+    // shared pool when impersonating the client.
+    if (clientRelation && !actingAsClient && !isAgency) return [];
 
     // Normal users are not a client of any agency AND are not an agency themselves.
     if (!clientRelation && !isAgency) return [];
@@ -298,10 +305,11 @@ export class CustomerService {
    * (or reactivates it if it was soft-deleted).
    *
    * Mirrors the two-path logic of findAgencySharedPool:
-   *   PATH A — tenant is a client → pool is agency + sibling directories.
+   *   PATH A — tenant is a client AND actingAsClient=true (agency impersonation):
+   *              pool is agency + sibling directories.
    *   PATH B — tenant is the agency → pool is all managed client directories.
    */
-  async importFromAgencyPool(tenantId: string, nif: string) {
+  async importFromAgencyPool(tenantId: string, actingAsClient: boolean, nif: string) {
     // accountType is read from the DB — never trusted from request input.
     const [clientRelation, tenant] = await Promise.all([
       this.prisma.agencyClientRelation.findFirst({
@@ -317,6 +325,12 @@ export class CustomerService {
     const isAgency = tenant?.accountType === AccountType.AGENCY;
 
     if (!clientRelation && !isAgency) {
+      throw new ForbiddenException('Este tenant no tiene acceso al directorio compartido');
+    }
+
+    // A client who logs in to their own account (not impersonated by the agency) must NOT
+    // be able to import from the agency's directory.
+    if (clientRelation && !actingAsClient && !isAgency) {
       throw new ForbiddenException('Este tenant no tiene acceso al directorio compartido');
     }
 

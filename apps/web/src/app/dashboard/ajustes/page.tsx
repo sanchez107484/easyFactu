@@ -21,7 +21,6 @@ import { useTenant } from '@/hooks/use-tenant';
 import { useAuthStore } from '@/store/auth-store';
 import { AccountType, Plan } from '@easyfactura/shared-types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { QrToggleCard } from './_components/qr-toggle-card';
 
 const PLAN_LABELS: Record<Plan, string> = {
   [Plan.FREE]: 'Gratuito',
@@ -198,8 +197,6 @@ export default function AjustesPage() {
           </div>
         </CardContent>
       </Card>
-
-      <QrToggleCard />
 
       {/* Secciones de configuración */}
       <div className="grid gap-3 sm:grid-cols-2">

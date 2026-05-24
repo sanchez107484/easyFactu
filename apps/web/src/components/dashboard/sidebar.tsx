@@ -366,7 +366,7 @@ export function DashboardSidebar() {
             <div className="flex items-center gap-2">
               <p className="truncate font-medium">{currentTenant.businessName}</p>
               {currentTenant.accountType === AccountType.AGENCY && (
-                <Badge variant="secondary" className="shrink-0 px-1.5 py-0 text-xs">
+                <Badge className="shrink-0 border-agency-300 bg-agency-100 px-1.5 py-0 text-xs text-agency-700 dark:border-agency-700 dark:bg-agency-900/40 dark:text-agency-300">
                   Asesoría
                 </Badge>
               )}

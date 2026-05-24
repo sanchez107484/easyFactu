@@ -6,6 +6,7 @@ import { LegalSection } from '@/components/legal/LegalSection';
 export const metadata: Metadata = {
   title: 'Términos de Uso',
   description: `Condiciones generales de uso de la plataforma ${brandConfig.app.name}.`,
+  alternates: { canonical: `${brandConfig.app.url}/terminos-uso` },
 };
 
 export default function TerminosUsoPage() {
@@ -19,22 +20,22 @@ export default function TerminosUsoPage() {
     >
       <LegalSection number="1." heading="Objeto">
         <p>
-          Los presentes términos regulan el acceso y uso del software {name}, una plataforma
-          online de gestión de facturación y administración empresarial.
+          Los presentes términos regulan el acceso y uso del software {name}, una plataforma online
+          de gestión de facturación y administración empresarial.
         </p>
       </LegalSection>
 
       <LegalSection number="2." heading="Aceptación de los términos">
         <p>
-          Al crear una cuenta o utilizar el servicio, el usuario declara haber leído y aceptado
-          los presentes términos.
+          Al crear una cuenta o utilizar el servicio, el usuario declara haber leído y aceptado los
+          presentes términos.
         </p>
       </LegalSection>
 
       <LegalSection number="3." heading="Registro de usuario">
         <p>
-          Para utilizar la plataforma es necesario crear una cuenta proporcionando información
-          veraz y actualizada.
+          Para utilizar la plataforma es necesario crear una cuenta proporcionando información veraz
+          y actualizada.
         </p>
         <p>El usuario es responsable de:</p>
         <ul className="ml-4 mt-2 list-inside list-disc space-y-1">
@@ -59,9 +60,8 @@ export default function TerminosUsoPage() {
 
       <LegalSection number="5." heading="Datos introducidos por el usuario">
         <p>
-          El usuario es responsable de los datos introducidos en el software, incluyendo
-          información fiscal, contable o comercial. {name} actúa como proveedor tecnológico de
-          la plataforma.
+          El usuario es responsable de los datos introducidos en el software, incluyendo información
+          fiscal, contable o comercial. {name} actúa como proveedor tecnológico de la plataforma.
         </p>
       </LegalSection>
 
@@ -79,8 +79,8 @@ export default function TerminosUsoPage() {
 
       <LegalSection number="7." heading="Propiedad intelectual">
         <p>
-          El software, su código y diseño son propiedad de {name}. El usuario obtiene únicamente
-          una licencia de uso limitada y no exclusiva para el periodo de su suscripción.
+          El software, su código y diseño son propiedad de {name}. El usuario obtiene únicamente una
+          licencia de uso limitada y no exclusiva para el periodo de su suscripción.
         </p>
       </LegalSection>
 

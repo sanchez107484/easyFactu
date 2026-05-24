@@ -650,7 +650,10 @@ export class AuthService {
     return { message: 'Email verificado correctamente' };
   }
 
-  async getMe(userId: string) {
+  async getMe(
+    userId: string,
+    context?: { actingAsClient: boolean; impersonatedTenantId?: string }
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -687,14 +690,34 @@ export class AuthService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    return {
-      ...user,
-      tenants: user.tenantUsers.map((tu: any) => ({
-        tenant: tu.tenant,
-        role: tu.role,
-        isOwner: tu.isOwner,
-      })),
-    };
+    const tenants = user.tenantUsers.map((tu: any) => ({
+      tenant: tu.tenant,
+      role: tu.role,
+      isOwner: tu.isOwner,
+    }));
+
+    // When the agency is impersonating a client, the JWT tenantId is the client's tenantId.
+    // The client tenant is NOT in the user's direct memberships, so we fetch it separately
+    // and return it as currentTenant so the frontend can restore the impersonation context
+    // correctly after a page reload.
+    if (context?.actingAsClient && context.impersonatedTenantId) {
+      const impersonatedTenant = await this.prisma.tenant.findUnique({
+        where: { id: context.impersonatedTenantId },
+        select: {
+          id: true,
+          businessName: true,
+          nif: true,
+          setupCompleted: true,
+          plan: true,
+          logoUrl: true,
+          accountType: true,
+        },
+      });
+
+      return { ...user, tenants, actingAsClient: true, currentTenant: impersonatedTenant };
+    }
+
+    return { ...user, tenants };
   }
 
   async updateProfile(userId: string, dto: { firstName?: string; lastName?: string }) {

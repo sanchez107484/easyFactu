@@ -26,6 +26,8 @@ import { QueryCustomerDto } from './dto/query-customer.dto';
 import { ImportFromPoolDto } from './dto/import-from-pool.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { CachedJwtUser } from '../auth/jwt-validation-cache.service';
 
 @ApiTags('customers')
 @Controller('customers')
@@ -52,15 +54,23 @@ export class CustomerController {
   @Get('shared-pool')
   @ApiOperation({ summary: 'Buscar clientes en el directorio compartido de la asesoría' })
   @ApiOkResponse({ description: 'Clientes de otros tenants de la misma asesoría' })
-  findSharedPool(@CurrentTenant() tenantId: string, @Query('search') search?: string) {
-    return this.customerService.findAgencySharedPool(tenantId, search);
+  findSharedPool(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CachedJwtUser,
+    @Query('search') search?: string
+  ) {
+    return this.customerService.findAgencySharedPool(tenantId, user.actingAsClient, search);
   }
 
   @Post('import-from-pool')
   @ApiOperation({ summary: 'Copiar un cliente del directorio compartido al tenant actual' })
   @ApiCreatedResponse({ description: 'Cliente copiado o ya existente devuelto' })
-  importFromPool(@CurrentTenant() tenantId: string, @Body() dto: ImportFromPoolDto) {
-    return this.customerService.importFromAgencyPool(tenantId, dto.nif);
+  importFromPool(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: CachedJwtUser,
+    @Body() dto: ImportFromPoolDto
+  ) {
+    return this.customerService.importFromAgencyPool(tenantId, user.actingAsClient, dto.nif);
   }
 
   @Get(':id')

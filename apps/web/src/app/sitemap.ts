@@ -185,6 +185,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     BRAND === 'nafactura'
       ? [
           {
+            url: `${BASE_URL}/contacto`,
+            lastModified: UPDATED_STABLE,
+            changeFrequency: 'monthly',
+            priority: 0.6,
+          },
+          {
             url: `${BASE_URL}/naticket`,
             lastModified: UPDATED_RECENT,
             changeFrequency: 'monthly',

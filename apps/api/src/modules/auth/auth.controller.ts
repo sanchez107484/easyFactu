@@ -24,6 +24,7 @@ import { SwitchTenantDto } from './dto/switch-tenant.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { CachedJwtUser } from '../auth/jwt-validation-cache.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -153,8 +154,11 @@ export class AuthController {
   @ApiOperation({ summary: 'Obtener usuario autenticado' })
   @ApiResponse({ status: 200, description: 'Usuario obtenido' })
   @ApiResponse({ status: 401, description: 'No autenticado' })
-  async getMe(@CurrentUser('id') userId: string) {
-    return this.authService.getMe(userId);
+  async getMe(@CurrentUser() user: CachedJwtUser) {
+    return this.authService.getMe(user.id, {
+      actingAsClient: user.actingAsClient,
+      impersonatedTenantId: user.actingAsClient ? user.tenantId : undefined,
+    });
   }
 
   @Patch('me')

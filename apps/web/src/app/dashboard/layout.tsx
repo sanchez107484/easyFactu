@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import { useUIStore } from '@/store/ui-store';
 import { useResponsiveSidebar } from '@/hooks/use-responsive-sidebar';
+import { usePdfWarmup } from '@/hooks/use-pdf-warmup';
 import { DashboardSidebar } from '@/components/dashboard/sidebar';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { ActingAsBanner } from '@/components/dashboard/acting-as-banner';
@@ -29,6 +30,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Auto-collapse the sidebar on viewports < xl so dashboard tables get the full width.
   useResponsiveSidebar();
+
+  // Pre-warm the PDF Vercel function (Chromium launch) so the first download
+  // does not pay the 3-5s cold start. Fires once per browser session.
+  usePdfWarmup();
 
   // Start with true on both server and client to avoid:
   // 1) Hydration mismatch (same value on both sides)

@@ -6,6 +6,7 @@ import { LegalSection } from '@/components/legal/LegalSection';
 export const metadata: Metadata = {
   title: 'Aviso Legal',
   description: `Información legal sobre el titular de ${brandConfig.app.name}: condiciones de acceso, propiedad intelectual y legislación aplicable.`,
+  alternates: { canonical: `${brandConfig.app.url}/aviso-legal` },
 };
 
 export default function AvisoLegalPage() {
@@ -56,9 +57,8 @@ export default function AvisoLegalPage() {
 
       <LegalSection number="2." heading="Objeto">
         <p>
-          El presente sitio web tiene como finalidad ofrecer información y acceso al software{' '}
-          {name}, una plataforma online de gestión de facturación destinada a autónomos y
-          empresas.
+          El presente sitio web tiene como finalidad ofrecer información y acceso al software {name}
+          , una plataforma online de gestión de facturación destinada a autónomos y empresas.
         </p>
       </LegalSection>
 
