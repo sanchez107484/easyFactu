@@ -25,6 +25,7 @@ import {
   Loader2,
   FileDown,
   ShieldCheck,
+  Upload,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +60,12 @@ const defaultNavItems: NavEntry[] = [
   { title: 'Productos', href: '/dashboard/productos', icon: Package },
   { title: 'Presupuestos', href: '/dashboard/presupuestos', icon: ClipboardList },
   { title: 'Recurrentes', href: '/dashboard/recurrentes', icon: RefreshCw },
+  {
+    title: 'Importar',
+    href: '/dashboard/importar',
+    icon: Upload,
+    description: 'Importa clientes y productos desde Excel',
+  },
   { title: 'Ajustes', href: '/dashboard/ajustes', icon: Settings },
 ];
 
@@ -79,6 +86,12 @@ const agencyNavItems: NavEntry[] = [
   { title: 'Productos', href: '/dashboard/productos', icon: Package },
   { title: 'Presupuestos', href: '/dashboard/presupuestos', icon: ClipboardList },
   { title: 'Recurrentes', href: '/dashboard/recurrentes', icon: RefreshCw },
+  {
+    title: 'Importar',
+    href: '/dashboard/importar',
+    icon: Upload,
+    description: 'Importa clientes y productos desde Excel',
+  },
   { title: 'Ajustes', href: '/dashboard/ajustes', icon: Settings },
 
   // ── Gestión de cartera ────────────────────────────────────────────────────

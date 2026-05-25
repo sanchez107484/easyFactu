@@ -44,6 +44,7 @@ import {
   Info,
   ArrowRight,
   RotateCcw,
+  Upload,
 } from 'lucide-react';
 import { CustomerType, Customer, AccountType } from '@easyfactura/shared-types';
 import {
@@ -284,12 +285,20 @@ export default function ClientesPage() {
               )}
             </div>
           </div>
-          <Link href="/dashboard/clientes/nuevo">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Nuevo cliente
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard/importar/clientes">
+              <Button variant="outline">
+                <Upload className="mr-2 h-4 w-4" />
+                Importar
+              </Button>
+            </Link>
+            <Link href="/dashboard/clientes/nuevo">
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Nuevo cliente
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Filters */}

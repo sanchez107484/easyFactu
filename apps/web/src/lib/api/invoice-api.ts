@@ -1,4 +1,4 @@
-import { apiClient } from '../api-client';
+import { apiClient, buildQueryString } from '../api-client';
 import { unwrapApiResponse, ApiResponse } from '../api-response';
 import {
   Invoice,
@@ -15,14 +15,6 @@ import {
 export interface RectifyInvoiceInput {
   rectificationReason: string;
   lines: CreateInvoiceInput['lines'];
-}
-
-function buildQueryString(params: Record<string, unknown>): string {
-  const entries = Object.entries(params).filter(
-    ([, v]) => v !== undefined && v !== null && v !== '',
-  );
-  if (entries.length === 0) return '';
-  return '?' + entries.map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join('&');
 }
 
 export const invoiceApi = {

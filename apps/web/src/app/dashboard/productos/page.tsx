@@ -18,6 +18,7 @@ import {
   Trash2,
   AlertCircle,
   X,
+  Upload,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -199,12 +200,20 @@ export default function ProductosPage() {
               : `${total} elemento${total !== 1 ? 's' : ''} en el catálogo`}
           </p>
         </div>
-        <Link href="/dashboard/productos/nuevo">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo producto
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard/importar/productos">
+            <Button variant="outline">
+              <Upload className="mr-2 h-4 w-4" />
+              Importar
+            </Button>
+          </Link>
+          <Link href="/dashboard/productos/nuevo">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Nuevo producto
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="space-y-3">

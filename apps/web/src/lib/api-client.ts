@@ -149,3 +149,12 @@ export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return 'Ha ocurrido un error inesperado';
 }
+
+// Query string builder
+export function buildQueryString(params: Record<string, unknown>): string {
+  const entries = Object.entries(params).filter(
+    ([, v]) => v !== undefined && v !== null && v !== '',
+  );
+  if (entries.length === 0) return '';
+  return '?' + entries.map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join('&');
+}

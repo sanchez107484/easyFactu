@@ -1,4 +1,4 @@
-import { apiClient } from '../api-client';
+import { apiClient, buildQueryString } from '../api-client';
 import { unwrapApiResponse, ApiResponse } from '../api-response';
 import {
   Product,
@@ -7,14 +7,6 @@ import {
   UpdateProductInput,
   QueryProductsInput,
 } from '@easyfactura/shared-types';
-
-function buildQueryString(params: Record<string, unknown>): string {
-  const entries = Object.entries(params).filter(
-    ([, v]) => v !== undefined && v !== null && v !== '',
-  );
-  if (entries.length === 0) return '';
-  return '?' + entries.map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join('&');
-}
 
 export const productApi = {
   getAll: (filters: QueryProductsInput = {}): Promise<PaginatedResponse<Product>> =>

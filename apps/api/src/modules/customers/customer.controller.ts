@@ -9,21 +9,30 @@ import {
   Param,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   HttpCode,
   HttpStatus,
+  BadRequestException,
+  Res,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { CustomerService } from './customer.service';
+import { CustomerImportService } from './customer-import.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 import { ImportFromPoolDto } from './dto/import-from-pool.dto';
+import { ConfirmImportDto } from './dto/confirm-import.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -34,7 +43,10 @@ import type { CachedJwtUser } from '../auth/jwt-validation-cache.service';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class CustomerController {
-  constructor(private customerService: CustomerService) {}
+  constructor(
+    private customerService: CustomerService,
+    private customerImportService: CustomerImportService
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Crear cliente' })
@@ -71,6 +83,37 @@ export class CustomerController {
     @Body() dto: ImportFromPoolDto
   ) {
     return this.customerService.importFromAgencyPool(tenantId, user.actingAsClient, dto.nif);
+  }
+
+  // ── Excel Import ─────────────────────────────────────────────────────────────
+
+  @Get('import/template')
+  @ApiOperation({ summary: 'Descargar plantilla Excel para importar clientes' })
+  async downloadTemplate(@Res() res: Response) {
+    const buffer = await this.customerImportService.generateTemplate();
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename="plantilla-clientes.xlsx"');
+    res.end(buffer);
+  }
+
+  @Post('import/preview')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Previsualizar importación de clientes desde Excel' })
+  @ApiOkResponse({ description: 'Vista previa de filas con validación' })
+  previewImport(@CurrentTenant() tenantId: string, @UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('No se ha enviado ningún archivo.');
+    return this.customerImportService.preview(tenantId, file);
+  }
+
+  @Post('import/confirm')
+  @ApiOperation({ summary: 'Confirmar importación de clientes' })
+  @ApiCreatedResponse({ description: 'Resultado de la importación' })
+  confirmImport(@CurrentTenant() tenantId: string, @Body() dto: ConfirmImportDto) {
+    return this.customerImportService.confirm(tenantId, dto.rows);
   }
 
   @Get(':id')

@@ -33,6 +33,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   onboarding: 'Primeros pasos',
   setup: 'Configuración',
   recurrentes: 'Recurrentes',
+  importar: 'Importar',
   nueva: 'Nueva',
   nuevo: 'Nuevo',
   editar: 'Editar',

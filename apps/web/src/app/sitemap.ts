@@ -14,216 +14,73 @@ const UPDATED_LEGAL = new Date('2025-04-01');
 
 export const revalidate = 3600;
 
+// ── Helper ──────────────────────────────────────────────────────────────────
+
+type SitemapEntry = MetadataRoute.Sitemap[number];
+type ChangeFreq = SitemapEntry['changeFrequency'];
+
+function entry(
+  path: string,
+  priority: number,
+  lastModified: Date = UPDATED_RECENT,
+  changeFrequency: ChangeFreq = 'monthly',
+): SitemapEntry {
+  return { url: `${BASE_URL}${path}`, lastModified, changeFrequency, priority };
+}
+
+// ── Shared routes (all brands) ───────────────────────────────────────────────
+
+const SHARED_ROUTES: MetadataRoute.Sitemap = [
+  entry('/', 1.0, UPDATED_RECENT, 'weekly'),
+  entry('/funcionalidades', 0.8),
+  entry('/verifactu', 0.9),
+  entry('/asesoria', 0.8),
+  entry('/precios', 0.8, UPDATED_STABLE),
+  entry('/blog', 0.8, UPDATED_RECENT, 'weekly'),
+  entry('/registro', 0.5, UPDATED_STABLE),
+  // Legal — low priority but important for E-E-A-T trust signals
+  entry('/aviso-legal', 0.3, UPDATED_LEGAL, 'yearly'),
+  entry('/politica-privacidad', 0.3, UPDATED_LEGAL, 'yearly'),
+  entry('/terminos-uso', 0.3, UPDATED_LEGAL, 'yearly'),
+  entry('/cookies', 0.3, UPDATED_LEGAL, 'yearly'),
+  entry('/tratamiento-datos', 0.3, UPDATED_LEGAL, 'yearly'),
+];
+
+// ── Brand-specific routes ────────────────────────────────────────────────────
+
+const BRAND_ROUTES: Partial<Record<string, MetadataRoute.Sitemap>> = {
+  novafactura: [
+    entry('/contacto', 0.6, UPDATED_STABLE),
+    entry('/facturacion-online', 0.9),
+    entry('/factura-electronica', 0.85),
+    // VeriFactu sub-pages
+    entry('/verifactu/cuando-es-obligatorio', 0.8),
+    entry('/verifactu/software-garante', 0.8),
+    entry('/verifactu/sanciones', 0.75),
+    // Guías de facturas
+    entry('/facturas', 0.8),
+    entry('/facturas/como-hacer-una-factura', 0.75),
+    entry('/facturas/con-irpf', 0.7),
+    entry('/facturas/rectificativa', 0.7),
+    entry('/facturas/proforma', 0.7),
+    entry('/facturas/simplificada', 0.7),
+    entry('/facturas/intracomunitaria', 0.7),
+    entry('/facturacion-autonomo-agricola', 0.8),
+  ],
+  nafactura: [
+    entry('/contacto', 0.6, UPDATED_STABLE),
+    entry('/naticket', 0.95),
+    entry('/alternativa-holded-navarra', 0.8),
+    entry('/mejor-software-facturacion-navarra', 0.8),
+    entry('/software-facturacion-pamplona', 0.75),
+    entry('/facturacion-autonomo-agricola', 0.8),
+  ],
+};
+
+// ── Sitemap function ─────────────────────────────────────────────────────────
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Routes shared by all brands
-  const sharedRoutes: MetadataRoute.Sitemap = [
-    { url: BASE_URL, lastModified: UPDATED_RECENT, changeFrequency: 'weekly', priority: 1.0 },
-    {
-      url: `${BASE_URL}/funcionalidades`,
-      lastModified: UPDATED_RECENT,
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${BASE_URL}/verifactu`,
-      lastModified: UPDATED_RECENT,
-      changeFrequency: 'monthly',
-      priority: 0.9,
-    },
-    {
-      url: `${BASE_URL}/asesoria`,
-      lastModified: UPDATED_RECENT,
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${BASE_URL}/precios`,
-      lastModified: UPDATED_STABLE,
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${BASE_URL}/blog`,
-      lastModified: UPDATED_RECENT,
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
-      url: `${BASE_URL}/registro`,
-      lastModified: UPDATED_STABLE,
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    // Legal pages — low priority but important for E-E-A-T trust signals
-    {
-      url: `${BASE_URL}/aviso-legal`,
-      lastModified: UPDATED_LEGAL,
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-    {
-      url: `${BASE_URL}/politica-privacidad`,
-      lastModified: UPDATED_LEGAL,
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-    {
-      url: `${BASE_URL}/terminos-uso`,
-      lastModified: UPDATED_LEGAL,
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-    {
-      url: `${BASE_URL}/cookies`,
-      lastModified: UPDATED_LEGAL,
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-    {
-      url: `${BASE_URL}/tratamiento-datos`,
-      lastModified: UPDATED_LEGAL,
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-  ];
-
-  // Routes exclusive to NovaFactura
-  const novafacturaRoutes: MetadataRoute.Sitemap =
-    BRAND === 'novafactura'
-      ? [
-          {
-            url: `${BASE_URL}/contacto`,
-            lastModified: UPDATED_STABLE,
-            changeFrequency: 'monthly',
-            priority: 0.6,
-          },
-          {
-            url: `${BASE_URL}/facturacion-online`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.9,
-          },
-          {
-            url: `${BASE_URL}/factura-electronica`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.85,
-          },
-          // VeriFactu sub-pages
-          {
-            url: `${BASE_URL}/verifactu/cuando-es-obligatorio`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.8,
-          },
-          {
-            url: `${BASE_URL}/verifactu/software-garante`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.8,
-          },
-          {
-            url: `${BASE_URL}/verifactu/sanciones`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.75,
-          },
-          // Guías de facturas
-          {
-            url: `${BASE_URL}/facturas`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.8,
-          },
-          {
-            url: `${BASE_URL}/facturas/como-hacer-una-factura`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.75,
-          },
-          {
-            url: `${BASE_URL}/facturas/con-irpf`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.7,
-          },
-          {
-            url: `${BASE_URL}/facturas/rectificativa`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.7,
-          },
-          {
-            url: `${BASE_URL}/facturas/proforma`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.7,
-          },
-          {
-            url: `${BASE_URL}/facturas/simplificada`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.7,
-          },
-          {
-            url: `${BASE_URL}/facturas/intracomunitaria`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.7,
-          },
-          {
-            url: `${BASE_URL}/facturacion-autonomo-agricola`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.8,
-          },
-        ]
-      : [];
-
-  // Routes exclusive to NaFactura
-  const nafacturaRoutes: MetadataRoute.Sitemap =
-    BRAND === 'nafactura'
-      ? [
-          {
-            url: `${BASE_URL}/contacto`,
-            lastModified: UPDATED_STABLE,
-            changeFrequency: 'monthly',
-            priority: 0.6,
-          },
-          {
-            url: `${BASE_URL}/naticket`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.95,
-          },
-          {
-            url: `${BASE_URL}/alternativa-holded-navarra`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.8,
-          },
-          {
-            url: `${BASE_URL}/mejor-software-facturacion-navarra`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.8,
-          },
-          {
-            url: `${BASE_URL}/software-facturacion-pamplona`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.75,
-          },
-          {
-            url: `${BASE_URL}/facturacion-autonomo-agricola`,
-            lastModified: UPDATED_RECENT,
-            changeFrequency: 'monthly',
-            priority: 0.8,
-          },
-        ]
-      : [];
-
-  const staticRoutes = [...sharedRoutes, ...novafacturaRoutes, ...nafacturaRoutes];
+  const staticRoutes = [...SHARED_ROUTES, ...(BRAND_ROUTES[BRAND] ?? [])];
 
   let blogRoutes: MetadataRoute.Sitemap = [];
 
@@ -237,7 +94,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7,
       }));
     } catch {
-      // Si Sanity no está disponible, el sitemap solo incluye rutas estáticas
+      // Sanity unavailable — sitemap falls back to static routes only
     }
   }
 

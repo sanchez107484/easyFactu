@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { toast } from 'sonner';
 import { agencyApi } from '@/lib/api/agency-api';
 import type { IdentifierCheckResult } from '@/lib/api/agency-api';
-import { getErrorMessage } from '@/lib/api-client';
+import { getApiErrorMessage } from '@/lib/api-error';
 import { triggerBlobDownload } from '@/lib/blob-download';
 import { validateNif } from '@easyfactura/shared-validators';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -89,7 +89,7 @@ export function useUpdateClientNotes() {
       toast.success('Notas guardadas');
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error));
+      toast.error(getApiErrorMessage(error));
     },
   });
 }
@@ -109,7 +109,7 @@ export function useCreateDirectClient() {
       // NIF_EXISTS and EMAIL_EXISTS are handled inline by the page — skip toast
       const code = (error as { response?: { data?: { code?: string } } }).response?.data?.code;
       if (code === 'NIF_EXISTS' || code === 'EMAIL_EXISTS') return;
-      toast.error(getErrorMessage(error));
+      toast.error(getApiErrorMessage(error));
     },
   });
 }
@@ -126,7 +126,7 @@ export function useInviteClient() {
       toast.success('Invitación enviada correctamente');
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error));
+      toast.error(getApiErrorMessage(error));
     },
   });
 }
@@ -182,7 +182,7 @@ export function useRevokeClient() {
       toast.success('Cliente dado de baja correctamente');
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error));
+      toast.error(getApiErrorMessage(error));
     },
   });
 }
@@ -224,7 +224,7 @@ export function useAcceptInvitation() {
       toast.success('Te has vinculado a la asesoría correctamente');
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error));
+      toast.error(getApiErrorMessage(error));
     },
   });
 }
@@ -239,7 +239,7 @@ export function useRejectInvitation() {
       toast.success('Has rechazado la invitación');
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error));
+      toast.error(getApiErrorMessage(error));
     },
   });
 }
@@ -256,7 +256,7 @@ export function useCancelInvitation() {
       toast.success('Invitación cancelada');
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error));
+      toast.error(getApiErrorMessage(error));
     },
   });
 }
@@ -277,7 +277,7 @@ export function useExportContaPlus() {
       );
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error));
+      toast.error(getApiErrorMessage(error));
     },
   });
 }
@@ -327,7 +327,7 @@ export function useRevokeMyAgency() {
       toast.success('Acceso de la asesoría revocado correctamente');
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error));
+      toast.error(getApiErrorMessage(error));
     },
   });
 }
@@ -350,7 +350,7 @@ export function useResendActivation() {
       toast.success('Enlace de activación enviado correctamente');
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error));
+      toast.error(getApiErrorMessage(error));
     },
   });
 }
@@ -416,7 +416,7 @@ export function useExportInvoices(clientTenantId: string) {
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.client(clientTenantId) });
     },
     onError: (error: unknown) => {
-      toast.error(getErrorMessage(error));
+      toast.error(getApiErrorMessage(error));
     },
   });
 }
@@ -441,7 +441,7 @@ export function useUpdatePreferredFormat() {
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.preferredExportFormat() });
     },
     onError: (error: unknown) => {
-      toast.error(getErrorMessage(error));
+      toast.error(getApiErrorMessage(error));
     },
   });
 }
