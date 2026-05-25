@@ -63,7 +63,7 @@ const COLUMNS: ColDef[] = [
 
 // name (lowercase) → ISO code
 const COUNTRY_NAME_TO_CODE = new Map<string, string>(
-  COUNTRIES.map((c) => [c.name.toLowerCase(), c.code]),
+  COUNTRIES.map((c) => [c.name.toLowerCase(), c.code])
 );
 // ISO code (uppercase) → ISO code (for direct code input like "ES")
 const COUNTRY_CODES = new Set<string>(COUNTRIES.map((c) => c.code));
@@ -324,7 +324,9 @@ export class CustomerImportService {
       if (data.country) {
         const isoCode = normalizeCountry(data.country);
         if (!isoCode) {
-          errors.push(`País no reconocido: "${data.country}". Usa el nombre en español o el código ISO (ej. España / ES).`);
+          errors.push(
+            `País no reconocido: "${data.country}". Usa el nombre en español o el código ISO (ej. España / ES).`
+          );
         } else {
           resolvedData.country = isoCode;
         }

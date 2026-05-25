@@ -663,16 +663,16 @@ export function ImportWizard({
               {result!.imported}
             </p>
             <p className="text-sm text-muted-foreground mt-1">
-              {entityNameSingular}{result!.imported !== 1 ? 's' : ''} importado{result!.imported !== 1 ? 's' : ''}
+              {entityNameSingular}
+              {result!.imported !== 1 ? 's' : ''} importado{result!.imported !== 1 ? 's' : ''}
             </p>
           </div>
           {result!.skipped > 0 && (
             <div className="text-center">
-              <p className="text-3xl font-bold text-amber-500">
-                {result!.skipped}
-              </p>
+              <p className="text-3xl font-bold text-amber-500">{result!.skipped}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                duplicado{result!.skipped !== 1 ? 's' : ''} saltado{result!.skipped !== 1 ? 's' : ''}
+                duplicado{result!.skipped !== 1 ? 's' : ''} saltado
+                {result!.skipped !== 1 ? 's' : ''}
               </p>
             </div>
           )}
