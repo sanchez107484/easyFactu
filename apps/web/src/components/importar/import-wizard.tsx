@@ -564,6 +564,10 @@ export function ImportWizard({
                         <td className="px-4 py-2.5 max-w-[250px]">
                           {row.errorMessage ? (
                             <span className="text-xs text-destructive">{row.errorMessage}</span>
+                          ) : row.warningMessage ? (
+                            <span className="text-xs text-amber-600 dark:text-amber-400">
+                              ⚠️ {row.warningMessage}
+                            </span>
                           ) : row.status === 'duplicate' ? (
                             <span className="text-xs text-amber-600 dark:text-amber-400">
                               Ya existe en tu cuenta (se saltará)

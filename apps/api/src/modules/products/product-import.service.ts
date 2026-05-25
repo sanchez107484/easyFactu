@@ -19,7 +19,17 @@ export type { ImportRowPreview, ImportPreviewResult, ImportConfirmResult };
 
 const MAX_ROWS = 200;
 const VALID_TAX_RATES = new Set([0, 4, 10, 21]);
-const VALID_PRODUCT_TYPES = new Set<string>([ProductType.PRODUCT, ProductType.SERVICE]);
+
+const PRODUCT_TYPE_LABELS: Record<string, string> = {
+  PRODUCT: 'Producto',
+  SERVICE: 'Servicio',
+};
+const VALID_PRODUCT_TYPES = new Set<string>(Object.keys(PRODUCT_TYPE_LABELS));
+
+// Reverse map: Spanish label (lowercase) → enum value
+const LABEL_TO_PRODUCT_TYPE = new Map<string, ProductType>(
+  Object.entries(PRODUCT_TYPE_LABELS).map(([k, v]) => [v.toLowerCase(), k as ProductType])
+);
 
 // ── Column definitions ─────────────────────────────────────────────────────────
 
@@ -34,7 +44,7 @@ const COLUMNS: ColDef[] = [
   { header: 'Nombre (*)', key: 'name', width: 35, required: true },
   { header: 'Precio unitario € (*)', key: 'unitPrice', width: 22, required: true },
   { header: 'IVA % (*)', key: 'taxRate', width: 12, required: true },
-  { header: 'Tipo', key: 'type', width: 15, required: false },
+  { header: 'Tipo (*)', key: 'type', width: 15, required: true },
   { header: 'Descripción', key: 'description', width: 38, required: false },
   { header: 'IRPF %', key: 'irpfRate', width: 12, required: false },
   { header: 'Unidad', key: 'unit', width: 15, required: false },
@@ -42,6 +52,13 @@ const COLUMNS: ColDef[] = [
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
+
+/** Accepts Spanish label ("Servicio") or English enum key ("SERVICE") → returns enum or undefined */
+function normalizeProductType(raw: string): ProductType | undefined {
+  const trimmed = raw.trim();
+  if (VALID_PRODUCT_TYPES.has(trimmed.toUpperCase())) return trimmed.toUpperCase() as ProductType;
+  return LABEL_TO_PRODUCT_TYPE.get(trimmed.toLowerCase());
+}
 
 function getCellNumber(row: ExcelJS.Row, colIndex: number): number | undefined {
   const val = row.getCell(colIndex).value;
@@ -86,10 +103,10 @@ export class ProductImportService {
 
     // Example row
     const exampleRow = ws.addRow({
-      name: 'Servicio de consultoría',
+      name: 'Ejemplo Servicio',
       unitPrice: 150,
       taxRate: 21,
-      type: 'SERVICE',
+      type: 'Servicio',
       description: 'Consultoría estratégica por hora',
       irpfRate: 15,
       unit: 'hora',
@@ -106,25 +123,22 @@ export class ProductImportService {
     exampleRow.height = 20;
 
     // Number format for price and rate columns
-    for (let rowIdx = 3; rowIdx <= MAX_ROWS + 2; rowIdx++) {
+    for (let rowIdx = 2; rowIdx <= MAX_ROWS + 2; rowIdx++) {
       ws.getCell(rowIdx, 2).numFmt = '#,##0.00';
       ws.getCell(rowIdx, 3).numFmt = '0';
       ws.getCell(rowIdx, 6).numFmt = '0';
     }
 
-    // Dropdown for Tipo column (column 4)
-    for (let rowIdx = 3; rowIdx <= MAX_ROWS + 2; rowIdx++) {
+    // Dropdown: Tipo (column 4) and IVA (column 3) — from row 2 to include example row
+    const typeValues = Object.values(PRODUCT_TYPE_LABELS).join(',');
+    for (let rowIdx = 2; rowIdx <= MAX_ROWS + 2; rowIdx++) {
       ws.getCell(rowIdx, 4).dataValidation = {
         type: 'list',
-        formulae: ['"PRODUCT,SERVICE"'],
+        formulae: [`"${typeValues}"`],
         showErrorMessage: true,
         errorTitle: 'Tipo inválido',
-        error: 'Valores válidos: PRODUCT, SERVICE',
+        error: `Valores válidos: ${typeValues}`,
       };
-    }
-
-    // IVA dropdown (column 3)
-    for (let rowIdx = 3; rowIdx <= MAX_ROWS + 2; rowIdx++) {
       ws.getCell(rowIdx, 3).dataValidation = {
         type: 'list',
         formulae: ['"0,4,10,21"'],
@@ -171,6 +185,8 @@ export class ProductImportService {
 
     ws.eachRow({ includeEmpty: false }, (row, rowNumber) => {
       if (rowNumber === 1) return;
+      // Skip if user left the example row placeholder unchanged
+      if (rowNumber === 2 && getCellString(row, 1) === 'Ejemplo Servicio') return;
       parsedRows.push({
         rowNumber,
         rawData: {
@@ -205,21 +221,38 @@ export class ProductImportService {
 
     const existingNameSet = await this.findExistingNames(tenantId, names);
 
+    // Build intra-file name map (name → first row it appears in)
+    const nameFirstRowMap = new Map<string, number>();
+    for (const { rowNumber, rawData } of parsedRows) {
+      if (rawData.name) {
+        const key = rawData.name.trim().toLowerCase();
+        if (!nameFirstRowMap.has(key)) nameFirstRowMap.set(key, rowNumber);
+      }
+    }
+
     // Validate each row
     const rows: ImportRowPreview[] = parsedRows.map(({ rowNumber, rawData }) => {
       const errors: string[] = [];
       const resolvedData: Record<string, unknown> = {};
+      let warningMessage: string | undefined;
 
       // name — required
       if (!rawData.name) {
         errors.push('El nombre es obligatorio');
       } else {
         resolvedData.name = rawData.name;
+        // Intra-file duplicate check
+        const nameKey = rawData.name.trim().toLowerCase();
+        const firstSeen = nameFirstRowMap.get(nameKey);
+        if (firstSeen !== undefined && firstSeen !== rowNumber) {
+          errors.push(`Nombre duplicado en este Excel (ya aparece en la fila ${firstSeen})`);
+        }
       }
 
-      // unitPrice — required, positive number
+      // unitPrice — defaults to 0 if empty, with a warning
       if (rawData.unitPrice === undefined || rawData.unitPrice === null) {
-        errors.push('El precio unitario es obligatorio');
+        resolvedData.unitPrice = 0;
+        warningMessage = 'Precio no indicado, se importará como 0,00 €';
       } else if (rawData.unitPrice < 0) {
         errors.push('El precio unitario no puede ser negativo');
       } else {
@@ -235,16 +268,18 @@ export class ProductImportService {
         resolvedData.taxRate = rawData.taxRate;
       }
 
-      // type — optional, defaults to SERVICE
-      if (rawData.type) {
-        const upperType = rawData.type.toUpperCase().trim();
-        if (!VALID_PRODUCT_TYPES.has(upperType)) {
-          errors.push(`Tipo inválido: "${rawData.type}". Usa: PRODUCT o SERVICE`);
-        } else {
-          resolvedData.type = upperType;
-        }
+      // type — required; accepts Spanish label or English enum key
+      if (!rawData.type) {
+        errors.push('El tipo es obligatorio');
       } else {
-        resolvedData.type = ProductType.SERVICE;
+        const resolvedType = normalizeProductType(rawData.type);
+        if (!resolvedType) {
+          errors.push(
+            `Tipo inválido: "${rawData.type}". Usa: ${Object.values(PRODUCT_TYPE_LABELS).join(' o ')}`
+          );
+        } else {
+          resolvedData.type = resolvedType;
+        }
       }
 
       // description — optional
@@ -287,7 +322,7 @@ export class ProductImportService {
         };
       }
 
-      return { row: rowNumber, status: 'valid', data: resolvedData };
+      return { row: rowNumber, status: 'valid', warningMessage, data: resolvedData };
     });
 
     const valid = rows.filter((r) => r.status === 'valid').length;

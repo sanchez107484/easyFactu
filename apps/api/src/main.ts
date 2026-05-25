@@ -1,5 +1,5 @@
 import { NestFactory, Reflector } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
@@ -66,6 +66,49 @@ async function bootstrap() {
       transform: true,
       transformOptions: {
         enableImplicitConversion: true,
+      },
+      exceptionFactory: (errors) => {
+        const CONSTRAINT_ES: Record<string, string> = {
+          whitelistValidation: "La propiedad '$property' no está permitida",
+          isString: "'$property' debe ser una cadena de texto",
+          isNumber: "'$property' debe ser un número",
+          isArray: "'$property' debe ser un array",
+          isObject: "'$property' debe ser un objeto",
+          isBoolean: "'$property' debe ser un booleano",
+          isNotEmpty: "'$property' no puede estar vacío",
+          isOptional: "'$property' es opcional",
+          isEnum: "'$property' tiene un valor no permitido",
+          isUUID: "'$property' debe ser un UUID válido",
+          isEmail: "'$property' debe ser un email válido",
+          isDateString: "'$property' debe ser una fecha válida",
+          isUrl: "'$property' debe ser una URL válida",
+          min: "'$property' debe ser mayor o igual al mínimo",
+          max: "'$property' debe ser menor o igual al máximo",
+          minLength: "'$property' es demasiado corto",
+          maxLength: "'$property' es demasiado largo",
+          arrayMinSize: "'$property' debe tener al menos un elemento",
+          isDefined: "'$property' es obligatorio",
+          nestedValidation: "Los datos de '$property' no son válidos",
+        };
+
+        function extractMessages(errs: typeof errors, prefix = ''): string[] {
+          const msgs: string[] = [];
+          for (const err of errs) {
+            const prop = prefix ? `${prefix}.${err.property}` : err.property;
+            if (err.constraints) {
+              for (const [key, defaultMsg] of Object.entries(err.constraints)) {
+                const template = CONSTRAINT_ES[key];
+                msgs.push(template ? template.replace(/\$property/g, prop) : defaultMsg);
+              }
+            }
+            if (err.children?.length) {
+              msgs.push(...extractMessages(err.children, prop));
+            }
+          }
+          return msgs;
+        }
+
+        return new BadRequestException(extractMessages(errors).join('. '));
       },
     })
   );

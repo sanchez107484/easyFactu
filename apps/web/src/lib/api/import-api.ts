@@ -7,6 +7,7 @@ export interface ImportRowPreview {
   row: number;
   status: 'valid' | 'error' | 'duplicate';
   errorMessage?: string;
+  warningMessage?: string;
   data: Record<string, unknown>;
 }
 

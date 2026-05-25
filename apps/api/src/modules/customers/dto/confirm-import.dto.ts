@@ -1,4 +1,4 @@
-import { IsArray, IsNumber, IsString, IsObject, ValidateNested } from 'class-validator';
+import { IsArray, IsNumber, IsString, IsObject, IsOptional, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class ConfirmImportRowDto {
@@ -7,6 +7,14 @@ class ConfirmImportRowDto {
 
   @IsString()
   status!: string;
+
+  @IsOptional()
+  @IsString()
+  errorMessage?: string;
+
+  @IsOptional()
+  @IsString()
+  warningMessage?: string;
 
   @IsObject()
   data!: Record<string, unknown>;
