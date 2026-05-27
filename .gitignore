@@ -66,3 +66,7 @@ Thumbs.db
 *.tsbuildinfo
 .github/agents/performance-optimizer.agent.md
 excelsEjemplos/Ejemplo_importacion_facturas_emitidas.xlsx
+.github/agents/marketing-novafactura.agent.md
+marketing/email-corporativo-autonomos.md
+marketing/pdf-asesorias.md
+marketing/pdf-clientes.md
