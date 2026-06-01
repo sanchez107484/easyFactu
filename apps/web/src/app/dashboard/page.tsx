@@ -166,13 +166,13 @@ function SetupBanner({ completedSteps, onDismiss }: SetupBannerProps) {
 
   return (
     <div className="relative rounded-xl border border-primary/30 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 p-5">
-      <button
+      {/* <button
         onClick={onDismiss}
         aria-label="Cerrar"
         className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
       >
         <X className="h-4 w-4" />
-      </button>
+      </button> */}
 
       <div className="flex items-start gap-4">
         <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
