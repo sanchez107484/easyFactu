@@ -300,8 +300,9 @@ export default function AgencyHubPage() {
       <SoftwareSelectModal
         open={isSoftwareModalOpen}
         currentFormat={preferredFormatData?.format ?? ExportFormat.CONTAPLUS}
-        onConfirm={(fmt, saveAsDefault) => {
-          if (saveAsDefault) updatePreferredFormat(fmt);
+        alwaysSaveDefault
+        onConfirm={(fmt) => {
+          updatePreferredFormat(fmt);
           setIsSoftwareModalOpen(false);
         }}
         onClose={() => setIsSoftwareModalOpen(false)}

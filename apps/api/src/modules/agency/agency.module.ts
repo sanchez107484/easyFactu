@@ -4,6 +4,7 @@ import { AgencyService } from './agency.service';
 import { AgencyExportService } from './agency-export.service';
 import { AgencyExportCegidService } from './agency-export-cegid.service';
 import { AgencyExportDiamaconService } from './agency-export-diamacon.service';
+import { AgencyExportA3Service } from './agency-export-a3.service';
 import { ContaPlusExportService } from './contaplus-export.service';
 import { FiscalValidatorService } from './fiscal-validator.service';
 import { PrismaModule } from '../../prisma/prisma.module';
@@ -19,6 +20,7 @@ import { AgencyAccessGuard } from '../../common/guards/agency-access.guard';
     AgencyExportService,
     AgencyExportCegidService,
     AgencyExportDiamaconService,
+    AgencyExportA3Service,
     ContaPlusExportService,
     FiscalValidatorService,
     AgencyAccessGuard,

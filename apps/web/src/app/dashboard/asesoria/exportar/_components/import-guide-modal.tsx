@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { CheckCircle2, HelpCircle, Lightbulb, Download, X } from 'lucide-react';
+import { CheckCircle2, HelpCircle, Lightbulb, Download, X, ExternalLink } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -131,6 +131,27 @@ export function ImportGuideModal({
                       </li>
                     ))}
                   </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {info.helpUrl && (
+            <div className="mt-4 rounded-lg border border-orange-200 bg-orange-50 dark:border-orange-800/50 dark:bg-orange-950/20 p-3">
+              <div className="flex items-start gap-2">
+                <ExternalLink className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-600 dark:text-orange-400 shrink-0 mt-0.5" />
+                <div className="space-y-1 min-w-0">
+                  <p className="text-xs font-semibold text-orange-800 dark:text-orange-300">
+                    Documentación oficial
+                  </p>
+                  <a
+                    href={info.helpUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-orange-800/90 dark:text-orange-300/90 underline underline-offset-2 hover:text-orange-900 dark:hover:text-orange-200 leading-relaxed break-all"
+                  >
+                    {info.helpUrlLabel ?? info.helpUrl}
+                  </a>
                 </div>
               </div>
             </div>

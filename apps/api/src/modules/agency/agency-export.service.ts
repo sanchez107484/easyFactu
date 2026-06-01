@@ -6,6 +6,7 @@ import * as iconv from 'iconv-lite';
 import { ExportModePrisma, ExportFormatDto } from './dto/export-invoices.dto';
 import { AgencyExportCegidService } from './agency-export-cegid.service';
 import { AgencyExportDiamaconService } from './agency-export-diamacon.service';
+import { AgencyExportA3Service } from './agency-export-a3.service';
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -109,7 +110,8 @@ export class AgencyExportService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cegidService: AgencyExportCegidService,
-    private readonly diamaconService: AgencyExportDiamaconService
+    private readonly diamaconService: AgencyExportDiamaconService,
+    private readonly a3Service: AgencyExportA3Service
   ) {}
 
   /**
@@ -471,7 +473,7 @@ export class AgencyExportService {
       case ExportFormatDto.DIAMACON:
         return this.diamaconService.generate(invoices);
       case ExportFormatDto.A3CON:
-        throw new BadRequestException(`El formato ${format} aún no está disponible. Próximamente.`);
+        return this.a3Service.generate(invoices);
     }
   }
 

@@ -110,6 +110,16 @@ const faqs = [
 // -----------------------------------------------------------------------------
 // SEO – JSON-LD Structured Data
 // -----------------------------------------------------------------------------
+const faqPageJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map(({ q, a }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
+};
+
 const contactPageJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'ContactPage',
@@ -158,6 +168,11 @@ export default function ContactoPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(contactPageJsonLd) }}
+      />
+      {/* JSON-LD – FAQPage */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageJsonLd) }}
       />
       <SiteHeader />
 

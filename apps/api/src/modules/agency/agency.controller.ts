@@ -317,10 +317,10 @@ export class AgencyController {
         body.invoiceIds
       );
 
-    const contentType =
-      body.format === 'CEGID'
-        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        : 'text/plain; charset=windows-1252';
+    const xlsxFormats = new Set(['CEGID', 'DIAMACON', 'A3CON']);
+    const contentType = xlsxFormats.has(body.format)
+      ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      : 'text/plain; charset=windows-1252';
 
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);

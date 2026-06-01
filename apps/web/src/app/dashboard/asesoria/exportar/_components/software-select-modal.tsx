@@ -15,6 +15,11 @@ interface SoftwareSelectModalProps {
   currentFormat: ExportFormat;
   /** When true: first-time setup — modal is not dismissable and shows "Empezar". */
   isFirstTime?: boolean;
+  /**
+   * When true: hides the "Guardar como predeterminado" checkbox and always
+   * calls onConfirm with saveAsDefault=true (used from the Mi Panel shortcut).
+   */
+  alwaysSaveDefault?: boolean;
   onConfirm: (format: ExportFormat, saveAsDefault: boolean) => void;
   onClose?: () => void;
 }
@@ -23,11 +28,12 @@ export function SoftwareSelectModal({
   open,
   currentFormat,
   isFirstTime = false,
+  alwaysSaveDefault = false,
   onConfirm,
   onClose,
 }: SoftwareSelectModalProps) {
   const [selected, setSelected] = useState<ExportFormat>(currentFormat);
-  const [saveDefault, setSaveDefault] = useState(isFirstTime);
+  const [saveDefault, setSaveDefault] = useState(isFirstTime || alwaysSaveDefault);
 
   // Sync selection with currentFormat every time the modal opens
   useEffect(() => {
@@ -120,17 +126,19 @@ export function SoftwareSelectModal({
           })}
         </div>
 
-        {/* Save as default checkbox */}
-        <div className="flex items-center gap-2.5 pt-1">
-          <Checkbox
-            id="sw-save-default"
-            checked={saveDefault}
-            onCheckedChange={(v) => setSaveDefault(!!v)}
-          />
-          <Label htmlFor="sw-save-default" className="text-sm cursor-pointer leading-tight">
-            Guardar como mi programa predeterminado
-          </Label>
-        </div>
+        {/* Save as default checkbox — hidden when alwaysSaveDefault is active */}
+        {!alwaysSaveDefault && (
+          <div className="flex items-center gap-2.5 pt-1">
+            <Checkbox
+              id="sw-save-default"
+              checked={saveDefault}
+              onCheckedChange={(v) => setSaveDefault(!!v)}
+            />
+            <Label htmlFor="sw-save-default" className="text-sm cursor-pointer leading-tight">
+              Guardar como mi programa predeterminado
+            </Label>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-2 justify-end pt-1">

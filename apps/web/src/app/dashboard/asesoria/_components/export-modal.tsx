@@ -65,7 +65,7 @@ interface ExportModalProps {
 const FORMAT_LABELS: Record<ExportFormat, string> = {
   CEGID: 'Cegid (.xlsx)',
   CONTAPLUS: 'ContaPlus (.txt)',
-  A3CON: 'A3CON (.txt) — Próximamente',
+  A3CON: 'A3CON (.xlsx)',
   DIAMACON: 'Diamacon (.xlsx)',
 };
 
