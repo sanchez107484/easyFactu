@@ -36,7 +36,6 @@ const empresaSchema = z
     businessName: z.string().min(2, 'Mínimo 2 caracteres').max(100, 'Máximo 100 caracteres'),
     legalName: z.string().max(100).optional().or(z.literal('')),
     nif: z.string().min(9, 'NIF/CIF inválido').max(9, 'NIF/CIF inválido'),
-    email: z.string().email('Email no válido'),
     address: z.string().min(1, 'La dirección es obligatoria').max(200),
     postalCode: z.string().regex(/^\d{5}$/, 'Código postal inválido (5 dígitos)'),
     city: z.string().min(1, 'La ciudad es obligatoria').max(100),
@@ -79,7 +78,6 @@ export default function AjustesEmpresaPage() {
       businessName: '',
       legalName: '',
       nif: '',
-      email: '',
       address: '',
       postalCode: '',
       city: '',
@@ -99,7 +97,6 @@ export default function AjustesEmpresaPage() {
         businessName: tenant.businessName ?? '',
         legalName: tenant.legalName ?? '',
         nif: tenant.nif ?? '',
-        email: tenant.email ?? '',
         address: tenant.address ?? '',
         postalCode: tenant.postalCode ?? '',
         city: tenant.city ?? '',
@@ -205,16 +202,6 @@ export default function AjustesEmpresaPage() {
                 {empresaForm.formState.errors.nif && (
                   <p className="mt-1 text-sm text-destructive">
                     {empresaForm.formState.errors.nif.message}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="email">Email de contacto *</Label>
-                <Input id="email" type="email" {...empresaForm.register('email')} />
-                {empresaForm.formState.errors.email && (
-                  <p className="mt-1 text-sm text-destructive">
-                    {empresaForm.formState.errors.email.message}
                   </p>
                 )}
               </div>
