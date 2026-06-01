@@ -25,6 +25,7 @@ import {
   Hash,
   Ruler,
   Loader2,
+  Upload,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useCreateProduct } from '@/hooks/use-products';
@@ -101,20 +102,28 @@ export default function NuevoProductoPage() {
   return (
     <div className="pb-24 lg:pb-10">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-8">
-        <Link href="/dashboard/productos">
-          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0">
-            <ArrowLeft className="h-4 w-4" />
+      <div className="flex items-center justify-between gap-3 mb-8">
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/productos">
+            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">
+              {selectedType === ProductType.SERVICE ? 'Nuevo servicio' : 'Nuevo producto'}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Añade un elemento a tu catálogo para usarlo rápidamente en tus facturas
+            </p>
+          </div>
+        </div>
+        <Link href="/dashboard/importar/productos">
+          <Button variant="outline" size="sm">
+            <Upload className="mr-2 h-4 w-4" />
+            Importar
           </Button>
         </Link>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {selectedType === ProductType.SERVICE ? 'Nuevo servicio' : 'Nuevo producto'}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Añade un elemento a tu catálogo para usarlo rápidamente en tus facturas
-          </p>
-        </div>
       </div>
 
       <form id="product-form" onSubmit={form.handleSubmit(onSubmit)}>

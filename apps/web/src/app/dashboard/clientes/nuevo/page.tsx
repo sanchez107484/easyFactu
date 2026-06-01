@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { CustomerType, CreateCustomerInput, TaxRegime } from '@easyfactura/shared-types';
 import { customerFormSchema, CustomerFormData } from '@/lib/validators/customer.schema';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Upload } from 'lucide-react';
 import { useCreateCustomer, useCustomerByNif } from '@/hooks/use-customers';
 import { CustomerFormFields } from '@/components/clientes/CustomerFormFields';
 import { AgencySharedPoolImport } from '@/components/clientes/AgencySharedPoolImport';
@@ -101,6 +101,12 @@ export default function NuevoClientePage() {
           <span className="text-sm font-medium">Nuevo cliente</span>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/dashboard/importar/clientes">
+            <Button variant="outline" size="sm">
+              <Upload className="mr-1.5 h-3.5 w-3.5" />
+              Importar
+            </Button>
+          </Link>
           <Link href="/dashboard/clientes">
             <Button variant="outline" size="sm" disabled={createMutation.isPending}>
               Cancelar
