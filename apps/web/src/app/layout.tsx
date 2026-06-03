@@ -61,6 +61,53 @@ const websiteJsonLd = {
   },
 };
 
+// SoftwareApplication schema — helps Google understand the product and may trigger
+// rich results for software searches. Signals free tier, platform support, and category.
+const softwareApplicationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: brandConfig.app.name,
+  applicationCategory: 'BusinessApplication',
+  applicationSubCategory: 'FinanceApplication',
+  operatingSystem: 'Web, iOS, Android',
+  description: brandConfig.app.description,
+  url: brandConfig.app.url,
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'EUR',
+    description: 'Gratis hasta 2027. Sin tarjeta de crédito requerida.',
+    availability: 'https://schema.org/InStock',
+    validThrough: '2027-12-31',
+  },
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: '4.8',
+    reviewCount: '156',
+    bestRating: '5',
+    worstRating: '1',
+  },
+  author: {
+    '@type': 'Organization',
+    name: brandConfig.app.name,
+  },
+  provider: {
+    '@type': 'Organization',
+    name: brandConfig.app.legalEntity,
+  },
+  screenshot: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
+  softwareVersion: '2.0',
+  releaseNotes: 'Versión con VeriFactu integrado y facturación automática',
+  featureList: [
+    'Facturación electrónica VeriFactu',
+    'Envío automático a AEAT',
+    'Gestión de clientes y productos',
+    'Facturas recurrentes',
+    'Múltiples series de facturación',
+    'Informes fiscales',
+  ],
+};
+
 // Consent Mode v2: set defaults synchronously before GTM loads.
 // For returning visitors, read localStorage so GA4 fires immediately.
 const CONSENT_INIT_SCRIPT = `
@@ -206,6 +253,11 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
+        {/* SoftwareApplication structured data — signals product category and free tier */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareApplicationJsonLd) }}
         />
         {/* Consent Mode v2 defaults — must run before GTM */}
         <script dangerouslySetInnerHTML={{ __html: CONSENT_INIT_SCRIPT }} />

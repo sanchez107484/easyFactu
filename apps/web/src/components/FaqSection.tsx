@@ -50,6 +50,28 @@ function AccordionItem({ q, a }: FaqItem) {
   );
 }
 
+function FaqJsonLd({ faqs }: { faqs: FaqItem[] }) {
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.q,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.a,
+      },
+    })),
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+    />
+  );
+}
+
 export default function FaqSection({
   faqs,
   title = 'Preguntas frecuentes',
@@ -57,6 +79,7 @@ export default function FaqSection({
 }: FaqSectionProps) {
   return (
     <section className="border-t border-slate-100 bg-slate-50 py-16 md:py-20">
+      <FaqJsonLd faqs={faqs} />
       <div className="mx-auto max-w-3xl px-4">
         <div className="mb-8 text-center">
           <span className="mb-4 inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">

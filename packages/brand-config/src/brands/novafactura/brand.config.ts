@@ -34,9 +34,9 @@ export const novafacturaBrandConfig = {
     email: '/brand/novafactura/logo-email.png',
     favicon: '/brand/novafactura/favicon.ico',
     pwa: {
-      icon192: '/brand/novafactura/pwa-192x192.png',
-      icon512: '/brand/novafactura/pwa-512x512.png',
-      maskable: '/brand/novafactura/pwa-maskable-512x512.png',
+      icon192: '/brand/novafactura/logo-icon.png', // Fallback to logo-icon until PWA icons are created
+      icon512: '/brand/novafactura/logo-icon.png', // Fallback to logo-icon until PWA icons are created
+      maskable: '/brand/novafactura/logo-icon.png', // Fallback to logo-icon until PWA icons are created
     },
   },
   auth: {

@@ -93,6 +93,24 @@ function ArticleJsonLd({ post }: { post: SanityBlogPost }) {
     post.body as Array<{ _type: string; children?: Array<{ text?: string }> }>,
   );
 
+  // Build comprehensive author schema for E-E-A-T
+  const authorSchema = post.author
+    ? {
+        '@type': 'Person',
+        name: post.author.name,
+        url: `${brandConfig.app.url}/autor/luis-fernando`,
+        sameAs: ['https://www.linkedin.com/in/luis-fernando-s%C3%A1nchez-merino-524b4118a/'],
+        jobTitle: 'Fundador & CEO',
+        worksFor: {
+          '@type': 'Organization',
+          name: brandConfig.app.name,
+          url: brandConfig.app.url,
+        },
+        description:
+          'Emprendedor tecnológico especializado en software de facturación y cumplimiento fiscal para autónomos y PYMEs.',
+      }
+    : { '@type': 'Organization', name: brandConfig.app.name };
+
   const articleJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -103,13 +121,15 @@ function ArticleJsonLd({ post }: { post: SanityBlogPost }) {
     dateModified: post._updatedAt ?? post.publishedAt,
     wordCount,
     articleSection: post.categories?.[0]?.title ?? undefined,
-    author: post.author
-      ? { '@type': 'Person', name: post.author.name }
-      : { '@type': 'Organization', name: brandConfig.app.name },
+    author: authorSchema,
     publisher: {
       '@type': 'Organization',
       name: brandConfig.app.name,
       url: brandConfig.app.url,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${brandConfig.app.url}${brandConfig.logos.main}`,
+      },
     },
     image: post.featuredImageUrl
       ? {
@@ -235,7 +255,10 @@ export default async function BlogPostPage({ params }: PageProps) {
                 {/* Author + meta */}
                 <div className="mt-6 flex flex-wrap items-center gap-4 border-b pb-6">
                   {post.author && (
-                    <div className="flex items-center gap-2.5">
+                    <Link
+                      href="/autor/luis-fernando"
+                      className="flex items-center gap-2.5 transition-opacity hover:opacity-70"
+                    >
                       {post.author.imageUrl ? (
                         <Image
                           src={post.author.imageUrl}
@@ -251,8 +274,9 @@ export default async function BlogPostPage({ params }: PageProps) {
                       )}
                       <div>
                         <p className="text-sm font-semibold text-foreground">{post.author.name}</p>
+                        <p className="text-xs text-muted-foreground">Ver perfil</p>
                       </div>
-                    </div>
+                    </Link>
                   )}
                   <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground ml-auto">
                     <span className="flex items-center gap-1.5">
