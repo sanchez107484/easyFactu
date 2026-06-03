@@ -52,9 +52,10 @@ const TEAM_MEMBERS: TeamMember[] = [
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const member = TEAM_MEMBERS.find((m) => m.slug === params.slug);
+  const { slug } = await params;
+  const member = TEAM_MEMBERS.find((m) => m.slug === slug);
 
   if (!member) {
     return {
@@ -78,8 +79,9 @@ export async function generateMetadata({
   };
 }
 
-export default function AuthorPage({ params }: { params: { slug: string } }) {
-  const member = TEAM_MEMBERS.find((m) => m.slug === params.slug);
+export default async function AuthorPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const member = TEAM_MEMBERS.find((m) => m.slug === slug);
 
   if (!member) {
     notFound();
