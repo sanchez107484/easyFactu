@@ -67,7 +67,7 @@ import { FREQUENCY_LABELS, PAYMENT_METHOD_LABELS } from '@easyfactura/shared-con
 import { cn, formatCurrency, formatDate, resolveUrl } from '@/lib/utils';
 import { SectionLabel } from '@/components/common/section-label';
 import { DataRow } from '@/components/common/data-row';
-import { round2 } from '@/lib/math';
+import { round2, formatUnitPriceCurrency } from '@/lib/math';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -109,7 +109,8 @@ function buildRecurringPreviewInvoice(
   const lines = recurring.lines ?? [];
 
   const subtotal = round2(
-    lines.reduce((acc, l) => acc + round2(Number(l.quantity) * Number(l.unitPrice)), 0),
+    // No intermediate round2 — preserve full unitPrice precision (up to 4 decimals)
+    lines.reduce((acc, l) => acc + Number(l.quantity) * Number(l.unitPrice), 0),
   );
 
   const discountAmount = recurring.discountPercent
@@ -132,8 +133,9 @@ function buildRecurringPreviewInvoice(
     ? 0
     : round2(
         lines.reduce((acc, l) => {
-          const base = round2(Number(l.quantity) * Number(l.unitPrice));
-          return acc + round2(base * discFactor * (Number(l.taxRate) / 100));
+          // No intermediate round2 — preserve full unitPrice precision
+          const base = Number(l.quantity) * Number(l.unitPrice);
+          return acc + base * discFactor * (Number(l.taxRate) / 100);
         }, 0),
       );
 
@@ -185,8 +187,17 @@ function buildRecurringPreviewInvoice(
     lines: lines.map((l, i) => {
       const qty = Number(l.quantity);
       const price = Number(l.unitPrice);
-      const sub = round2(qty * price);
-      const tax = round2(sub * (Number(l.taxRate) / 100));
+      const lineDiscount = l.discountPercent ? Number(l.discountPercent) : 0;
+      // No intermediate round2 — keep full precision so lineTotal is derived from
+      // unitPrice's 4-decimal precision, matching invoice-calculation.service.ts.
+      // e.g. 28.9256 × 1.21 = 34.999976 → round2 → 35.00 (not 35.01)
+      const gross = qty * price;
+      const precise = lineDiscount > 0 ? gross * (1 - lineDiscount / 100) : gross;
+      const taxRate = Number(l.taxRate);
+      const isLineReagyp = isReagyp; // inherit invoice-level REAGYP flag
+      const taxAmount = isLineReagyp ? 0 : round2(precise * (taxRate / 100));
+      const lineTotal = round2(precise * (isLineReagyp ? 1 : 1 + taxRate / 100));
+      const subtotal = round2(precise);
       return {
         id: `preview-${i}`,
         tenantId: recurring.tenantId,
@@ -195,10 +206,11 @@ function buildRecurringPreviewInvoice(
         description: l.description,
         quantity: qty,
         unitPrice: price,
-        subtotal: sub,
-        taxRate: Number(l.taxRate),
-        taxAmount: tax,
-        lineTotal: round2(sub + tax),
+        subtotal,
+        discountPercent: lineDiscount > 0 ? lineDiscount : null,
+        taxRate,
+        taxAmount,
+        lineTotal,
         hideQty: l.hideQty,
         sortOrder: i,
         createdAt: today,
@@ -554,14 +566,19 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
                         </th>
                       )}
                       <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
-                        Subtotal
+                        Total
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {lines.map((line, i) => {
-                      const sub = round2(Number(line.quantity) * Number(line.unitPrice));
                       const showDiscountCol = lines.some((l) => Number(l.discountPercent) > 0);
+                      const lineDisc = Number(line.discountPercent ?? 0);
+                      // Full precision — no intermediate round2, same as backend.
+                      const gross = Number(line.quantity) * Number(line.unitPrice);
+                      const precise = lineDisc > 0 ? gross * (1 - lineDisc / 100) : gross;
+                      const lineTaxRate = Number(line.taxRate ?? 0);
+                      const lineTotal = round2(precise * (isReagyp ? 1 : 1 + lineTaxRate / 100));
                       return (
                         <tr key={i}>
                           <td className="py-2.5 pr-4">{line.description}</td>
@@ -575,7 +592,7 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
                             </td>
                           )}
                           <td className="py-2.5 text-right tabular-nums">
-                            {formatCurrency(Number(line.unitPrice))}
+                            {formatUnitPriceCurrency(line.unitPrice)}
                           </td>
                           {!isReagyp && (
                             <td className="py-2.5 text-right tabular-nums text-muted-foreground">
@@ -590,7 +607,7 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
                             </td>
                           )}
                           <td className="py-2.5 text-right tabular-nums font-medium">
-                            {formatCurrency(sub)}
+                            {formatCurrency(lineTotal)}
                           </td>
                         </tr>
                       );

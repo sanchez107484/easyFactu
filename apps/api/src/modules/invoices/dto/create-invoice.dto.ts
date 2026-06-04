@@ -57,8 +57,8 @@ export class CreateInvoiceLineDto {
   @Min(0.0001, { message: 'La cantidad debe ser mayor a 0' })
   quantity!: number;
 
-  @ApiProperty({ description: 'Precio unitario (hasta 2 decimales)', minimum: 0 })
-  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El precio admite hasta 2 decimales' })
+  @ApiProperty({ description: 'Precio unitario (hasta 4 decimales)', minimum: 0 })
+  @IsNumber({ maxDecimalPlaces: 4 }, { message: 'El precio admite hasta 4 decimales' })
   @Min(0, { message: 'El precio debe ser mayor o igual a 0' })
   unitPrice!: number;
 

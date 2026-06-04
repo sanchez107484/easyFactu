@@ -25,6 +25,11 @@ export const productApi = {
   update: (id: string, data: UpdateProductInput): Promise<Product> =>
     apiClient.put<ApiResponse<Product>>(`/products/${id}`, data).then(unwrapApiResponse),
 
-  remove: (id: string): Promise<void> =>
-    apiClient.delete<ApiResponse<void>>(`/products/${id}`).then(unwrapApiResponse),
+  remove: (id: string): Promise<{ deleted: true }> =>
+    apiClient.delete<ApiResponse<{ deleted: true }>>(`/products/${id}`).then(unwrapApiResponse),
+
+  bulkRemove: (ids: string[]): Promise<{ deleted: number }> =>
+    apiClient
+      .delete<ApiResponse<{ deleted: number }>>('/products/bulk', { data: { ids } })
+      .then(unwrapApiResponse),
 };

@@ -11,8 +11,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Trash2, Copy, ChevronUp, ChevronDown, BookOpen, Plus, Sparkles } from 'lucide-react';
-import { cn, formatCurrency } from '@/lib/utils';
-import { round2 } from '@/lib/math';
+import { cn } from '@/lib/utils';
+import { round2, round4, formatUnitPrice } from '@/lib/math';
 import { useProducts } from '@/hooks/use-products';
 import { Product, ProductType } from '@easyfactura/shared-types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -24,7 +24,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Package, Wrench } from 'lucide-react';
 import { LineMode, LINE_MODE_META, ExtendedLineData } from '@/lib/invoice-line-types';
 import { QuickCreateProductModal } from '@/components/facturas/QuickCreateProductModal';
@@ -212,6 +212,7 @@ export function InvoiceLineItem({
 }: InvoiceLineItemProps) {
   const line: ExtendedLineData = useWatch({ control: form.control, name: `lines.${index}` }) ?? {};
   const mode: LineMode = line._mode ?? 'custom';
+  const priceMode = (line._priceMode ?? 'unit') as 'unit' | 'total';
 
   // Local raw string for discount input — lets the user type "10.5" or "10,5"
   // without React clobbering the intermediate value on each keystroke.
@@ -220,15 +221,36 @@ export function InvoiceLineItem({
     return v ? String(v) : '';
   });
 
+  // Local raw string for unit price — shows up to 4 decimal places to the user while
+  // the form state stores up to 4 decimal places for back-calculation precision.
+  const unitPriceInputRef = useRef<HTMLInputElement>(null);
+  // True only when the user has actively typed in the unit price input during this focus session.
+  // Prevents onBlur from overwriting form state with the rounded display value on load/navigation.
+  const unitPriceIsEditedRef = useRef(false);
+
+  const [unitPriceRaw, setUnitPriceRaw] = useState<string>(() => {
+    const v = line.unitPrice;
+    return v && v > 0 ? formatUnitPrice(v) : '';
+  });
+
+  // Local raw string for total input — only active when priceMode === 'total'.
+  const [totalRaw, setTotalRaw] = useState<string>('');
+
   // -- Calculations --------------------------------------------------
   const qty = mode === 'service' ? 1 : (line.quantity ?? 0);
   const price = line.unitPrice ?? 0;
   const tax = line.taxRate ?? 21;
   const discount = line.discountPercent ?? 0;
-  const grossSubtotal = round2(qty * price);
-  const subtotal = discount > 0 ? round2(grossSubtotal * (1 - discount / 100)) : grossSubtotal;
+  // Keep full floating-point precision in intermediate steps so that lineTotal is
+  // derived from unitPrice's 4-decimal precision rather than a rounded subtotal.
+  // e.g. unitPrice=28.9256 → precise=28.9256 → ×1.21 = 34.999976 → round2 = 35.00
+  // (rounding at the grossSubtotal step would give 28.93 → ×1.21 = 35.0053 → 35.01)
+  const precisePre = qty * price;
+  const precise = discount > 0 ? precisePre * (1 - discount / 100) : precisePre;
+  // `subtotal` is only used for the display label below the line; always 2 dec.
+  const subtotal = round2(precise);
   // In REAGYP, IVA does not apply per line — compensation is at invoice level
-  const lineTotal = isReagyp ? subtotal : round2(subtotal * (1 + tax / 100));
+  const lineTotal = isReagyp ? subtotal : round2(precise * (1 + tax / 100));
 
   // -- Mode change ---------------------------------------------------
   const handleModeChange = (newMode: LineMode) => {
@@ -251,6 +273,35 @@ export function InvoiceLineItem({
       form.setValue(`lines.${index}.productId`, undefined);
     }
   };
+
+  // -- Price mode toggle (dead code guard — no button, kept for external use) ---------------
+  // When qty / discount / tax change while in total mode, keep unitPrice in sync
+  useEffect(() => {
+    if (priceMode !== 'total') return;
+    const t = parseFloat((totalRaw ?? '').replace(',', '.'));
+    if (isNaN(t) || t <= 0) return;
+    const divisor =
+      (mode === 'service' ? 1 : qty || 1) * (1 - discount / 100) * (1 + (isReagyp ? 0 : tax) / 100);
+    if (divisor <= 0) return;
+    const backCalc = round4(t / divisor);
+    form.setValue(`lines.${index}.unitPrice`, backCalc, { shouldValidate: false });
+    setUnitPriceRaw(
+      round2(backCalc).toLocaleString('es-ES', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qty, discount, tax, isReagyp, priceMode, totalRaw, mode, index]);
+
+  // Sync unitPriceRaw display when unitPrice is set externally (e.g. catalog import or draft load).
+  // Skip when the user is actively typing inside the input.
+  useEffect(() => {
+    if (document.activeElement === unitPriceInputRef.current) return;
+    const v = line.unitPrice ?? 0;
+    setUnitPriceRaw(v > 0 ? formatUnitPrice(v) : '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [line.unitPrice]);
 
   // -- Errors -------------------------------------------------------
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -314,6 +365,12 @@ export function InvoiceLineItem({
               `lines.${index}._mode`,
               product.type === ProductType.PRODUCT ? 'product' : 'service',
             );
+            // Only lock to 'unit' mode when the catalog product has an actual price.
+            // If price is 0, keep the current mode so both unit-price and total inputs
+            // remain editable immediately without the user needing to switch modes.
+            if (Number(product.unitPrice) > 0) {
+              form.setValue(`lines.${index}._priceMode`, 'unit');
+            }
             if (product.type === ProductType.PRODUCT) {
               form.setValue(`lines.${index}._hideQty`, false);
             }
@@ -382,7 +439,7 @@ export function InvoiceLineItem({
         )}
 
         {/* Labels row */}
-        <div className="flex items-center gap-2 px-0.5">
+        <div className="flex items-center gap-2">
           {showQtyField && (
             <div className="w-[96px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
               Cantidad
@@ -400,8 +457,8 @@ export function InvoiceLineItem({
           <div className="w-[90px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
             Dto. %
           </div>
-          <div className="min-w-[72px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide text-right">
-            Total
+          <div className="w-[108px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide text-right">
+            {priceMode === 'total' ? 'Total c/IVA' : 'Total'}
           </div>
         </div>
 
@@ -468,15 +525,58 @@ export function InvoiceLineItem({
             <span className="text-muted-foreground text-sm select-none">×</span>
           )}
 
-          {/* Unit price */}
+          {/* Unit price — text input showing 2 decimals; internally stores up to 4 decimals
+              for precision when back-calculating from total. Entering > 0 switches to 'unit'
+              mode; clearing to 0 returns to 'total' mode. */}
           <div className="relative flex-1 min-w-[100px]">
             <Input
-              type="number"
-              step="0.01"
-              min="0"
+              ref={unitPriceInputRef}
+              type="text"
+              inputMode="decimal"
               placeholder="0,00"
-              className="text-sm h-9 pr-8"
-              {...form.register(`lines.${index}.unitPrice`, { valueAsNumber: true })}
+              className={cn('text-sm h-9 pr-8', priceMode === 'total' && 'text-muted-foreground')}
+              value={unitPriceRaw}
+              onChange={(e) => {
+                const raw = e.target.value;
+                const normalized = raw.replace(',', '.');
+                unitPriceIsEditedRef.current = true;
+                setUnitPriceRaw(raw);
+                const num = parseFloat(normalized);
+                if (!isNaN(num) && num >= 0) {
+                  form.setValue(`lines.${index}.unitPrice`, num, { shouldValidate: false });
+                  if (num > 0 && priceMode === 'total') {
+                    form.setValue(`lines.${index}._priceMode`, 'unit');
+                  }
+                }
+              }}
+              onBlur={() => {
+                const wasEdited = unitPriceIsEditedRef.current;
+                unitPriceIsEditedRef.current = false;
+
+                if (!wasEdited) {
+                  // User didn't type anything — normalize display only, preserve form state precision.
+                  const formValue = form.getValues(`lines.${index}.unitPrice`) as number;
+                  if (formValue > 0) setUnitPriceRaw(formatUnitPrice(formValue));
+                  return;
+                }
+
+                const normalized = unitPriceRaw.replace(',', '.');
+                const num = parseFloat(normalized);
+                if (isNaN(num) || num <= 0) {
+                  setUnitPriceRaw('');
+                  form.setValue(`lines.${index}.unitPrice`, 0, { shouldValidate: false });
+                  if (priceMode === 'unit') {
+                    form.setValue(`lines.${index}._priceMode`, 'total');
+                    setTotalRaw('');
+                  }
+                } else {
+                  // User typed a value — normalise display preserving up to 4 decimal
+                  // places so the stored precision is visible and the live total stays
+                  // exact (e.g. 28,9256 → lineTotal shows 35,00, not 35,01).
+                  setUnitPriceRaw(formatUnitPrice(num));
+                  form.setValue(`lines.${index}.unitPrice`, num, { shouldValidate: false });
+                }
+              }}
             />
             <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground select-none">
               €
@@ -552,9 +652,66 @@ export function InvoiceLineItem({
             </span>
           </div>
 
-          {/* Total */}
-          <div className="text-sm font-semibold tabular-nums text-right min-w-[72px]">
-            {lineTotal > 0 ? formatCurrency(lineTotal) : '—'}
+          {/* Total — always an Input; read-only (calculated) in unit mode, editable in total mode */}
+          <div className="relative w-[108px]">
+            {priceMode === 'unit' ? (
+              <Input
+                type="text"
+                readOnly
+                tabIndex={-1}
+                className="text-sm h-9 pr-6 text-right font-semibold bg-transparent border-dashed cursor-default focus-visible:ring-0 focus-visible:ring-offset-0"
+                value={
+                  lineTotal > 0
+                    ? lineTotal.toLocaleString('es-ES', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })
+                    : ''
+                }
+              />
+            ) : (
+              <>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  className="text-sm h-9 pr-6 text-right font-semibold"
+                  value={totalRaw}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const normalized = raw.replace(',', '.');
+                    setTotalRaw(raw);
+                    const t = parseFloat(normalized);
+                    if (!isNaN(t) && t >= 0) {
+                      const divisor =
+                        (mode === 'service' ? 1 : qty || 1) *
+                        (1 - discount / 100) *
+                        (1 + (isReagyp ? 0 : tax) / 100);
+                      if (divisor > 0) {
+                        const backCalc = round4(t / divisor);
+                        form.setValue(`lines.${index}.unitPrice`, backCalc, {
+                          shouldValidate: false,
+                        });
+                        setUnitPriceRaw(formatUnitPrice(backCalc));
+                      }
+                    }
+                  }}
+                  onBlur={() => {
+                    const normalized = (totalRaw ?? '').replace(',', '.');
+                    const num = parseFloat(normalized);
+                    if (isNaN(num) || num < 0) {
+                      setTotalRaw('');
+                      form.setValue(`lines.${index}.unitPrice`, 0, { shouldValidate: false });
+                    } else {
+                      setTotalRaw(String(round2(num)));
+                    }
+                  }}
+                />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground select-none">
+                  €
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>

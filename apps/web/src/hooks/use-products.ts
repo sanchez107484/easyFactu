@@ -92,3 +92,20 @@ export function useDeleteProduct() {
     },
   });
 }
+
+export function useBulkDeleteProducts() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: productApi.bulkRemove,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['products', 'list'] });
+      toast.success(
+        `${data.deleted} producto${data.deleted !== 1 ? 's' : ''} eliminado${data.deleted !== 1 ? 's' : ''} correctamente`,
+      );
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}

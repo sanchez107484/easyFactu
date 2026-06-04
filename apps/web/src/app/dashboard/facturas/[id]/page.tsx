@@ -274,6 +274,21 @@ export default function FacturaDetailPage() {
         }
       : baseTemplate;
 
+  // In the preview, IRPF is always shown when the invoice has irpfPercent configured —
+  // the template's showIrpf only controls the final PDF output.
+  const previewTemplate = template
+    ? {
+        ...template,
+        layout: {
+          ...template.layout,
+          totals: {
+            ...template.layout.totals,
+            showIrpf: true,
+          },
+        },
+      }
+    : null;
+
   const paymentDetails = invoice.paymentDetails as PaymentDetails | undefined;
   const activePaymentMethod = invoice.paymentMethod ?? null;
 
@@ -597,7 +612,7 @@ export default function FacturaDetailPage() {
         <div className="w-[40%] flex flex-col overflow-hidden">
           <LiveInvoicePreview
             invoice={invoice}
-            template={template ?? null}
+            template={previewTemplate}
             tenant={(() => {
               const src = tenantData ?? currentTenant;
               return src ? ({ ...src, logoUrl: resolveUrl(src.logoUrl) ?? null } as Tenant) : null;

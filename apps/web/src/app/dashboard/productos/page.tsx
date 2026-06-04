@@ -19,6 +19,7 @@ import {
   AlertCircle,
   X,
   Upload,
+  CheckSquare,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -37,7 +38,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useProducts, useDeleteProduct, usePrefetchProduct } from '@/hooks/use-products';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  useProducts,
+  useDeleteProduct,
+  useBulkDeleteProducts,
+  usePrefetchProduct,
+} from '@/hooks/use-products';
 import { useSortTable } from '@/hooks/use-sort-table';
 import { SortableHeader } from '@/components/common/sortable-header';
 import { EmptyState } from '@/components/common/empty-state';
@@ -129,16 +136,20 @@ export default function ProductosPage() {
   const [page, setPage] = useState(1);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteName, setDeleteName] = useState<string>('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
 
   const { sortKey, sortDir, handleSort } = useSortTable('name', 'asc');
 
   useEffect(() => {
     setPage(1);
+    setSelectedIds(new Set());
   }, [search, typeFilter, sortKey, sortDir]);
 
   const { data, isLoading, error, refetch } = useProducts({
     search: search || undefined,
     type: typeFilter !== 'ALL' ? (typeFilter as ProductType) : undefined,
+    isActive: true,
     sortBy: sortKey,
     sortOrder: sortDir,
     page,
@@ -146,6 +157,7 @@ export default function ProductosPage() {
   });
 
   const deleteMutation = useDeleteProduct();
+  const bulkDeleteMutation = useBulkDeleteProducts();
   const prefetchProduct = usePrefetchProduct();
 
   const handleDeleteClick = (product: Product) => {
@@ -158,6 +170,29 @@ export default function ProductosPage() {
     await deleteMutation.mutateAsync(deleteId);
     setDeleteId(null);
     setDeleteName('');
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.size === products.length && products.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(products.map((p) => p.id)));
+    }
+  };
+
+  const handleBulkDeleteConfirm = async () => {
+    await bulkDeleteMutation.mutateAsync(Array.from(selectedIds));
+    setSelectedIds(new Set());
+    setShowBulkDeleteDialog(false);
   };
 
   const products = data?.data ?? [];
@@ -217,6 +252,35 @@ export default function ProductosPage() {
       </div>
 
       <div className="space-y-3">
+        {/* Bulk action bar */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5">
+            <span className="text-sm font-medium text-primary">
+              {selectedIds.size} elemento{selectedIds.size !== 1 ? 's' : ''} seleccionado
+              {selectedIds.size !== 1 ? 's' : ''}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-muted-foreground"
+                onClick={() => setSelectedIds(new Set())}
+              >
+                <X className="mr-1.5 h-3.5 w-3.5" />
+                Deseleccionar todo
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-8"
+                onClick={() => setShowBulkDeleteDialog(true)}
+              >
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                Eliminar seleccionados ({selectedIds.size})
+              </Button>
+            </div>
+          </div>
+        )}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -304,6 +368,14 @@ export default function ProductosPage() {
                 <table className="w-full">
                   <thead className="border-b bg-muted/40">
                     <tr>
+                      <th className="px-4 py-3 w-10">
+                        <Checkbox
+                          checked={products.length > 0 && selectedIds.size === products.length}
+                          onCheckedChange={handleSelectAll}
+                          aria-label="Seleccionar todos"
+                          className="translate-y-[1px]"
+                        />
+                      </th>
                       <SortableHeader
                         label="Nombre"
                         sortKey="name"
@@ -354,13 +426,25 @@ export default function ProductosPage() {
                   <tbody className="divide-y">
                     {products.map((product) => {
                       const pvp = product.unitPrice * (1 + product.taxRate / 100);
+                      const isSelected = selectedIds.has(product.id);
                       return (
                         <tr
                           key={product.id}
-                          className="group hover:bg-muted/30 transition-colors"
+                          className={cn(
+                            'group hover:bg-muted/30 transition-colors',
+                            isSelected && 'bg-primary/5',
+                          )}
                           onMouseEnter={() => prefetchProduct(product.id)}
                           onFocus={() => prefetchProduct(product.id)}
                         >
+                          <td className="px-4 py-3 w-10">
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => handleToggleSelect(product.id)}
+                              aria-label={`Seleccionar ${product.name}`}
+                              className="translate-y-[1px]"
+                            />
+                          </td>
                           <td className="px-6 py-3">
                             <div className="min-w-0">
                               <Link
@@ -488,6 +572,33 @@ export default function ProductosPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleteMutation.isPending ? 'Eliminando...' : 'Si, eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Eliminar {selectedIds.size} producto{selectedIds.size !== 1 ? 's' : ''}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminarán{' '}
+              <strong>
+                {selectedIds.size} elemento{selectedIds.size !== 1 ? 's' : ''}
+              </strong>{' '}
+              permanentemente. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDeleteConfirm}
+              disabled={bulkDeleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDeleteMutation.isPending ? 'Eliminando...' : `Sí, eliminar ${selectedIds.size}`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

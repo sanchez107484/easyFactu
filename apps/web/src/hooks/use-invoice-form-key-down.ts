@@ -1,6 +1,16 @@
 import { useCallback } from 'react';
 
 /**
+ * Focuses an element without triggering the browser's default scrollIntoView
+ * (which can scroll multiple ancestor scroll containers at once and misalign the
+ * layout), then manually scrolls the minimum amount needed to make it visible.
+ */
+function focusElement(el: HTMLElement) {
+  el.focus({ preventScroll: true });
+  el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
+/**
  * Returns an onKeyDown handler for invoice/quote forms with line items.
  *
  * Navigation flow when pressing Enter:
@@ -32,7 +42,8 @@ export function useInvoiceFormKeyDown() {
     const qtyAttr = (target as HTMLElement).dataset.invoiceQty;
     if (qtyAttr !== undefined) {
       const n = parseInt(qtyAttr, 10);
-      form.querySelector<HTMLElement>(`input[name="lines.${n}.unitPrice"]`)?.focus();
+      const el = form.querySelector<HTMLElement>(`input[name="lines.${n}.unitPrice"]`);
+      if (el) focusElement(el);
       return;
     }
 
@@ -42,24 +53,28 @@ export function useInvoiceFormKeyDown() {
       const n = parseInt(priceMatch[1], 10);
       const nextQty = form.querySelector<HTMLElement>(`input[data-invoice-qty="${n + 1}"]`);
       if (nextQty) {
-        nextQty.focus();
+        focusElement(nextQty);
         return;
       }
       const nextPrice = form.querySelector<HTMLElement>(`input[name="lines.${n + 1}.unitPrice"]`);
       if (nextPrice) {
-        nextPrice.focus();
+        focusElement(nextPrice);
         return;
       }
-      document.getElementById('discountPercent')?.focus();
+      const discountEl = document.getElementById('discountPercent');
+      if (discountEl) focusElement(discountEl);
       return;
     }
 
-    // Default: move to next focusable field in DOM order
-    const focusableSelectors = 'input:not([disabled]), select:not([disabled])';
-    const focusable = Array.from(form.querySelectorAll<HTMLElement>(focusableSelectors));
+    // Default: move to next truly interactive field in DOM order.
+    // Exclude readOnly inputs and tabIndex=-1 elements (e.g. computed display fields).
+    const focusableSelectors = 'input:not([disabled]):not([readonly]), select:not([disabled])';
+    const focusable = Array.from(form.querySelectorAll<HTMLElement>(focusableSelectors)).filter(
+      (el) => (el as HTMLInputElement).tabIndex !== -1,
+    );
     const idx = focusable.indexOf(target);
     if (idx >= 0 && idx < focusable.length - 1) {
-      focusable[idx + 1].focus();
+      focusElement(focusable[idx + 1]);
     }
   }, []);
 }

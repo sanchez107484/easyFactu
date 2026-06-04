@@ -98,7 +98,10 @@ async function bootstrap() {
             if (err.constraints) {
               for (const [key, defaultMsg] of Object.entries(err.constraints)) {
                 const template = CONSTRAINT_ES[key];
-                msgs.push(template ? template.replace(/\$property/g, prop) : defaultMsg);
+                // Prefer the decorator's custom message when it looks like a Spanish/custom
+                // message (no English 'must'/'should' pattern); fall back to the global template.
+                const isCustomMsg = !defaultMsg.includes(' must ') && !defaultMsg.includes(' should ');
+                msgs.push(isCustomMsg ? defaultMsg : template ? template.replace(/\$property/g, prop) : defaultMsg);
               }
             }
             if (err.children?.length) {

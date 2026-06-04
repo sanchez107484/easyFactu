@@ -1,5 +1,6 @@
 import { InvoiceLayout, Invoice } from '@easyfactura/shared-types';
 import { cn, formatCurrency } from '@/lib/utils';
+import { formatUnitPriceCurrency } from '@/lib/math';
 
 interface ItemsTableBlockProps {
   layout: InvoiceLayout;
@@ -24,9 +25,12 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
   const isReagyp = invoice.compensacionPercent != null;
   const showTaxColumn = !isReagyp && (layout.itemsTable.showTaxColumn ?? true);
   const showLineTotal = layout.itemsTable.showLineTotal ?? true;
-  // Respect the user's toggle, but never hide real discounts that exist in the data.
+  // Respect the user's toggle, but never hide real discounts that exist in the data,
+  // UNLESS the layout explicitly forces showDiscount=false (e.g. simplifyTable).
   const hasDiscountData = lines.some((l) => (l.discountPercent ?? 0) > 0);
-  const showDiscount = layout.itemsTable.showDiscount || hasDiscountData;
+  // Show the Dto column only when actual discount data exists.
+  // layout.itemsTable.showDiscount===false is the hard override (simplifyTable).
+  const showDiscount = layout.itemsTable.showDiscount === false ? false : hasDiscountData;
   const { tableHeader, primary } = layout.colors;
 
   const isGrid = style === 'grid';
@@ -83,7 +87,9 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
                 </td>
               )}
               {showUnitPrice && (
-                <td className={cn(tdClass, 'text-right')}>{formatCurrency(line.unitPrice)}</td>
+                <td className={cn(tdClass, 'text-right')}>
+                  {formatUnitPriceCurrency(line.unitPrice)}
+                </td>
               )}
               {showTaxColumn && <td className={cn(tdClass, 'text-right')}>{line.taxRate}%</td>}
               {showDiscount && (

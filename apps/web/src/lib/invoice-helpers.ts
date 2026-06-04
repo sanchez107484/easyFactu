@@ -63,11 +63,10 @@ export function buildPreviewInvoice(
 
   const subtotal = round2(
     lines.reduce((acc, l) => {
-      const grossSubtotal = round2((l.quantity ?? 0) * (l.unitPrice ?? 0));
+      // No intermediate round2 — preserve full unitPrice precision (up to 4 decimals)
+      const grossSubtotal = (l.quantity ?? 0) * (l.unitPrice ?? 0);
       const lineDiscount = l.discountPercent ?? 0;
-      return (
-        acc + (lineDiscount > 0 ? round2(grossSubtotal * (1 - lineDiscount / 100)) : grossSubtotal)
-      );
+      return acc + (lineDiscount > 0 ? grossSubtotal * (1 - lineDiscount / 100) : grossSubtotal);
     }, 0),
   );
 
@@ -85,11 +84,12 @@ export function buildPreviewInvoice(
     ? 0
     : round2(
         lines.reduce((acc, l) => {
-          const grossSubtotal = round2((l.quantity ?? 0) * (l.unitPrice ?? 0));
+          // No intermediate round2 — preserve full unitPrice precision
+          const grossSubtotal = (l.quantity ?? 0) * (l.unitPrice ?? 0);
           const lineDiscount = l.discountPercent ?? 0;
           const lineNet =
-            lineDiscount > 0 ? round2(grossSubtotal * (1 - lineDiscount / 100)) : grossSubtotal;
-          return acc + round2(lineNet * discFactor * ((l.taxRate ?? 0) / 100));
+            lineDiscount > 0 ? grossSubtotal * (1 - lineDiscount / 100) : grossSubtotal;
+          return acc + lineNet * discFactor * ((l.taxRate ?? 0) / 100);
         }, 0),
       );
 
@@ -115,10 +115,11 @@ export function buildPreviewInvoice(
     // - custom: hide only when _hideQty=true (user left quantity blank)
     const hideQty = l._mode === 'service' || (l._mode === 'custom' && l._hideQty === true);
     const effectiveQty = l.quantity && l.quantity > 0 ? l.quantity : 1;
-    const grossSubtotal = round2(effectiveQty * (l.unitPrice ?? 0));
+    // No intermediate round2 — preserve full unitPrice precision for accurate lineTotal
+    const grossSubtotal = effectiveQty * (l.unitPrice ?? 0);
     const lineDiscount = l.discountPercent ?? 0;
     const lineSubtotal =
-      lineDiscount > 0 ? round2(grossSubtotal * (1 - lineDiscount / 100)) : grossSubtotal;
+      lineDiscount > 0 ? grossSubtotal * (1 - lineDiscount / 100) : grossSubtotal;
     return {
       id: `preview-${i}`,
       tenantId: '',

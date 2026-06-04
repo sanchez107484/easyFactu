@@ -293,6 +293,15 @@ function InvoiceForm({
             showLineTotal: simplifyTable
               ? false
               : (effectiveTemplate.layout.itemsTable.showLineTotal ?? true),
+            showDiscount: simplifyTable
+              ? false
+              : (effectiveTemplate.layout.itemsTable.showDiscount ?? false),
+          },
+          // In the live preview, IRPF is always shown if the user has set a value —
+          // the template's showIrpf only controls the final PDF output.
+          totals: {
+            ...effectiveTemplate.layout.totals,
+            showIrpf: true,
           },
           footer: {
             ...effectiveTemplate.layout.footer,
@@ -344,7 +353,14 @@ function InvoiceForm({
     try {
       const layoutOverride = {
         ...(simplifyTable
-          ? { itemsTable: { showUnitPrice: false, showTaxColumn: false, showLineTotal: false } }
+          ? {
+              itemsTable: {
+                showUnitPrice: false,
+                showTaxColumn: false,
+                showLineTotal: false,
+                showDiscount: false,
+              },
+            }
           : {}),
         footer: { showVerifactuQr: showQr },
       };
@@ -390,7 +406,14 @@ function InvoiceForm({
       try {
         const layoutOverride = {
           ...(simplifyTable
-            ? { itemsTable: { showUnitPrice: false, showTaxColumn: false, showLineTotal: false } }
+            ? {
+                itemsTable: {
+                  showUnitPrice: false,
+                  showTaxColumn: false,
+                  showLineTotal: false,
+                  showDiscount: false,
+                },
+              }
             : {}),
           footer: { showVerifactuQr: showQr },
         };
@@ -419,7 +442,14 @@ function InvoiceForm({
     try {
       const layoutOverride = {
         ...(simplifyTable
-          ? { itemsTable: { showUnitPrice: false, showTaxColumn: false, showLineTotal: false } }
+          ? {
+              itemsTable: {
+                showUnitPrice: false,
+                showTaxColumn: false,
+                showLineTotal: false,
+                showDiscount: false,
+              },
+            }
           : {}),
         footer: { showVerifactuQr: showQr },
       };
@@ -843,6 +873,7 @@ export default function NuevaFacturaPage() {
           productId: l.productId ?? undefined,
           _mode: l.hideQty ? 'service' : l.productId ? 'product' : 'custom',
           _hideQty: l.hideQty ?? false,
+          _priceMode: 'unit',
         })),
       }
     : {

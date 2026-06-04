@@ -31,6 +31,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { QueryProductDto } from './dto/query-product.dto';
 import { ConfirmImportDto } from './dto/confirm-import.dto';
+import { BulkDeleteProductDto } from './dto/bulk-delete-product.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 
@@ -107,10 +108,17 @@ export class ProductController {
     return this.productService.update(tenantId, id, dto);
   }
 
+  @Delete('bulk')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Eliminar múltiples productos' })
+  @ApiOkResponse({ description: 'Número de productos eliminados' })
+  bulkRemove(@CurrentTenant() tenantId: string, @Body() dto: BulkDeleteProductDto) {
+    return this.productService.bulkRemove(tenantId, dto.ids);
+  }
+
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Eliminar producto (soft delete)' })
-  @ApiOkResponse({ description: 'Producto desactivado correctamente' })
+  @ApiOperation({ summary: 'Eliminar producto' })
+  @ApiOkResponse({ description: 'Producto eliminado correctamente' })
   remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.productService.remove(tenantId, id);
   }

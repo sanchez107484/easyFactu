@@ -149,9 +149,16 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
       : baseLayout;
   // Quotes are not official confirmed invoices — suppress the VeriFactu QR entirely.
   const isQuote = invoice.invoiceType === 'quote';
-  const effectiveLayout: InvoiceLayout = isQuote
-    ? { ...layout, footer: { ...layout.footer, showVerifactuQr: false } }
-    : layout;
+  // IRPF is a fiscal obligation — always show it in the PDF when irpfPercent is configured,
+  // regardless of the template's showIrpf toggle (which is only meaningful for preview aesthetics).
+  const effectiveLayout: InvoiceLayout = {
+    ...layout,
+    totals: { ...layout.totals, showIrpf: true },
+    footer: {
+      ...layout.footer,
+      ...(isQuote ? { showVerifactuQr: false } : {}),
+    },
+  };
   const { page, typography, colors } = effectiveLayout;
   const fontFamily = FONT_FAMILY_MAP[typography.fontFamily] ?? FONT_FAMILY_MAP['helvetica'];
   const paymentDetails = invoice.paymentDetails as PaymentDetails | undefined;
@@ -206,7 +213,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
         }}
       >
         {/* 1 — Header: sender + customer */}
-        <HeaderBlock layout={layout} invoice={invoice} tenant={tenant} />
+        <HeaderBlock layout={effectiveLayout} invoice={invoice} tenant={tenant} />
 
         <hr
           style={{
@@ -284,11 +291,11 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
         </div>
 
         {/* 3 — Items table */}
-        <ItemsTableBlock layout={layout} invoice={invoice} />
+        <ItemsTableBlock layout={effectiveLayout} invoice={invoice} />
 
         {/* 4 — Totals */}
         <div style={{ marginTop: '16px' }}>
-          <TotalsBlock layout={layout} invoice={invoice} />
+          <TotalsBlock layout={effectiveLayout} invoice={invoice} />
         </div>
 
         {/* 5 — Payment method */}

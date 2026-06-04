@@ -4,6 +4,7 @@ import { SectionLabel } from '@/components/common/section-label';
 import { DataRow } from '@/components/common/data-row';
 import type { Invoice, InvoiceTemplate } from '@easyfactura/shared-types';
 import { formatCurrency, parseNum } from '@/lib/utils';
+import { formatUnitPriceCurrency } from '@/lib/math';
 
 interface InvoiceLinesCardProps {
   invoice: Invoice;
@@ -53,7 +54,7 @@ export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
             )}
             {showLineTotal && (
               <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
-                Subtotal
+                Total
               </th>
             )}
           </tr>
@@ -70,7 +71,9 @@ export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
                 </td>
               )}
               {showUnitPrice && (
-                <td className="py-2.5 text-right tabular-nums">{formatCurrency(line.unitPrice)}</td>
+                <td className="py-2.5 text-right tabular-nums">
+                  {formatUnitPriceCurrency(line.unitPrice)}
+                </td>
               )}
               {showTaxColumn && (
                 <td className="py-2.5 text-right tabular-nums text-muted-foreground">
@@ -86,7 +89,7 @@ export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
               )}
               {showLineTotal && (
                 <td className="py-2.5 text-right tabular-nums font-medium">
-                  {formatCurrency(line.subtotal)}
+                  {formatCurrency(line.lineTotal)}
                 </td>
               )}
             </tr>

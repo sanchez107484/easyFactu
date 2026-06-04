@@ -87,19 +87,33 @@ export class InvoiceCalculationService {
     const isReagyp = compensacionPercent != null && compensacionPercent > 0;
 
     // === STEP 1: Calculate per-line amounts ===
-    const calculatedLines: CalculatedLine[] = lines.map((line) => {
-      const grossSubtotal = this.round2(Number(line.quantity) * Number(line.unitPrice));
-      // Apply per-line discount (if any) before computing tax
+    // IMPORTANT: intermediate values are kept at full floating-point precision before
+    // the final round2 so that lineTotal is derived from the precise unitPrice (up to 4
+    // decimal places) rather than from an already-rounded subtotal. Without this, a total
+    // entered by the user (e.g. 35 €) back-calculates to unitPrice=28.9256, which rounds
+    // to subtotal=28.93, and then 28.93×1.21=35.0053 → lineTotal=35.01 (off by 1 cent).
+    const calculatedLinesRaw: (CalculatedLine & { _precise: number })[] = lines.map((line) => {
+      // Use full precision for intermediate multiplication — do NOT round2 here.
+      const grossSubtotal = Number(line.quantity) * Number(line.unitPrice);
+      // Apply per-line discount at full precision before computing tax.
       const lineDiscountAmount =
         line.discountPercent && Number(line.discountPercent) > 0
-          ? this.round2(grossSubtotal * (Number(line.discountPercent) / 100))
+          ? grossSubtotal * (Number(line.discountPercent) / 100)
           : 0;
-      const subtotal = this.round2(grossSubtotal - lineDiscountAmount);
-      // In REAGYP, lines have no IVA
-      const taxAmount = isReagyp ? 0 : this.round2(subtotal * (Number(line.taxRate) / 100));
-      const lineTotal = this.round2(subtotal + taxAmount);
-      return { subtotal, taxAmount, lineTotal };
+      const precise = grossSubtotal - lineDiscountAmount; // full precision, not stored in DB
+      // In REAGYP, lines have no IVA.
+      // taxAmount and lineTotal are derived from `precise` (not from round2(precise))
+      // so that e.g. 28.9256 × 0.21 = 6.074376 → round2 → 6.07, and
+      // 28.9256 × 1.21 = 34.999976 → round2 → 35.00 (not 35.01).
+      const taxAmount = isReagyp ? 0 : this.round2(precise * (Number(line.taxRate) / 100));
+      const lineTotal = this.round2(precise * (isReagyp ? 1 : 1 + Number(line.taxRate) / 100));
+      const subtotal = this.round2(precise); // rounded for DB storage (Decimal 12,2)
+      return { subtotal, taxAmount, lineTotal, _precise: precise };
     });
+    // Strip the internal _precise field before exposing the public CalculatedLine array.
+    const calculatedLines: CalculatedLine[] = calculatedLinesRaw.map(
+      ({ subtotal, taxAmount, lineTotal }) => ({ subtotal, taxAmount, lineTotal })
+    );
 
     // === STEP 2: Invoice subtotal (sum of all line subtotals) ===
     const subtotal = this.round2(calculatedLines.reduce((sum, line) => sum + line.subtotal, 0));
@@ -120,10 +134,13 @@ export class InvoiceCalculationService {
 
       lines.forEach((line, index) => {
         const rate = Number(line.taxRate);
-        const lineSubtotalAfterDiscount = this.round2(
-          calculatedLines[index]!.subtotal * discountRatio
-        );
-        const lineTaxAfterDiscount = this.round2(lineSubtotalAfterDiscount * (rate / 100));
+        const linePrecise = calculatedLinesRaw[index]!._precise;
+        // Keep full precision for the tax multiplication to avoid the double-rounding error.
+        // e.g. 28.9256 → round2 → 28.93 → ×0.21 → 6.0753 → round2 → 6.08 (WRONG)
+        //      28.9256 → ×0.21 → 6.074376 → round2 → 6.07 (CORRECT)
+        const lineBaseForTax = linePrecise * discountRatio; // full precision
+        const lineSubtotalAfterDiscount = this.round2(lineBaseForTax); // rounded for baseAmount display only
+        const lineTaxAfterDiscount = this.round2(lineBaseForTax * (rate / 100)); // use unrounded base
 
         const existing = taxMap.get(rate);
         if (existing) {

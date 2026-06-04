@@ -369,6 +369,15 @@ function RecurringInvoiceForm({
             showLineTotal: simplifyTable
               ? false
               : (defaultTemplate.layout.itemsTable.showLineTotal ?? true),
+            showDiscount: simplifyTable
+              ? false
+              : (defaultTemplate.layout.itemsTable.showDiscount ?? false),
+          },
+          // In the live preview, IRPF is always shown if the user has set a value —
+          // the template's showIrpf only controls the final PDF output.
+          totals: {
+            ...defaultTemplate.layout.totals,
+            showIrpf: true,
           },
           footer: {
             ...defaultTemplate.layout.footer,
@@ -428,7 +437,19 @@ function RecurringInvoiceForm({
           paymentDetails: paymentDetailsPayload ?? null,
           notes: data.notes ?? null,
           lines: mappedLines,
-          layoutOverride: { footer: { showVerifactuQr: showQr } },
+          layoutOverride: {
+            footer: { showVerifactuQr: showQr },
+            ...(simplifyTable
+              ? {
+                  itemsTable: {
+                    showUnitPrice: false,
+                    showTaxColumn: false,
+                    showLineTotal: false,
+                    showDiscount: false,
+                  },
+                }
+              : {}),
+          },
         },
       });
       router.push(`/dashboard/recurrentes/${editId}`);
@@ -448,7 +469,19 @@ function RecurringInvoiceForm({
         paymentDetails: paymentDetailsPayload,
         notes: data.notes || undefined,
         lines: mappedLines,
-        layoutOverride: { footer: { showVerifactuQr: showQr } },
+        layoutOverride: {
+          footer: { showVerifactuQr: showQr },
+          ...(simplifyTable
+            ? {
+                itemsTable: {
+                  showUnitPrice: false,
+                  showTaxColumn: false,
+                  showLineTotal: false,
+                  showDiscount: false,
+                },
+              }
+            : {}),
+        },
       });
       router.push('/dashboard/recurrentes');
     }
@@ -1047,6 +1080,7 @@ export default function NuevaRecurrentePage() {
           productId: l.productId ?? undefined,
           _mode: l.hideQty ? 'service' : l.productId ? 'product' : 'custom',
           _hideQty: l.hideQty ?? false,
+          _priceMode: 'unit',
         })),
       }
     : {

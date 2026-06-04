@@ -38,6 +38,8 @@ export const extendedLineSchema = z.object({
   _mode: z.enum(LINE_MODES).default('custom'),
   /** true when mode=custom and user has not entered a quantity (qty=1 but hidden in invoice) */
   _hideQty: z.boolean().default(true),
+  /** 'unit' = user enters Precio/ud (default); 'total' = user enters Total con IVA (unitPrice computed) */
+  _priceMode: z.enum(['unit', 'total']).default('unit'),
 });
 
 export type ExtendedLineData = z.infer<typeof extendedLineSchema>;
@@ -50,6 +52,7 @@ export const EMPTY_LINE: ExtendedLineData = {
   taxRate: 21,
   _mode: 'custom',
   _hideQty: true,
+  _priceMode: 'total',
 };
 
 // ==================== HELPERS ====================
@@ -60,8 +63,8 @@ export const EMPTY_LINE: ExtendedLineData = {
  */
 export function stripLineMetaFields(
   line: ExtendedLineData,
-): Omit<ExtendedLineData, '_mode' | '_hideQty'> & { hideQty: boolean } {
-  const { _mode, _hideQty, ...rest } = line;
+): Omit<ExtendedLineData, '_mode' | '_hideQty' | '_priceMode'> & { hideQty: boolean } {
+  const { _mode, _hideQty, _priceMode, ...rest } = line;
   const hideQty =
     _mode === 'service' || (_mode === 'custom' && (_hideQty === true || rest.quantity === 0));
   return {

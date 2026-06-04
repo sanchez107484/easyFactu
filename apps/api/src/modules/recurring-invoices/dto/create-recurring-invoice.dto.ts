@@ -42,7 +42,7 @@ export class CreateRecurringInvoiceLineDto {
   @Min(0.0001, { message: 'La cantidad debe ser mayor a 0' })
   quantity!: number;
 
-  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El precio admite hasta 2 decimales' })
+  @IsNumber({ maxDecimalPlaces: 4 }, { message: 'El precio admite hasta 4 decimales' })
   @Min(0, { message: 'El precio debe ser mayor o igual a 0' })
   unitPrice!: number;
 

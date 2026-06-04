@@ -730,6 +730,7 @@ export default function NuevoPresupuestoPage() {
             productId: l.productId ?? undefined,
             _mode: hideQty ? 'service' : l.productId ? 'product' : 'custom',
             _hideQty: hideQty,
+            _priceMode: 'unit',
           };
         }),
       }

@@ -4,7 +4,7 @@
 // The `renderer` object is injected at runtime via the `createInvoicePdfElement` factory.
 import { Invoice, InvoiceLayout, InvoiceTemplate, Tenant } from '@easyfactura/shared-types';
 import { formatIban } from '@easyfactura/shared-validators';
-import { formatCurrency } from '../../../common/utils/format';
+import { formatCurrency, formatUnitPrice } from '../../../common/utils/format';
 
 interface InvoicePdfDocumentProps {
   invoice: Invoice;
@@ -251,9 +251,10 @@ export function createInvoicePdfElement(
   const showUnitPrice = layout.itemsTable.showUnitPrice ?? true;
   const showTaxColumn = layout.itemsTable.showTaxColumn ?? true;
   const showLineTotal = layout.itemsTable.showLineTotal ?? true;
-  // Respect the user's toggle, but never hide real discounts present in the data.
+  // Show Dto column only when actual discount data exists.
+  // layout.itemsTable.showDiscount===false is the hard override (simplifyTable).
   const hasDiscountData = lines.some((line) => (Number(line.discountPercent) || 0) > 0);
-  const showDiscount = layout.itemsTable.showDiscount || hasDiscountData;
+  const showDiscount = layout.itemsTable.showDiscount === false ? false : hasDiscountData;
 
   // Prefer immutable snapshot fields; fall back to live tenant relation for backwards compat.
   const senderName = invoice.issuerSnapshotName ?? tenant.businessName;
@@ -392,7 +393,9 @@ export function createInvoicePdfElement(
                 {Number(line.quantity).toLocaleString('es-ES', { maximumFractionDigits: 4 })}
               </Text>
               {showUnitPrice && (
-                <Text style={[styles.cell, styles.colPrice]}>{formatCurrency(line.unitPrice)}</Text>
+                <Text style={[styles.cell, styles.colPrice]}>
+                  {formatUnitPrice(line.unitPrice)}
+                </Text>
               )}
               {showTaxColumn && (
                 <Text style={[styles.cell, styles.colTax]}>{formatPercent(line.taxRate)}</Text>

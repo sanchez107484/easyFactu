@@ -61,6 +61,7 @@ import { useInvoiceTemplate, useDefaultTemplate } from '@/hooks/use-invoice-temp
 import { useAuthStore } from '@/store/auth-store';
 import { useTenant } from '@/hooks/use-tenant';
 import { cn, resolveUrl, formatCurrency, parseNum, formatDateShort } from '@/lib/utils';
+import { formatUnitPriceCurrency } from '@/lib/math';
 import { SectionLabel } from '@/components/common/section-label';
 import { DataRow } from '@/components/common/data-row';
 
@@ -176,6 +177,21 @@ export default function PresupuestoDetailPage() {
   const { data: specificTemplate } = useInvoiceTemplate(templateId);
   const { data: defaultTemplate } = useDefaultTemplate();
   const template = specificTemplate ?? defaultTemplate;
+
+  // In the preview, IRPF is always shown when configured —
+  // the template's showIrpf only controls the final PDF output.
+  const previewTemplate = template
+    ? {
+        ...template,
+        layout: {
+          ...template.layout,
+          totals: {
+            ...template.layout.totals,
+            showIrpf: true,
+          },
+        },
+      }
+    : null;
 
   const paymentDetails = (quote as unknown as { paymentDetails?: PaymentDetails })?.paymentDetails;
   const activePaymentMethod = quote?.paymentMethod as string | null | undefined;
@@ -597,7 +613,7 @@ export default function PresupuestoDetailPage() {
                           </th>
                         )}
                         <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-20">
-                          Subtotal
+                          Total
                         </th>
                       </tr>
                     </thead>
@@ -615,7 +631,7 @@ export default function PresupuestoDetailPage() {
                             </td>
                           )}
                           <td className="py-2.5 text-right tabular-nums">
-                            {formatCurrency(line.unitPrice)}
+                            {formatUnitPriceCurrency(line.unitPrice)}
                           </td>
                           {!isReagyp && (
                             <td className="py-2.5 text-right tabular-nums text-muted-foreground">
@@ -630,7 +646,7 @@ export default function PresupuestoDetailPage() {
                             </td>
                           )}
                           <td className="py-2.5 text-right tabular-nums font-medium">
-                            {formatCurrency(line.subtotal)}
+                            {formatCurrency(line.lineTotal)}
                           </td>
                         </tr>
                       ))}
@@ -757,7 +773,7 @@ export default function PresupuestoDetailPage() {
         <div className="w-[40%] flex flex-col overflow-hidden">
           <LiveInvoicePreview
             invoice={quoteForPreview}
-            template={template ?? null}
+            template={previewTemplate}
             tenant={(() => {
               const src = tenantData ?? currentTenant;
               return src ? ({ ...src, logoUrl: resolveUrl(src.logoUrl) ?? null } as Tenant) : null;

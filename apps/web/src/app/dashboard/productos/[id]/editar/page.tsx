@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -45,6 +45,7 @@ import { useProduct, useUpdateProduct, useDeleteProduct } from '@/hooks/use-prod
 import { ProductType } from '@easyfactura/shared-types';
 import { TAX_RATE_SELECT_OPTIONS } from '@easyfactura/shared-constants';
 import { cn } from '@/lib/utils';
+import { round2, round4, formatUnitPrice, formatUnitPriceCurrency } from '@/lib/math';
 
 const productSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio').max(200),
@@ -115,24 +116,54 @@ export default function EditarProductoPage() {
 
   useEffect(() => {
     if (product) {
+      const v = Number(product.unitPrice) || 0;
+      const t = Number(product.taxRate) || 21;
       form.reset({
         name: product.name,
         description: product.description ?? '',
         reference: product.reference ?? '',
         unit: product.unit ?? '',
         type: (product.type as ProductType) ?? ProductType.SERVICE,
-        unitPrice: Number(product.unitPrice) || 0,
-        taxRate: Number(product.taxRate) || 21,
+        unitPrice: v,
+        taxRate: t,
       });
+      // Sync raw display state with loaded values
+      setUnitPriceRaw(v > 0 ? formatUnitPrice(v) : '');
+      setTotalRaw(
+        v > 0
+          ? round2(v * (1 + t / 100)).toLocaleString('es-ES', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          : '',
+      );
     }
   }, [product, form]);
 
   const unitPrice = form.watch('unitPrice') || 0;
   const taxRate = form.watch('taxRate') || 0;
-  const taxAmount = unitPrice * (taxRate / 100);
-  const pvp = unitPrice + taxAmount;
+  const taxAmount = round2(unitPrice * (taxRate / 100));
+  const pvp = round2(unitPrice + taxAmount);
   const selectedType = form.watch('type');
   const watchedUnit = form.watch('unit') || '';
+
+  // Local raw string state for bidirectional price inputs
+  const [unitPriceRaw, setUnitPriceRaw] = useState<string>('');
+  const [totalRaw, setTotalRaw] = useState<string>('');
+
+  // When IVA type changes, re-sync totalRaw from the current unitPrice
+  useEffect(() => {
+    const v = form.getValues('unitPrice') || 0;
+    if (v > 0) {
+      setTotalRaw(
+        round2(v * (1 + taxRate / 100)).toLocaleString('es-ES', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }),
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taxRate]);
 
   const UNIT_SUGGESTIONS =
     selectedType === ProductType.SERVICE
@@ -419,7 +450,8 @@ export default function EditarProductoPage() {
                 </p>
               </div>
               <div className="p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Precio sin IVA — hasta 4 decimales, sincronizado con Precio con IVA */}
                   <div className="space-y-2">
                     <Label
                       htmlFor="unitPrice"
@@ -432,13 +464,43 @@ export default function EditarProductoPage() {
                     <div className="relative">
                       <Input
                         id="unitPrice"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        {...form.register('unitPrice', { valueAsNumber: true })}
+                        type="text"
+                        inputMode="decimal"
                         placeholder="0,00"
+                        value={unitPriceRaw}
                         className="h-11 pr-12 text-base"
                         disabled={updateMutation.isPending}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          setUnitPriceRaw(raw);
+                          const num = parseFloat(raw.replace(',', '.'));
+                          if (!isNaN(num) && num >= 0) {
+                            form.setValue('unitPrice', num, { shouldValidate: false });
+                            setTotalRaw(
+                              round2(num * (1 + taxRate / 100)).toLocaleString('es-ES', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              }),
+                            );
+                          }
+                        }}
+                        onBlur={() => {
+                          const num = parseFloat(unitPriceRaw.replace(',', '.'));
+                          if (isNaN(num) || num < 0) {
+                            setUnitPriceRaw('');
+                            setTotalRaw('');
+                            form.setValue('unitPrice', 0, { shouldValidate: true });
+                          } else {
+                            setUnitPriceRaw(formatUnitPrice(num));
+                            form.setValue('unitPrice', num, { shouldValidate: true });
+                            setTotalRaw(
+                              round2(num * (1 + taxRate / 100)).toLocaleString('es-ES', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              }),
+                            );
+                          }
+                        }}
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium select-none">
                         EUR
@@ -450,6 +512,7 @@ export default function EditarProductoPage() {
                       </p>
                     )}
                   </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="taxRate" className="text-sm font-medium">
                       Tipo de IVA <span className="text-destructive">*</span>
@@ -474,6 +537,64 @@ export default function EditarProductoPage() {
                       La mayoría de autónomos usan el 21%
                     </p>
                   </div>
+
+                  {/* Precio con IVA — autocalculado pero también editable (back-calcula sin IVA) */}
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="totalPrice"
+                      className="text-sm font-medium flex items-center gap-2"
+                    >
+                      <Euro className="h-3.5 w-3.5 text-muted-foreground" />
+                      Precio con IVA
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="totalPrice"
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0,00"
+                        value={totalRaw}
+                        className="h-11 pr-12 text-base"
+                        disabled={updateMutation.isPending}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          setTotalRaw(raw);
+                          const total = parseFloat(raw.replace(',', '.'));
+                          if (!isNaN(total) && total >= 0) {
+                            const divisor = 1 + taxRate / 100;
+                            const unitP = divisor > 0 ? round4(total / divisor) : 0;
+                            form.setValue('unitPrice', unitP, { shouldValidate: false });
+                            setUnitPriceRaw(formatUnitPrice(unitP));
+                          }
+                        }}
+                        onBlur={() => {
+                          const total = parseFloat(totalRaw.replace(',', '.'));
+                          if (isNaN(total) || total < 0) {
+                            setTotalRaw('');
+                            setUnitPriceRaw('');
+                            form.setValue('unitPrice', 0, { shouldValidate: true });
+                          } else {
+                            setTotalRaw(
+                              round2(total).toLocaleString('es-ES', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              }),
+                            );
+                            const divisor = 1 + taxRate / 100;
+                            const unitP = divisor > 0 ? round4(total / divisor) : 0;
+                            form.setValue('unitPrice', unitP, { shouldValidate: true });
+                            setUnitPriceRaw(formatUnitPrice(unitP));
+                          }
+                        }}
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium select-none">
+                        EUR
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Se autocalcula, pero puedes introducirlo directamente.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -490,7 +611,7 @@ export default function EditarProductoPage() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Precio base</span>
                   <span className="font-medium tabular-nums">
-                    {unitPrice.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                    {formatUnitPriceCurrency(unitPrice)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">

@@ -30,7 +30,7 @@ export class ProductService {
   }
 
   async findAll(tenantId: string, query: QueryProductDto) {
-    const { page = 1, limit = 20, search, active, type, sortBy, sortOrder = 'asc' } = query;
+    const { page = 1, limit = 20, search, isActive, type, sortBy, sortOrder = 'asc' } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProductWhereInput = { tenantId };
@@ -47,9 +47,7 @@ export class ProductService {
       where.type = type;
     }
 
-    if (active !== undefined) {
-      where.isActive = active;
-    }
+    where.isActive = isActive !== undefined ? isActive : true;
 
     const PRODUCT_SORT_FIELDS: Record<string, true> = {
       name: true,
@@ -114,13 +112,20 @@ export class ProductService {
     });
   }
 
-  async remove(tenantId: string, id: string) {
+  async remove(tenantId: string, id: string): Promise<{ deleted: true }> {
     await this.findOne(tenantId, id);
 
-    // Soft delete by marking as inactive
-    return this.prisma.product.update({
-      where: { id },
-      data: { isActive: false },
+    // Hard delete — invoice lines use onDelete: SetNull so history is preserved
+    await this.prisma.product.delete({ where: { id } });
+
+    return { deleted: true };
+  }
+
+  async bulkRemove(tenantId: string, ids: string[]): Promise<{ deleted: number }> {
+    const result = await this.prisma.product.deleteMany({
+      where: { tenantId, id: { in: ids } },
     });
+
+    return { deleted: result.count };
   }
 }

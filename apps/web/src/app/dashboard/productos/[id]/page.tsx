@@ -31,6 +31,7 @@ import Link from 'next/link';
 import { useProduct, useDeleteProduct } from '@/hooks/use-products';
 import { ProductType } from '@easyfactura/shared-types';
 import { cn } from '@/lib/utils';
+import { round2, formatUnitPriceCurrency } from '@/lib/math';
 
 // ==================== SUB-COMPONENTS ====================
 
@@ -150,8 +151,8 @@ export default function VerProductoPage() {
 
   const unitPrice = Number(product.unitPrice) || 0;
   const taxRate = Number(product.taxRate) || 0;
-  const taxAmount = unitPrice * (taxRate / 100);
-  const pvp = unitPrice + taxAmount;
+  const taxAmount = round2(unitPrice * (taxRate / 100));
+  const pvp = round2(unitPrice + taxAmount);
   const isService = product.type === ProductType.SERVICE;
 
   const TAX_LABEL: Record<string, string> = {
@@ -340,20 +341,29 @@ export default function VerProductoPage() {
               <h2 className="text-sm font-semibold">Precio e impuestos</h2>
             </div>
             <div className="p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <p className="text-sm font-medium flex items-center gap-2">
                     <Euro className="h-3.5 w-3.5 text-muted-foreground" />
                     {product.unit ? `Precio por ${product.unit}` : 'Precio sin IVA'}
                   </p>
                   <div className="h-11 flex items-center px-3 rounded-lg border bg-muted/30 text-sm font-medium tabular-nums">
-                    {unitPrice.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                    {formatUnitPriceCurrency(unitPrice)}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Tipo de IVA</p>
                   <div className="h-11 flex items-center px-3 rounded-lg border bg-muted/30 text-sm">
                     {TAX_LABEL[String(taxRate)] ?? `${taxRate}%`}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <Euro className="h-3.5 w-3.5 text-muted-foreground" />
+                    Precio con IVA
+                  </p>
+                  <div className="h-11 flex items-center px-3 rounded-lg border bg-muted/30 text-sm font-medium tabular-nums">
+                    {pvp.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
                   </div>
                 </div>
               </div>
@@ -371,7 +381,7 @@ export default function VerProductoPage() {
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Precio base</span>
                 <span className="font-medium tabular-nums">
-                  {unitPrice.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                  {formatUnitPriceCurrency(unitPrice)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
