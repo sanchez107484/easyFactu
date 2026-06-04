@@ -278,6 +278,7 @@ export function buildExampleInvoice(tenantId: string): Invoice {
       notes: null,
       isActive: true,
       isReagyp: false,
+      hasEquivalenceSurcharge: false,
       createdAt: now,
       updatedAt: now,
     },

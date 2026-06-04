@@ -7,6 +7,7 @@ import {
   PaymentStatus,
   InvoiceSeries,
 } from '@easyfactura/shared-types';
+import { EQUIVALENCE_SURCHARGE_RATES } from '@easyfactura/shared-constants';
 import { formatSeriesPreview } from '@easyfactura/shared-validators';
 import { round2 } from '@/lib/math';
 import { ExtendedLineData, stripLineMetaFields } from '@/lib/invoice-line-types';
@@ -37,6 +38,8 @@ export interface InvoiceFormData {
   irpfPercent?: number;
   /** Porcentaje de compensación agraria (solo REAGYP). Editado por el usuario en el formulario. */
   compensacionPercent?: number;
+  /** Porcentaje de Recargo de Equivalencia global. Cuando se define, sobrescribe los tipos por línea. */
+  equivalenceSurchargePercent?: number;
   paymentMethod?: PaymentMethod;
   paymentDetails?: Record<string, string | undefined>;
   notes?: string;
@@ -50,12 +53,14 @@ export interface InvoiceFormData {
  * No se persiste en base de datos — solo se usa para renderizar LiveInvoicePreview.
  *
  * @param compensacionPercent - Porcentaje de compensación agraria (solo REAGYP). Pass 0 or undefined for GENERAL.
+ * @param equivalenceSurchargeRates - Recargo de Equivalencia rate map: { taxRate -> surchargeRate }. Pass empty or omit for GENERAL.
  */
 export function buildPreviewInvoice(
   data: Partial<InvoiceFormData>,
   customers: Customer[],
   selectedSeries?: InvoiceSeries | null,
   compensacionPercent?: number,
+  equivalenceSurchargeRates?: Record<number, number>,
 ): Invoice {
   const today = new Date().toISOString();
   const lines = data.lines ?? [];
@@ -80,6 +85,10 @@ export function buildPreviewInvoice(
   // In this case IVA must still be hidden but the compensation row must not appear.
   const isReagyp = compensacionPercent != null;
 
+  // ── Recargo de Equivalencia ──
+  const hasEquivalenceSurcharge =
+    equivalenceSurchargeRates != null && Object.keys(equivalenceSurchargeRates).length > 0 && !isReagyp;
+
   const taxTotal = isReagyp
     ? 0
     : round2(
@@ -93,6 +102,19 @@ export function buildPreviewInvoice(
         }, 0),
       );
 
+  const surchargeTotal = hasEquivalenceSurcharge
+    ? round2(
+        lines.reduce((acc, l) => {
+          const grossSubtotal = (l.quantity ?? 0) * (l.unitPrice ?? 0);
+          const lineDiscount = l.discountPercent ?? 0;
+          const lineNet =
+            lineDiscount > 0 ? grossSubtotal * (1 - lineDiscount / 100) : grossSubtotal;
+          const rate = l.surchargeRate ?? equivalenceSurchargeRates![l.taxRate ?? 0] ?? 0;
+          return acc + lineNet * discFactor * (rate / 100);
+        }, 0),
+      )
+    : 0;
+
   const previewCompensacionAmount = isReagyp
     ? round2(subtotalAfterDiscount * (compensacionPercent / 100))
     : 0;
@@ -105,7 +127,7 @@ export function buildPreviewInvoice(
   const irpfTotal = data.irpfPercent ? round2(irpfBase * (data.irpfPercent / 100)) : null;
 
   const total = round2(
-    subtotalAfterDiscount + taxTotal + previewCompensacionAmount - (irpfTotal ?? 0),
+    subtotalAfterDiscount + taxTotal + surchargeTotal + previewCompensacionAmount - (irpfTotal ?? 0),
   );
 
   const previewLines = lines.map((l, i) => {
@@ -120,6 +142,12 @@ export function buildPreviewInvoice(
     const lineDiscount = l.discountPercent ?? 0;
     const lineSubtotal =
       lineDiscount > 0 ? grossSubtotal * (1 - lineDiscount / 100) : grossSubtotal;
+    const lineSurchargeRate = hasEquivalenceSurcharge
+      ? (l.surchargeRate ?? equivalenceSurchargeRates![l.taxRate ?? 0] ?? 0)
+      : 0;
+    const lineSurchargeAmount = hasEquivalenceSurcharge
+      ? round2(lineSubtotal * discFactor * (lineSurchargeRate / 100))
+      : 0;
     return {
       id: `preview-${i}`,
       tenantId: '',
@@ -132,6 +160,8 @@ export function buildPreviewInvoice(
       discountPercent: lineDiscount > 0 ? lineDiscount : null,
       taxRate: l.taxRate ?? 0,
       taxAmount: round2(lineSubtotal * ((l.taxRate ?? 0) / 100)),
+      surchargeRate: lineSurchargeRate > 0 ? lineSurchargeRate : null,
+      surchargeAmount: lineSurchargeAmount > 0 ? lineSurchargeAmount : null,
       lineTotal: round2(lineSubtotal * (1 + (l.taxRate ?? 0) / 100)),
       hideQty,
       sortOrder: i,
@@ -156,6 +186,7 @@ export function buildPreviewInvoice(
     discountPercent: data.discountPercent ?? null,
     discountAmount,
     taxTotal,
+    surchargeTotal: surchargeTotal > 0 ? surchargeTotal : null,
     irpfPercent: data.irpfPercent ?? null,
     irpfTotal,
     compensacionPercent: isReagyp ? compensacionPercent : null,
@@ -218,6 +249,7 @@ export function buildCreateInput(data: InvoiceFormData) {
         taxRate: clean.taxRate,
         productId: clean.productId,
         hideQty: clean.hideQty,
+        surchargeRate: clean.surchargeRate,
       };
     }),
   };

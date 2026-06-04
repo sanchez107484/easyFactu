@@ -61,6 +61,12 @@ export class CreateRecurringInvoiceLineDto {
   @Min(0)
   @Max(30)
   irpfRate?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  surchargeRate?: number;
 }
 
 export class CreateRecurringInvoiceDto {

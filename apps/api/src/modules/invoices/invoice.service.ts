@@ -87,7 +87,7 @@ export class InvoiceService {
   private buildLineCreateData(
     tenantId: string,
     lines: CreateInvoiceLineDto[],
-    calculatedLines: { subtotal: number; taxAmount: number; lineTotal: number }[]
+    calculatedLines: { subtotal: number; taxAmount: number; surchargeAmount: number; lineTotal: number }[]
   ) {
     return lines.map((line, index) => ({
       tenantId,
@@ -103,6 +103,13 @@ export class InvoiceService {
       ...(line.irpfRate != null ? { irpfRate: line.irpfRate } : {}),
       ...(line.discountPercent != null && line.discountPercent > 0
         ? { discountPercent: line.discountPercent }
+        : {}),
+      // Recargo de Equivalencia per-line — persist when surcharge was actually computed
+      ...(calculatedLines[index]!.surchargeAmount > 0
+        ? {
+            surchargeRate: line.surchargeRate ?? null,
+            surchargeAmount: calculatedLines[index]!.surchargeAmount,
+          }
         : {}),
       hideQty: line.hideQty ?? false,
       sortOrder: index,
@@ -126,7 +133,7 @@ export class InvoiceService {
     tenantId: string,
     invoiceId: string,
     lines: CreateInvoiceLineDto[],
-    calculatedLines: { subtotal: number; taxAmount: number; lineTotal: number }[]
+    calculatedLines: { subtotal: number; taxAmount: number; surchargeAmount: number; lineTotal: number }[]
   ): Promise<void> {
     const existing = await tx.invoiceLine.findMany({
       where: { invoiceId, tenantId },
@@ -177,6 +184,8 @@ export class InvoiceService {
                   ? line.discountPercent
                   : null,
               irpfRate: line.irpfRate ?? null,
+              surchargeRate: calculatedLines[index]!.surchargeAmount > 0 ? (line.surchargeRate ?? null) : null,
+              surchargeAmount: calculatedLines[index]!.surchargeAmount > 0 ? calculatedLines[index]!.surchargeAmount : null,
               hideQty: line.hideQty ?? false,
               sortOrder: index,
             },
@@ -204,6 +213,9 @@ export class InvoiceService {
             ...(line.irpfRate != null ? { irpfRate: line.irpfRate } : {}),
             ...(line.discountPercent != null && Number(line.discountPercent) > 0
               ? { discountPercent: line.discountPercent }
+              : {}),
+            ...(calc.surchargeAmount > 0
+              ? { surchargeRate: line.surchargeRate ?? null, surchargeAmount: calc.surchargeAmount }
               : {}),
             hideQty: line.hideQty ?? false,
             sortOrder: index,
@@ -376,6 +388,30 @@ export class InvoiceService {
     return Number(tenant.reaypRate);
   }
 
+  /**
+   * Checks whether the customer has the Recargo de Equivalencia flag set.
+   * Returns the surcharge rate map (taxRate → surchargeRate) when applicable,
+   * or an empty object if RE does not apply (REAGYP customers can't have RE).
+   */
+  private async resolveEquivalenceSurchargeRates(
+    tenantId: string,
+    customerId: string,
+    isReagyp: boolean
+  ): Promise<Record<number, number>> {
+    // RE is incompatible with REAGYP regime
+    if (isReagyp) return {};
+
+    const customer = await this.prisma.customer.findFirst({
+      where: { id: customerId, tenantId },
+      select: { hasEquivalenceSurcharge: true },
+    });
+
+    if (!customer?.hasEquivalenceSurcharge) return {};
+
+    // Default rates per Art. 161 LIVA (Recargo de Equivalencia)
+    return { 21: 5.2, 10: 1.4, 4: 0.5, 0: 0 };
+  }
+
   // ==================== PUBLIC CRUD ====================
 
   async create(tenantId: string, createdByUserId: string | null, dto: CreateInvoiceDto) {
@@ -395,6 +431,12 @@ export class InvoiceService {
       this.validateProductIds(tenantId, dto.lines),
     ]);
     const compensacionPercent = resolvedCompensacion;
+    const equivalenceSurchargeRates = await this.resolveEquivalenceSurchargeRates(
+      tenantId,
+      dto.customerId,
+      compensacionPercent != null && compensacionPercent > 0
+    );
+
     let invoiceStatus: PrismaInvoiceStatus;
     if (isProforma) {
       invoiceStatus = PrismaInvoiceStatus.PROFORMA;
@@ -411,6 +453,7 @@ export class InvoiceService {
       discountPercent: dto.discountPercent,
       irpfPercent: dto.irpfPercent,
       compensacionPercent,
+      equivalenceSurchargeRates,
     });
 
     return this.prisma.$transaction(async (tx) => {
@@ -460,6 +503,7 @@ export class InvoiceService {
           irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
           compensacionPercent: compensacionPercent ?? null,
           compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
+          surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
           total: totals.total,
           paymentMethod: (dto.paymentMethod ?? null) as any,
           notes: dto.notes ?? null,
@@ -572,6 +616,7 @@ export class InvoiceService {
           subtotal: true,
           taxTotal: true,
           irpfTotal: true,
+          surchargeTotal: true,
           total: true,
           amountPaid: true,
           paymentMethod: true,
@@ -638,6 +683,7 @@ export class InvoiceService {
         irpfPercent: true,
         irpfTotal: true,
         compensacionPercent: true,
+        surchargeTotal: true,
         total: true,
         paymentMethod: true,
         paymentDetails: true,
@@ -664,6 +710,8 @@ export class InvoiceService {
             discountPercent: true,
             irpfRate: true,
             irpfAmount: true,
+            surchargeRate: true,
+            surchargeAmount: true,
             hideQty: true,
             sortOrder: true,
             productId: true,
@@ -706,6 +754,7 @@ export class InvoiceService {
           irpfTotal: true,
           compensacionPercent: true,
           compensacionAmount: true,
+          surchargeTotal: true,
           total: true,
           amountPaid: true,
           paymentMethod: true,
@@ -854,10 +903,17 @@ export class InvoiceService {
         ? dto.compensacionPercent
         : await this.resolveCompensacionPercent(tenantId, customerId);
 
+    const equivalenceSurchargeRates = await this.resolveEquivalenceSurchargeRates(
+      tenantId,
+      customerId,
+      compensacionPercent != null && compensacionPercent > 0
+    );
+
     const totals = this.calculationService.calculateTotals(linesToUse, {
       discountPercent: currentDiscount,
       irpfPercent: currentIrpf,
       compensacionPercent,
+      equivalenceSurchargeRates,
     });
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -890,6 +946,7 @@ export class InvoiceService {
         irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
         compensacionPercent: compensacionPercent ?? null,
         compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
+        surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
         paymentMethod: (dto.paymentMethod !== undefined ? dto.paymentMethod : null) as any,
         notes: dto.notes !== undefined ? dto.notes : undefined,
         ...(dto.paymentDetails !== undefined ? { paymentDetails: { ...dto.paymentDetails } } : {}),
@@ -965,10 +1022,18 @@ export class InvoiceService {
           ? Number(invoice.compensacionPercent)
           : undefined;
 
+        // Re-derive surcharge from the customer at confirmation time
+        const surchargeRates = await this.resolveEquivalenceSurchargeRates(
+          tenantId,
+          invoice.customerId,
+          storedCompensacion != null && storedCompensacion > 0
+        );
+
         const totals = this.calculationService.calculateTotals(lines, {
           discountPercent: invoice.discountPercent ? Number(invoice.discountPercent) : undefined,
           irpfPercent: invoice.irpfPercent ? Number(invoice.irpfPercent) : undefined,
           compensacionPercent: storedCompensacion,
+          equivalenceSurchargeRates: surchargeRates,
         });
 
         await tx.invoiceLine.deleteMany({ where: { invoiceId: id } });
@@ -984,6 +1049,7 @@ export class InvoiceService {
             irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
             compensacionPercent: storedCompensacion ?? null,
             compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
+            surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
             total: totals.total,
             ...customerSnapshot,
             ...issuerSnapshot,
@@ -1141,10 +1207,16 @@ export class InvoiceService {
       tenantId,
       original.customerId
     );
+    const equivalenceSurchargeRates = await this.resolveEquivalenceSurchargeRates(
+      tenantId,
+      original.customerId,
+      compensacionPercent != null && compensacionPercent > 0
+    );
     const totals = this.calculationService.calculateTotals(lines, {
       discountPercent: original.discountPercent ? Number(original.discountPercent) : undefined,
       irpfPercent: original.irpfPercent ? Number(original.irpfPercent) : undefined,
       compensacionPercent,
+      equivalenceSurchargeRates,
     });
 
     const paymentDetails = original.paymentDetails;
@@ -1168,6 +1240,7 @@ export class InvoiceService {
         irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
         compensacionPercent: compensacionPercent ?? null,
         compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
+        surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
         total: totals.total,
         paymentMethod: original.paymentMethod as any,
         ...(paymentDetails != null ? { paymentDetails } : {}),
@@ -1209,7 +1282,15 @@ export class InvoiceService {
       tenantId,
       original.customerId
     );
-    const totals = this.calculationService.calculateTotals(dto.lines, { compensacionPercent });
+    const equivalenceSurchargeRates = await this.resolveEquivalenceSurchargeRates(
+      tenantId,
+      original.customerId,
+      compensacionPercent != null && compensacionPercent > 0
+    );
+    const totals = this.calculationService.calculateTotals(dto.lines, {
+      compensacionPercent,
+      equivalenceSurchargeRates,
+    });
 
     const paymentDetails = original.paymentDetails;
 
@@ -1234,6 +1315,7 @@ export class InvoiceService {
           taxTotal: totals.taxTotal,
           compensacionPercent: compensacionPercent ?? null,
           compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
+          surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
           total: totals.total,
           paymentMethod: original.paymentMethod as any,
           ...(paymentDetails != null ? { paymentDetails } : {}),
@@ -1302,10 +1384,16 @@ export class InvoiceService {
 
     const lines = invoice.lines as unknown as CreateInvoiceLineDto[];
     const compensacionPercent = await this.resolveCompensacionPercent(tenantId, invoice.customerId);
+    const equivalenceSurchargeRates = await this.resolveEquivalenceSurchargeRates(
+      tenantId,
+      invoice.customerId,
+      compensacionPercent != null && compensacionPercent > 0
+    );
     const totals = this.calculationService.calculateTotals(lines, {
       discountPercent: invoice.discountPercent ? Number(invoice.discountPercent) : undefined,
       irpfPercent: invoice.irpfPercent ? Number(invoice.irpfPercent) : undefined,
       compensacionPercent,
+      equivalenceSurchargeRates,
     });
 
     const paymentDetails = invoice.paymentDetails;
@@ -1335,6 +1423,7 @@ export class InvoiceService {
           irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
           compensacionPercent: compensacionPercent ?? null,
           compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
+          surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
           total: totals.total,
           paymentMethod: invoice.paymentMethod as any,
           ...(paymentDetails != null ? { paymentDetails } : {}),
@@ -1443,10 +1532,16 @@ export class InvoiceService {
 
     const lines = invoice.lines as unknown as CreateInvoiceLineDto[];
     const compensacionPercent = await this.resolveCompensacionPercent(tenantId, invoice.customerId);
+    const equivalenceSurchargeRates = await this.resolveEquivalenceSurchargeRates(
+      tenantId,
+      invoice.customerId,
+      compensacionPercent != null && compensacionPercent > 0
+    );
     const totals = this.calculationService.calculateTotals(lines, {
       discountPercent: invoice.discountPercent ? Number(invoice.discountPercent) : undefined,
       irpfPercent: invoice.irpfPercent ? Number(invoice.irpfPercent) : undefined,
       compensacionPercent,
+      equivalenceSurchargeRates,
     });
     const paymentDetails = invoice.paymentDetails;
 
@@ -1471,6 +1566,7 @@ export class InvoiceService {
           irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
           compensacionPercent: compensacionPercent ?? null,
           compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
+          surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
           total: totals.total,
           paymentMethod: invoice.paymentMethod as any,
           ...(paymentDetails != null ? { paymentDetails } : {}),
@@ -1524,10 +1620,16 @@ export class InvoiceService {
 
     const lines = invoice.lines as unknown as CreateInvoiceLineDto[];
     const compensacionPercent = await this.resolveCompensacionPercent(tenantId, invoice.customerId);
+    const equivalenceSurchargeRates = await this.resolveEquivalenceSurchargeRates(
+      tenantId,
+      invoice.customerId,
+      compensacionPercent != null && compensacionPercent > 0
+    );
     const totals = this.calculationService.calculateTotals(lines, {
       discountPercent: invoice.discountPercent ? Number(invoice.discountPercent) : undefined,
       irpfPercent: invoice.irpfPercent ? Number(invoice.irpfPercent) : undefined,
       compensacionPercent,
+      equivalenceSurchargeRates,
     });
     const paymentDetails = invoice.paymentDetails;
 
@@ -1552,6 +1654,7 @@ export class InvoiceService {
           irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
           compensacionPercent: compensacionPercent ?? null,
           compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
+          surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
           total: totals.total,
           paymentMethod: invoice.paymentMethod as any,
           ...(paymentDetails != null ? { paymentDetails } : {}),
@@ -1608,7 +1711,7 @@ export class InvoiceService {
     type PendingRow = { pending: string | null };
     type CollectedRow = { collected: string | null };
     type OverdueRow = { count: bigint; amount: string | null };
-    type VatRow = { vat: string | null };
+    type VatRow = { vat: string | null; surcharge: string | null };
 
     // 9 parallel SQL aggregates
     const [
@@ -1683,7 +1786,7 @@ export class InvoiceService {
           AND due_date < ${today}
       `),
       this.prisma.$queryRaw<VatRow[]>(Prisma.sql`
-        SELECT SUM(tax_total)::text AS vat
+        SELECT SUM(tax_total)::text AS vat, SUM(surcharge_total)::text AS surcharge
         FROM invoices
         WHERE tenant_id = ${tenantId}
           AND status IN ('CONFIRMED', 'SENT', 'PAID')
@@ -1746,6 +1849,8 @@ export class InvoiceService {
       ticketMedioThisMonth:
         invoicesThisMonth > 0 ? Math.round((billedThisMonth / invoicesThisMonth) * 100) / 100 : 0,
       vatThisQuarter: Math.round(Number(vatRows[0]?.vat ?? 0) * 100) / 100,
+      surchargeThisQuarter:
+        Math.round(Number(vatRows[0]?.surcharge ?? 0) * 100) / 100,
     };
   }
 
@@ -1764,6 +1869,7 @@ export class InvoiceService {
       total_subtotal: string | null;
       total_iva: string | null;
       total_irpf: string | null;
+      total_surcharge: string | null;
       invoices_count: bigint;
     };
 
@@ -1800,10 +1906,11 @@ export class InvoiceService {
       `),
       this.prisma.$queryRaw<SummaryRow[]>(Prisma.sql`
         SELECT
-          SUM(subtotal)::text  AS total_subtotal,
-          SUM(tax_total)::text AS total_iva,
-          SUM(irpf_total)::text AS total_irpf,
-          COUNT(*)             AS invoices_count
+          SUM(subtotal)::text        AS total_subtotal,
+          SUM(tax_total)::text       AS total_iva,
+          SUM(irpf_total)::text      AS total_irpf,
+          SUM(surcharge_total)::text AS total_surcharge,
+          COUNT(*)                   AS invoices_count
         FROM invoices
         WHERE tenant_id = ${tenantId}
           AND status IN ('CONFIRMED', 'SENT', 'PAID')
@@ -1833,6 +1940,7 @@ export class InvoiceService {
         totalSubtotal: Math.round(Number(summary?.total_subtotal ?? 0) * 100) / 100,
         totalIva: Math.round(Number(summary?.total_iva ?? 0) * 100) / 100,
         totalIrpf: Math.round(Number(summary?.total_irpf ?? 0) * 100) / 100,
+        totalSurcharge: Math.round(Number(summary?.total_surcharge ?? 0) * 100) / 100,
         invoicesCount: Number(summary?.invoices_count ?? 0),
       },
     };

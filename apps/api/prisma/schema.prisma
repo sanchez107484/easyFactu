@@ -177,6 +177,9 @@ model Customer {
   // Cuando es true y el tenant emisor también está en REAGYP, la compensación
   // agraria NO se aplica (se compensan entre sí por la misma cadena de valor).
   isReagyp         Boolean      @default(false) @map("is_reagyp")
+  // Recargo de Equivalencia: indica si este cliente está en el régimen de RE.
+  // Cuando es true, la factura debe incluir el recargo de equivalencia además del IVA.
+  hasEquivalenceSurcharge Boolean @default(false) @map("has_equivalence_surcharge")
   createdAt        DateTime     @default(now()) @map("created_at")
   updatedAt        DateTime     @updatedAt @map("updated_at")
 
@@ -321,6 +324,9 @@ model Invoice {
   // compensacionAmount: the computed amount (subtotalAfterDiscount × compensacionPercent).
   compensacionPercent Decimal?       @map("compensacion_percent") @db.Decimal(5, 2)
   compensacionAmount  Decimal?       @map("compensacion_amount") @db.Decimal(12, 2)
+  // Recargo de Equivalencia — solo cuando el cliente está en RE.
+  // surchargeTotal: suma de todos los importes de RE de las líneas.
+  surchargeTotal      Decimal?       @map("surcharge_total") @db.Decimal(12, 2)
   total               Decimal        @db.Decimal(12, 2)
   paymentMethod       PaymentMethod? @map("payment_method")
   notes               String?        @db.Text
@@ -476,6 +482,9 @@ model InvoiceLine {
   taxAmount        Decimal  @map("tax_amount") @db.Decimal(12, 2)
   irpfRate         Decimal? @map("irpf_rate") @db.Decimal(5, 2)
   irpfAmount       Decimal? @map("irpf_amount") @db.Decimal(12, 2)
+  // Recargo de Equivalencia — solo cuando hasEquivalenceSurcharge en Customer es true.
+  surchargeRate    Decimal? @map("surcharge_rate") @db.Decimal(5, 2)
+  surchargeAmount  Decimal? @map("surcharge_amount") @db.Decimal(12, 2)
   lineTotal        Decimal  @map("line_total") @db.Decimal(12, 2)
   hideQty          Boolean  @default(false) @map("hide_qty")
   sortOrder        Int      @default(0) @map("sort_order")
@@ -776,6 +785,8 @@ model RecurringInvoice {
   irpfPercent    Decimal?        @map("irpf_percent") @db.Decimal(5, 2)
   // REAGYP: stored so the scheduler can reproduce the correct totals on each generation
   compensacionPercent Decimal?   @map("compensacion_percent") @db.Decimal(5, 2)
+  // Recargo de Equivalencia: indica si este contrato recurrente aplica RE
+  hasEquivalenceSurcharge Boolean @default(false) @map("has_equivalence_surcharge")
   estimatedTotal Decimal         @default(0) @map("estimated_total") @db.Decimal(15, 2)
   paymentMethod  PaymentMethod?  @map("payment_method")
   paymentDetails Json?           @map("payment_details")
@@ -811,6 +822,8 @@ model RecurringInvoiceLine {
   discountPercent    Decimal?         @map("discount_percent") @db.Decimal(5, 2)
   taxRate            Decimal          @map("tax_rate") @db.Decimal(5, 2)
   irpfRate           Decimal?         @map("irpf_rate") @db.Decimal(5, 2)
+  // Recargo de Equivalencia por línea
+  surchargeRate      Decimal?         @map("surcharge_rate") @db.Decimal(5, 2)
   hideQty            Boolean          @default(false) @map("hide_qty")
   sortOrder          Int              @default(0) @map("sort_order")
   createdAt          DateTime         @default(now()) @map("created_at")

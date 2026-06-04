@@ -39,6 +39,7 @@ function buildCreateInput(data: FormData): CreateCustomerInput {
     country: data.country || 'ES',
     notes: data.notes?.trim() || undefined,
     isReagyp: data.isReagyp ?? false,
+    hasEquivalenceSurcharge: data.hasEquivalenceSurcharge ?? false,
   };
 }
 

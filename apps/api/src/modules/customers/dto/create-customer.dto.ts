@@ -96,4 +96,14 @@ export class CreateCustomerDto {
   @IsOptional()
   @IsBoolean({ message: 'isReagyp debe ser un booleano' })
   isReagyp?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'Indica si este cliente está en el régimen de Recargo de Equivalencia (RE). ' +
+      'Cuando es true, la factura incluirá el recargo de equivalencia además del IVA.',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'hasEquivalenceSurcharge debe ser un booleano' })
+  hasEquivalenceSurcharge?: boolean;
 }

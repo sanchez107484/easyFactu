@@ -39,6 +39,9 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
   const taxRates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
   const ivaLabel = taxRates.length === 1 ? `IVA (${taxRates[0]}%)` : 'IVA';
   const isReagyp = invoice.compensacionPercent != null;
+  const hasSurcharge = invoice.surchargeTotal != null && Number(invoice.surchargeTotal) > 0;
+  const surchargeRates = [...new Set((invoice.lines ?? []).map((l) => Number(l.surchargeRate ?? 0)).filter(r => r > 0))];
+  const surchargeLabel = surchargeRates.length === 1 ? `RE (${surchargeRates[0]}%)` : 'Recargo de Equivalencia';
 
   return (
     <div className="flex justify-end">
@@ -64,6 +67,13 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
           : showTaxBreakdown && (
               <TotalsRow label={ivaLabel} value={formatCurrency(invoice.taxTotal)} />
             )}
+
+        {hasSurcharge && !isReagyp && (
+          <TotalsRow
+            label={surchargeLabel}
+            value={`+${formatCurrency(invoice.surchargeTotal ?? 0)}`}
+          />
+        )}
 
         {showIrpf &&
           (isReagyp

@@ -180,6 +180,7 @@ export default function FacturaDetailPage() {
         quantity: l.quantity,
         unitPrice: l.unitPrice,
         taxRate: l.taxRate,
+        surchargeRate: l.surchargeRate && Number(l.surchargeRate) > 0 ? Number(l.surchargeRate) : undefined,
         hideQty: l.hideQty ?? false,
       })),
       paymentMethod: invoice!.paymentMethod ?? undefined,

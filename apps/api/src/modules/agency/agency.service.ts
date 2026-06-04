@@ -207,6 +207,7 @@ export class AgencyService {
     type IvaRow = {
       total_iva: string | null;
       total_irpf: string | null;
+      total_surcharge: string | null;
       total_revenue: string | null;
       invoices_count: bigint;
       clients_count: bigint;
@@ -214,10 +215,11 @@ export class AgencyService {
 
     const [result] = await this.prisma.$queryRaw<IvaRow[]>(Prisma.sql`
       SELECT
-        SUM(tax_total)  AS total_iva,
-        SUM(irpf_total) AS total_irpf,
-        SUM(total)      AS total_revenue,
-        COUNT(*)        AS invoices_count,
+        SUM(tax_total)       AS total_iva,
+        SUM(irpf_total)      AS total_irpf,
+        SUM(surcharge_total) AS total_surcharge,
+        SUM(total)           AS total_revenue,
+        COUNT(*)             AS invoices_count,
         COUNT(DISTINCT tenant_id) AS clients_count
       FROM invoices
       WHERE tenant_id = ANY(ARRAY[${Prisma.join(clientIds.map((id) => Prisma.sql`${id}`))}])
@@ -233,6 +235,7 @@ export class AgencyService {
       endDate: endDate.toISOString(),
       totalIva: Number(result?.total_iva ?? 0),
       totalIrpf: Number(result?.total_irpf ?? 0),
+      totalSurcharge: Number(result?.total_surcharge ?? 0),
       totalRevenue: Number(result?.total_revenue ?? 0),
       invoicesCount: Number(result?.invoices_count ?? 0),
       clientsWithData: Number(result?.clients_count ?? 0),
@@ -1338,7 +1341,7 @@ export class AgencyService {
     const [agg, distinctClients] = await Promise.all([
       this.prisma.invoice.aggregate({
         where,
-        _sum: { subtotal: true, taxTotal: true, irpfTotal: true, total: true, amountPaid: true },
+        _sum: { subtotal: true, taxTotal: true, irpfTotal: true, surchargeTotal: true, total: true, amountPaid: true },
         _count: { _all: true },
       }),
       this.prisma.invoice.findMany({
@@ -1357,6 +1360,7 @@ export class AgencyService {
       totalSubtotal: Number(agg._sum.subtotal ?? 0),
       totalIva: Number(agg._sum.taxTotal ?? 0),
       totalIrpf: Number(agg._sum.irpfTotal ?? 0),
+      totalSurcharge: Number(agg._sum.surchargeTotal ?? 0),
       totalRevenue,
       totalPending: Math.max(0, totalRevenue - totalPaid),
     };
@@ -1372,6 +1376,7 @@ export class AgencyService {
         totalSubtotal: 0,
         totalIva: 0,
         totalIrpf: 0,
+        totalSurcharge: 0,
         totalRevenue: 0,
         totalPending: 0,
       },

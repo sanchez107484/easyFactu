@@ -80,6 +80,13 @@ export class CreateInvoiceLineDto {
   @Min(0)
   @Max(100)
   irpfRate?: number;
+
+  @ApiPropertyOptional({ description: 'Tipo de Recargo de Equivalencia para esta línea (%)', minimum: 0, maximum: 100 })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El recargo de equivalencia admite hasta 2 decimales' })
+  @Min(0)
+  @Max(100)
+  surchargeRate?: number;
 }
 
 export class PaymentDetailsDto {

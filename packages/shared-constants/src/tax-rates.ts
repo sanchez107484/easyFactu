@@ -57,3 +57,15 @@ export const VALID_TAX_RATES = [
   TAX_RATES.REDUCED,
   TAX_RATES.STANDARD,
 ] as const;
+
+/**
+ * Recargo de Equivalencia rates mapped to their corresponding IVA rate.
+ * Art. 161 LIVA: recargo que pagan los minoristas en régimen de RE.
+ * IVA 21% → RE 5.2% | IVA 10% → RE 1.4% | IVA 4% → RE 0.5% | IVA 0% → RE 0%
+ */
+export const EQUIVALENCE_SURCHARGE_RATES: Record<number, number> = {
+  21: 5.2,
+  10: 1.4,
+  4: 0.5,
+  0: 0,
+} as const;

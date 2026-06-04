@@ -164,6 +164,9 @@ export class RecurringInvoiceService {
       unitPrice: line.unitPrice,
       taxRate: line.taxRate,
       irpfRate: line.irpfRate ?? null,
+      ...(line.surchargeRate != null && line.surchargeRate > 0
+        ? { surchargeRate: line.surchargeRate }
+        : {}),
       ...(line.discountPercent != null && line.discountPercent > 0
         ? { discountPercent: line.discountPercent }
         : {}),
@@ -174,7 +177,7 @@ export class RecurringInvoiceService {
 
   /**
    * Computes the estimated total of a recurring invoice from its lines and tenant-level
-   * discount/IRPF percentages. Persisted in `RecurringInvoice.estimatedTotal` so the listing
+   * discount/IRPF/RE percentages. Persisted in `RecurringInvoice.estimatedTotal` so the listing
    * endpoint can avoid loading every `RecurringInvoiceLine` row just to render the total.
    */
   private computeEstimatedTotal(
@@ -184,17 +187,26 @@ export class RecurringInvoiceService {
       taxRate: number | string | Prisma.Decimal;
     }>,
     discountPercent: number | string | Prisma.Decimal | null | undefined,
-    irpfPercent: number | string | Prisma.Decimal | null | undefined
+    irpfPercent: number | string | Prisma.Decimal | null | undefined,
+    equivalenceSurchargeRates?: Record<number, number>
   ): number {
     const discountFactor = discountPercent ? 1 - Number(discountPercent) / 100 : 1;
     const gross = lines.reduce((sum, l) => sum + Number(l.quantity) * Number(l.unitPrice), 0);
     const netBase = gross * discountFactor;
+    const hasSurcharge = equivalenceSurchargeRates != null && Object.keys(equivalenceSurchargeRates).length > 0;
     const totalTax = lines.reduce((sum, l) => {
       const lineNet = Number(l.quantity) * Number(l.unitPrice) * discountFactor;
       return sum + lineNet * (Number(l.taxRate) / 100);
     }, 0);
+    const totalSurcharge = hasSurcharge
+      ? lines.reduce((sum, l) => {
+          const lineNet = Number(l.quantity) * Number(l.unitPrice) * discountFactor;
+          const rate = equivalenceSurchargeRates![Number(l.taxRate)] ?? 0;
+          return sum + lineNet * (rate / 100);
+        }, 0)
+      : 0;
     const totalIrpf = irpfPercent ? netBase * (Number(irpfPercent) / 100) : 0;
-    return Math.round((netBase + totalTax - totalIrpf) * 100) / 100;
+    return Math.round((netBase + totalTax + totalSurcharge - totalIrpf) * 100) / 100;
   }
 
   /**
@@ -253,6 +265,10 @@ export class RecurringInvoiceService {
               unitPrice: line.unitPrice,
               taxRate: line.taxRate,
               irpfRate: line.irpfRate ?? null,
+              surchargeRate:
+                line.surchargeRate != null && line.surchargeRate > 0
+                  ? line.surchargeRate
+                  : null,
               discountPercent:
                 line.discountPercent != null && line.discountPercent > 0
                   ? line.discountPercent
@@ -278,6 +294,9 @@ export class RecurringInvoiceService {
             unitPrice: line.unitPrice,
             taxRate: line.taxRate,
             irpfRate: line.irpfRate ?? null,
+            ...(line.surchargeRate != null && line.surchargeRate > 0
+              ? { surchargeRate: line.surchargeRate }
+              : {}),
             discountPercent:
               line.discountPercent != null && line.discountPercent > 0
                 ? line.discountPercent
@@ -380,6 +399,13 @@ export class RecurringInvoiceService {
     const dayOfMonth = dto.dayOfMonth ?? 1;
     const nextRunDate = this.calculateInitialNextRunDate(dto.startDate, dayOfMonth, dto.frequency);
 
+    // RE is incompatible with REAGYP
+    const isReagyp = dto.compensacionPercent != null && dto.compensacionPercent > 0;
+    const hasEquivalenceSurcharge = customer.hasEquivalenceSurcharge && !isReagyp;
+    const equivalenceSurchargeRates: Record<number, number> = hasEquivalenceSurcharge
+      ? { 21: 5.2, 10: 1.4, 4: 0.5, 0: 0 }
+      : {};
+
     return this.prisma.$transaction(async (tx) => {
       // Only store createdByUserId when the creator is NOT the tenant owner.
       const isOwner = await tx.tenantUser.findFirst({
@@ -400,13 +426,15 @@ export class RecurringInvoiceService {
           nextRunDate,
           autoConfirm: dto.autoConfirm ?? false,
           status: PrismaRecurringStatus.ACTIVE,
+          hasEquivalenceSurcharge,
           discountPercent: dto.discountPercent ?? null,
           irpfPercent: dto.irpfPercent ?? null,
           compensacionPercent: dto.compensacionPercent ?? null,
           estimatedTotal: this.computeEstimatedTotal(
             dto.lines,
             dto.discountPercent ?? null,
-            dto.irpfPercent ?? null
+            dto.irpfPercent ?? null,
+            equivalenceSurchargeRates
           ),
           paymentMethod: dto.paymentMethod ?? null,
           paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : Prisma.JsonNull,
@@ -459,11 +487,16 @@ export class RecurringInvoiceService {
     // Recompute denormalized estimatedTotal whenever lines or any percentage change.
     const totalsAffected =
       dto.lines !== undefined || dto.discountPercent !== undefined || dto.irpfPercent !== undefined;
+    const hasEquivalenceSurcharge = existing.hasEquivalenceSurcharge;
+    const equivalenceSurchargeRates: Record<number, number> = hasEquivalenceSurcharge
+      ? { 21: 5.2, 10: 1.4, 4: 0.5, 0: 0 }
+      : {};
     const recomputedEstimatedTotal = totalsAffected
       ? this.computeEstimatedTotal(
           dto.lines ?? existing.lines,
           dto.discountPercent !== undefined ? dto.discountPercent : existing.discountPercent,
-          dto.irpfPercent !== undefined ? dto.irpfPercent : existing.irpfPercent
+          dto.irpfPercent !== undefined ? dto.irpfPercent : existing.irpfPercent,
+          equivalenceSurchargeRates
         )
       : undefined;
 

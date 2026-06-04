@@ -136,26 +136,51 @@ export class VerifactuXmlService {
     }
 
     // ── General IVA path ───────────────────────────────────────────────────────
-    // Group lines by tax rate
-    const taxGroups = new Map<number, { base: number; tax: number; irpf: number }>();
+    // Group lines by tax rate, tracking surcharge data alongside
+    const taxGroups = new Map<
+      number,
+      { base: number; tax: number; irpf: number; surchargeAmount: number; surchargeRate: number }
+    >();
 
     for (const line of invoice.lines) {
       const key = Number(line.taxRate);
-      const current = taxGroups.get(key) || { base: 0, tax: 0, irpf: 0 };
+      const current = taxGroups.get(key) || {
+        base: 0,
+        tax: 0,
+        irpf: 0,
+        surchargeAmount: 0,
+        surchargeRate: 0,
+      };
+      const lineSurcharge = Number(line.surchargeAmount || 0);
 
       taxGroups.set(key, {
         base: current.base + Number(line.subtotal),
         tax: current.tax + Number(line.taxAmount),
         irpf: current.irpf + Number(line.irpfAmount || 0),
+        surchargeAmount: current.surchargeAmount + lineSurcharge,
+        surchargeRate:
+          lineSurcharge > 0 && current.surchargeRate === 0
+            ? Number(line.surchargeRate || 0)
+            : current.surchargeRate,
       });
     }
 
     // Build XML for each tax group
     const breakdowns = Array.from(taxGroups.entries()).map(([rate, amounts]) => {
+      const hasSurcharge = amounts.surchargeAmount > 0;
       return `<DetalleDesglose>
         <BaseImponible>${amounts.base.toFixed(2)}</BaseImponible>
         <TipoImpositivo>${rate.toFixed(2)}</TipoImpositivo>
         <CuotaImpuesto>${amounts.tax.toFixed(2)}</CuotaImpuesto>
+        ${
+          hasSurcharge
+            ? `<RecargoEquivalencia>
+          <BaseImponible>${amounts.base.toFixed(2)}</BaseImponible>
+          <TipoImpositivo>${amounts.surchargeRate.toFixed(2)}</TipoImpositivo>
+          <CuotaImpuesto>${amounts.surchargeAmount.toFixed(2)}</CuotaImpuesto>
+        </RecargoEquivalencia>`
+            : ''
+        }
         ${
           amounts.irpf > 0
             ? `<BaseRetencion>${amounts.base.toFixed(2)}</BaseRetencion>

@@ -44,6 +44,7 @@ import {
   TrendingUp,
   Receipt,
   Clock,
+  Percent,
 } from 'lucide-react';
 import { useSortTable, sortData } from '@/hooks/use-sort-table';
 import { SortableHeader } from '@/components/common/sortable-header';
@@ -300,6 +301,12 @@ export default function ClienteDetailPage() {
               <Badge variant={customer.isActive ? 'default' : 'secondary'} className="shrink-0">
                 {customer.isActive ? 'Activo' : 'Inactivo'}
               </Badge>
+              {customer.hasEquivalenceSurcharge && (
+                <Badge variant="outline" className="shrink-0 gap-1 border-amber-300 text-amber-700 bg-amber-50">
+                  <Percent className="h-3 w-3" />
+                  RE
+                </Badge>
+              )}
             </div>
             {customer.legalName && (
               <p className="text-sm text-muted-foreground mt-0.5">{customer.legalName}</p>

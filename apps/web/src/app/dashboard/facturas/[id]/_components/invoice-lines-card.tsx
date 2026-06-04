@@ -15,6 +15,9 @@ export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
   const taxRates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
   const taxLabel = taxRates.length === 1 ? `IVA (${taxRates[0]}%)` : 'IVA';
   const isReagyp = invoice.compensacionPercent != null;
+  const hasSurcharge = invoice.surchargeTotal != null && Number(invoice.surchargeTotal) > 0;
+  const surchargeRates = [...new Set((invoice.lines ?? []).map((l) => Number(l.surchargeRate ?? 0)).filter(r => r > 0))];
+  const surchargeLabel = surchargeRates.length === 1 ? `RE (${surchargeRates[0]}%)` : 'Recargo de Equivalencia';
 
   const showQtyColumn = (invoice.lines ?? []).some((l) => !l.hideQty);
   const showUnitPrice = template?.layout.itemsTable.showUnitPrice ?? true;
@@ -120,6 +123,14 @@ export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
           )
         ) : (
           <DataRow label={taxLabel} value={formatCurrency(invoice.taxTotal)} />
+        )}
+        {hasSurcharge && !isReagyp && (
+          <div className="flex justify-between items-baseline py-1">
+            <span className="text-sm">{surchargeLabel}</span>
+            <span className="text-sm tabular-nums">
+              +{formatCurrency(invoice.surchargeTotal ?? 0)}
+            </span>
+          </div>
         )}
         {parseNum(invoice.irpfPercent) > 0 && (
           <div className="flex justify-between items-baseline py-1">

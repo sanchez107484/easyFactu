@@ -39,6 +39,7 @@ function buildUpdateInput(data: FormData): UpdateCustomerInput {
     country: data.country || 'ES',
     notes: data.notes?.trim() || undefined,
     isReagyp: data.isReagyp ?? false,
+    hasEquivalenceSurcharge: data.hasEquivalenceSurcharge ?? false,
   };
 }
 
@@ -227,6 +228,7 @@ export default function EditarClientePage() {
     country: customer.country ?? 'ES',
     notes: customer.notes ?? '',
     isReagyp: customer.isReagyp ?? false,
+    hasEquivalenceSurcharge: customer.hasEquivalenceSurcharge ?? false,
   };
 
   return (

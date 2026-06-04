@@ -31,6 +31,8 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
   // Show the Dto column only when actual discount data exists.
   // layout.itemsTable.showDiscount===false is the hard override (simplifyTable).
   const showDiscount = layout.itemsTable.showDiscount === false ? false : hasDiscountData;
+  const hasSurchargeData = !isReagyp && lines.some((l) => (l.surchargeRate ?? 0) > 0);
+  const showSurchargeCol = hasSurchargeData && layout.itemsTable.showTaxColumn !== false;
   const { tableHeader, primary } = layout.colors;
 
   const isGrid = style === 'grid';
@@ -56,6 +58,7 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
     (showQtyCol ? 1 : 0) +
     (showUnitPrice ? 1 : 0) +
     (showTaxColumn ? 1 : 0) +
+    (showSurchargeCol ? 1 : 0) +
     (showDiscount ? 1 : 0) +
     (showLineTotal ? 1 : 0);
 
@@ -68,6 +71,7 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
           {showQtyCol && <th className={cn(thClass, 'text-right w-12')}>Cant.</th>}
           {showUnitPrice && <th className={cn(thClass, 'text-right w-20')}>Precio unit.</th>}
           {showTaxColumn && <th className={cn(thClass, 'text-right w-12')}>IVA</th>}
+          {showSurchargeCol && <th className={cn(thClass, 'text-right w-14')}>RE</th>}
           {showDiscount && <th className={cn(thClass, 'text-right w-12')}>Dto.</th>}
           {showLineTotal && <th className={cn(thClass, 'text-right w-20')}>Total</th>}
         </tr>
@@ -92,6 +96,13 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
                 </td>
               )}
               {showTaxColumn && <td className={cn(tdClass, 'text-right')}>{line.taxRate}%</td>}
+              {showSurchargeCol && (
+                <td className={cn(tdClass, 'text-right')}>
+                  {(line.surchargeRate ?? 0) > 0
+                    ? `${Number(line.surchargeRate).toLocaleString('es-ES', { maximumFractionDigits: 1 })}%`
+                    : '—'}
+                </td>
+              )}
               {showDiscount && (
                 <td className={cn(tdClass, 'text-right')}>
                   {(line.discountPercent ?? 0) > 0

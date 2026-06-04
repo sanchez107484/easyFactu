@@ -5,11 +5,16 @@ export interface TaxBreakdownItem {
   taxRate: number;
   baseAmount: number;
   taxAmount: number;
+  /** Tipo de Recargo de Equivalencia para este tramo de IVA. 0 si no aplica. */
+  surchargeRate: number;
+  surchargeAmount: number;
 }
 
 export interface CalculatedLine {
   subtotal: number;
   taxAmount: number;
+  /** Importe de Recargo de Equivalencia para esta línea. 0 si no aplica. */
+  surchargeAmount: number;
   lineTotal: number;
 }
 
@@ -20,6 +25,8 @@ export interface CalculatedInvoiceTotals {
   subtotalAfterDiscount: number;
   taxBreakdown: TaxBreakdownItem[];
   taxTotal: number;
+  /** Recargo de Equivalencia total (suma de RE de todas las líneas). 0 si no aplica. */
+  surchargeTotal: number;
   irpfTotal: number;
   /** REAGYP only: compensation amount (subtotalAfterDiscount × compensacionPercent). 0 for GENERAL. */
   compensacionAmount: number;
@@ -30,8 +37,11 @@ export interface CalculateTotalsOptions {
   discountPercent?: number;
   irpfPercent?: number;
   /** REAGYP compensation rate (%). Pass undefined or 0 for GENERAL regime. */
-  compensacionPercent?: number;
-}
+  compensacionPercent?: number;  /** Recargo de Equivalencia rate map: { taxRate -> surchargeRate }.
+   * Pass a non-empty map when the customer has hasEquivalenceSurcharge=true.
+   * Each line’s surcharge rate is taken from this map using its taxRate.
+   * If a rate is not present, surcharge defaults to 0 for that line. */
+  equivalenceSurchargeRates?: Record<number, number>;}
 
 /**
  * Handles all monetary calculations for invoices.
@@ -85,6 +95,10 @@ export class InvoiceCalculationService {
     }
 
     const isReagyp = compensacionPercent != null && compensacionPercent > 0;
+    const equivalenceSurchargeRatesOption =
+      options !== undefined && typeof options === 'object' ? options.equivalenceSurchargeRates : undefined;
+    const surchargeRateMap: Record<number, number> = equivalenceSurchargeRatesOption ?? {};
+    const hasEquivalenceSurcharge = Object.keys(surchargeRateMap).length > 0;
 
     // === STEP 1: Calculate per-line amounts ===
     // IMPORTANT: intermediate values are kept at full floating-point precision before
@@ -106,13 +120,20 @@ export class InvoiceCalculationService {
       // so that e.g. 28.9256 × 0.21 = 6.074376 → round2 → 6.07, and
       // 28.9256 × 1.21 = 34.999976 → round2 → 35.00 (not 35.01).
       const taxAmount = isReagyp ? 0 : this.round2(precise * (Number(line.taxRate) / 100));
+      // Surcharge: calculated on the same base as IVA (after line discount, before global discount)
+      const lineSurchargeRate = hasEquivalenceSurcharge
+        ? (surchargeRateMap[Number(line.taxRate)] ?? 0)
+        : 0;
+      const surchargeAmount = hasEquivalenceSurcharge && !isReagyp
+        ? this.round2(precise * (lineSurchargeRate / 100))
+        : 0;
       const lineTotal = this.round2(precise * (isReagyp ? 1 : 1 + Number(line.taxRate) / 100));
       const subtotal = this.round2(precise); // rounded for DB storage (Decimal 12,2)
-      return { subtotal, taxAmount, lineTotal, _precise: precise };
+      return { subtotal, taxAmount, surchargeAmount, lineTotal, _precise: precise };
     });
     // Strip the internal _precise field before exposing the public CalculatedLine array.
     const calculatedLines: CalculatedLine[] = calculatedLinesRaw.map(
-      ({ subtotal, taxAmount, lineTotal }) => ({ subtotal, taxAmount, lineTotal })
+      ({ subtotal, taxAmount, surchargeAmount, lineTotal }) => ({ subtotal, taxAmount, surchargeAmount, lineTotal })
     );
 
     // === STEP 2: Invoice subtotal (sum of all line subtotals) ===
@@ -130,26 +151,31 @@ export class InvoiceCalculationService {
 
     if (!isReagyp) {
       const discountRatio = subtotal > 0 ? subtotalAfterDiscount / subtotal : 1;
-      const taxMap = new Map<number, { baseAmount: number; taxAmount: number }>();
+      const taxMap = new Map<number, { baseAmount: number; taxAmount: number; surchargeRate: number; surchargeAmount: number }>();
 
       lines.forEach((line, index) => {
         const rate = Number(line.taxRate);
         const linePrecise = calculatedLinesRaw[index]!._precise;
+        const surchargeRate = hasEquivalenceSurcharge ? (surchargeRateMap[rate] ?? 0) : 0;
         // Keep full precision for the tax multiplication to avoid the double-rounding error.
-        // e.g. 28.9256 → round2 → 28.93 → ×0.21 → 6.0753 → round2 → 6.08 (WRONG)
-        //      28.9256 → ×0.21 → 6.074376 → round2 → 6.07 (CORRECT)
         const lineBaseForTax = linePrecise * discountRatio; // full precision
         const lineSubtotalAfterDiscount = this.round2(lineBaseForTax); // rounded for baseAmount display only
         const lineTaxAfterDiscount = this.round2(lineBaseForTax * (rate / 100)); // use unrounded base
+        const lineSurchargeAfterDiscount = hasEquivalenceSurcharge
+          ? this.round2(lineBaseForTax * (surchargeRate / 100))
+          : 0;
 
         const existing = taxMap.get(rate);
         if (existing) {
           existing.baseAmount = this.round2(existing.baseAmount + lineSubtotalAfterDiscount);
           existing.taxAmount = this.round2(existing.taxAmount + lineTaxAfterDiscount);
+          existing.surchargeAmount = this.round2(existing.surchargeAmount + lineSurchargeAfterDiscount);
         } else {
           taxMap.set(rate, {
             baseAmount: lineSubtotalAfterDiscount,
             taxAmount: lineTaxAfterDiscount,
+            surchargeRate,
+            surchargeAmount: lineSurchargeAfterDiscount,
           });
         }
       });
@@ -166,6 +192,11 @@ export class InvoiceCalculationService {
       ? this.round2(subtotalAfterDiscount * (Number(compensacionPercent) / 100))
       : 0;
 
+    // === STEP 4c: Recargo de Equivalencia total ===
+    const surchargeTotal = hasEquivalenceSurcharge && !isReagyp
+      ? this.round2(taxBreakdown.reduce((sum, item) => sum + item.surchargeAmount, 0))
+      : 0;
+
     // === STEP 5: IRPF (withheld from the invoiced amount) ===
     // GENERAL: IRPF applies to subtotalAfterDiscount (before IVA)
     // REAGYP:  IRPF applies to subtotalAfterDiscount + compensacionAmount (Art. 102.Dos LIVA)
@@ -175,11 +206,11 @@ export class InvoiceCalculationService {
     const irpfTotal = irpfPercent ? this.round2(irpfBase * (Number(irpfPercent) / 100)) : 0;
 
     // === STEP 6: Final total ===
-    // GENERAL: subtotalAfterDiscount + taxTotal − irpfTotal
-    // REAGYP:  subtotalAfterDiscount + compensacionAmount − irpfTotal
+    // GENERAL:    subtotalAfterDiscount + taxTotal + surchargeTotal − irpfTotal
+    // REAGYP:     subtotalAfterDiscount + compensacionAmount − irpfTotal (no RE in REAGYP)
     const total = isReagyp
       ? this.round2(subtotalAfterDiscount + compensacionAmount - irpfTotal)
-      : this.round2(subtotalAfterDiscount + taxTotal - irpfTotal);
+      : this.round2(subtotalAfterDiscount + taxTotal + surchargeTotal - irpfTotal);
 
     return {
       lines: calculatedLines,
@@ -188,6 +219,7 @@ export class InvoiceCalculationService {
       subtotalAfterDiscount,
       taxBreakdown,
       taxTotal,
+      surchargeTotal,
       irpfTotal,
       compensacionAmount,
       total,

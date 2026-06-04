@@ -300,6 +300,8 @@ export interface Customer {
   notes: string | null;
   /** Indica si el cliente está acogido al REAGYP. Si true, no se aplica compensación agraria. */
   isReagyp: boolean;
+  /** Indica si el cliente está en el régimen de Recargo de Equivalencia (RE). */
+  hasEquivalenceSurcharge: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -319,6 +321,7 @@ export interface CreateCustomerInput {
   country?: string;
   notes?: string;
   isReagyp?: boolean;
+  hasEquivalenceSurcharge?: boolean;
 }
 
 export interface UpdateCustomerInput {
@@ -335,6 +338,7 @@ export interface UpdateCustomerInput {
   country?: string;
   notes?: string;
   isReagyp?: boolean;
+  hasEquivalenceSurcharge?: boolean;
   isActive?: boolean;
 }
 
@@ -455,6 +459,9 @@ export interface InvoiceLine {
   discountPercent?: number | null;
   taxRate: number;
   taxAmount: number;
+  /** Recargo de Equivalencia (RE) por línea. Solo cuando el cliente está en RE. */
+  surchargeRate?: number | null;
+  surchargeAmount?: number | null;
   lineTotal: number;
   /** Whether to hide the quantity column for this line in the invoice preview/PDF */
   hideQty: boolean;
@@ -514,6 +521,8 @@ export interface Invoice {
   compensacionPercent: number | null;
   /** Importe de la compensación agraria. Null en régimen general. */
   compensacionAmount: number | null;
+  /** Importe total del Recargo de Equivalencia. Null si no aplica. */
+  surchargeTotal?: number | null;
   total: number;
   paymentMethod: PaymentMethod | null;
   paymentDetails: Record<string, unknown> | null;
@@ -613,6 +622,8 @@ export interface CreateInvoiceLineInput {
   hideQty?: boolean;
   /** Per-line IRPF withholding rate (%) */
   irpfRate?: number;
+  /** Recargo de Equivalencia rate for this line (%). Auto-populated from customer's RE flag. */
+  surchargeRate?: number;
 }
 
 export interface CreateInvoiceInput {
@@ -878,6 +889,8 @@ export interface RecurringInvoiceLine {
   discountPercent?: number | null;
   taxRate: number;
   irpfRate: number | null;
+  /** Recargo de Equivalencia rate for this line (%). */
+  surchargeRate?: number | null;
   hideQty: boolean;
   sortOrder: number;
   createdAt: string;
@@ -904,6 +917,8 @@ export interface RecurringInvoice {
   paymentDetails: Record<string, unknown> | null;
   notes: string | null;
   layoutOverride?: LayoutOverride | null;
+  /** Customer has Recargo de Equivalencia flag (copied at generation time). */
+  hasEquivalenceSurcharge?: boolean;
   createdAt: string;
   updatedAt: string;
   customer?: Customer;
@@ -927,6 +942,8 @@ export interface CreateRecurringInvoiceLineInput {
   discountPercent?: number;
   taxRate: number;
   irpfRate?: number;
+  /** Recargo de Equivalencia rate for this line (%). */
+  surchargeRate?: number;
   hideQty?: boolean;
 }
 
@@ -1068,6 +1085,7 @@ export interface InvoiceReportData {
     totalSubtotal: number;
     totalIva: number;
     totalIrpf: number;
+    totalSurcharge: number;
     invoicesCount: number;
   };
 }
@@ -1364,6 +1382,7 @@ export interface AgencyInvoicesSummary {
   totalSubtotal: number;
   totalIva: number;
   totalIrpf: number;
+  totalSurcharge: number;
   totalRevenue: number;
   totalPending: number;
 }

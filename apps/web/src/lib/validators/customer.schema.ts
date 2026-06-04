@@ -21,6 +21,7 @@ export const customerFormSchema = z
     country: z.string().length(2, 'Código de país de 2 letras').default('ES').optional(),
     notes: z.string().max(500, 'Máximo 500 caracteres').optional().or(z.literal('')),
     isReagyp: z.boolean().default(false).optional(),
+    hasEquivalenceSurcharge: z.boolean().default(false).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.type !== CustomerType.INTRACOMMUNITY && data.nif) {
@@ -36,6 +37,14 @@ export const customerFormSchema = z
           path: ['nif'],
         });
       }
+    }
+    if (data.isReagyp && data.hasEquivalenceSurcharge) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'Un cliente no puede estar simultáneamente en REAGYP y en Recargo de Equivalencia',
+        path: ['hasEquivalenceSurcharge'],
+      });
     }
   });
 

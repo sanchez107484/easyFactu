@@ -443,23 +443,7 @@ export function CustomerFormFields({
         </div>
       </div>
 
-      {/* ── FILA 4: Notas internas ── */}
-      <div className="rounded-xl border bg-card p-5">
-        <SectionLabel>
-          Notas internas{' '}
-          <span className="text-muted-foreground text-xs font-normal normal-case tracking-normal">
-            (opcional)
-          </span>
-        </SectionLabel>
-        <Textarea
-          {...form.register('notes')}
-          placeholder="Información adicional sobre este cliente (no aparece en las facturas)..."
-          rows={3}
-        />
-        <FieldError message={form.formState.errors.notes?.message} />
-      </div>
-
-      {/* ── FILA 5: REAGYP (solo si el tenant emisor está en REAGYP) ── */}
+      {/* ── FILA 4: REAGYP (solo si el tenant emisor está en REAGYP) ── */}
       {showReagypToggle && (
         <div className="rounded-xl border bg-card p-5">
           <SectionLabel>Régimen fiscal del cliente</SectionLabel>
@@ -479,6 +463,39 @@ export function CustomerFormFields({
           </div>
         </div>
       )}
+
+      {/* ── FILA 5: Recargo de Equivalencia ── */}
+      <div className="rounded-xl border bg-card px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <SectionLabel>Recargo de Equivalencia</SectionLabel>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Aplica el recargo de equivalencia (Art. 161 LIVA). Tipos: 21%→5,2% | 10%→1,4% | 4%→0,5%. Incompatible con REAGYP.
+            </p>
+          </div>
+          <Switch
+            id="hasEquivalenceSurcharge"
+            checked={form.watch('hasEquivalenceSurcharge') ?? false}
+            onCheckedChange={(checked) => form.setValue('hasEquivalenceSurcharge', checked)}
+          />
+        </div>
+      </div>
+
+      {/* ── FILA 6: Notas internas ── */}
+      <div className="rounded-xl border bg-card p-5">
+        <SectionLabel>
+          Notas internas{' '}
+          <span className="text-muted-foreground text-xs font-normal normal-case tracking-normal">
+            (opcional)
+          </span>
+        </SectionLabel>
+        <Textarea
+          {...form.register('notes')}
+          placeholder="Información adicional sobre este cliente (no aparece en las facturas)..."
+          rows={3}
+        />
+        <FieldError message={form.formState.errors.notes?.message} />
+      </div>
     </div>
   );
 }

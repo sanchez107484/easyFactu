@@ -30,6 +30,7 @@ type RecurringWithLines = {
     unitPrice: unknown;
     taxRate: unknown;
     irpfRate: unknown;
+    surchargeRate: unknown;
     discountPercent: unknown;
     hideQty: boolean;
     productId: string | null;
@@ -138,6 +139,9 @@ export class RecurringInvoiceSchedulerService {
         hideQty: line.hideQty,
         ...(line.discountPercent != null && Number(line.discountPercent) > 0
           ? { discountPercent: Number(line.discountPercent) }
+          : {}),
+        ...(line.surchargeRate != null && Number(line.surchargeRate) > 0
+          ? { surchargeRate: Number(line.surchargeRate) }
           : {}),
       })),
     };

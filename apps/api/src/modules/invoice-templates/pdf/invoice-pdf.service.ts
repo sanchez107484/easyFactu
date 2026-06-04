@@ -334,6 +334,9 @@ export class InvoicePdfService {
     } else {
       doc.text(`IVA: ${formatCurrency(invoice.taxTotal)}`);
     }
+    if (invoice.surchargeTotal && Number(invoice.surchargeTotal) > 0) {
+      doc.text(`RE: ${formatCurrency(invoice.surchargeTotal)}`);
+    }
     if (invoice.irpfTotal) doc.text(`IRPF: ${formatCurrency(invoice.irpfTotal)}`);
     if (invoice.discountAmount) doc.text(`Descuento: ${formatCurrency(invoice.discountAmount)}`);
     doc.text(`Total: ${formatCurrency(invoice.total)}`);
@@ -464,6 +467,7 @@ export class InvoicePdfService {
         notes: null,
         isActive: true,
         isReagyp: false,
+        hasEquivalenceSurcharge: false,
         createdAt: now,
         updatedAt: now,
       },
