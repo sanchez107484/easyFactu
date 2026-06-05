@@ -59,7 +59,7 @@ import {
   SharedPoolCustomer,
   TaxRegime,
 } from '@easyfactura/shared-types';
-import { FREQUENCY_OPTIONS, PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
+import { FREQUENCY_OPTIONS, PAYMENT_METHOD_LABELS, EQUIVALENCE_SURCHARGE_RATES } from '@easyfactura/shared-constants';
 import { cn, resolveUrl } from '@/lib/utils';
 
 // ==================== SCHEMA ====================
@@ -332,6 +332,13 @@ function RecurringInvoiceForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchedValues.customerId, tenantData?.taxRegime, tenantData?.reaypRate]);
 
+  // Recargo de Equivalencia: applies when the customer has RE and we're not in REAGYP.
+  // The rate is fixed by law (Art. 161 LIVA) — only the customer-level flag toggles it.
+  const equivalenceSurchargeRates =
+    selectedCustomer?.hasEquivalenceSurcharge && !showCompensacion
+      ? EQUIVALENCE_SURCHARGE_RATES
+      : undefined;
+
   const previewInvoice = buildPreviewInvoice(
     {
       customerId: watchedValues.customerId,
@@ -346,6 +353,7 @@ function RecurringInvoiceForm({
     customers,
     null,
     showCompensacion ? (watchedValues.compensacionPercent ?? 0) : watchedValues.compensacionPercent,
+    equivalenceSurchargeRates,
   );
 
   const source = tenantData ?? currentTenant;
@@ -979,6 +987,7 @@ function RecurringInvoiceForm({
                   irpfPercentProps={form.register('irpfPercent', {
                     setValueAs: (v) => (v === '' ? undefined : Number(v)),
                   })}
+                  showEquivalenceSurchargeInfo={equivalenceSurchargeRates != null}
                   onFocus={() => setActiveSection('discountPercent')}
                 />
               )}

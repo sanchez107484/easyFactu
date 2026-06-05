@@ -376,6 +376,13 @@ export default function PresupuestoDetailPage() {
                     {quote.compensacionPercent != null
                       ? ` · Comp. agraria: +${formatCurrency(quote.compensacionAmount ?? 0)}`
                       : ` · IVA: ${formatCurrency(quote.taxTotal)}`}
+                    {quote.surchargeTotal != null &&
+                      Number(quote.surchargeTotal) > 0 && (
+                        <>
+                          {' · RE: +'}
+                          {formatCurrency(Number(quote.surchargeTotal))}
+                        </>
+                      )}
                     {parseNum(quote.irpfPercent) > 0 && (
                       <> · IRPF: −{formatCurrency(quote.irpfTotal)}</>
                     )}
@@ -587,6 +594,9 @@ export default function PresupuestoDetailPage() {
                 const isReagyp = quote.compensacionPercent != null;
                 const showQtyCol = quoteLines.some((l) => !l.hideQty);
                 const showDiscount = quoteLines.some((l) => parseNum(l.discountPercent) > 0);
+                const showSurcharge = quoteLines.some(
+                  (l) => parseNum(l.surchargeRate) > 0 || parseNum(l.surchargeAmount) > 0,
+                );
                 return (
                   <table className="w-full text-sm">
                     <thead>
@@ -607,6 +617,11 @@ export default function PresupuestoDetailPage() {
                             IVA
                           </th>
                         )}
+                        {showSurcharge && !isReagyp && (
+                          <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
+                            RE
+                          </th>
+                        )}
                         {showDiscount && (
                           <th className="text-right pb-2 font-medium text-muted-foreground text-xs w-12">
                             Dto.
@@ -618,38 +633,49 @@ export default function PresupuestoDetailPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {quoteLines.map((line) => (
-                        <tr key={line.id}>
-                          <td className="py-2.5 pr-4">{line.description}</td>
-                          {showQtyCol && (
+                      {quoteLines.map((line) => {
+                        const surchargeRate = parseNum(line.surchargeRate);
+                        const surchargeAmount = parseNum(line.surchargeAmount);
+                        return (
+                          <tr key={line.id}>
+                            <td className="py-2.5 pr-4">{line.description}</td>
+                            {showQtyCol && (
+                              <td className="py-2.5 text-right tabular-nums">
+                                {line.hideQty
+                                  ? ''
+                                  : parseNum(line.quantity).toLocaleString('es-ES', {
+                                      maximumFractionDigits: 4,
+                                    })}
+                              </td>
+                            )}
                             <td className="py-2.5 text-right tabular-nums">
-                              {line.hideQty
-                                ? ''
-                                : parseNum(line.quantity).toLocaleString('es-ES', {
-                                    maximumFractionDigits: 4,
-                                  })}
+                              {formatUnitPriceCurrency(line.unitPrice)}
                             </td>
-                          )}
-                          <td className="py-2.5 text-right tabular-nums">
-                            {formatUnitPriceCurrency(line.unitPrice)}
-                          </td>
-                          {!isReagyp && (
-                            <td className="py-2.5 text-right tabular-nums text-muted-foreground">
-                              {parseNum(line.taxRate)}%
+                            {!isReagyp && (
+                              <td className="py-2.5 text-right tabular-nums text-muted-foreground">
+                                {parseNum(line.taxRate)}%
+                              </td>
+                            )}
+                            {showSurcharge && !isReagyp && (
+                              <td className="py-2.5 text-right tabular-nums text-muted-foreground">
+                                {surchargeRate > 0
+                                  ? `${surchargeRate.toLocaleString('es-ES', { maximumFractionDigits: 2 })}%`
+                                  : '—'}
+                              </td>
+                            )}
+                            {showDiscount && (
+                              <td className="py-2.5 text-right tabular-nums text-muted-foreground">
+                                {parseNum(line.discountPercent) > 0
+                                  ? `${parseNum(line.discountPercent).toLocaleString('es-ES', { maximumFractionDigits: 2 })}%`
+                                  : '—'}
+                              </td>
+                            )}
+                            <td className="py-2.5 text-right tabular-nums font-medium">
+                              {formatCurrency(line.lineTotal)}
                             </td>
-                          )}
-                          {showDiscount && (
-                            <td className="py-2.5 text-right tabular-nums text-muted-foreground">
-                              {parseNum(line.discountPercent) > 0
-                                ? `${parseNum(line.discountPercent).toLocaleString('es-ES', { maximumFractionDigits: 2 })}%`
-                                : '—'}
-                            </td>
-                          )}
-                          <td className="py-2.5 text-right tabular-nums font-medium">
-                            {formatCurrency(line.lineTotal)}
-                          </td>
-                        </tr>
-                      ))}
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 );
@@ -684,6 +710,24 @@ export default function PresupuestoDetailPage() {
                 ) : (
                   <DataRow label="IVA" value={formatCurrency(quote.taxTotal)} />
                 )}
+                {quote.surchargeTotal != null &&
+                  Number(quote.surchargeTotal) > 0 && (
+                    <DataRow
+                      label={(() => {
+                        const rates = [
+                          ...new Set(
+                            (quote.lines ?? [])
+                              .map((l) => parseNum(l.surchargeRate))
+                              .filter((r) => r > 0),
+                          ),
+                        ];
+                        return rates.length === 1
+                          ? `RE (${rates[0]}%)`
+                          : 'Recargo de equivalencia';
+                      })()}
+                      value={formatCurrency(Number(quote.surchargeTotal))}
+                    />
+                  )}
                 {parseNum(quote.irpfPercent) > 0 && (
                   <div className="flex justify-between items-baseline py-1">
                     <span className="text-sm text-rectificativa-600">

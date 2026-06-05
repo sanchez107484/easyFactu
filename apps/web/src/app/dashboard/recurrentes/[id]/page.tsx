@@ -63,7 +63,7 @@ import {
   type RecurringInvoice,
   type Invoice,
 } from '@easyfactura/shared-types';
-import { FREQUENCY_LABELS, PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
+import { FREQUENCY_LABELS, PAYMENT_METHOD_LABELS, EQUIVALENCE_SURCHARGE_RATES } from '@easyfactura/shared-constants';
 import { cn, formatCurrency, formatDate, resolveUrl } from '@/lib/utils';
 import { SectionLabel } from '@/components/common/section-label';
 import { DataRow } from '@/components/common/data-row';
@@ -129,6 +129,13 @@ function buildRecurringPreviewInvoice(
     ? round2(subtotalAfterDiscount * (compensacionPercent / 100))
     : 0;
 
+  // Recargo de Equivalencia: applies when the customer has RE and we're not in REAGYP.
+  // Rate is fixed by law (Art. 161 LIVA) — looked up per line from its taxRate.
+  const customerHasRE =
+    !!(recurring.customer as { hasEquivalenceSurcharge?: boolean } | null)
+      ?.hasEquivalenceSurcharge && !isReagyp;
+  const hasEquivalenceSurcharge = customerHasRE;
+
   const taxTotal = isReagyp
     ? 0
     : round2(
@@ -139,6 +146,18 @@ function buildRecurringPreviewInvoice(
         }, 0),
       );
 
+  const surchargeTotal = hasEquivalenceSurcharge
+    ? round2(
+        lines.reduce((acc, l) => {
+          const base = Number(l.quantity) * Number(l.unitPrice);
+          const lineDiscount = l.discountPercent ? Number(l.discountPercent) : 0;
+          const precise = lineDiscount > 0 ? base * (1 - lineDiscount / 100) : base;
+          const rate = EQUIVALENCE_SURCHARGE_RATES[Number(l.taxRate)] ?? 0;
+          return acc + precise * discFactor * (rate / 100);
+        }, 0),
+      )
+    : 0;
+
   // For REAGYP, IRPF base includes compensation (Art. 102.Dos LIVA)
   const irpfBase = isReagyp
     ? round2(subtotalAfterDiscount + compensacionAmount)
@@ -147,7 +166,9 @@ function buildRecurringPreviewInvoice(
     ? round2(irpfBase * (Number(recurring.irpfPercent) / 100))
     : null;
 
-  const total = round2(subtotalAfterDiscount + taxTotal + compensacionAmount - (irpfTotal ?? 0));
+  const total = round2(
+    subtotalAfterDiscount + taxTotal + surchargeTotal + compensacionAmount - (irpfTotal ?? 0),
+  );
 
   return {
     id: 'preview',
@@ -162,6 +183,7 @@ function buildRecurringPreviewInvoice(
     discountPercent: recurring.discountPercent,
     discountAmount,
     taxTotal,
+    surchargeTotal,
     irpfPercent: recurring.irpfPercent,
     irpfTotal,
     compensacionPercent: isReagyp ? compensacionPercent : null,
@@ -196,6 +218,12 @@ function buildRecurringPreviewInvoice(
       const taxRate = Number(l.taxRate);
       const isLineReagyp = isReagyp; // inherit invoice-level REAGYP flag
       const taxAmount = isLineReagyp ? 0 : round2(precise * (taxRate / 100));
+      const lineSurchargeRate = hasEquivalenceSurcharge
+        ? EQUIVALENCE_SURCHARGE_RATES[taxRate] ?? 0
+        : 0;
+      const lineSurchargeAmount = hasEquivalenceSurcharge
+        ? round2(precise * discFactor * (lineSurchargeRate / 100))
+        : 0;
       const lineTotal = round2(precise * (isLineReagyp ? 1 : 1 + taxRate / 100));
       const subtotal = round2(precise);
       return {
@@ -210,6 +238,8 @@ function buildRecurringPreviewInvoice(
         discountPercent: lineDiscount > 0 ? lineDiscount : null,
         taxRate,
         taxAmount,
+        surchargeRate: lineSurchargeRate > 0 ? lineSurchargeRate : null,
+        surchargeAmount: lineSurchargeAmount,
         lineTotal,
         hideQty: l.hideQty,
         sortOrder: i,
@@ -643,6 +673,22 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
               ) : (
                 <DataRow label="IVA" value={formatCurrency(taxTotal)} />
               )}
+              {previewInvoice!.surchargeTotal != null &&
+                Number(previewInvoice!.surchargeTotal) > 0 && (
+                  <DataRow
+                    label={(() => {
+                      const rates = [
+                        ...new Set(
+                          (previewInvoice!.lines ?? [])
+                            .map((l) => Number(l.surchargeRate ?? 0))
+                            .filter((r) => r > 0),
+                        ),
+                      ];
+                      return rates.length === 1 ? `RE (${rates[0]}%)` : 'Recargo de equivalencia';
+                    })()}
+                    value={formatCurrency(Number(previewInvoice!.surchargeTotal))}
+                  />
+                )}
               {recurring.irpfPercent && Number(recurring.irpfPercent) > 0 && (
                 <div className="flex justify-between items-baseline py-1">
                   <span className="text-sm text-rectificativa-600">

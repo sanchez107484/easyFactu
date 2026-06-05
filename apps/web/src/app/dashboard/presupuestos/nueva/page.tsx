@@ -40,7 +40,7 @@ import {
   TaxRegime,
 } from '@easyfactura/shared-types';
 import { resolveUrl } from '@/lib/utils';
-import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
+import { PAYMENT_METHOD_LABELS, EQUIVALENCE_SURCHARGE_RATES } from '@easyfactura/shared-constants';
 import { buildPreviewInvoice, buildCreateInput, calculateDueDate } from '@/lib/invoice-helpers';
 import { formatSeriesPreview } from '@easyfactura/shared-validators';
 import { DueDatePicker } from '@/components/facturas/DueDatePicker';
@@ -182,11 +182,19 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchedValues.customerId, tenantData?.taxRegime, tenantData?.reaypRate]);
 
+  // Recargo de Equivalencia: applies when the customer has RE and we're not in REAGYP.
+  // The rate is fixed by law (Art. 161 LIVA) — only the customer-level flag toggles it.
+  const equivalenceSurchargeRates =
+    selectedCustomer?.hasEquivalenceSurcharge && !showCompensacion
+      ? EQUIVALENCE_SURCHARGE_RATES
+      : undefined;
+
   const previewInvoice = buildPreviewInvoice(
     watchedValues,
     customers,
     selectedSeries,
     showCompensacion ? (watchedValues.compensacionPercent ?? 0) : watchedValues.compensacionPercent,
+    equivalenceSurchargeRates,
   );
   const activePaymentMethod = watchedValues.paymentMethod as PaymentMethod | undefined;
 
@@ -617,6 +625,7 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
                       irpfPercentProps={form.register('irpfPercent', {
                         setValueAs: (v) => (v === '' ? undefined : Number(v)),
                       })}
+                      showEquivalenceSurchargeInfo={equivalenceSurchargeRates != null}
                       onFocus={() => setActiveSection('discountPercent')}
                     />
                   )}
