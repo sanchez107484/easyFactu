@@ -33,8 +33,6 @@ export const extendedLineSchema = z.object({
   /** Per-line discount (0–100). Default 0 = no discount. */
   discountPercent: z.number().min(0).max(100).default(0),
   taxRate: z.number({ invalid_type_error: 'Requerido' }),
-  /** Recargo de Equivalencia rate for this line (%). Derived from EQUIVALENCE_SURCHARGE_RATES map at display time. */
-  surchargeRate: z.number().min(0).max(100).default(0).optional(),
   productId: z.string().optional(),
   // Frontend-only — stripped before sending to the API
   _mode: z.enum(LINE_MODES).default('custom'),

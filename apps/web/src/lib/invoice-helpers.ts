@@ -38,8 +38,6 @@ export interface InvoiceFormData {
   irpfPercent?: number;
   /** Porcentaje de compensación agraria (solo REAGYP). Editado por el usuario en el formulario. */
   compensacionPercent?: number;
-  /** Porcentaje de Recargo de Equivalencia global. Cuando se define, sobrescribe los tipos por línea. */
-  equivalenceSurchargePercent?: number;
   paymentMethod?: PaymentMethod;
   paymentDetails?: Record<string, string | undefined>;
   notes?: string;
@@ -86,8 +84,12 @@ export function buildPreviewInvoice(
   const isReagyp = compensacionPercent != null;
 
   // ── Recargo de Equivalencia ──
+  // The rate is FIXED BY LAW (Art. 161 LIVA) — users never input it. For the preview we
+  // look up the rate from the LIVA map per line's taxRate. The backend re-computes the
+  // same values and stamps them on the persisted invoice for traceability.
   const hasEquivalenceSurcharge =
-    equivalenceSurchargeRates != null && Object.keys(equivalenceSurchargeRates).length > 0 && !isReagyp;
+    equivalenceSurchargeRates != null && Object.keys(equivalenceSurchargeRates).length > 0;
+  const isSurchargeActive = hasEquivalenceSurcharge && !isReagyp;
 
   const taxTotal = isReagyp
     ? 0
@@ -102,14 +104,16 @@ export function buildPreviewInvoice(
         }, 0),
       );
 
-  const surchargeTotal = hasEquivalenceSurcharge
+  const surchargeTotal = isSurchargeActive
     ? round2(
         lines.reduce((acc, l) => {
           const grossSubtotal = (l.quantity ?? 0) * (l.unitPrice ?? 0);
           const lineDiscount = l.discountPercent ?? 0;
           const lineNet =
             lineDiscount > 0 ? grossSubtotal * (1 - lineDiscount / 100) : grossSubtotal;
-          const rate = l.surchargeRate ?? equivalenceSurchargeRates![l.taxRate ?? 0] ?? 0;
+          // RE rate is always looked up from the LIVA map using the line's taxRate.
+          // No user override — the rate is fixed by law.
+          const rate = equivalenceSurchargeRates?.[l.taxRate ?? 0] ?? 0;
           return acc + lineNet * discFactor * (rate / 100);
         }, 0),
       )
@@ -142,10 +146,10 @@ export function buildPreviewInvoice(
     const lineDiscount = l.discountPercent ?? 0;
     const lineSubtotal =
       lineDiscount > 0 ? grossSubtotal * (1 - lineDiscount / 100) : grossSubtotal;
-    const lineSurchargeRate = hasEquivalenceSurcharge
-      ? (l.surchargeRate ?? equivalenceSurchargeRates![l.taxRate ?? 0] ?? 0)
+    const lineSurchargeRate = isSurchargeActive
+      ? equivalenceSurchargeRates?.[l.taxRate ?? 0] ?? 0
       : 0;
-    const lineSurchargeAmount = hasEquivalenceSurcharge
+    const lineSurchargeAmount = isSurchargeActive
       ? round2(lineSubtotal * discFactor * (lineSurchargeRate / 100))
       : 0;
     return {
@@ -249,7 +253,6 @@ export function buildCreateInput(data: InvoiceFormData) {
         taxRate: clean.taxRate,
         productId: clean.productId,
         hideQty: clean.hideQty,
-        surchargeRate: clean.surchargeRate,
       };
     }),
   };

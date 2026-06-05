@@ -1,4 +1,5 @@
 import { InvoiceLayout, Invoice } from '@easyfactura/shared-types';
+import { EQUIVALENCE_SURCHARGE_RATES } from '@easyfactura/shared-constants';
 import { formatCurrency } from '@/lib/utils';
 
 interface TotalsBlockProps {
@@ -40,8 +41,18 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
   const ivaLabel = taxRates.length === 1 ? `IVA (${taxRates[0]}%)` : 'IVA';
   const isReagyp = invoice.compensacionPercent != null;
   const hasSurcharge = invoice.surchargeTotal != null && Number(invoice.surchargeTotal) > 0;
-  const surchargeRates = [...new Set((invoice.lines ?? []).map((l) => Number(l.surchargeRate ?? 0)).filter(r => r > 0))];
-  const surchargeLabel = surchargeRates.length === 1 ? `RE (${surchargeRates[0]}%)` : 'Recargo de Equivalencia';
+  // Resolve the effective RE rate for each line from the tax-rate-based default map (Art. 161 LIVA),
+  // falling back to the stored per-line value. This guarantees the label always reflects the
+  // rate that was actually applied to the totals, even if a line's taxRate was just changed.
+  const surchargeRates = [
+    ...new Set(
+      (invoice.lines ?? [])
+        .map((l) => EQUIVALENCE_SURCHARGE_RATES[Number(l.taxRate ?? 0)] ?? Number(l.surchargeRate ?? 0))
+        .filter((r) => r > 0),
+    ),
+  ];
+  const surchargeLabel =
+    surchargeRates.length === 1 ? `RE (${surchargeRates[0]}%)` : 'Recargo de Equivalencia';
 
   return (
     <div className="flex justify-end">

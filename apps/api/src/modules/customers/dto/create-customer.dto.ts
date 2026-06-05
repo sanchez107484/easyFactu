@@ -11,6 +11,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CustomerType } from '@easyfactura/shared-types';
 import { IsValidNif } from '../../../common/validators/is-valid-nif.validator';
 import { IsValidSpanishPostalCode } from '../../../common/validators/is-valid-postal-code.validator';
+import { IsNotReagypAndEquivalenceSurcharge } from '../../../common/validators/is-not-reagyp-and-equivalence-surcharge.validator';
 
 export class CreateCustomerDto {
   @ApiProperty({ description: 'Nombre comercial del cliente' })
@@ -95,6 +96,7 @@ export class CreateCustomerDto {
   })
   @IsOptional()
   @IsBoolean({ message: 'isReagyp debe ser un booleano' })
+  @IsNotReagypAndEquivalenceSurcharge()
   isReagyp?: boolean;
 
   @ApiPropertyOptional({
@@ -105,5 +107,6 @@ export class CreateCustomerDto {
   })
   @IsOptional()
   @IsBoolean({ message: 'hasEquivalenceSurcharge debe ser un booleano' })
+  @IsNotReagypAndEquivalenceSurcharge()
   hasEquivalenceSurcharge?: boolean;
 }

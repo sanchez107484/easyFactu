@@ -87,7 +87,13 @@ export class InvoiceService {
   private buildLineCreateData(
     tenantId: string,
     lines: CreateInvoiceLineDto[],
-    calculatedLines: { subtotal: number; taxAmount: number; surchargeAmount: number; lineTotal: number }[]
+    calculatedLines: {
+      subtotal: number;
+      taxAmount: number;
+      surchargeRate: number;
+      surchargeAmount: number;
+      lineTotal: number;
+    }[]
   ) {
     return lines.map((line, index) => ({
       tenantId,
@@ -104,10 +110,12 @@ export class InvoiceService {
       ...(line.discountPercent != null && line.discountPercent > 0
         ? { discountPercent: line.discountPercent }
         : {}),
-      // Recargo de Equivalencia per-line — persist when surcharge was actually computed
+      // Recargo de Equivalencia per-line — server-computed (Art. 161 LIVA) and persisted
+      // for fiscal traceability. Never trust the client's `surchargeRate`: the backend
+      // recomputes it from the tax-rate map and stamps the result on the line.
       ...(calculatedLines[index]!.surchargeAmount > 0
         ? {
-            surchargeRate: line.surchargeRate ?? null,
+            surchargeRate: calculatedLines[index]!.surchargeRate,
             surchargeAmount: calculatedLines[index]!.surchargeAmount,
           }
         : {}),
@@ -133,7 +141,13 @@ export class InvoiceService {
     tenantId: string,
     invoiceId: string,
     lines: CreateInvoiceLineDto[],
-    calculatedLines: { subtotal: number; taxAmount: number; surchargeAmount: number; lineTotal: number }[]
+    calculatedLines: {
+      subtotal: number;
+      taxAmount: number;
+      surchargeRate: number;
+      surchargeAmount: number;
+      lineTotal: number;
+    }[]
   ): Promise<void> {
     const existing = await tx.invoiceLine.findMany({
       where: { invoiceId, tenantId },
@@ -184,8 +198,14 @@ export class InvoiceService {
                   ? line.discountPercent
                   : null,
               irpfRate: line.irpfRate ?? null,
-              surchargeRate: calculatedLines[index]!.surchargeAmount > 0 ? (line.surchargeRate ?? null) : null,
-              surchargeAmount: calculatedLines[index]!.surchargeAmount > 0 ? calculatedLines[index]!.surchargeAmount : null,
+              surchargeRate:
+                calculatedLines[index]!.surchargeAmount > 0
+                  ? calculatedLines[index]!.surchargeRate
+                  : null,
+              surchargeAmount:
+                calculatedLines[index]!.surchargeAmount > 0
+                  ? calculatedLines[index]!.surchargeAmount
+                  : null,
               hideQty: line.hideQty ?? false,
               sortOrder: index,
             },
@@ -215,7 +235,7 @@ export class InvoiceService {
               ? { discountPercent: line.discountPercent }
               : {}),
             ...(calc.surchargeAmount > 0
-              ? { surchargeRate: line.surchargeRate ?? null, surchargeAmount: calc.surchargeAmount }
+              ? { surchargeRate: calc.surchargeRate, surchargeAmount: calc.surchargeAmount }
               : {}),
             hideQty: line.hideQty ?? false,
             sortOrder: index,

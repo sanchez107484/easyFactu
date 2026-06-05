@@ -81,7 +81,6 @@ const formSchema = z.object({
   discountPercent: z.number().min(0).max(100).optional(),
   irpfPercent: z.number().min(0).max(100).optional(),
   compensacionPercent: z.number().min(0).max(100).optional(),
-  equivalenceSurchargePercent: z.number().min(0).max(100).optional(),
   paymentMethod: z
     .nativeEnum(PaymentMethod, { invalid_type_error: 'Método de pago no válido' })
     .optional()
@@ -232,38 +231,13 @@ function InvoiceForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchedValues.customerId, tenant?.taxRegime, tenant?.reaypRate]);
 
-  // RE is incompatible with REAGYP
+  // RE is incompatible with REAGYP. The rate is fixed by law (Art. 161 LIVA) — the user never
+  // inputs it. The preview uses the LIVA default map per line's taxRate, and the server
+  // re-computes and stamps the same rate on each line at creation.
   const equivalenceSurchargeRates =
     selectedCustomer?.hasEquivalenceSurcharge && !showCompensacion
       ? EQUIVALENCE_SURCHARGE_RATES
       : undefined;
-
-  // Auto-populate surchargeRate per line when customer with hasEquivalenceSurcharge is selected.
-  // When surcharge is cleared (customer change or REAGYP), reset to 0.
-  useEffect(() => {
-    const lines = form.getValues('lines');
-    if (!lines) return;
-    lines.forEach((_, i) => {
-      const taxRate = form.getValues(`lines.${i}.taxRate`) as number;
-      const rate = equivalenceSurchargeRates ? (EQUIVALENCE_SURCHARGE_RATES[taxRate] ?? 0) : 0;
-      form.setValue(`lines.${i}.surchargeRate`, rate, { shouldDirty: false, shouldValidate: false });
-    });
-    // Reset global override when customer changes
-    form.setValue('equivalenceSurchargePercent', undefined, { shouldDirty: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchedValues.customerId, showCompensacion]);
-
-  // Sync global equivalenceSurchargePercent to all per-line surchargeRate when user modifies it
-  useEffect(() => {
-    const override = watchedValues.equivalenceSurchargePercent;
-    if (override == null) return;
-    const lines = form.getValues('lines');
-    if (!lines) return;
-    lines.forEach((_, i) => {
-      form.setValue(`lines.${i}.surchargeRate`, override, { shouldDirty: false, shouldValidate: false });
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchedValues.equivalenceSurchargePercent]);
 
   const previewInvoice = buildPreviewInvoice(
     watchedValues,
@@ -539,7 +513,6 @@ function InvoiceForm({
         discountPercent: l.discountPercent && l.discountPercent > 0 ? l.discountPercent : undefined,
         taxRate: l.taxRate,
         hideQty: l._hideQty ?? false,
-        surchargeRate: l.surchargeRate && l.surchargeRate > 0 ? l.surchargeRate : undefined,
       })),
       paymentMethod: data.paymentMethod,
       discountPercent: data.discountPercent,
@@ -719,7 +692,6 @@ function InvoiceForm({
                         onFocus={() => setActiveSection('lines-section')}
                         autoFocusDescription={index === lastAddedIndex}
                         isReagyp={showCompensacion}
-                        showSurcharge={!!equivalenceSurchargeRates}
                       />
                     ))}
                   </div>
@@ -783,13 +755,7 @@ function InvoiceForm({
                       irpfPercentProps={form.register('irpfPercent', {
                         setValueAs: (v) => (v === '' ? undefined : Number(v)),
                       })}
-                      equivalenceSurchargePercentProps={
-                        equivalenceSurchargeRates
-                          ? form.register('equivalenceSurchargePercent', {
-                              setValueAs: (v) => (v === '' ? undefined : Number(v)),
-                            })
-                          : undefined
-                      }
+                      showEquivalenceSurchargeInfo={equivalenceSurchargeRates != null}
                       onFocus={() => setActiveSection('discountPercent')}
                     />
                   )}

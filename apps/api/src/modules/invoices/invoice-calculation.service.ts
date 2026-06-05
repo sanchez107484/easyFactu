@@ -13,6 +13,13 @@ export interface TaxBreakdownItem {
 export interface CalculatedLine {
   subtotal: number;
   taxAmount: number;
+  /**
+   * Tipo de Recargo de Equivalencia (%) aplicado a esta línea, según el Art. 161 LIVA
+   * (21%→5.2, 10%→1.4, 4%→0.5, 0%→0). 0 si el cliente no está en régimen de RE
+   * o si el tipo de IVA de la línea no tiene un recargo definido.
+   * Se persiste en `InvoiceLine.surchargeRate` para trazabilidad fiscal.
+   */
+  surchargeRate: number;
   /** Importe de Recargo de Equivalencia para esta línea. 0 si no aplica. */
   surchargeAmount: number;
   lineTotal: number;
@@ -37,11 +44,18 @@ export interface CalculateTotalsOptions {
   discountPercent?: number;
   irpfPercent?: number;
   /** REAGYP compensation rate (%). Pass undefined or 0 for GENERAL regime. */
-  compensacionPercent?: number;  /** Recargo de Equivalencia rate map: { taxRate -> surchargeRate }.
+  compensacionPercent?: number;
+  /**
+   * Recargo de Equivalencia rate map: { taxRate -> surchargeRate } (Art. 161 LIVA).
    * Pass a non-empty map when the customer has hasEquivalenceSurcharge=true.
-   * Each line’s surcharge rate is taken from this map using its taxRate.
-   * If a rate is not present, surcharge defaults to 0 for that line. */
-  equivalenceSurchargeRates?: Record<number, number>;}
+   * Each line's surcharge rate is taken from this map using its taxRate.
+   * If a rate is not present for a line's taxRate, surcharge defaults to 0 for that line.
+   *
+   * The RE rate is FIXED BY LAW — there is no user input for it. The map is the
+   * single source of truth and is stamped on each invoice line for traceability.
+   */
+  equivalenceSurchargeRates?: Record<number, number>;
+}
 
 /**
  * Handles all monetary calculations for invoices.
@@ -95,9 +109,10 @@ export class InvoiceCalculationService {
     }
 
     const isReagyp = compensacionPercent != null && compensacionPercent > 0;
-    const equivalenceSurchargeRatesOption =
-      options !== undefined && typeof options === 'object' ? options.equivalenceSurchargeRates : undefined;
-    const surchargeRateMap: Record<number, number> = equivalenceSurchargeRatesOption ?? {};
+    const surchargeRateMap: Record<number, number> =
+      options !== undefined && typeof options === 'object'
+        ? options.equivalenceSurchargeRates ?? {}
+        : {};
     const hasEquivalenceSurcharge = Object.keys(surchargeRateMap).length > 0;
 
     // === STEP 1: Calculate per-line amounts ===
@@ -120,20 +135,27 @@ export class InvoiceCalculationService {
       // so that e.g. 28.9256 × 0.21 = 6.074376 → round2 → 6.07, and
       // 28.9256 × 1.21 = 34.999976 → round2 → 35.00 (not 35.01).
       const taxAmount = isReagyp ? 0 : this.round2(precise * (Number(line.taxRate) / 100));
-      // Surcharge: calculated on the same base as IVA (after line discount, before global discount)
+      // Surcharge rate is always derived from the Art. 161 LIVA map using the line's taxRate.
+      // No user input — the rate is fixed by law. Stamped on the line for traceability.
       const lineSurchargeRate = hasEquivalenceSurcharge
-        ? (surchargeRateMap[Number(line.taxRate)] ?? 0)
+        ? surchargeRateMap[Number(line.taxRate)] ?? 0
         : 0;
       const surchargeAmount = hasEquivalenceSurcharge && !isReagyp
         ? this.round2(precise * (lineSurchargeRate / 100))
         : 0;
       const lineTotal = this.round2(precise * (isReagyp ? 1 : 1 + Number(line.taxRate) / 100));
       const subtotal = this.round2(precise); // rounded for DB storage (Decimal 12,2)
-      return { subtotal, taxAmount, surchargeAmount, lineTotal, _precise: precise };
+      return { subtotal, taxAmount, surchargeRate: lineSurchargeRate, surchargeAmount, lineTotal, _precise: precise };
     });
     // Strip the internal _precise field before exposing the public CalculatedLine array.
     const calculatedLines: CalculatedLine[] = calculatedLinesRaw.map(
-      ({ subtotal, taxAmount, surchargeAmount, lineTotal }) => ({ subtotal, taxAmount, surchargeAmount, lineTotal })
+      ({ subtotal, taxAmount, surchargeRate, surchargeAmount, lineTotal }) => ({
+        subtotal,
+        taxAmount,
+        surchargeRate,
+        surchargeAmount,
+        lineTotal,
+      })
     );
 
     // === STEP 2: Invoice subtotal (sum of all line subtotals) ===
@@ -156,7 +178,7 @@ export class InvoiceCalculationService {
       lines.forEach((line, index) => {
         const rate = Number(line.taxRate);
         const linePrecise = calculatedLinesRaw[index]!._precise;
-        const surchargeRate = hasEquivalenceSurcharge ? (surchargeRateMap[rate] ?? 0) : 0;
+        const surchargeRate = hasEquivalenceSurcharge ? surchargeRateMap[rate] ?? 0 : 0;
         // Keep full precision for the tax multiplication to avoid the double-rounding error.
         const lineBaseForTax = linePrecise * discountRatio; // full precision
         const lineSubtotalAfterDiscount = this.round2(lineBaseForTax); // rounded for baseAmount display only

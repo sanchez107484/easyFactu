@@ -28,7 +28,6 @@ import { useState, useEffect, useRef } from 'react';
 import { Package, Wrench } from 'lucide-react';
 import { LineMode, LINE_MODE_META, ExtendedLineData } from '@/lib/invoice-line-types';
 import { QuickCreateProductModal } from '@/components/facturas/QuickCreateProductModal';
-import { EQUIVALENCE_SURCHARGE_RATES } from '@easyfactura/shared-constants';
 
 // ==================== TYPES ====================
 
@@ -47,8 +46,6 @@ interface InvoiceLineItemProps {
   autoFocusDescription?: boolean;
   /** True when the tenant is in REAGYP regime — IVA does not apply per line. */
   isReagyp?: boolean;
-  /** True when the customer has Recargo de Equivalencia (mutually exclusive with REAGYP). */
-  showSurcharge?: boolean;
 }
 
 // ==================== CONSTANTS ====================
@@ -212,7 +209,6 @@ export function InvoiceLineItem({
   onFocus,
   autoFocusDescription = false,
   isReagyp = false,
-  showSurcharge = false,
 }: InvoiceLineItemProps) {
   const line: ExtendedLineData = useWatch({ control: form.control, name: `lines.${index}` }) ?? {};
   const mode: LineMode = line._mode ?? 'custom';
@@ -307,15 +303,6 @@ export function InvoiceLineItem({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [line.unitPrice]);
 
-  // Auto-populate surchargeRate when taxRate changes (Recargo de Equivalencia).
-  useEffect(() => {
-    if (!showSurcharge) return;
-    const currentTax = line.taxRate ?? 21;
-    const rate = EQUIVALENCE_SURCHARGE_RATES[currentTax] ?? 0;
-    form.setValue(`lines.${index}.surchargeRate`, rate, { shouldValidate: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tax, showSurcharge]);
-
   // -- Errors -------------------------------------------------------
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const lineErrors = (form.formState.errors as any)?.lines?.[index] as
@@ -373,10 +360,6 @@ export function InvoiceLineItem({
             form.setValue(`lines.${index}.taxRate`, isReagyp ? 0 : Number(product.taxRate), {
               shouldValidate: true,
             });
-            if (showSurcharge) {
-              const sr = EQUIVALENCE_SURCHARGE_RATES[Number(product.taxRate)] ?? 0;
-              form.setValue(`lines.${index}.surchargeRate`, sr, { shouldValidate: false });
-            }
             form.setValue(`lines.${index}.productId`, product.id);
             form.setValue(
               `lines.${index}._mode`,
@@ -469,11 +452,6 @@ export function InvoiceLineItem({
           {!isReagyp && (
             <div className="w-[80px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
               IVA
-            </div>
-          )}
-          {showSurcharge && (
-            <div className="w-[72px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-              RE %
             </div>
           )}
           <div className="w-[90px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
@@ -624,35 +602,6 @@ export function InvoiceLineItem({
                 ))}
               </SelectContent>
             </Select>
-          )}
-
-          {/* RE % — Recargo de Equivalencia, shown when customer has hasEquivalenceSurcharge */}
-          {showSurcharge && (
-            <div className="relative">
-              <Input
-                type="text"
-                inputMode="decimal"
-                placeholder="0"
-                className="w-[72px] text-sm h-9 pr-5"
-                value={String(line.surchargeRate ?? 0)}
-                onChange={(e) => {
-                  const raw = e.target.value.replace(',', '.');
-                  const num = parseFloat(raw);
-                  if (!isNaN(num)) {
-                    form.setValue(
-                      `lines.${index}.surchargeRate`,
-                      Math.min(100, Math.max(0, num)),
-                      { shouldValidate: false },
-                    );
-                  } else if (raw === '' || raw === '.') {
-                    form.setValue(`lines.${index}.surchargeRate`, 0, { shouldValidate: false });
-                  }
-                }}
-              />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground select-none">
-                %
-              </span>
-            </div>
           )}
 
           {/* Discount % */}

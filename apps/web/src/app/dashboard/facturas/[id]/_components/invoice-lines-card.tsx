@@ -3,6 +3,7 @@ import { FileText } from 'lucide-react';
 import { SectionLabel } from '@/components/common/section-label';
 import { DataRow } from '@/components/common/data-row';
 import type { Invoice, InvoiceTemplate } from '@easyfactura/shared-types';
+import { EQUIVALENCE_SURCHARGE_RATES } from '@easyfactura/shared-constants';
 import { formatCurrency, parseNum } from '@/lib/utils';
 import { formatUnitPriceCurrency } from '@/lib/math';
 
@@ -16,7 +17,16 @@ export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
   const taxLabel = taxRates.length === 1 ? `IVA (${taxRates[0]}%)` : 'IVA';
   const isReagyp = invoice.compensacionPercent != null;
   const hasSurcharge = invoice.surchargeTotal != null && Number(invoice.surchargeTotal) > 0;
-  const surchargeRates = [...new Set((invoice.lines ?? []).map((l) => Number(l.surchargeRate ?? 0)).filter(r => r > 0))];
+  // Resolve the effective RE rate for each line from the tax-rate-based default map (Art. 161 LIVA),
+  // falling back to the stored per-line value. Saved invoices only persist the per-line rate when
+  // it differs from the LIVA default (the backend applies the map and never stores a per-line value).
+  const surchargeRates = [
+    ...new Set(
+      (invoice.lines ?? [])
+        .map((l) => EQUIVALENCE_SURCHARGE_RATES[Number(l.taxRate ?? 0)] ?? Number(l.surchargeRate ?? 0))
+        .filter((r) => r > 0),
+    ),
+  ];
   const surchargeLabel = surchargeRates.length === 1 ? `RE (${surchargeRates[0]}%)` : 'Recargo de Equivalencia';
 
   const showQtyColumn = (invoice.lines ?? []).some((l) => !l.hideQty);

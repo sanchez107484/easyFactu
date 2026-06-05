@@ -11,8 +11,8 @@ interface DiscountsSectionGeneralProps {
   discountPercentProps: UseFormRegisterReturn;
   /** Props from form.register('irpfPercent', { setValueAs }) */
   irpfPercentProps: UseFormRegisterReturn;
-  /** Props from form.register('equivalenceSurchargePercent', { setValueAs }) — optional, shown when customer has RE */
-  equivalenceSurchargePercentProps?: UseFormRegisterReturn;
+  /** When true, shows an info-only badge indicating RE is being applied per line. */
+  showEquivalenceSurchargeInfo?: boolean;
   onFocus?: () => void;
 }
 
@@ -62,14 +62,34 @@ function PercentField({
   );
 }
 
+function RecargoEquivalenciaInfo() {
+  return (
+    <div
+      className="space-y-1.5 rounded-md border border-amber-200/60 bg-amber-50/50 px-3 py-2"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-1.5 text-xs font-medium text-amber-900">
+        <Percent className="h-3.5 w-3.5 text-amber-600" aria-hidden="true" />
+        <span>Recargo de equivalencia</span>
+      </div>
+      <p className="text-[11px] text-amber-900/70 leading-tight">
+        Se aplica automáticamente por línea según el tipo de IVA (Art. 161 LIVA). No editable.
+      </p>
+    </div>
+  );
+}
+
 /**
  * Descuentos y retenciones section for the GENERAL tax regime.
- * Shows global discount, IRPF retention, and optionally Recargo de Equivalencia.
+ * Shows global discount, IRPF retention, and an info-only badge when the customer is
+ * subject to Recargo de Equivalencia. The RE rate is fixed by law and computed from
+ * each line's taxRate — users can never override it.
  */
 export function DiscountsSectionGeneral({
   discountPercentProps,
   irpfPercentProps,
-  equivalenceSurchargePercentProps,
+  showEquivalenceSurchargeInfo,
   onFocus,
 }: DiscountsSectionGeneralProps) {
   return (
@@ -77,8 +97,8 @@ export function DiscountsSectionGeneral({
       id="field-discountPercent"
       className={cn(
         'grid gap-4',
-        equivalenceSurchargePercentProps
-          ? 'grid-cols-1 sm:grid-cols-3'
+        showEquivalenceSurchargeInfo
+          ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
           : 'grid-cols-1 sm:grid-cols-2',
       )}
       onFocus={onFocus}
@@ -100,17 +120,7 @@ export function DiscountsSectionGeneral({
         accent="text-rose-500"
         inputProps={irpfPercentProps}
       />
-      {equivalenceSurchargePercentProps && (
-        <PercentField
-          id="equivalenceSurchargePercent"
-          label="Recargo equivalencia"
-          placeholder="Auto"
-          hint="Global · sobrescribe las líneas"
-          icon={Percent}
-          accent="text-amber-500"
-          inputProps={equivalenceSurchargePercentProps}
-        />
-      )}
+      {showEquivalenceSurchargeInfo && <RecargoEquivalenciaInfo />}
     </section>
   );
 }

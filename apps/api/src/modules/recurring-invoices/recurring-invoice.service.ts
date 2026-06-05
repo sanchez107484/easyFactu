@@ -193,7 +193,8 @@ export class RecurringInvoiceService {
     const discountFactor = discountPercent ? 1 - Number(discountPercent) / 100 : 1;
     const gross = lines.reduce((sum, l) => sum + Number(l.quantity) * Number(l.unitPrice), 0);
     const netBase = gross * discountFactor;
-    const hasSurcharge = equivalenceSurchargeRates != null && Object.keys(equivalenceSurchargeRates).length > 0;
+    const hasSurcharge =
+      equivalenceSurchargeRates != null && Object.keys(equivalenceSurchargeRates).length > 0;
     const totalTax = lines.reduce((sum, l) => {
       const lineNet = Number(l.quantity) * Number(l.unitPrice) * discountFactor;
       return sum + lineNet * (Number(l.taxRate) / 100);
@@ -201,6 +202,8 @@ export class RecurringInvoiceService {
     const totalSurcharge = hasSurcharge
       ? lines.reduce((sum, l) => {
           const lineNet = Number(l.quantity) * Number(l.unitPrice) * discountFactor;
+          // RE rate is always derived from the Art. 161 LIVA map using the line's taxRate.
+          // No user override — the rate is fixed by law.
           const rate = equivalenceSurchargeRates![Number(l.taxRate)] ?? 0;
           return sum + lineNet * (rate / 100);
         }, 0)

@@ -454,10 +454,17 @@ export function CustomerFormFields({
                 Si está activo, la compensación agraria no se aplicará en sus facturas (operación
                 B2B entre agricultores acogidos al régimen).
               </p>
+              {form.watch('hasEquivalenceSurcharge') && (
+                <p className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 mt-1.5">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  Desactiva el Recargo de Equivalencia para marcar REAGYP.
+                </p>
+              )}
             </div>
             <Switch
               id="isReagyp"
               checked={form.watch('isReagyp') ?? false}
+              disabled={!!form.watch('hasEquivalenceSurcharge')}
               onCheckedChange={(checked) => form.setValue('isReagyp', checked)}
             />
           </div>
@@ -470,12 +477,21 @@ export function CustomerFormFields({
           <div className="min-w-0">
             <SectionLabel>Recargo de Equivalencia</SectionLabel>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Aplica el recargo de equivalencia (Art. 161 LIVA). Tipos: 21%→5,2% | 10%→1,4% | 4%→0,5%. Incompatible con REAGYP.
+              Aplica el recargo de equivalencia (Art. 161 LIVA). Tipos: 21%→5,2% | 10%→1,4% | 4%→0,5%.
+              {showReagypToggle && ' Incompatible con REAGYP.'}
             </p>
+            {showReagypToggle && form.watch('isReagyp') && (
+              <p className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 mt-1.5">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                Desactiva REAGYP para activar el Recargo de Equivalencia.
+              </p>
+            )}
+            <FieldError message={form.formState.errors.hasEquivalenceSurcharge?.message} />
           </div>
           <Switch
             id="hasEquivalenceSurcharge"
             checked={form.watch('hasEquivalenceSurcharge') ?? false}
+            disabled={showReagypToggle && !!form.watch('isReagyp')}
             onCheckedChange={(checked) => form.setValue('hasEquivalenceSurcharge', checked)}
           />
         </div>
