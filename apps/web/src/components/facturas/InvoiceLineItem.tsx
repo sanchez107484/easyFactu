@@ -72,7 +72,7 @@ function CatalogPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
-  const { data } = useProducts({ limit: 100 });
+  const { data } = useProducts({ limit: 500 });
   const products = data?.data ?? [];
 
   const handleProductCreated = (product: Product) => {

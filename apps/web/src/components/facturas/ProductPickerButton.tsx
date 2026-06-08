@@ -29,7 +29,7 @@ interface ProductPickerButtonProps {
 
 export function ProductPickerButton({ onSelect, selectedProductId }: ProductPickerButtonProps) {
   const [open, setOpen] = useState(false);
-  const { data } = useProducts({ limit: 100 });
+  const { data } = useProducts({ limit: 500 });
   const products = data?.data ?? [];
 
   if (products.length === 0) return null;

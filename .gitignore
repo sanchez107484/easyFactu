@@ -25,6 +25,9 @@ npm-debug.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Agents (opencode skills)
+.agents/
+
 # IDEs
 .vscode/
 .idea/

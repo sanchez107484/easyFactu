@@ -12,7 +12,7 @@ export class PaginationDto {
 
   @ApiPropertyOptional({
     minimum: 1,
-    maximum: 100,
+    maximum: 500,
     default: 10,
     description: 'Elementos por página',
   })
@@ -20,7 +20,7 @@ export class PaginationDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
+  @Max(500)
   limit?: number = 10;
 
   @ApiPropertyOptional({ description: 'Campo por el que ordenar', example: 'createdAt' })
