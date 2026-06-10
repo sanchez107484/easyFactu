@@ -367,7 +367,7 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
               <Shield className="h-4 w-4" />
               Obligatorio desde julio 2025 · Ley Antifraude 11/2021
             </div>
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
+            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
               ¿Qué es <span className="text-blue-600">VeriFactu</span>?
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-500">

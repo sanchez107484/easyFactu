@@ -366,7 +366,7 @@ export function NafacturaVerifactuPage(): React.JSX.Element {
               <Shield className="h-4 w-4" />
               Cumplimiento Hacienda Foral de Navarra · Normativa fiscal
             </div>
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
+            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
               ¿Qué necesito para facturar{' '}
               <span className="text-red-600">correctamente en Navarra</span>?
             </h1>

@@ -316,7 +316,7 @@ export function NovafacturaHomePage() {
                 Plataforma nativa VeriFactu
               </div>
 
-              <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
+              <h1 data-speakable className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
                 Software de facturación{' '}
                 <span className="relative whitespace-nowrap text-blue-600">
                   VeriFactu

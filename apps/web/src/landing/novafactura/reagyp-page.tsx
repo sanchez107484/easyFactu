@@ -283,7 +283,7 @@ export function NovafacturaReagypPage() {
               <Leaf className="h-4 w-4" />
               Para agricultores, ganaderos y pescadores autónomos
             </div>
-            <h1 className="mb-6 text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl md:text-6xl">
+            <h1 data-speakable className="mb-6 text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl md:text-6xl">
               Facturación para{' '}
               <span className="bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
                 autónomos del campo

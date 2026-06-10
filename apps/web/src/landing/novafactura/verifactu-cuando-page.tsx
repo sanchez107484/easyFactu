@@ -269,7 +269,7 @@ export function NovafacturaVerifactuCuandoPage(): React.JSX.Element {
               <Clock className="h-4 w-4" />
               Actualizado — Real Decreto 254/2025
             </div>
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
               ¿Cuándo es obligatorio VeriFactu?
             </h1>
             <p className="mt-6 text-xl text-slate-600 leading-relaxed max-w-2xl">

@@ -12,12 +12,14 @@ import {
   ArrowLeftRight,
   Award,
   BookOpen,
+  Building2,
   ChevronDown,
   Clock,
   FileCheck,
   FileText,
   Globe,
   Layers,
+  LayoutDashboard,
   Leaf,
   MapPin,
   Menu,
@@ -155,19 +157,26 @@ export default function SiteHeader() {
   const [mobileVerifactuOpen, setMobileVerifactuOpen] = useState(false);
   const [mobileRecursosOpen, setMobileRecursosOpen] = useState(false);
   const [mobileNavarraOpen, setMobileNavarraOpen] = useState(false);
+  const [mobileAsesoriasOpen, setMobileAsesoriasOpen] = useState(false);
   const [verifactuOpen, setVerifactuOpen] = useState(false);
   const [recursosOpen, setRecursosOpen] = useState(false);
   const [navarraOpen, setNavarraOpen] = useState(false);
+  const [asesoriasOpen, setAsesoriasOpen] = useState(false);
   const pathname = usePathname();
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recursosLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navarraLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const asesoriasLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isVerifactuActive = pathname.startsWith('/verifactu');
   const isRecursosActive =
     pathname.startsWith('/facturas') ||
     pathname === '/factura-electronica' ||
     pathname === '/facturacion-autonomo-agricola';
   const isNavarraActive = nafacturaNavarraItems.some((item) => item.href === pathname);
+  const isAsesoriasActive =
+    pathname === '/asesoria' ||
+    pathname === '/software-para-asesorias' ||
+    pathname === '/asesoria-facturas-clientes';
 
   const handleVerifactuEnter = () => {
     if (leaveTimer.current) clearTimeout(leaveTimer.current);
@@ -196,6 +205,15 @@ export default function SiteHeader() {
 
   const handleNavarraLeave = () => {
     navarraLeaveTimer.current = setTimeout(() => setNavarraOpen(false), 150);
+  };
+
+  const handleAsesoriasEnter = () => {
+    if (asesoriasLeaveTimer.current) clearTimeout(asesoriasLeaveTimer.current);
+    setAsesoriasOpen(true);
+  };
+
+  const handleAsesoriasLeave = () => {
+    asesoriasLeaveTimer.current = setTimeout(() => setAsesoriasOpen(false), 150);
   };
 
   return (
@@ -298,16 +316,95 @@ export default function SiteHeader() {
                 VeriFactu
               </Link>
 
-              <Link
-                href="/asesoria"
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  pathname === '/asesoria'
-                    ? 'bg-[var(--brand-highlight-bg)] text-[var(--brand-highlight)]'
-                    : 'text-[var(--brand-highlight)] hover:bg-[var(--brand-highlight-bg)]'
-                }`}
+              {/* Asesorías dropdown — NaFactura only */}
+              <div
+                className="relative"
+                onMouseEnter={handleAsesoriasEnter}
+                onMouseLeave={handleAsesoriasLeave}
               >
-                Asesorías
-              </Link>
+                <button
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isAsesoriasActive
+                      ? 'bg-[var(--brand-highlight-bg)] text-[var(--brand-highlight)]'
+                      : 'text-[var(--brand-highlight)] hover:bg-[var(--brand-highlight-bg)]'
+                  }`}
+                  aria-expanded={asesoriasOpen}
+                  onClick={() => setAsesoriasOpen((o) => !o)}
+                >
+                  Asesorías
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform ${asesoriasOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
+
+                {asesoriasOpen && (
+                  <div className="absolute left-1/2 top-full -translate-x-1/2 pt-2">
+                    <div className="w-80 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-lg">
+                      <Link
+                        href="/asesoria"
+                        onClick={() => setAsesoriasOpen(false)}
+                        className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 border-b border-neutral-100 ${
+                          pathname === '/asesoria' ? 'bg-[var(--brand-highlight-bg)]' : ''
+                        }`}
+                      >
+                        <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
+                          <LayoutDashboard className="h-4 w-4 text-[var(--brand-highlight)]" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-neutral-900">
+                            Landing para asesorías
+                          </p>
+                          <p className="text-xs text-neutral-500">
+                            Cómo NaFactura ayuda a gestorías y asesorías navarras
+                          </p>
+                        </div>
+                      </Link>
+                      <Link
+                        href="/software-para-asesorias"
+                        onClick={() => setAsesoriasOpen(false)}
+                        className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 border-b border-neutral-100 ${
+                          pathname === '/software-para-asesorias'
+                            ? 'bg-[var(--brand-highlight-bg)]'
+                            : ''
+                        }`}
+                      >
+                        <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
+                          <Building2 className="h-4 w-4 text-[var(--brand-highlight)]" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-neutral-900">
+                            Software para asesorías
+                          </p>
+                          <p className="text-xs text-neutral-500">
+                            Panel multi-cliente con NaTicket y exportación CSV/PDF
+                          </p>
+                        </div>
+                      </Link>
+                      <Link
+                        href="/asesoria-facturas-clientes"
+                        onClick={() => setAsesoriasOpen(false)}
+                        className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 ${
+                          pathname === '/asesoria-facturas-clientes'
+                            ? 'bg-[var(--brand-highlight-bg)]'
+                            : ''
+                        }`}
+                      >
+                        <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
+                          <FileText className="h-4 w-4 text-[var(--brand-highlight)]" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-neutral-900">
+                            Haces las facturas de tus clientes
+                          </p>
+                          <p className="text-xs text-neutral-500">
+                            Gestiona la facturación de todos tus clientes en un solo lugar
+                          </p>
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <Link
                 href="/precios"
@@ -394,17 +491,95 @@ export default function SiteHeader() {
                 )}
               </div>
 
-              {/* Asesorías link — NovaFactura only */}
-              <Link
-                href="/asesoria"
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  pathname === '/asesoria'
-                    ? 'bg-[var(--brand-highlight-bg)] text-[var(--brand-highlight)]'
-                    : 'text-[var(--brand-highlight)] hover:bg-[var(--brand-highlight-bg)]'
-                }`}
+              {/* Asesorías dropdown — NovaFactura only */}
+              <div
+                className="relative"
+                onMouseEnter={handleAsesoriasEnter}
+                onMouseLeave={handleAsesoriasLeave}
               >
-                Asesorías
-              </Link>
+                <button
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isAsesoriasActive
+                      ? 'bg-[var(--brand-highlight-bg)] text-[var(--brand-highlight)]'
+                      : 'text-[var(--brand-highlight)] hover:bg-[var(--brand-highlight-bg)]'
+                  }`}
+                  aria-expanded={asesoriasOpen}
+                  onClick={() => setAsesoriasOpen((o) => !o)}
+                >
+                  Asesorías
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform ${asesoriasOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
+
+                {asesoriasOpen && (
+                  <div className="absolute left-1/2 top-full -translate-x-1/2 pt-2">
+                    <div className="w-80 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-lg">
+                      <Link
+                        href="/asesoria"
+                        onClick={() => setAsesoriasOpen(false)}
+                        className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 border-b border-neutral-100 ${
+                          pathname === '/asesoria' ? 'bg-[var(--brand-highlight-bg)]' : ''
+                        }`}
+                      >
+                        <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
+                          <LayoutDashboard className="h-4 w-4 text-[var(--brand-highlight)]" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-neutral-900">
+                            Landing para asesorías
+                          </p>
+                          <p className="text-xs text-neutral-500">
+                            Cómo NovaFactura ayuda a gestorías y asesorías
+                          </p>
+                        </div>
+                      </Link>
+                      <Link
+                        href="/software-para-asesorias"
+                        onClick={() => setAsesoriasOpen(false)}
+                        className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 border-b border-neutral-100 ${
+                          pathname === '/software-para-asesorias'
+                            ? 'bg-[var(--brand-highlight-bg)]'
+                            : ''
+                        }`}
+                      >
+                        <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
+                          <Building2 className="h-4 w-4 text-[var(--brand-highlight)]" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-neutral-900">
+                            Software para asesorías
+                          </p>
+                          <p className="text-xs text-neutral-500">
+                            Panel multi-cliente con VeriFactu y exportación contable
+                          </p>
+                        </div>
+                      </Link>
+                      <Link
+                        href="/asesoria-facturas-clientes"
+                        onClick={() => setAsesoriasOpen(false)}
+                        className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 ${
+                          pathname === '/asesoria-facturas-clientes'
+                            ? 'bg-[var(--brand-highlight-bg)]'
+                            : ''
+                        }`}
+                      >
+                        <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
+                          <FileText className="h-4 w-4 text-[var(--brand-highlight)]" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-neutral-900">
+                            Haces las facturas de tus clientes
+                          </p>
+                          <p className="text-xs text-neutral-500">
+                            Gestiona la facturación de todos tus autónomos en un solo lugar
+                          </p>
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Recursos dropdown — NovaFactura only */}
               <div
@@ -568,13 +743,47 @@ export default function SiteHeader() {
                   VeriFactu
                 </Link>
 
-                <Link
-                  href="/asesoria"
-                  className="rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--brand-highlight)] transition-colors hover:bg-[var(--brand-highlight-bg)]"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Asesorías
-                </Link>
+                {/* Asesorías collapsible — NaFactura only */}
+                <div>
+                  <button
+                    onClick={() => setMobileAsesoriasOpen((o) => !o)}
+                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      isAsesoriasActive
+                        ? 'bg-[var(--brand-highlight-bg)] text-[var(--brand-highlight)]'
+                        : 'text-[var(--brand-highlight)] hover:bg-[var(--brand-highlight-bg)]'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">Asesorías</span>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${mobileAsesoriasOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  {mobileAsesoriasOpen && (
+                    <div className="ml-3 mt-1 flex flex-col gap-0.5 border-l border-neutral-100 pl-3">
+                      <Link
+                        href="/asesoria"
+                        onClick={() => setMobileOpen(false)}
+                        className="rounded-lg px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-50"
+                      >
+                        Landing para asesorías
+                      </Link>
+                      <Link
+                        href="/software-para-asesorias"
+                        onClick={() => setMobileOpen(false)}
+                        className="rounded-lg px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-50"
+                      >
+                        Software para asesorías
+                      </Link>
+                      <Link
+                        href="/asesoria-facturas-clientes"
+                        onClick={() => setMobileOpen(false)}
+                        className="rounded-lg px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-50"
+                      >
+                        Haces las facturas de tus clientes
+                      </Link>
+                    </div>
+                  )}
+                </div>
 
                 <Link
                   href="/precios"
@@ -645,14 +854,47 @@ export default function SiteHeader() {
                   )}
                 </div>
 
-                {/* Asesorías link — NovaFactura only */}
-                <Link
-                  href="/asesoria"
-                  className="rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--brand-highlight)] transition-colors hover:bg-[var(--brand-highlight-bg)]"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Asesorías
-                </Link>
+                {/* Asesorías collapsible — NovaFactura only */}
+                <div>
+                  <button
+                    onClick={() => setMobileAsesoriasOpen((o) => !o)}
+                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      isAsesoriasActive
+                        ? 'bg-[var(--brand-highlight-bg)] text-[var(--brand-highlight)]'
+                        : 'text-[var(--brand-highlight)] hover:bg-[var(--brand-highlight-bg)]'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">Asesorías</span>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${mobileAsesoriasOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  {mobileAsesoriasOpen && (
+                    <div className="ml-3 mt-1 flex flex-col gap-0.5 border-l border-neutral-100 pl-3">
+                      <Link
+                        href="/asesoria"
+                        onClick={() => setMobileOpen(false)}
+                        className="rounded-lg px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-50"
+                      >
+                        Landing para asesorías
+                      </Link>
+                      <Link
+                        href="/software-para-asesorias"
+                        onClick={() => setMobileOpen(false)}
+                        className="rounded-lg px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-50"
+                      >
+                        Software para asesorías
+                      </Link>
+                      <Link
+                        href="/asesoria-facturas-clientes"
+                        onClick={() => setMobileOpen(false)}
+                        className="rounded-lg px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-50"
+                      >
+                        Haces las facturas de tus clientes
+                      </Link>
+                    </div>
+                  )}
+                </div>
 
                 {/* Recursos collapsible — NovaFactura only */}
                 <div>

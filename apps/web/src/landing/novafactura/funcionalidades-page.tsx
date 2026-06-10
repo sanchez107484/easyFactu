@@ -404,7 +404,7 @@ export function NovafacturaFuncionalidadesPage(): React.JSX.Element {
                 <BadgeCheck className="h-4 w-4 text-blue-600" />
                 Certificado VeriFactu · AEAT
               </div>
-              <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
+              <h1 data-speakable className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
                 Todo lo que necesitas para{' '}
                 <span className="relative whitespace-nowrap text-blue-600">
                   facturar correctamente

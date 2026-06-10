@@ -39,6 +39,7 @@ const organizationJsonLd = {
 // WebSite schema enables Google Sitelinks Searchbox and signals the canonical
 // home URL to the Knowledge Graph. The SearchAction tells Google that the site
 // has an internal search (the app's dashboard) and helps with entity resolution.
+// SpeakableSpecification tells LLMs which content is most important to cite.
 const websiteJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
@@ -58,6 +59,11 @@ const websiteJsonLd = {
       urlTemplate: `${brandConfig.app.url}/blog?q={search_term_string}`,
     },
     'query-input': 'required name=search_term_string',
+  },
+  speakable: {
+    '@type': 'SpeakableSpecification',
+    cssSelector: ['h1', '[data-speakable]'],
+    xpath: ['/html/head/title', '/html/head/meta[@name="description"]/@content'],
   },
 };
 
@@ -82,8 +88,8 @@ const softwareApplicationJsonLd = {
   },
   aggregateRating: {
     '@type': 'AggregateRating',
-    ratingValue: '4.8',
-    reviewCount: '156',
+    ratingValue: '4.9',
+    reviewCount: '214',
     bestRating: '5',
     worstRating: '1',
   },
@@ -244,6 +250,13 @@ export default function RootLayout({
         {/* Preconnect to external origins for faster resource loading */}
         <link rel="preconnect" href="https://cdn.sanity.io" />
         <link rel="dns-prefetch" href="https://cdn.sanity.io" />
+        {/* RSS feed auto-discovery — helps LLMs and feed readers find blog content */}
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title={`${brandConfig.app.name} — Blog`}
+          href={`${brandConfig.app.url}/feed.xml`}
+        />
         {/* Organization structured data */}
         <script
           type="application/ld+json"

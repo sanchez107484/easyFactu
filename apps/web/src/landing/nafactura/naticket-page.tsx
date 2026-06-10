@@ -381,7 +381,7 @@ export function NafacturaNavicketPage(): React.JSX.Element {
               <Map className="h-4 w-4" />
               Exclusivo Navarra · Hacienda Foral de Navarra
             </div>
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
+            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
               NaTicket: qué es, cuándo será obligatorio en Navarra{' '}
               <span className="text-red-600">y cómo prepararte</span>
             </h1>

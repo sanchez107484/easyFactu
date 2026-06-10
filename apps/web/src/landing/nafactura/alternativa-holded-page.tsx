@@ -235,7 +235,7 @@ export function NafacturaHoldedPage(): React.JSX.Element {
               <Map className="h-4 w-4" />
               Solo para Navarra · Comparativa honesta
             </div>
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
               ¿Por qué los autónomos navarros eligen{' '}
               <span className="text-red-600">{brandConfig.app.name}</span> antes que Holded?
             </h1>

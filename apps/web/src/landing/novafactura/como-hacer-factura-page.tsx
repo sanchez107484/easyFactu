@@ -405,7 +405,7 @@ export function NovafacturaComoHacerFacturaPage(): React.JSX.Element {
               <BookOpen className="h-4 w-4" />
               Guía actualizada 2026 · 8 pasos
             </div>
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
               Cómo hacer una factura correcta en España
             </h1>
             <p className="mt-6 text-xl text-slate-600 leading-relaxed max-w-2xl">

@@ -193,7 +193,7 @@ export function NovafacturaFacturaSimplificadaPage(): React.JSX.Element {
               <BookOpen className="h-4 w-4" />
               Tícket B2C — Guía 2026
             </div>
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
               Factura simplificada: cuándo es válida
             </h1>
             <p className="mt-6 text-xl text-slate-600 leading-relaxed max-w-2xl">

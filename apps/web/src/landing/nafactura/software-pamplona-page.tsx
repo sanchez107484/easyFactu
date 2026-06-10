@@ -250,7 +250,7 @@ export function NafacturaPamplonaPage(): React.JSX.Element {
               <Map className="h-4 w-4" />
               Pamplona · Comunidad Foral de Navarra
             </div>
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
               Software de facturación para autónomos{' '}
               <span className="text-red-600">en Pamplona</span>
             </h1>

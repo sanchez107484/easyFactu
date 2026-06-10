@@ -14,10 +14,17 @@ const novafacturaFooterColumns = [
       { href: '/facturacion-online', label: 'Software de facturación' },
       { href: '/funcionalidades', label: 'Funcionalidades' },
       { href: '/verifactu', label: 'VeriFactu' },
-      { href: '/asesoria', label: 'Para asesorías' },
       { href: '/precios', label: 'Precios' },
       { href: '/blog', label: 'Blog' },
       { href: '/contacto', label: 'Contacto' },
+    ],
+  },
+  {
+    title: 'Para asesorías',
+    links: [
+      { href: '/asesoria', label: 'Landing para asesorías' },
+      { href: '/software-para-asesorias', label: 'Software para asesorías' },
+      { href: '/asesoria-facturas-clientes', label: 'Haces facturas de tus clientes' },
     ],
   },
   {
@@ -41,9 +48,16 @@ const nafacturaFooterColumns = [
     links: [
       { href: '/funcionalidades', label: 'Funcionalidades' },
       { href: '/verifactu', label: 'VeriFactu' },
-      { href: '/asesoria', label: 'Para asesorías' },
       { href: '/precios', label: 'Precios' },
       { href: '/blog', label: 'Blog' },
+    ],
+  },
+  {
+    title: 'Para asesorías',
+    links: [
+      { href: '/asesoria', label: 'Landing para asesorías' },
+      { href: '/software-para-asesorias', label: 'Software para asesorías' },
+      { href: '/asesoria-facturas-clientes', label: 'Haces facturas de tus clientes' },
     ],
   },
   {

@@ -106,7 +106,7 @@ const schemaData = {
       aggregateRating: {
         '@type': 'AggregateRating',
         ratingValue: '4.9',
-        reviewCount: '214',
+        reviewCount: '47',
         bestRating: '5',
       },
     },
@@ -369,7 +369,7 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                 de {PLAZAS_CONFIG.total.toLocaleString('es-ES')}
               </div>
 
-              <h1 className="mb-5 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
+              <h1 data-speakable className="mb-5 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
                 <span className="block text-slate-500 text-2xl font-semibold mb-2 sm:text-3xl">
                   Precio de {brandConfig.app.name} para Navarra
                 </span>

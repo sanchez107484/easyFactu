@@ -247,7 +247,7 @@ export function NovafacturaVerifactuSancionesPage(): React.JSX.Element {
               <AlertTriangle className="h-4 w-4" />
               Ley Antifraude 11/2021 — Multas hasta 50.000€
             </div>
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
               Sanciones por no cumplir VeriFactu
             </h1>
             <p className="mt-6 text-xl text-slate-600 leading-relaxed max-w-2xl">

@@ -218,7 +218,7 @@ export function NovafacturaFacturasIndexPage(): React.JSX.Element {
               <BookOpen className="h-4 w-4" />
               Guías actualizadas 2026
             </div>
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
               Todo sobre facturación en España
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-xl text-slate-600 leading-relaxed">

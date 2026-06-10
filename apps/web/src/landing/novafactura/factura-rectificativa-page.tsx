@@ -211,7 +211,7 @@ export function NovafacturaFacturaRectificativaPage(): React.JSX.Element {
               <BookOpen className="h-4 w-4" />
               Corrección de facturas — Guía 2026
             </div>
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
               Factura rectificativa: qué es y cómo hacerla
             </h1>
             <p className="mt-6 text-xl text-slate-600 leading-relaxed max-w-2xl">

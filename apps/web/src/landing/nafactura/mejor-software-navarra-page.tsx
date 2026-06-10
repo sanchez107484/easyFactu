@@ -243,7 +243,7 @@ export function NafacturaMejorSoftwarePage(): React.JSX.Element {
               <Map className="h-4 w-4" />
               Comparativa actualizada · Mayo 2026
             </div>
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
               Mejor software de facturación para{' '}
               <span className="text-red-600">autónomos navarros</span> en 2027
             </h1>
