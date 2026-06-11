@@ -331,7 +331,7 @@ function InvoiceCardRow({
               <Copy className="mr-2 h-4 w-4" />
               Duplicar
             </DropdownMenuItem>
-            {invoice.status === InvoiceStatus.DRAFT && (
+            {(invoice.status === InvoiceStatus.DRAFT || invoice.status === InvoiceStatus.PROFORMA) && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -941,7 +941,7 @@ export default function FacturasPage() {
                                     <Copy className="mr-2 h-4 w-4" />
                                     Duplicar
                                   </DropdownMenuItem>
-                                  {invoice.status === InvoiceStatus.DRAFT && (
+                                  {(invoice.status === InvoiceStatus.DRAFT || invoice.status === InvoiceStatus.PROFORMA) && (
                                     <>
                                       <DropdownMenuSeparator />
                                       <DropdownMenuItem
@@ -1044,9 +1044,15 @@ export default function FacturasPage() {
       <AlertDialog open={Boolean(deleteId)} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar borrador?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {invoices.find((inv) => inv.id === deleteId)?.invoiceType === 'proforma'
+                ? '¿Eliminar proforma?'
+                : '¿Eliminar borrador?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. El borrador se eliminará permanentemente.
+              {invoices.find((inv) => inv.id === deleteId)?.invoiceType === 'proforma'
+                ? 'Esta acción no se puede deshacer. La proforma se eliminará permanentemente.'
+                : 'Esta acción no se puede deshacer. El borrador se eliminará permanentemente.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
