@@ -82,6 +82,7 @@ export const novafacturaFuncionalidadesMetadata: Metadata = {
     description: `Descubre todo lo que incluye ${brandConfig.app.name}: VeriFactu, clientes, presupuestos, PDF, dashboard y más. Gratis hasta 2027.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
+  robots: { index: true, follow: true },
 };
 
 const softwareAppJsonLd = {

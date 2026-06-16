@@ -42,7 +42,7 @@ const faqs = [
   },
   {
     q: '¿El software es realmente gratis para asesorías sin límite de clientes?',
-    a: `Sí. ${brandConfig.app.name} es gratuito para asesorías y gestorías durante el periodo de lanzamiento hasta 2027. No hay límite en el número de clientes que gestionas, ni en el número de facturas emitidas. A partir de 2027, comunicaremos con antelación suficiente el modelo de precios para asesorías.`,
+    a: `Sí. ${brandConfig.app.name} es gratuito para asesorías y gestorías para siempre. No hay límite en el número de clientes que gestionas, ni en el número de facturas emitidas.`,
   },
   {
     q: '¿Cómo funciona la exportación contable para Sage, A3CON, Cegid o Diamacon?',

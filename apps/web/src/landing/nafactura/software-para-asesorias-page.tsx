@@ -72,6 +72,7 @@ export const nafacturaSoftwareParaAsesoriasMetadata: Metadata = {
       'Gestiona todos tus clientes desde un solo panel. NaTicket automático, exportación CSV/PDF. Gratis para asesorías navarras.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
+  robots: { index: true, follow: true },
 };
 
 const softwareJsonLd = {

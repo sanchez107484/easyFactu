@@ -107,6 +107,7 @@ export const novafacturaAsesoriaMetadata: Metadata = {
       'Panel centralizado para emitir facturas con VeriFactu en nombre de todos tus autónomos. Gratis para siempre.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
+  robots: { index: true, follow: true },
 };
 
 const softwareJsonLd = {

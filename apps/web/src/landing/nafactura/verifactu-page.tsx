@@ -48,7 +48,7 @@ export const nafacturaVerifactuMetadata: Metadata = {
     description:
       'Todo lo que necesita saber un autónomo navarro sobre obligaciones de facturación: Hacienda Foral, VeriFactu y cómo cumplir con software certificado.',
     url: `${brandConfig.app.url}/verifactu`,
-    type: 'article',
+    type: 'website',
     siteName: brandConfig.app.name,
     locale: 'es_ES',
     images: [
@@ -67,6 +67,7 @@ export const nafacturaVerifactuMetadata: Metadata = {
       'VeriFactu y Hacienda Foral de Navarra: qué necesitas saber y cómo cumplir con software certificado.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
+  robots: { index: true, follow: true },
 };
 
 const articleJsonLd = {

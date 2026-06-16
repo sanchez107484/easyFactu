@@ -29,4 +29,5 @@ export const nafacturaPreciosMetadata: Metadata = {
     description: `Facturación para autónomos navarros, gratis hasta 2027. Desde ${PRICING.starter.monthly}€/mes.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
+  robots: { index: true, follow: true },
 };

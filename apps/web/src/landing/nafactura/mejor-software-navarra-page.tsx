@@ -40,7 +40,7 @@ export const nafacturaMejorSoftwareMetadata: Metadata = {
     title: `Mejor software de facturación para autónomos navarros 2027 | ${brandConfig.app.name}`,
     description: `Comparativa completa de programas de facturación para autónomos de Navarra. Cumplimiento Hacienda Foral, precio y soporte.`,
     url: `${brandConfig.app.url}/mejor-software-facturacion-navarra`,
-    type: 'article',
+    type: 'website',
     siteName: brandConfig.app.name,
     locale: 'es_ES',
     images: [
@@ -59,6 +59,7 @@ export const nafacturaMejorSoftwareMetadata: Metadata = {
       'Comparativa completa de programas de facturación para Navarra. Gratis hasta 2027.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
+  robots: { index: true, follow: true },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

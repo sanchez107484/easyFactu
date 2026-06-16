@@ -59,6 +59,7 @@ export const nafacturaPamplonaMetadata: Metadata = {
     description: `El programa de facturación para Pamplona adaptado a Hacienda Navarra. Gratis hasta 2027.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
+  robots: { index: true, follow: true },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

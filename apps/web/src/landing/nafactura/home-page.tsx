@@ -438,6 +438,7 @@ export const nafacturaHomeMetadata: Metadata = {
     description: `Cumplimiento automático con Hacienda Navarra. Gratis hasta 2027. Sin tarjeta.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
+  robots: { index: true, follow: true },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

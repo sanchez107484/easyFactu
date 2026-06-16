@@ -124,6 +124,7 @@ export const nafacturaAsesoriaFacturasMetadata: Metadata = {
       'Gestiona todos los NIFs de tus clientes navarros desde un solo panel con NaTicket automático. Gratis.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
+  robots: { index: true, follow: true },
 };
 
 export function NafacturaAsesoriaFacturasPage() {

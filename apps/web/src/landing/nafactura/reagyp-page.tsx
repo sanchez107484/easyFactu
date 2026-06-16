@@ -220,6 +220,7 @@ export const nafacturaReagypMetadata: Metadata = {
       'Gestiona el IVA agrario navarro y emite facturas legales para Hacienda Foral. Gratis hasta 2027.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
+  robots: { index: true, follow: true },
 };
 
 export function NafacturaReagypPage() {

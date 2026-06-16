@@ -57,7 +57,7 @@ export const nafacturaNavicketMetadata: Metadata = {
     description:
       'Todo lo que necesitas saber sobre NaTicket como autónomo navarro: qué es, diferencias con VeriFactu y TicketBAI, a quién afecta y cómo prepararte.',
     url: `${brandConfig.app.url}/naticket`,
-    type: 'article',
+    type: 'website',
     siteName: brandConfig.app.name,
     locale: 'es_ES',
     images: [
@@ -76,6 +76,7 @@ export const nafacturaNavicketMetadata: Metadata = {
       'Guía completa sobre NaTicket: el nuevo sistema de facturación de Hacienda Foral de Navarra para autónomos.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
+  robots: { index: true, follow: true },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

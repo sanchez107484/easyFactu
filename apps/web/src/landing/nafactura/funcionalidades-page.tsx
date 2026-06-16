@@ -73,8 +73,9 @@ export const nafacturaFuncionalidadesMetadata: Metadata = {
     card: 'summary_large_image',
     title: `Funcionalidades de ${brandConfig.app.name} — Facturación para Navarra`,
     description: `Descubre todo lo que incluye ${brandConfig.app.name} para autónomos navarros. Gratis hasta 2027.`,
-    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
+    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`    ],
   },
+  robots: { index: true, follow: true },
 };
 
 const softwareAppJsonLd = {

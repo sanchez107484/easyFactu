@@ -70,6 +70,7 @@ export const nafacturaAsesoriaMetadata: Metadata = {
       'Panel centralizado para gestionar el cumplimiento fiscal de todos tus clientes navarros. Gratis para siempre.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
+  robots: { index: true, follow: true },
 };
 
 const softwareJsonLd = {

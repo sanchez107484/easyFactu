@@ -49,7 +49,7 @@ export const novafacturaVerifactuMetadata: Metadata = {
     description:
       'Todo lo que necesitas saber sobre VeriFactu: qué es, a quién afecta, fechas obligatorias, sanciones y cómo tu software puede hacerlo automático.',
     url: `${brandConfig.app.url}/verifactu`,
-    type: 'article',
+    type: 'website',
     siteName: brandConfig.app.name,
     locale: 'es_ES',
     images: [

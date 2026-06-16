@@ -63,6 +63,7 @@ export const nafacturaHoldedMetadata: Metadata = {
     description: `Descubre por qué los autónomos navarros eligen ${brandConfig.app.name} antes que Holded.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
+  robots: { index: true, follow: true },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

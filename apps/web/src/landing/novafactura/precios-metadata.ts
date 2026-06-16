@@ -29,4 +29,5 @@ export const novafacturaPreciosMetadata: Metadata = {
     description: `Software VeriFactu gratis hasta 2027. Desde ${PRICING.starter.monthly}€/mes.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
+  robots: { index: true, follow: true },
 };
