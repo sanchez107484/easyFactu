@@ -166,7 +166,7 @@ export function buildPreviewInvoice(
       taxAmount: round2(lineSubtotal * ((l.taxRate ?? 0) / 100)),
       surchargeRate: lineSurchargeRate > 0 ? lineSurchargeRate : null,
       surchargeAmount: lineSurchargeAmount > 0 ? lineSurchargeAmount : null,
-      lineTotal: round2(lineSubtotal * (1 + (l.taxRate ?? 0) / 100)),
+      lineTotal: round2(lineSubtotal),
       hideQty,
       sortOrder: i,
       createdAt: today,

@@ -102,7 +102,7 @@ export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
               )}
               {showLineTotal && (
                 <td className="py-2.5 text-right tabular-nums font-medium">
-                  {formatCurrency(line.lineTotal)}
+                  {formatCurrency(line.subtotal)}
                 </td>
               )}
             </tr>

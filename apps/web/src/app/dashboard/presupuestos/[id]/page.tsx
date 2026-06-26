@@ -671,7 +671,7 @@ export default function PresupuestoDetailPage() {
                               </td>
                             )}
                             <td className="py-2.5 text-right tabular-nums font-medium">
-                              {formatCurrency(line.lineTotal)}
+                              {formatCurrency(line.subtotal)}
                             </td>
                           </tr>
                         );

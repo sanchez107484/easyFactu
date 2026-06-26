@@ -210,9 +210,8 @@ function buildRecurringPreviewInvoice(
       const qty = Number(l.quantity);
       const price = Number(l.unitPrice);
       const lineDiscount = l.discountPercent ? Number(l.discountPercent) : 0;
-      // No intermediate round2 — keep full precision so lineTotal is derived from
+      // No intermediate round2 — keep full precision so subtotal is derived from
       // unitPrice's 4-decimal precision, matching invoice-calculation.service.ts.
-      // e.g. 28.9256 × 1.21 = 34.999976 → round2 → 35.00 (not 35.01)
       const gross = qty * price;
       const precise = lineDiscount > 0 ? gross * (1 - lineDiscount / 100) : gross;
       const taxRate = Number(l.taxRate);
@@ -224,7 +223,7 @@ function buildRecurringPreviewInvoice(
       const lineSurchargeAmount = hasEquivalenceSurcharge
         ? round2(precise * discFactor * (lineSurchargeRate / 100))
         : 0;
-      const lineTotal = round2(precise * (isLineReagyp ? 1 : 1 + taxRate / 100));
+      const lineTotal = round2(precise);
       const subtotal = round2(precise);
       return {
         id: `preview-${i}`,
@@ -608,7 +607,7 @@ export default function RecurrenteDetailPage({ params }: PageProps) {
                       const gross = Number(line.quantity) * Number(line.unitPrice);
                       const precise = lineDisc > 0 ? gross * (1 - lineDisc / 100) : gross;
                       const lineTaxRate = Number(line.taxRate ?? 0);
-                      const lineTotal = round2(precise * (isReagyp ? 1 : 1 + lineTaxRate / 100));
+                      const lineTotal = round2(precise);
                       return (
                         <tr key={i}>
                           <td className="py-2.5 pr-4">{line.description}</td>

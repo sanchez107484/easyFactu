@@ -102,7 +102,7 @@ export function ItemsTableBlock({ layout, invoice }: ItemsTableBlockProps) {
               )}
               {showLineTotal && (
                 <td className={cn(tdClass, 'text-right font-medium')} style={{ color: primary }}>
-                  {formatCurrency(line.lineTotal)}
+                  {formatCurrency(line.subtotal)}
                 </td>
               )}
             </tr>

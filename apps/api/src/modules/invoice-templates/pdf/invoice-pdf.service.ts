@@ -317,7 +317,7 @@ export class InvoicePdfService {
         rowParts.push((line.quantity?.toString() ?? '').padStart(5));
         if (showUnitPrice) rowParts.push(formatCurrency(line.unitPrice).padStart(12));
         if (showTaxColumn) rowParts.push(`${line.taxRate?.toFixed(0) ?? ''}%`.padStart(5));
-        if (showLineTotal) rowParts.push(formatCurrency(line.lineTotal).padStart(12));
+        if (showLineTotal) rowParts.push(formatCurrency(line.subtotal).padStart(12));
         doc.text(rowParts.join('  '));
       });
     }

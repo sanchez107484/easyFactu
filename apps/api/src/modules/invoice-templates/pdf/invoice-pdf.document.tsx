@@ -408,7 +408,7 @@ export function createInvoicePdfElement(
                 </Text>
               )}
               {showLineTotal && (
-                <Text style={[styles.cell, styles.colTotal]}>{formatCurrency(line.lineTotal)}</Text>
+                <Text style={[styles.cell, styles.colTotal]}>{formatCurrency(line.subtotal)}</Text>
               )}
             </View>
           ))}

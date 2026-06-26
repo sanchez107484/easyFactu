@@ -474,6 +474,7 @@ export function InvoiceLineItem({
                 placeholder="Cant."
                 className="w-[96px] text-sm h-9 pr-1"
                 data-invoice-qty={index}
+                onFocus={(e) => e.target.select()}
                 value={
                   mode === 'product'
                     ? line.quantity === 0
@@ -536,6 +537,7 @@ export function InvoiceLineItem({
               placeholder="0,00"
               className={cn('text-sm h-9 pr-8', priceMode === 'total' && 'text-muted-foreground')}
               value={unitPriceRaw}
+              onFocus={(e) => e.target.select()}
               onChange={(e) => {
                 const raw = e.target.value;
                 const normalized = raw.replace(',', '.');
@@ -612,6 +614,7 @@ export function InvoiceLineItem({
               placeholder="0"
               className="w-[90px] text-sm h-9 pr-5"
               value={discountRaw}
+              onFocus={(e) => e.target.select()}
               onChange={(e) => {
                 const raw = e.target.value;
                 // Allow comma as decimal separator
@@ -677,6 +680,7 @@ export function InvoiceLineItem({
                   placeholder="0,00"
                   className="text-sm h-9 pr-6 text-right font-semibold"
                   value={totalRaw}
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => {
                     const raw = e.target.value;
                     const normalized = raw.replace(',', '.');
