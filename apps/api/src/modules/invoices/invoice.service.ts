@@ -416,19 +416,19 @@ export class InvoiceService {
   private async resolveEquivalenceSurchargeRates(
     tenantId: string,
     customerId: string,
-    isReagyp: boolean
+    isReagyp: boolean,
+    client: Prisma.TransactionClient | PrismaService = this.prisma
   ): Promise<Record<number, number>> {
     // RE is incompatible with REAGYP regime
     if (isReagyp) return {};
 
-    const customer = await this.prisma.customer.findFirst({
+    const customer = await client.customer.findFirst({
       where: { id: customerId, tenantId },
       select: { hasEquivalenceSurcharge: true },
     });
 
     if (!customer?.hasEquivalenceSurcharge) return {};
 
-    // Default rates per Art. 161 LIVA (Recargo de Equivalencia)
     return { 21: 5.2, 10: 1.4, 4: 0.5, 0: 0 };
   }
 
@@ -1046,7 +1046,8 @@ export class InvoiceService {
         const surchargeRates = await this.resolveEquivalenceSurchargeRates(
           tenantId,
           invoice.customerId,
-          storedCompensacion != null && storedCompensacion > 0
+          storedCompensacion != null && storedCompensacion > 0,
+          tx
         );
 
         const totals = this.calculationService.calculateTotals(lines, {
@@ -1869,8 +1870,7 @@ export class InvoiceService {
       ticketMedioThisMonth:
         invoicesThisMonth > 0 ? Math.round((billedThisMonth / invoicesThisMonth) * 100) / 100 : 0,
       vatThisQuarter: Math.round(Number(vatRows[0]?.vat ?? 0) * 100) / 100,
-      surchargeThisQuarter:
-        Math.round(Number(vatRows[0]?.surcharge ?? 0) * 100) / 100,
+      surchargeThisQuarter: Math.round(Number(vatRows[0]?.surcharge ?? 0) * 100) / 100,
     };
   }
 
