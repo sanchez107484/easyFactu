@@ -23,6 +23,7 @@ import { UpdateInvoiceNotesDto } from './dto/update-invoice-notes.dto';
 import { VerifactuService } from '../verifactu/services/verifactu.service';
 import { InvoiceNumberService } from './invoice-number.service';
 import { InvoiceCalculationService } from './invoice-calculation.service';
+import { withTransactionRetry } from '../../prisma/with-transaction-retry';
 
 const RECTIFIABLE_STATUSES = [InvoiceStatus.CONFIRMED, InvoiceStatus.SENT, InvoiceStatus.PAID];
 const EDITABLE_STATUSES = [InvoiceStatus.DRAFT, InvoiceStatus.PROFORMA, InvoiceStatus.QUOTE];
@@ -32,6 +33,13 @@ const EDITABLE_STATUSES = [InvoiceStatus.DRAFT, InvoiceStatus.PROFORMA, InvoiceS
 // and with connection_limit=1 a concurrent request must wait for the single connection.
 // An expiring transaction is rolled back mid-callback and surfaces as "Transaction not found".
 const TRANSACTION_OPTIONS = { maxWait: 10_000, timeout: 15_000 } as const;
+
+// Prisma 6.2 does not re-export the interactive-transaction options type.
+type TransactionOptions = {
+  maxWait?: number;
+  timeout?: number;
+  isolationLevel?: Prisma.TransactionIsolationLevel;
+};
 
 @Injectable()
 export class InvoiceService {
@@ -44,6 +52,23 @@ export class InvoiceService {
   ) {}
 
   // ==================== PRIVATE HELPERS ====================
+
+  /**
+   * Runs an interactive transaction with the shared serverless-tuned options and
+   * bounded retries on transient errors (pool exhaustion, serialization conflicts,
+   * stalled transactions). The transaction is the atomic unit of retry: it either
+   * commits or rolls back as a whole, so a retry is invisible to the user.
+   */
+  private runTransaction<T>(
+    context: string,
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+    options: TransactionOptions = {}
+  ): Promise<T> {
+    return withTransactionRetry(
+      () => this.prisma.$transaction(fn, { ...TRANSACTION_OPTIONS, ...options }),
+      context
+    );
+  }
 
   /**
    * Builds agency info from a createdByUser relation.
@@ -482,7 +507,7 @@ export class InvoiceService {
       equivalenceSurchargeRates,
     });
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.runTransaction('InvoiceService.create', async (tx) => {
       let quoteNumber: string | null = invoiceNumber;
       let resolvedSeriesId = seriesId;
 
@@ -545,7 +570,7 @@ export class InvoiceService {
           series: true,
         },
       });
-    }, TRANSACTION_OPTIONS);
+    });
   }
 
   async findAll(tenantId: string, query: QueryInvoiceDto) {
@@ -942,7 +967,7 @@ export class InvoiceService {
       equivalenceSurchargeRates,
     });
 
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    return this.runTransaction('InvoiceService.update', async (tx: Prisma.TransactionClient) => {
       if (dto.lines) {
         await this.applyLineDiff(tx, tenantId, id, dto.lines, totals.lines);
       }
@@ -996,7 +1021,7 @@ export class InvoiceService {
           series: true,
         },
       });
-    }, TRANSACTION_OPTIONS);
+    });
   }
 
   // ==================== STATUS TRANSITIONS ====================
@@ -1033,7 +1058,8 @@ export class InvoiceService {
     ]);
     const customerSnapshot = this.buildCustomerSnapshot(customerForSnapshot);
 
-    const confirmedInvoice = await this.prisma.$transaction(
+    const confirmedInvoice = await this.runTransaction(
+      'InvoiceService.confirm',
       async (tx: Prisma.TransactionClient) => {
         const invoiceNumber = await this.invoiceNumberService.generateNextNumber(
           tenantId,
@@ -1091,7 +1117,7 @@ export class InvoiceService {
           },
         });
       },
-      { isolationLevel: 'Serializable', ...TRANSACTION_OPTIONS }
+      { isolationLevel: 'Serializable' }
     );
 
     this.verifactuService.processInvoice(tenantId, id).catch((error: unknown) => {
@@ -1116,7 +1142,7 @@ export class InvoiceService {
     const currentPaid = Number(invoice.amountPaid);
     const remaining = Math.round((invoiceTotal - currentPaid) * 100) / 100;
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.runTransaction('InvoiceService.markAsPaid', async (tx) => {
       if (remaining > 0) {
         await tx.payment.create({
           data: {
@@ -1143,7 +1169,7 @@ export class InvoiceService {
           payments: { orderBy: { paymentDate: 'desc' } },
         },
       });
-    }, TRANSACTION_OPTIONS);
+    });
   }
 
   async unmarkAsPaid(tenantId: string, id: string) {
@@ -1155,7 +1181,7 @@ export class InvoiceService {
       );
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.runTransaction('InvoiceService.unmarkAsPaid', async (tx) => {
       await tx.payment.deleteMany({ where: { invoiceId: id, tenantId } });
 
       return tx.invoice.update({
@@ -1172,7 +1198,7 @@ export class InvoiceService {
           payments: { orderBy: { paymentDate: 'desc' } },
         },
       });
-    }, TRANSACTION_OPTIONS);
+    });
   }
 
   async markAsSent(tenantId: string, id: string) {
@@ -1321,10 +1347,12 @@ export class InvoiceService {
 
     const paymentDetails = original.paymentDetails;
 
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.invoice.update({
-        where: { id },
-        data: { status: PrismaInvoiceStatus.RECTIFIED },
+    return this.runTransaction(
+      'InvoiceService.createRectificative',
+      async (tx: Prisma.TransactionClient) => {
+        await tx.invoice.update({
+          where: { id },
+          data: { status: PrismaInvoiceStatus.RECTIFIED },
       });
 
       return tx.invoice.create({
@@ -1356,7 +1384,7 @@ export class InvoiceService {
           series: true,
         },
       });
-    }, TRANSACTION_OPTIONS);
+    });
   }
 
   async remove(tenantId: string, id: string) {
@@ -1429,7 +1457,7 @@ export class InvoiceService {
     // La proforma es un documento no vinculante: una vez convertida a oficial deja de tener
     // sentido y se elimina para evitar confusión. Las líneas, logs y notas se borran en
     // cascada según las relaciones definidas en el schema de Prisma.
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    return this.runTransaction('InvoiceService.convertToOfficial', async (tx: Prisma.TransactionClient) => {
       const newInvoice = await tx.invoice.create({
         data: {
           tenantId,
@@ -1469,7 +1497,7 @@ export class InvoiceService {
       await tx.invoice.delete({ where: { id } });
 
       return newInvoice;
-    }, TRANSACTION_OPTIONS);
+    });
   }
 
   // ==================== NOTE OPERATIONS ====================
@@ -1481,7 +1509,7 @@ export class InvoiceService {
     const newNotes = dto.notes !== undefined ? (dto.notes ?? null) : previousNotes;
 
     // Atomic: update + audit log either both succeed or both fail.
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    return this.runTransaction('InvoiceService.updateNotes', async (tx: Prisma.TransactionClient) => {
       const updated = await tx.invoice.update({
         where: { id },
         data: { notes: newNotes },
@@ -1504,7 +1532,7 @@ export class InvoiceService {
       });
 
       return updated;
-    }, TRANSACTION_OPTIONS);
+    });
   }
 
   // ==================== QUOTE CONVERSION ====================
@@ -1572,7 +1600,7 @@ export class InvoiceService {
     });
     const paymentDetails = invoice.paymentDetails;
 
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    return this.runTransaction('InvoiceService.convertQuoteToProforma', async (tx: Prisma.TransactionClient) => {
       const proforma = await tx.invoice.create({
         data: {
           tenantId,
@@ -1620,7 +1648,7 @@ export class InvoiceService {
       });
 
       return proforma;
-    }, TRANSACTION_OPTIONS);
+    });
   }
 
   async convertQuoteToOfficial(tenantId: string, id: string) {
@@ -1660,7 +1688,7 @@ export class InvoiceService {
     });
     const paymentDetails = invoice.paymentDetails;
 
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    return this.runTransaction('InvoiceService.convertQuoteToOfficial', async (tx: Prisma.TransactionClient) => {
       const draft = await tx.invoice.create({
         data: {
           tenantId,
@@ -1708,7 +1736,7 @@ export class InvoiceService {
       });
 
       return draft;
-    }, TRANSACTION_OPTIONS);
+    });
   }
 
   // ==================== STATS & REPORTS ====================

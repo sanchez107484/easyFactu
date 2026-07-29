@@ -101,7 +101,7 @@ common/
   interceptors/           # LoggingInterceptor, TransformInterceptor
   dto/                    # Shared DTOs (pagination, etc.)
   validators/             # Custom class-validator validators
-prisma/                   # PrismaModule + PrismaService
+prisma/                   # PrismaModule + PrismaService + withTransactionRetry (bounded retries on transient Prisma errors)
 modules/
   auth/                   # JWT auth (login, register, refresh, email verify, password reset)
   tenants/                # Tenant CRUD + user management
