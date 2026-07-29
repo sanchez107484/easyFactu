@@ -27,6 +27,12 @@ import { InvoiceCalculationService } from './invoice-calculation.service';
 const RECTIFIABLE_STATUSES = [InvoiceStatus.CONFIRMED, InvoiceStatus.SENT, InvoiceStatus.PAID];
 const EDITABLE_STATUSES = [InvoiceStatus.DRAFT, InvoiceStatus.PROFORMA, InvoiceStatus.QUOTE];
 
+// Interactive transactions need headroom beyond Prisma's defaults (maxWait 2s, timeout 5s).
+// On Vercel serverless the first query after a cold start includes the TLS + pooler handshake,
+// and with connection_limit=1 a concurrent request must wait for the single connection.
+// An expiring transaction is rolled back mid-callback and surfaces as "Transaction not found".
+const TRANSACTION_OPTIONS = { maxWait: 10_000, timeout: 15_000 } as const;
+
 @Injectable()
 export class InvoiceService {
   constructor(
@@ -539,7 +545,7 @@ export class InvoiceService {
           series: true,
         },
       });
-    });
+    }, TRANSACTION_OPTIONS);
   }
 
   async findAll(tenantId: string, query: QueryInvoiceDto) {
@@ -990,7 +996,7 @@ export class InvoiceService {
           series: true,
         },
       });
-    });
+    }, TRANSACTION_OPTIONS);
   }
 
   // ==================== STATUS TRANSITIONS ====================
@@ -1085,7 +1091,7 @@ export class InvoiceService {
           },
         });
       },
-      { isolationLevel: 'Serializable' }
+      { isolationLevel: 'Serializable', ...TRANSACTION_OPTIONS }
     );
 
     this.verifactuService.processInvoice(tenantId, id).catch((error: unknown) => {
@@ -1137,7 +1143,7 @@ export class InvoiceService {
           payments: { orderBy: { paymentDate: 'desc' } },
         },
       });
-    });
+    }, TRANSACTION_OPTIONS);
   }
 
   async unmarkAsPaid(tenantId: string, id: string) {
@@ -1166,7 +1172,7 @@ export class InvoiceService {
           payments: { orderBy: { paymentDate: 'desc' } },
         },
       });
-    });
+    }, TRANSACTION_OPTIONS);
   }
 
   async markAsSent(tenantId: string, id: string) {
@@ -1350,7 +1356,7 @@ export class InvoiceService {
           series: true,
         },
       });
-    });
+    }, TRANSACTION_OPTIONS);
   }
 
   async remove(tenantId: string, id: string) {
@@ -1463,7 +1469,7 @@ export class InvoiceService {
       await tx.invoice.delete({ where: { id } });
 
       return newInvoice;
-    });
+    }, TRANSACTION_OPTIONS);
   }
 
   // ==================== NOTE OPERATIONS ====================
@@ -1498,7 +1504,7 @@ export class InvoiceService {
       });
 
       return updated;
-    });
+    }, TRANSACTION_OPTIONS);
   }
 
   // ==================== QUOTE CONVERSION ====================
@@ -1614,7 +1620,7 @@ export class InvoiceService {
       });
 
       return proforma;
-    });
+    }, TRANSACTION_OPTIONS);
   }
 
   async convertQuoteToOfficial(tenantId: string, id: string) {
@@ -1702,7 +1708,7 @@ export class InvoiceService {
       });
 
       return draft;
-    });
+    }, TRANSACTION_OPTIONS);
   }
 
   // ==================== STATS & REPORTS ====================
