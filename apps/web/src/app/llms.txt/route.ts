@@ -140,7 +140,7 @@ VeriFactu es el sistema de verificación de facturas de la Agencia Tributaria es
 
 ## Páginas VeriFactu
 
-- [¿Cuándo es obligatorio VeriFactu?](${BASE}/verifactu/cuando-es-obligatorio): Plazos por perfil según el Real Decreto 254/2025: software (29 julio 2025), grandes empresas IS >8M€ (1 enero 2027), autónomos y pymes (1 julio 2027)
+- [¿Cuándo es obligatorio VeriFactu?](${BASE}/verifactu/cuando-es-obligatorio): Plazos por perfil según el Real Decreto 1007/2023 y el Real Decreto 254/2025: software (29 julio 2025), sociedades (1 enero 2027), autónomos (1 julio 2027)
 - [Software garante VeriFactu](${BASE}/verifactu/software-garante): Qué es un software garante, cómo se certifica y cómo verificar si tu software cumple con la AEAT
 - [Sanciones por no cumplir VeriFactu](${BASE}/verifactu/sanciones): Multas de hasta 50.000€ por incumplimiento de la Ley Antifraude 11/2021
 

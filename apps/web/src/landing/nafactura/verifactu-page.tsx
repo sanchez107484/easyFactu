@@ -19,6 +19,7 @@ import { brandConfig, PRICING } from '@easyfactura/brand-config';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
+import { VerifactuDeadlines } from '@/components/verifactu-deadlines';
 
 export const nafacturaVerifactuMetadata: Metadata = {
   title: `Cumplimiento fiscal para autónomos navarros — Guía 2027 | ${brandConfig.app.name}`,
@@ -569,6 +570,13 @@ export function NafacturaVerifactuPage(): React.JSX.Element {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Plazos canónicos + fuentes BOE */}
+        <section className="pb-16 md:pb-24">
+          <div className="mx-auto max-w-4xl px-6">
+            <VerifactuDeadlines />
           </div>
         </section>
 

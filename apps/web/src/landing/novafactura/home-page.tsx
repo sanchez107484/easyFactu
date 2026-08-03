@@ -27,6 +27,7 @@ import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
 import { HomeStickyCtaBanner, HomeAnimatedStats } from '@/components/home/home-client';
 import FaqSection from '@/components/FaqSection';
+import { VerifactuDeadlines } from '@/components/verifactu-deadlines';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data
@@ -130,10 +131,21 @@ const comparisonRows = [
   { feature: 'Soporte técnico incluido', them: 'Coste adicional', us: true },
 ];
 
+// Machine-readable version of the comparison table — the visual cells use
+// icons, so crawlers get this plus the sr-only text in each cell.
+const comparisonTableJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Table',
+  name: `Comparativa: ${brandConfig.app.name} frente a software tradicional`,
+  about:
+    'Comparativa de cumplimiento VeriFactu y Ley Antifraude 11/2021: hash encadenado, envío a la AEAT, código QR normativo, instalación, migración, soporte y precio.',
+  description: `${brandConfig.app.name} incluye cumplimiento de la Ley Antifraude 11/2021, hash encadenado automático, envío a la AEAT integrado y código QR normativo de serie, sin instalación y gratis hasta 2027. El software tradicional no los incluye y cobra el soporte técnico aparte.`,
+};
+
 const faqs = [
   {
     q: '¿Cuándo es obligatorio VeriFactu para autónomos?',
-    a: 'Desde el 1 de julio de 2025 para nuevos contribuyentes que se den de alta en el Censo de Empresarios. Para los autónomos persona física ya dados de alta antes de esa fecha, el plazo es el 1 de julio de 2027. Para sociedades (SL, SA) y otras personas jurídicas, el 1 de enero de 2027 (Real Decreto 254/2025). A partir de esas fechas, emitir facturas con Excel o software no certificado puede acarrear multas de hasta 50.000€.',
+    a: 'Los plazos oficiales son escalonados: el software de facturación solo puede comercializarse adaptado al Reglamento VeriFactu desde el 29 de julio de 2025; las sociedades (SL, SA y demás personas jurídicas) deben facturar con software VeriFactu desde el 1 de enero de 2027; y los autónomos persona física en estimación directa, desde el 1 de julio de 2027 (Real Decreto 1007/2023 y Real Decreto 254/2025). A partir de esas fechas, emitir facturas con Excel o software no certificado puede acarrear multas de hasta 50.000€.',
   },
   {
     q: `¿${brandConfig.app.name} está homologado por la AEAT como software garante?`,
@@ -242,7 +254,7 @@ const homepageSoftwareJsonLd = {
 // SEO — Metadata
 // ─────────────────────────────────────────────────────────────────────────────
 export const novafacturaHomeMetadata: Metadata = {
-  title: `Software de facturación VeriFactu para autónomos y pymes | ${brandConfig.app.name}`,
+  title: `Software de Facturación Gratis para Autónomos 2026 | VeriFactu`,
   description: `${brandConfig.app.name} es el software de facturación con VeriFactu integrado para autónomos y pymes. Cumplimiento automático con la Ley Antifraude 11/2021. Gratis hasta 2027. Sin tarjeta.`,
   alternates: {
     canonical: brandConfig.app.url,
@@ -251,8 +263,8 @@ export const novafacturaHomeMetadata: Metadata = {
     type: 'website',
     locale: 'es_ES',
     url: brandConfig.app.url,
-    title: `Software de facturación VeriFactu para autónomos | ${brandConfig.app.name}`,
-    description: `Cumple con la Ley Antifraude 11/2021 de forma automática. Hash encadenado, código QR y envío a la AEAT incluidos. Gratis hasta 2027. Sin tarjeta.`,
+    title: `Software de Facturación Gratis para Autónomos 2026 | VeriFactu`,
+    description: `Crea facturas legales con VeriFactu en 60 segundos. Hash, QR y envío a la AEAT automáticos. Gratis hasta 2027, sin tarjeta. Cumple la Ley Antifraude 11/2021.`,
     siteName: brandConfig.app.name,
     images: [
       {
@@ -265,8 +277,8 @@ export const novafacturaHomeMetadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `Software de facturación VeriFactu para autónomos | ${brandConfig.app.name}`,
-    description: `Cumplimiento automático con Hacienda. Gratis hasta 2027. Sin tarjeta.`,
+    title: `Software de Facturación Gratis para Autónomos 2026 | VeriFactu`,
+    description: `Crea facturas legales con VeriFactu en 60 segundos. Hash, QR y envío a la AEAT automáticos. Gratis hasta 2027, sin tarjeta. Cumple la Ley Antifraude 11/2021.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   robots: { index: true, follow: true },
@@ -295,6 +307,10 @@ export function NovafacturaHomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageSoftwareJsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(comparisonTableJsonLd) }}
+      />
       <SiteHeader />
 
       <main className="flex-1">
@@ -317,7 +333,10 @@ export function NovafacturaHomePage() {
                 Plataforma nativa VeriFactu
               </div>
 
-              <h1 data-speakable className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
+              <h1
+                data-speakable
+                className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl"
+              >
                 Software de facturación{' '}
                 <span className="relative whitespace-nowrap text-blue-600">
                   VeriFactu
@@ -451,15 +470,18 @@ export function NovafacturaHomePage() {
             </h2>
             <div className="rounded-xl border-2 border-red-200 bg-red-50 p-6 text-center md:p-8">
               <p className="mb-4 text-lg text-slate-700">
-                A partir de julio de 2025, la <strong>Ley Antifraude 11/2021</strong> exige que
-                todas las facturas incluyan <strong>hash encadenado</strong>,{' '}
-                <strong>código QR</strong> y sean{' '}
-                <strong>enviadas automáticamente a la AEAT</strong>.
+                Con la <strong>Ley Antifraude 11/2021</strong> y el{' '}
+                <strong>Reglamento VeriFactu</strong>, todas las facturas deberán incluir{' '}
+                <strong>hash encadenado</strong>, <strong>código QR</strong> y{' '}
+                <strong>envío automático a la AEAT</strong>.
               </p>
               <div className="flex items-center justify-center gap-2 text-red-600">
                 <AlertTriangle className="h-5 w-5" />
                 <span className="text-xl font-bold">Sanción por incumplimiento: hasta 50.000€</span>
               </div>
+            </div>
+            <div className="mt-6">
+              <VerifactuDeadlines />
             </div>
             <p className="mt-8 text-center text-lg text-slate-500">
               {brandConfig.app.name} automatiza todos estos requisitos técnicos.{' '}
@@ -788,13 +810,26 @@ export function NovafacturaHomePage() {
                           {typeof row.them === 'string' ? (
                             <span className="font-medium text-amber-600">{row.them}</span>
                           ) : row.them ? (
-                            <CheckCircle2 className="mx-auto h-5 w-5 text-green-500" />
+                            <>
+                              <CheckCircle2
+                                aria-hidden="true"
+                                className="mx-auto h-5 w-5 text-green-500"
+                              />
+                              <span className="sr-only">Sí</span>
+                            </>
                           ) : (
-                            <X className="mx-auto h-5 w-5 text-slate-300" />
+                            <>
+                              <X aria-hidden="true" className="mx-auto h-5 w-5 text-slate-300" />
+                              <span className="sr-only">No</span>
+                            </>
                           )}
                         </td>
                         <td className="bg-blue-50/30 px-4 py-3 text-center">
-                          <CheckCircle2 className="mx-auto h-5 w-5 text-blue-600" />
+                          <CheckCircle2
+                            aria-hidden="true"
+                            className="mx-auto h-5 w-5 text-blue-600"
+                          />
+                          <span className="sr-only">Sí</span>
                         </td>
                       </tr>
                     ))}
@@ -802,6 +837,12 @@ export function NovafacturaHomePage() {
                 </table>
               </div>
             </Card>
+            <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-slate-500">
+              En síntesis: el software tradicional no cumple de serie con la Ley Antifraude 11/2021
+              — sin hash encadenado, sin envío automático a la AEAT y sin código QR normativo.{' '}
+              {brandConfig.app.name} lo incluye todo desde el primer día, sin instalación, con
+              migración y soporte técnico sin coste adicional, y gratis hasta 2027.
+            </p>
           </div>
         </section>
 

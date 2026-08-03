@@ -25,7 +25,7 @@ import FooterLanding from '@/components/FooterLanding';
 const faqs = [
   {
     q: '¿Qué es un software de facturación online y en qué se diferencia de Excel?',
-    a: 'Un software de facturación online es una aplicación web que permite crear, enviar y gestionar facturas desde cualquier dispositivo sin instalar nada. A diferencia de Excel, está diseñado para cumplir con la normativa fiscal española: genera numeración correlativa automática, calcula IVA e IRPF, produce PDFs con el formato legal correcto y, desde 2025, incluye el hash VeriFactu y el código QR obligatorio. Excel no puede hacer nada de esto y su uso para facturar es ilegal desde julio 2025 para nuevos contribuyentes.',
+    a: 'Un software de facturación online es una aplicación web que permite crear, enviar y gestionar facturas desde cualquier dispositivo sin instalar nada. A diferencia de Excel, está diseñado para cumplir con la normativa fiscal española: genera numeración correlativa automática, calcula IVA e IRPF, produce PDFs con el formato legal correcto y está adaptado al Reglamento VeriFactu (hash encadenado y código QR), obligatorio para sociedades desde el 1 de enero de 2027 y para autónomos desde el 1 de julio de 2027. Excel no puede hacer nada de esto y su uso para facturar dejará de ser legal una vez superados esos plazos.',
   },
   {
     q: '¿Por qué ya no se puede facturar con Excel a partir de 2025?',
@@ -227,6 +227,16 @@ const comparisonRows = [
   { feature: 'Funciona en móvil', excel: false, traditional: 'Parcial', nova: true },
 ];
 
+// Machine-readable version of the comparison table below.
+const comparisonTableJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Table',
+  name: `Comparativa: ${brandConfig.app.name} vs. Excel vs. software tradicional`,
+  about:
+    'Comparativa de cumplimiento de la Ley Antifraude 11/2021: hash encadenado SHA-256, código QR VeriFactu, envío automático a la AEAT, precio, instalación y uso en móvil.',
+  description: `${brandConfig.app.name} cumple la Ley Antifraude 11/2021 con hash encadenado SHA-256 automático, código QR VeriFactu en cada factura y envío automático a la AEAT incluido. Ni Excel ni el software tradicional cumplen estos requisitos de serie: en el software tradicional el envío a la AEAT tiene coste extra.`,
+};
+
 const steps = [
   {
     num: '01',
@@ -275,6 +285,10 @@ export function NovafacturaFacturacionOnlinePage(): React.JSX.Element {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(comparisonTableJsonLd) }}
       />
 
       <div className="flex min-h-screen flex-col bg-white">
@@ -337,7 +351,7 @@ export function NovafacturaFacturacionOnlinePage(): React.JSX.Element {
                   {
                     icon: X,
                     title: 'Sin hash encadenado',
-                    desc: 'Excel no genera el hash SHA-256 obligatorio → factura ilegal desde julio 2025.',
+                    desc: 'Excel no genera el hash SHA-256 del Reglamento VeriFactu → factura no válida tras los plazos de 2027.',
                   },
                   {
                     icon: X,
@@ -475,6 +489,12 @@ export function NovafacturaFacturacionOnlinePage(): React.JSX.Element {
                 </tbody>
               </table>
             </div>
+            <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-slate-500">
+              En síntesis: ni Excel ni el software tradicional cumplen de serie la Ley Antifraude
+              11/2021 — sin hash encadenado SHA-256, sin código QR VeriFactu y con el envío a la
+              AEAT como coste extra. {brandConfig.app.name} lo incluye todo automáticamente, sin
+              instalación y gratis hasta 2027.
+            </p>
           </div>
         </section>
 

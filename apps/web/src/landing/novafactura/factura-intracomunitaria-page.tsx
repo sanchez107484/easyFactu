@@ -9,7 +9,7 @@ import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
 
 export const novafacturaFacturaIntracomunitariaMetadata: Metadata = {
-  title: `Factura intracomunitaria — Cómo facturar a empresas de la UE 2026 | ${brandConfig.app.name}`,
+  title: `Factura Intracomunitaria: Cómo Hacerla Paso a Paso (2026) | ${brandConfig.app.name}`,
   description:
     'Guía sobre la factura intracomunitaria: IVA 0%, requisito VIES/ROI, inversión del sujeto pasivo, modelo 349 y cómo rellenar la factura correctamente para clientes de la UE.',
   keywords: [
@@ -26,7 +26,7 @@ export const novafacturaFacturaIntracomunitariaMetadata: Metadata = {
   ],
   alternates: { canonical: `${brandConfig.app.url}/facturas/intracomunitaria` },
   openGraph: {
-    title: `Factura intracomunitaria — IVA 0% para clientes UE | ${brandConfig.app.name}`,
+    title: `Factura Intracomunitaria: Cómo Hacerla Paso a Paso (2026) | ${brandConfig.app.name}`,
     description:
       'Cómo facturar a una empresa de otro país de la UE: exención de IVA, VIES, ROI y modelo 349.',
     url: `${brandConfig.app.url}/facturas/intracomunitaria`,
@@ -38,7 +38,7 @@ export const novafacturaFacturaIntracomunitariaMetadata: Metadata = {
   robots: { index: true, follow: true },
   twitter: {
     card: 'summary_large_image',
-    title: `Factura intracomunitaria — IVA 0% para clientes UE | ${brandConfig.app.name}`,
+    title: `Factura Intracomunitaria: Cómo Hacerla Paso a Paso (2026) | ${brandConfig.app.name}`,
     description:
       'Cómo facturar a una empresa de otro país de la UE: exención de IVA, VIES, ROI y modelo 349.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
@@ -48,7 +48,7 @@ export const novafacturaFacturaIntracomunitariaMetadata: Metadata = {
 const articleJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline: 'Factura intracomunitaria — Cómo facturar a empresas de la UE',
+  headline: 'Factura Intracomunitaria: Cómo Hacerla Paso a Paso (2026)',
   description: 'Guía completa sobre la factura intracomunitaria: IVA 0%, ROI, VIES y modelo 349.',
   author: { '@type': 'Organization', name: brandConfig.app.name, url: brandConfig.app.url },
   publisher: {
@@ -203,7 +203,10 @@ export function NovafacturaFacturaIntracomunitariaPage(): React.JSX.Element {
               <BookOpen className="h-4 w-4" />
               Clientes UE — IVA 0% — Guía 2026
             </div>
-            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1
+              data-speakable
+              className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl"
+            >
               Factura intracomunitaria: cómo facturar a empresas de la UE
             </h1>
             <p className="mt-6 text-xl text-slate-600 leading-relaxed max-w-2xl">

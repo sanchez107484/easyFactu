@@ -27,6 +27,7 @@ import { brandConfig, PLAZAS_CONFIG, PRICING } from '@easyfactura/brand-config';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
+import { VerifactuDeadlines } from '@/components/verifactu-deadlines';
 import {
   HomeStickyCtaBanner,
   HomeAnimatedStats,
@@ -134,6 +135,17 @@ const comparisonRows = [
   { feature: 'Migración desde otros programas', them: false, us: true },
   { feature: 'Soporte técnico incluido', them: 'Coste adicional', us: true },
 ];
+
+// Machine-readable version of the comparison table — the visual cells use
+// icons, so crawlers get this plus the sr-only text in each cell.
+const comparisonTableJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Table',
+  name: `Comparativa: ${brandConfig.app.name} frente a software tradicional`,
+  about:
+    'Comparativa de cumplimiento con Hacienda Foral de Navarra: hash encadenado, envío a Hacienda Navarra, código QR normativo, instalación, migración, soporte y precio.',
+  description: `${brandConfig.app.name} incluye cumplimiento con Hacienda Foral de Navarra, hash encadenado automático, envío a Hacienda Navarra integrado y código QR normativo de serie, sin instalación y gratis hasta 2027. El software tradicional no está adaptado al régimen foral navarro y cobra el soporte técnico aparte.`,
+};
 
 const faqs = [
   {
@@ -468,6 +480,10 @@ export function NafacturaHomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageSoftwareJsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(comparisonTableJsonLd) }}
+      />
       <SiteHeader />
 
       <main className="flex-1">
@@ -649,6 +665,9 @@ export function NafacturaHomePage() {
                 <AlertTriangle className="h-5 w-5" />
                 <span className="text-xl font-bold">Sanción por incumplimiento: hasta 50.000€</span>
               </div>
+            </div>
+            <div className="mt-6">
+              <VerifactuDeadlines />
             </div>
             <p className="mt-8 text-center text-lg text-slate-500">
               {brandConfig.app.name} automatiza todos estos requisitos.{' '}
@@ -1026,13 +1045,26 @@ export function NafacturaHomePage() {
                           {typeof row.them === 'string' ? (
                             <span className="font-medium text-amber-600">{row.them}</span>
                           ) : row.them ? (
-                            <CheckCircle2 className="mx-auto h-5 w-5 text-green-500" />
+                            <>
+                              <CheckCircle2
+                                aria-hidden="true"
+                                className="mx-auto h-5 w-5 text-green-500"
+                              />
+                              <span className="sr-only">Sí</span>
+                            </>
                           ) : (
-                            <X className="mx-auto h-5 w-5 text-slate-300" />
+                            <>
+                              <X aria-hidden="true" className="mx-auto h-5 w-5 text-slate-300" />
+                              <span className="sr-only">No</span>
+                            </>
                           )}
                         </td>
                         <td className="bg-red-50/30 px-4 py-3 text-center">
-                          <CheckCircle2 className="mx-auto h-5 w-5 text-red-600" />
+                          <CheckCircle2
+                            aria-hidden="true"
+                            className="mx-auto h-5 w-5 text-red-600"
+                          />
+                          <span className="sr-only">Sí</span>
                         </td>
                       </tr>
                     ))}
@@ -1040,6 +1072,12 @@ export function NafacturaHomePage() {
                 </table>
               </div>
             </Card>
+            <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-slate-500">
+              En síntesis: el software tradicional no está adaptado a la Hacienda Foral de Navarra
+              — sin hash encadenado, sin envío integrado a Hacienda Navarra y sin código QR
+              normativo. {brandConfig.app.name} lo incluye todo de serie, sin instalación, con
+              migración y soporte técnico sin coste adicional, y gratis hasta 2027.
+            </p>
           </div>
         </section>
 

@@ -3,6 +3,7 @@ import { brandConfig } from '@easyfactura/brand-config';
 import { sanityClient } from '@/sanity/lib/client';
 import { POSTS_FOR_SITEMAP_QUERY } from '@/sanity/lib/queries';
 import type { SanityPostSitemap } from '@/sanity/lib/queries';
+import { slugify } from '@/lib/slugify';
 
 const BASE_URL = brandConfig.app.url;
 const BRAND = process.env.NEXT_PUBLIC_BRAND ?? 'novafactura';
@@ -90,7 +91,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     try {
       const posts = await sanityClient.fetch<SanityPostSitemap[]>(POSTS_FOR_SITEMAP_QUERY);
       blogRoutes = posts.map((post) => ({
-        url: `${BASE_URL}/blog/${post.slug}`,
+        // Slugs are normalized to pure ASCII — URLs with raw diacritics
+        // cause canonical/sitemap mismatches (percent-encoding duplicates).
+        url: `${BASE_URL}/blog/${slugify(post.slug)}`,
         lastModified: new Date(post._updatedAt ?? post.publishedAt),
         changeFrequency: 'weekly' as const,
         priority: 0.7,

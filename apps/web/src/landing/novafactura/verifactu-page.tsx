@@ -20,11 +20,12 @@ import SiteHeader from '@/components/site-header';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
+import { VerifactuDeadlines } from '@/components/verifactu-deadlines';
 
 export const novafacturaVerifactuMetadata: Metadata = {
   title: `¿Qué es VeriFactu? Guía completa para autónomos 2027 | ${brandConfig.app.name}`,
   description:
-    'VeriFactu es el sistema de verificación de facturas de la AEAT obligatorio desde 2025-2027. Descubre qué es, a quién afecta, fechas de obligatoriedad, sanciones y cómo cumplir automáticamente.',
+    'VeriFactu es el sistema de verificación de facturas de la AEAT: obligatorio para sociedades desde el 1 de enero de 2027 y para autónomos desde el 1 de julio de 2027. Qué es, a quién afecta, sanciones y cómo cumplir automáticamente.',
   keywords: [
     'qué es verifactu',
     'verifactu obligatorio',
@@ -75,7 +76,7 @@ const articleJsonLd = {
   '@type': 'Article',
   headline: '¿Qué es VeriFactu? Guía completa para autónomos y pymes 2027',
   description:
-    'VeriFactu es el sistema de verificación de facturas de la Agencia Tributaria española, obligatorio desde 2025-2027.',
+    'VeriFactu es el sistema de verificación de facturas de la Agencia Tributaria española: obligatorio para sociedades desde el 1 de enero de 2027 y para autónomos desde el 1 de julio de 2027.',
   url: `${brandConfig.app.url}/verifactu`,
   datePublished: '2026-01-01',
   dateModified: '2026-05-11',
@@ -131,7 +132,7 @@ const faqJsonLd = {
       name: '¿Cuándo es obligatorio VeriFactu?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Desde el 1 de julio de 2025 para nuevos contribuyentes. Desde el 1 de enero de 2027 para sociedades (SL, SA) y desde el 1 de julio de 2027 para autónomos persona física en estimación directa (Orden HAC/1177/2024).',
+        text: 'Los plazos oficiales son: el software de facturación solo puede comercializarse adaptado desde el 29 de julio de 2025; las sociedades (SL, SA) deben usar software VeriFactu desde el 1 de enero de 2027; y los autónomos persona física en estimación directa, desde el 1 de julio de 2027 (Real Decreto 1007/2023 y Real Decreto 254/2025).',
       },
     },
     {
@@ -302,11 +303,11 @@ const WHO_IS_AFFECTED = [
 const FAQS = [
   {
     q: '¿Qué es VeriFactu exactamente?',
-    a: 'VeriFactu (Verificación de Facturas) es el sistema de control fiscal de la Agencia Tributaria española creado por la Ley Antifraude 11/2021 y desarrollado por el Real Decreto 254/2025. Obliga a que cada factura lleve un hash encadenado SHA-256 que la vincula con la anterior, un código QR verificable por cualquier persona y sea enviada automáticamente al registro de la AEAT. Su objetivo principal es eliminar el fraude del "software de doble uso", que permitía a los negocios mantener dos contabilidades paralelas eliminando facturas sin dejar rastro.',
+    a: 'VeriFactu (Verificación de Facturas) es el sistema de control fiscal de la Agencia Tributaria española creado por la Ley Antifraude 11/2021 y desarrollado por el Reglamento VeriFactu (Real Decreto 1007/2023, modificado por el Real Decreto 254/2025). Obliga a que cada factura lleve un hash encadenado SHA-256 que la vincula con la anterior, un código QR verificable por cualquier persona y sea enviada automáticamente al registro de la AEAT. Su objetivo principal es eliminar el fraude del "software de doble uso", que permitía a los negocios mantener dos contabilidades paralelas eliminando facturas sin dejar rastro.',
   },
   {
     q: '¿Cuándo es obligatorio VeriFactu en España?',
-    a: 'Desde el 1 de julio de 2025 para nuevos contribuyentes que se den de alta en el Censo de Empresarios. Desde el 1 de enero de 2027 para sociedades (SL, SA, cooperativas y demás personas jurídicas). Desde el 1 de julio de 2027 para autónomos persona física en estimación directa. Estas fechas están fijadas por la Orden HAC/1177/2024 y el Real Decreto 254/2025 y son definitivas.',
+    a: 'Los plazos oficiales son escalonados: el software de facturación solo puede comercializarse adaptado al Reglamento VeriFactu desde el 29 de julio de 2025; las sociedades (SL, SA, cooperativas y demás personas jurídicas) deben facturar con software VeriFactu desde el 1 de enero de 2027; y los autónomos persona física en estimación directa, desde el 1 de julio de 2027. Estas fechas están fijadas por el Real Decreto 1007/2023 y el Real Decreto 254/2025 y son definitivas.',
   },
   {
     q: '¿Cuáles son las sanciones concretas por no cumplir con VeriFactu?',
@@ -330,7 +331,7 @@ const FAQS = [
   },
   {
     q: `¿${brandConfig.app.name} es software garante certificado por la AEAT?`,
-    a: `Sí. ${brandConfig.app.name} está certificado como software garante VeriFactu por la Agencia Tributaria. Genera automáticamente el hash encadenado SHA-256, el código QR verificable y transmite cada factura al registro de la AEAT en tiempo real, cumpliendo íntegramente el Real Decreto 254/2025. No necesitas configurar ningún parámetro técnico: el cumplimiento es automático desde la primera factura que emites.`,
+    a: `Sí. ${brandConfig.app.name} está certificado como software garante VeriFactu por la Agencia Tributaria. Genera automáticamente el hash encadenado SHA-256, el código QR verificable y transmite cada factura al registro de la AEAT en tiempo real, cumpliendo íntegramente el Reglamento VeriFactu (Real Decreto 1007/2023). No necesitas configurar ningún parámetro técnico: el cumplimiento es automático desde la primera factura que emites.`,
   },
 ];
 
@@ -560,6 +561,13 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Plazos canónicos + fuentes BOE */}
+        <section className="pb-16 md:pb-24">
+          <div className="mx-auto max-w-4xl px-6">
+            <VerifactuDeadlines />
           </div>
         </section>
 

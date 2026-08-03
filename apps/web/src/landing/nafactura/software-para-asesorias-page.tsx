@@ -320,6 +320,17 @@ const COMPARISON_ROWS = [
   { feature: 'Soporte técnico especializado en Navarra', them: 'Variable', us: true },
 ];
 
+// Machine-readable version of the comparison table — the visual cells use
+// icons, so crawlers get this plus the sr-only text in each cell.
+const comparisonTableJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Table',
+  name: `Comparativa: ${brandConfig.app.name} frente a software tradicional para asesorías navarras`,
+  about:
+    'Comparativa de software de facturación para asesorías en Navarra: panel multi-cliente, NaTicket por NIF de cliente, cumplimiento con Hacienda Foral, exportación CSV, log de auditoría, directorio compartido, precio y soporte.',
+  description: `${brandConfig.app.name} ofrece panel multi-cliente, NaTicket automático bajo el NIF de cada cliente, cumplimiento con Hacienda Foral de Navarra, exportación CSV para ContaPlus/Sage/A3, log de auditoría por acción, directorio compartido y cambio de contexto en un clic — gratis para asesorías y gestorías navarras. El software tradicional no incluye estas funciones.`,
+};
+
 const FAQS = [
   {
     q: '¿Puedo gestionar las facturas de todos mis clientes navarros desde un solo panel?',
@@ -369,6 +380,10 @@ export function NafacturaSoftwareParaAsesoriasPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(comparisonTableJsonLd) }}
       />
 
       <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950">
@@ -694,13 +709,28 @@ export function NafacturaSoftwareParaAsesoriasPage() {
                           {typeof row.them === 'string' ? (
                             <span className="font-medium text-amber-600">{row.them}</span>
                           ) : row.them ? (
-                            <CheckCircle2 className="mx-auto h-5 w-5 text-green-500" />
+                            <>
+                              <CheckCircle2
+                                aria-hidden="true"
+                                className="mx-auto h-5 w-5 text-green-500"
+                              />
+                              <span className="sr-only">Sí</span>
+                            </>
                           ) : (
-                            <span className="text-gray-300">—</span>
+                            <>
+                              <span aria-hidden="true" className="text-gray-300">
+                                —
+                              </span>
+                              <span className="sr-only">No</span>
+                            </>
                           )}
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <CheckCircle2 className="mx-auto h-5 w-5 text-red-500" />
+                          <CheckCircle2
+                            aria-hidden="true"
+                            className="mx-auto h-5 w-5 text-red-500"
+                          />
+                          <span className="sr-only">Sí</span>
                         </td>
                       </tr>
                     ))}
@@ -708,6 +738,13 @@ export function NafacturaSoftwareParaAsesoriasPage() {
                 </table>
               </div>
             </div>
+            <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+              En resumen: el software tradicional no ofrece panel multi-cliente, NaTicket bajo el
+              NIF de cada cliente, directorio compartido ni log de auditoría — funciones que{' '}
+              {brandConfig.app.name} incluye de serie para asesorías, junto con la exportación CSV
+              para ContaPlus, Sage y A3. Y es gratis para asesorías y gestorías navarras, sin
+              límite de clientes.
+            </p>
           </div>
         </section>
 

@@ -160,6 +160,17 @@ const COMPARISON = [
   { feature: 'Diseñado para ERP completo', nafactura: false, holded: true },
 ];
 
+// Machine-readable version of the comparison table — the visual cells use
+// icons, so crawlers get this plus the sr-only text in each cell.
+const comparisonTableJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Table',
+  name: `Comparativa: ${brandConfig.app.name} vs. Holded para autónomos navarros`,
+  about:
+    'Comparativa entre NaFactura y Holded: especialización en Navarra, cumplimiento con Hacienda Foral, IVA e IRPF del régimen navarro, VeriFactu, preparación para NaTicket, precio, migración, soporte y permanencia.',
+  description: `${brandConfig.app.name} está especializado en Navarra con cumplimiento automático de Hacienda Foral, IVA e IRPF del régimen navarro, VeriFactu incluido y preparación para NaTicket — gratis hasta 2027. Holded es un ERP genérico para toda España: incluye VeriFactu, pero su soporte del régimen navarro es parcial y su precio parte de 14€/mes.`,
+};
+
 const ADVANTAGES = [
   {
     icon: Map,
@@ -213,6 +224,10 @@ export function NafacturaHoldedPage(): React.JSX.Element {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(comparisonTableJsonLd) }}
       />
 
       <div className="flex min-h-screen flex-col bg-white">
@@ -288,18 +303,36 @@ export function NafacturaHoldedPage(): React.JSX.Element {
                       <td className="px-4 py-3 font-medium text-slate-800">{feature}</td>
                       <td className="px-4 py-3 text-center">
                         {nafactura === true ? (
-                          <CheckCircle2 className="mx-auto h-5 w-5 text-green-600" />
+                          <>
+                            <CheckCircle2
+                              aria-hidden="true"
+                              className="mx-auto h-5 w-5 text-green-600"
+                            />
+                            <span className="sr-only">Sí</span>
+                          </>
                         ) : nafactura === false ? (
-                          <X className="mx-auto h-5 w-5 text-slate-300" />
+                          <>
+                            <X aria-hidden="true" className="mx-auto h-5 w-5 text-slate-300" />
+                            <span className="sr-only">No</span>
+                          </>
                         ) : (
                           <span className="font-semibold text-red-700">{nafactura}</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-center">
                         {holded === true ? (
-                          <CheckCircle2 className="mx-auto h-5 w-5 text-green-600" />
+                          <>
+                            <CheckCircle2
+                              aria-hidden="true"
+                              className="mx-auto h-5 w-5 text-green-600"
+                            />
+                            <span className="sr-only">Sí</span>
+                          </>
                         ) : holded === false ? (
-                          <X className="mx-auto h-5 w-5 text-slate-300" />
+                          <>
+                            <X aria-hidden="true" className="mx-auto h-5 w-5 text-slate-300" />
+                            <span className="sr-only">No</span>
+                          </>
                         ) : (
                           <span className="text-slate-500">{holded}</span>
                         )}
@@ -309,6 +342,13 @@ export function NafacturaHoldedPage(): React.JSX.Element {
                 </tbody>
               </table>
             </div>
+            <p className="mx-auto mt-6 max-w-2xl text-sm leading-relaxed text-slate-500">
+              En resumen: Holded es un ERP genérico para toda España cuyo soporte del régimen
+              navarro es parcial. {brandConfig.app.name} está diseñado exclusivamente para Navarra:
+              cumplimiento automático con Hacienda Foral, IVA e IRPF navarro completos y preparación
+              para NaTicket — gratis hasta 2027, sin permanencia y con migración desde Holded
+              incluida.
+            </p>
             <p className="mt-3 text-xs text-slate-400">
               * Comparativa basada en análisis de mercado. Mayo 2026.
             </p>

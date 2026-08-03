@@ -11,7 +11,7 @@ import FooterLanding from '@/components/FooterLanding';
 export const novafacturaFacturaProformaMetadata: Metadata = {
   title: `Factura proforma — Qué es y para qué sirve 2026 | ${brandConfig.app.name}`,
   description:
-    'Guía sobre la factura proforma: qué es, diferencias con el presupuesto y la factura real, cuándo usarla, validez legal y cómo hacerla correctamente.',
+    'La factura proforma no tiene valor fiscal ni devenga IVA. Te explicamos cuándo usarla y sus diferencias con el presupuesto.',
   keywords: [
     'factura proforma',
     'que es una factura proforma',
@@ -28,7 +28,7 @@ export const novafacturaFacturaProformaMetadata: Metadata = {
   openGraph: {
     title: `Factura proforma — Qué es y para qué sirve | ${brandConfig.app.name}`,
     description:
-      'La factura proforma no tiene valor fiscal. Aprende qué es, cuándo usarla y en qué se diferencia de la factura real y del presupuesto.',
+      'La factura proforma no tiene valor fiscal ni devenga IVA. Te explicamos cuándo usarla y sus diferencias con el presupuesto.',
     url: `${brandConfig.app.url}/facturas/proforma`,
     type: 'article',
     siteName: brandConfig.app.name,
@@ -40,7 +40,7 @@ export const novafacturaFacturaProformaMetadata: Metadata = {
     card: 'summary_large_image',
     title: `Factura proforma — Qué es y para qué sirve | ${brandConfig.app.name}`,
     description:
-      'La factura proforma no tiene valor fiscal. Aprende qué es, cuándo usarla y en qué se diferencia de la factura real y del presupuesto.',
+      'La factura proforma no tiene valor fiscal ni devenga IVA. Te explicamos cuándo usarla y sus diferencias con el presupuesto.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
@@ -48,9 +48,9 @@ export const novafacturaFacturaProformaMetadata: Metadata = {
 const articleJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline: 'Factura proforma — Qué es y para qué sirve',
+  headline: 'Factura proforma: Qué es y para qué sirve 2026',
   description:
-    'Guía sobre la factura proforma, sus usos, su validez legal y diferencias con la factura definitiva.',
+    'La factura proforma no tiene valor fiscal ni devenga IVA. Te explicamos cuándo usarla y sus diferencias con el presupuesto.',
   author: { '@type': 'Organization', name: brandConfig.app.name, url: brandConfig.app.url },
   publisher: {
     '@type': 'Organization',
@@ -223,7 +223,10 @@ export function NovafacturaFacturaProformaPage(): React.JSX.Element {
               <BookOpen className="h-4 w-4" />
               Sin valor fiscal — Guía 2026
             </div>
-            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1
+              data-speakable
+              className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl"
+            >
               Factura proforma: qué es y para qué sirve
             </h1>
             <p className="mt-6 text-xl text-slate-600 leading-relaxed max-w-2xl">

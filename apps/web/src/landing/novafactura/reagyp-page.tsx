@@ -137,12 +137,12 @@ const breadcrumbJsonLd = {
 const softwareJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
-  name: `${brandConfig.app.name} para Autónomos Agrícolas`,
+  name: `Facturación para Autónomos Agrícolas: REAGP, IVA y VeriFactu 2026 | ${brandConfig.app.name}`,
   applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web',
   url: `${brandConfig.app.url}/facturacion-autonomo-agricola`,
   description:
-    'Programa de facturación para autónomos del sector agrario: agricultores, ganaderos y pescadores. Gestiona los tipos de IVA del REAGYP y mantén tu registro de facturas siempre en orden.',
+    'Cómo facturar siendo autónomo agrícola: régimen especial REAGP, compensación del 12%, modelo 303 y cumplimiento VeriFactu. Software gratis hasta 2027.',
   offers: {
     '@type': 'Offer',
     price: '0',
@@ -155,10 +155,10 @@ const softwareJsonLd = {
 const serviceJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Service',
-  name: 'Facturación para autónomos del REAGYP',
+  name: 'Facturación para Autónomos Agrícolas: REAGP, IVA y VeriFactu 2026',
   serviceType: 'Software de facturación para autónomos agrícolas y ganaderos',
   description:
-    'Programa de facturación para autónomos del Régimen Especial Agrario (REAGYP). Gestiona los tipos de IVA especiales del sector agrario, emite facturas legales y mantén el libro de registro listo para Hacienda.',
+    'Cómo facturar siendo autónomo agrícola: régimen especial REAGP, compensación del 12%, modelo 303 y cumplimiento VeriFactu. Software gratis hasta 2027.',
   provider: { '@type': 'Organization', name: brandConfig.app.name, url: brandConfig.app.url },
   areaServed: { '@type': 'Country', name: 'España' },
   audience: {
@@ -283,7 +283,10 @@ export function NovafacturaReagypPage() {
               <Leaf className="h-4 w-4" />
               Para agricultores, ganaderos y pescadores autónomos
             </div>
-            <h1 data-speakable className="mb-6 text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl md:text-6xl">
+            <h1
+              data-speakable
+              className="mb-6 text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl md:text-6xl"
+            >
               Facturación para{' '}
               <span className="bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
                 autónomos del campo

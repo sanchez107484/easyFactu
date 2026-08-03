@@ -23,6 +23,7 @@ import { brandConfig, PRICING } from '@easyfactura/brand-config';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
+import { VerifactuDeadlines } from '@/components/verifactu-deadlines';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Metadata
@@ -261,6 +262,18 @@ const COMPARISON_TABLE = [
   },
 ];
 
+// Machine-readable version of the NaTicket / VeriFactu / TicketBAI comparison
+// table (the visual table already renders plain text cells).
+const comparisonTableJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Table',
+  name: 'Comparativa: NaTicket vs. VeriFactu vs. TicketBAI',
+  about:
+    'Comparativa de los sistemas de verificación de facturas en España: ámbito territorial, hacienda receptora, tipo de facturación, estado actual, obligatoriedad prevista y normativa base.',
+  description:
+    'VeriFactu (AEAT) está activo desde julio de 2025 y será obligatorio para los autónomos navarros el 1 de julio de 2027. NaTicket, el sistema de Hacienda Foral de Navarra, está en desarrollo y pendiente de calendario oficial. TicketBAI ya es obligatorio en Euskadi y aplica al sector minorista. Los autónomos navarros probablemente tendrán que reportar a VeriFactu y NaTicket a la vez desde el mismo software.',
+};
+
 const AFFECTED_GROUPS = [
   {
     label: 'Autónomos navarros en estimación directa',
@@ -370,6 +383,10 @@ export function NafacturaNavicketPage(): React.JSX.Element {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(comparisonTableJsonLd) }}
       />
 
       <div className="flex min-h-screen flex-col bg-white">
@@ -615,6 +632,10 @@ export function NafacturaNavicketPage(): React.JSX.Element {
               Estado actual del proyecto NaTicket y calendario esperado. Última actualización:{' '}
               <time dateTime="2026-05">mayo 2026</time>.
             </p>
+
+            <div className="mb-10">
+              <VerifactuDeadlines />
+            </div>
 
             <div className="relative space-y-6 pl-8">
               <div className="absolute left-3 top-2 h-full w-0.5 bg-slate-200" />

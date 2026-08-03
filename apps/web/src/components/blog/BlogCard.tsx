@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Calendar, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatBlogDate, estimateReadingTime } from '@/lib/blog-helpers';
+import { slugify } from '@/lib/slugify';
 import type { SanityBlogPostCard } from '@/sanity/lib/queries';
 
 interface BlogCardProps {
@@ -11,10 +12,11 @@ interface BlogCardProps {
 
 export function BlogCard({ post }: BlogCardProps) {
   const readingTime = estimateReadingTime(post.bodyText ?? post.excerpt);
+  const postUrl = `/blog/${slugify(post.slug)}`;
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border bg-card transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
-      <Link href={`/blog/${post.slug}`} className="block overflow-hidden" tabIndex={-1}>
+      <Link href={postUrl} className="block overflow-hidden" tabIndex={-1}>
         <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
           {post.featuredImageUrl ? (
             <Image
@@ -49,7 +51,7 @@ export function BlogCard({ post }: BlogCardProps) {
           </div>
         )}
 
-        <Link href={`/blog/${post.slug}`} className="flex-1 group/title">
+        <Link href={postUrl} className="flex-1 group/title">
           <h2 className="line-clamp-2 text-base font-bold leading-snug text-foreground transition-colors group-hover/title:text-primary">
             {post.title}
           </h2>

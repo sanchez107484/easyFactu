@@ -18,9 +18,9 @@ import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
 
 export const novafacturaFacturaElectronicaMetadata: Metadata = {
-  title: `¿Qué es la factura electrónica? Guía completa 2026 | ${brandConfig.app.name}`,
+  title: `Factura Electrónica Obligatoria 2026: Fechas, Ley y Cumplir | ${brandConfig.app.name}`,
   description:
-    'Qué es la factura electrónica, diferencias con VeriFactu, cuándo será obligatoria para autónomos y pymes, qué formatos existen (Facturae, PDF firmado) y cómo emitirla correctamente.',
+    '¿Cuándo es obligatoria la factura electrónica para autónomos y empresas? Fechas de la Ley Crea y Crece, formato Facturae, diferencias con VeriFactu y cómo adaptarte.',
   keywords: [
     'factura electrónica',
     'qué es la factura electrónica',
@@ -47,9 +47,9 @@ export const novafacturaFacturaElectronicaMetadata: Metadata = {
   robots: { index: true, follow: true },
   twitter: {
     card: 'summary_large_image',
-    title: `¿Qué es la factura electrónica? Guía completa 2026 | ${brandConfig.app.name}`,
+    title: `Factura Electrónica Obligatoria 2026: Fechas, Ley y Cumplir | ${brandConfig.app.name}`,
     description:
-      'Qué es la factura electrónica, en qué se diferencia de VeriFactu, formatos válidos y cuándo será obligatoria en España.',
+      '¿Cuándo es obligatoria la factura electrónica para autónomos y empresas? Fechas de la Ley Crea y Crece, formato Facturae, diferencias con VeriFactu y cómo adaptarte.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
@@ -57,9 +57,9 @@ export const novafacturaFacturaElectronicaMetadata: Metadata = {
 const articleJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline: '¿Qué es la factura electrónica? Guía completa 2026',
+  headline: 'Factura Electrónica Obligatoria 2026: Fechas, Ley y Cumplir',
   description:
-    'Qué es la factura electrónica, diferencias con VeriFactu, cuándo será obligatoria y cómo emitirla correctamente.',
+    '¿Cuándo es obligatoria la factura electrónica para autónomos y empresas? Fechas de la Ley Crea y Crece, formato Facturae, diferencias con VeriFactu y cómo adaptarte.',
   author: {
     '@type': 'Organization',
     name: brandConfig.app.name,
@@ -100,7 +100,7 @@ const faqJsonLd = {
       name: '¿Cuándo es obligatoria la factura electrónica?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Según el Real Decreto 254/2025 para VeriFactu: software de facturación desde el 29 julio 2025; grandes empresas (IS >8M€/año) desde el 1 enero 2027; y autónomos y pymes desde el 1 julio 2027. La Ley Crea y Crece (factura electrónica B2B obligatoria entre empresas) tiene su propio calendario pendiente de reglamento definitivo.',
+        text: 'Según el Real Decreto 1007/2023 y el Real Decreto 254/2025 para VeriFactu: el software de facturación solo puede comercializarse adaptado desde el 29 julio 2025; las sociedades deben usarlo desde el 1 enero 2027; y los autónomos persona física, desde el 1 julio 2027. La Ley Crea y Crece (factura electrónica B2B obligatoria entre empresas) tiene su propio calendario pendiente de reglamento definitivo.',
       },
     },
     {
@@ -265,7 +265,10 @@ export function NovafacturaFacturaElectronicaPage(): React.JSX.Element {
               <BookOpen className="h-4 w-4" />
               Guía completa actualizada 2026
             </div>
-            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1
+              data-speakable
+              className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl"
+            >
               ¿Qué es la factura electrónica?
             </h1>
             <p className="mt-6 text-xl text-slate-600 leading-relaxed max-w-2xl">

@@ -342,6 +342,17 @@ const ASESOR_COMPARISON: {
   { label: 'Log de auditoría por cliente', novafactura: true, holded: false, quipu: false },
 ];
 
+// Machine-readable version of the comparison table — the visual cells use
+// icons, so crawlers get this plus the sr-only text in each cell.
+const comparisonTableJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Table',
+  name: `Comparativa de software para asesorías: ${brandConfig.app.name} vs. Holded vs. Quipu`,
+  about:
+    'Comparativa de funcionalidades de software de facturación para asesorías: precio, panel multi-cliente, VeriFactu por NIF de cliente, directorio de clientes compartido, cambio de contexto, límite de clientes y log de auditoría.',
+  description: `${brandConfig.app.name} es gratuito para asesorías para siempre e incluye panel multi-cliente, VeriFactu bajo el NIF de cada cliente, directorio de clientes compartido, cambio de contexto en un clic, clientes ilimitados y log de auditoría por cliente. Holded (40-90€/mes) y Quipu (25€+/mes) no ofrecen directorio compartido, cambio de contexto ni log de auditoría, y limitan los clientes según el plan.`,
+};
+
 const exportServiceJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Service',
@@ -389,6 +400,10 @@ export function NovafacturaAsesoriaPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(exportServiceJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(comparisonTableJsonLd) }}
       />
 
       <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950">
@@ -927,13 +942,22 @@ export function NovafacturaAsesoriaPage() {
                         >
                           {typeof val === 'boolean' ? (
                             val ? (
-                              <CheckCircle2
-                                className={`mx-auto h-4 w-4 ${
-                                  isNova ? 'text-indigo-600' : 'text-gray-400'
-                                }`}
-                              />
+                              <>
+                                <CheckCircle2
+                                  aria-hidden="true"
+                                  className={`mx-auto h-4 w-4 ${
+                                    isNova ? 'text-indigo-600' : 'text-gray-400'
+                                  }`}
+                                />
+                                <span className="sr-only">Sí</span>
+                              </>
                             ) : (
-                              <span className="text-gray-300 dark:text-gray-600">—</span>
+                              <>
+                                <span aria-hidden="true" className="text-gray-300 dark:text-gray-600">
+                                  —
+                                </span>
+                                <span className="sr-only">No</span>
+                              </>
                             )
                           ) : (
                             <span
@@ -953,6 +977,12 @@ export function NovafacturaAsesoriaPage() {
                 </tbody>
               </table>
             </div>
+            <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+              En resumen: {brandConfig.app.name} es gratuito para asesorías para siempre, mientras
+              Holded parte de 40-90€/mes y Quipu de 25€+/mes. Además, es la única de las tres con
+              directorio de clientes compartido, cambio de contexto en un clic y log de auditoría
+              por cliente, y la única que no limita el número de clientes en cartera.
+            </p>
             <p className="mt-4 text-center text-xs text-gray-400">
               * Datos basados en análisis de mercado a mayo de 2026. Los competidores pueden
               actualizar precios y funcionalidades en cualquier momento.

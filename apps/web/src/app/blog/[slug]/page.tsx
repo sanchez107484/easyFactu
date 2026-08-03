@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { Calendar, Clock, ChevronLeft, User, ArrowRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import {
   estimateReadingTimeFromBody,
   extractWordCountFromBody,
 } from '@/lib/blog-helpers';
+import { slugify } from '@/lib/slugify';
 
 export const revalidate = 3600;
 
@@ -24,10 +25,7 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-async function getPost(slug: string): Promise<SanityBlogPost | null> {
-  if (!process.env.NEXT_PUBLIC_SANITY_PROJECT_ID) {
-    return null;
-  }
+function fetchPostBySlug(slug: string): Promise<SanityBlogPost | null> {
   return sanityClient.fetch<SanityBlogPost | null>(
     POST_QUERY,
     { slug },
@@ -35,17 +33,49 @@ async function getPost(slug: string): Promise<SanityBlogPost | null> {
   );
 }
 
+async function findRawSlugByNormalizedForm(normalizedSlug: string): Promise<string | null> {
+  const slugs = await sanityClient.fetch<SanityPostSlug[]>(POSTS_SLUGS_QUERY);
+  return slugs.find((item) => slugify(item.slug) === normalizedSlug)?.slug ?? null;
+}
+
+async function getPost(slug: string): Promise<SanityBlogPost | null> {
+  if (!process.env.NEXT_PUBLIC_SANITY_PROJECT_ID) {
+    return null;
+  }
+  const post = await fetchPostBySlug(slug);
+  if (post) return post;
+  // The requested slug may be the ASCII form of a Sanity slug that still
+  // contains diacritics (transition until the slug is renamed in Sanity).
+  const rawSlug = await findRawSlugByNormalizedForm(slug);
+  return rawSlug ? fetchPostBySlug(rawSlug) : null;
+}
+
+/**
+ * Blog URLs must be pure ASCII. A slug with diacritics or other non-ASCII
+ * characters permanently redirects (308) to its normalized form, so the old
+ * URL, the canonical and the sitemap entry never diverge.
+ */
+function ensureCanonicalSlug(rawSlug: string): string {
+  const canonicalSlug = slugify(rawSlug);
+  if (canonicalSlug !== rawSlug) {
+    permanentRedirect(`/blog/${canonicalSlug}`);
+  }
+  return canonicalSlug;
+}
+
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
   if (!process.env.NEXT_PUBLIC_SANITY_PROJECT_ID) {
     return [];
   }
   const slugs = await sanityClient.fetch<SanityPostSlug[]>(POSTS_SLUGS_QUERY);
-  return slugs.map((item) => ({ slug: item.slug }));
+  // Prerender only canonical (ASCII) slugs — accented variants redirect.
+  const canonicalSlugs = new Set(slugs.map((item) => slugify(item.slug)));
+  return [...canonicalSlugs].map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getPost(slug);
+  const post = await getPost(ensureCanonicalSlug(slug));
 
   if (!post) {
     return { title: 'Artículo no encontrado' };
@@ -53,7 +83,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const title = post.seoTitle ?? post.title;
   const description = post.seoDescription ?? post.excerpt;
-  const url = `${brandConfig.app.url}/blog/${post.slug}`;
+  const url = `${brandConfig.app.url}/blog/${slugify(post.slug)}`;
 
   return {
     title: `${title} | ${brandConfig.app.name}`,
@@ -88,7 +118,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 function ArticleJsonLd({ post }: { post: SanityBlogPost }) {
-  const url = `${brandConfig.app.url}/blog/${post.slug}`;
+  const url = `${brandConfig.app.url}/blog/${slugify(post.slug)}`;
   const wordCount = extractWordCountFromBody(
     post.body as Array<{ _type: string; children?: Array<{ text?: string }> }>,
   );
@@ -182,7 +212,7 @@ function ArticleJsonLd({ post }: { post: SanityBlogPost }) {
 
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params;
-  const post = await getPost(slug);
+  const post = await getPost(ensureCanonicalSlug(slug));
 
   if (!post) {
     notFound();

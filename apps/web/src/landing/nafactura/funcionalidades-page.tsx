@@ -311,6 +311,17 @@ const comparisonRows = [
   { feature: 'App móvil y tablet', competitors: true, us: true },
 ];
 
+// Machine-readable version of the comparison table below — the visual cells
+// use icons, so crawlers get this plus the sr-only text in each cell.
+const comparisonTableJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Table',
+  name: `Comparativa de funcionalidades: ${brandConfig.app.name} frente a otros programas`,
+  about:
+    'Comparativa de funcionalidades de software de facturación para Navarra: adaptación a Hacienda Foral, IVA y retenciones navarras, soporte del régimen foral, periodo gratuito, migración, plantillas y app móvil.',
+  description: `${brandConfig.app.name} está adaptado a Hacienda Foral de Navarra con IVA y retenciones según la normativa navarra y soporte especializado en régimen foral. La mayoría de programas no están adaptados a Navarra y cobran aparte la migración y el soporte técnico.`,
+};
+
 const faqs = [
   {
     q: '¿El software está adaptado a Hacienda Foral de Navarra?',
@@ -366,6 +377,10 @@ export function NafacturaFuncionalidadesPage(): React.JSX.Element {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(comparisonTableJsonLd) }}
       />
 
       <div className="flex min-h-screen flex-col bg-white text-slate-900">
@@ -554,11 +569,20 @@ export function NafacturaFuncionalidadesPage(): React.JSX.Element {
                     <span className="font-medium text-slate-800">{row.feature}</span>
                     <span className="flex justify-center">
                       {row.competitors === true ? (
-                        <CheckCircle2 className="h-5 w-5 text-slate-400" />
+                        <>
+                          <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-slate-400" />
+                          <span className="sr-only">Sí</span>
+                        </>
                       ) : row.competitors === false ? (
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-red-500">
-                          ✕
-                        </span>
+                        <>
+                          <span
+                            aria-hidden="true"
+                            className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-red-500"
+                          >
+                            ✕
+                          </span>
+                          <span className="sr-only">No</span>
+                        </>
                       ) : (
                         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
                           {row.competitors}
@@ -566,11 +590,18 @@ export function NafacturaFuncionalidadesPage(): React.JSX.Element {
                       )}
                     </span>
                     <span className="flex justify-center">
-                      <CheckCircle2 className="h-5 w-5 text-red-600" />
+                      <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-red-600" />
+                      <span className="sr-only">Sí</span>
                     </span>
                   </div>
                 ))}
               </div>
+              <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-slate-500">
+                En resumen: la mayoría de programas no están adaptados a Hacienda Foral de Navarra
+                ni aplican el IVA y las retenciones del régimen navarro, y cobran aparte la
+                migración y el soporte. {brandConfig.app.name} está diseñado para Navarra desde el
+                primer día — con {PRICING.freePeriodMonths} meses completamente gratuitos.
+              </p>
             </div>
           </section>
 

@@ -54,13 +54,13 @@ const faqs = [
   },
   {
     q: '¿Necesito que mis clientes tengan certificado digital para usar VeriFactu?',
-    a: 'No. ${brandConfig.app.name} incluye el certificado digital del software garante para cumplir con VeriFactu. El certificado del cliente solo sería necesario si quisiera firmar electrónicamente en nombre propio. En la práctica, como asesoría operas con tu propio certificado de empresa o con el certificado del software garante para la emisión de las facturas.',
+    a: `No. ${brandConfig.app.name} incluye el certificado digital del software garante para cumplir con VeriFactu. El certificado del cliente solo sería necesario si quisiera firmar electrónicamente en nombre propio. En la práctica, como asesoría operas con tu propio certificado de empresa o con el certificado del software garante para la emisión de las facturas.`,
   },
 ];
 
 export const novafacturaSoftwareParaAsesoriasMetadata: Metadata = {
-  title: `Software para asesorías que gestionan facturas de sus clientes | ${brandConfig.app.name}`,
-  description: `¿Tu asesoría hace las facturas de tus autónomos? Un solo panel para todos sus NIFs con VeriFactu automático. Exporta a Sage, A3CON, Cegid. Gratis para asesorías.`,
+  title: `Programa de Facturación para Asesorías Gratis | Multi-cliente + VeriFactu | ${brandConfig.app.name}`,
+  description: `Panel único para facturar por todos tus clientes: VeriFactu por NIF, exportación a Sage, A3CON, Cegid y Diamacon. Gratis y sin límite de clientes.`,
   keywords: [
     'software para asesorías',
     'programa asesorías facturación',
@@ -79,8 +79,8 @@ export const novafacturaSoftwareParaAsesoriasMetadata: Metadata = {
   ],
   alternates: { canonical: `${brandConfig.app.url}/software-para-asesorias` },
   openGraph: {
-    title: `Software para asesorías que gestionan facturas de sus clientes | ${brandConfig.app.name}`,
-    description: `¿Tu asesoría hace las facturas de tus autónomos? Un solo panel para todos sus NIFs con VeriFactu automático. Exporta a Sage, A3CON, Cegid. Gratis.`,
+    title: `Programa de Facturación para Asesorías Gratis | Multi-cliente + VeriFactu | ${brandConfig.app.name}`,
+    description: `Panel único para facturar por todos tus clientes: VeriFactu por NIF, exportación a Sage, A3CON, Cegid y Diamacon. Gratis y sin límite de clientes.`,
     url: `${brandConfig.app.url}/software-para-asesorias`,
     type: 'website',
     siteName: brandConfig.app.name,
@@ -194,26 +194,41 @@ const faqJsonLd = {
   })),
 };
 
+// Machine-readable version of the comparison table — the visual cells use
+// icons, so crawlers get this plus the sr-only text in each cell.
+const comparisonTableJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Table',
+  name: `Comparativa de software para asesorías: ${brandConfig.app.name} vs. Holded vs. Quipu`,
+  about:
+    'Comparativa de funcionalidades de software de facturación para asesorías: panel multi-cliente, VeriFactu por NIF de cliente, directorio de empresas compartido, cambio de contexto, log de auditoría, exportación contable (Sage, A3CON, Cegid, Diamacon) y precio.',
+  description: `${brandConfig.app.name} incluye panel multi-cliente, VeriFactu bajo el NIF de cada cliente, directorio de empresas compartido, cambio de contexto en un clic, log de auditoría por cliente y exportación a Sage, A3CON, Cegid y Diamacon. Es gratuito para asesorías hasta 2027. Holded exporta a Sage pero no a A3CON, Cegid ni Diamacon, y parte de 40€/mes. Quipu no ofrece esas exportaciones ni directorio compartido, y parte de 25€/mes.`,
+};
+
 const KEY_DIFFERENTIATORS = [
   {
     icon: LayoutDashboard,
     title: 'Panel multi-cliente',
-    description: 'Todos tus clientes en una sola pantalla. Accede a cada uno con un clic, sin cerrar sesión ni cambiar de cuenta.',
+    description:
+      'Todos tus clientes en una sola pantalla. Accede a cada uno con un clic, sin cerrar sesión ni cambiar de cuenta.',
   },
   {
     icon: Shield,
     title: 'VeriFactu por NIF',
-    description: 'Cada factura se emite bajo el NIF del cliente. La cadena VeriFactu, el hash y el envío a la AEAT son independientes por tenant.',
+    description:
+      'Cada factura se emite bajo el NIF del cliente. La cadena VeriFactu, el hash y el envío a la AEAT son independientes por tenant.',
   },
   {
     icon: FileSpreadsheet,
     title: 'Exportación a Sage, A3CON, Cegid y Diamacon',
-    description: 'Descarga archivos Excel formateados con el mapeo exacto de columnas para cada programa contable. Sin trabajo manual de reacondicionamiento.',
+    description:
+      'Descarga archivos Excel formateados con el mapeo exacto de columnas para cada programa contable. Sin trabajo manual de reacondicionamiento.',
   },
   {
     icon: Gift,
     title: 'Gratis para asesorías',
-    description: 'Sin límite de clientes, sin coste por cliente adicional, sin funcionalidades restringidas. Gratis hasta 2027.',
+    description:
+      'Sin límite de clientes, sin coste por cliente adicional, sin funcionalidades restringidas. Gratis hasta 2027.',
   },
 ];
 
@@ -228,7 +243,7 @@ const FEATURES = [
     icon: Repeat,
     title: 'Cambio de contexto en 1 clic',
     description:
-      'Pasa de facturar para el cliente A a operar en el entorno del cliente B con un solo clic. Sin necesidad de cerrar sesión, sin cookies, sin多重 cuentas. Todo fluye desde tu panel de asesoría.',
+      'Pasa de facturar para el cliente A a operar en el entorno del cliente B con un solo clic. Sin necesidad de cerrar sesión, sin cookies, sin múltiples cuentas. Todo fluye desde tu panel de asesoría.',
   },
   {
     icon: Database,
@@ -257,15 +272,47 @@ const FEATURES = [
 ];
 
 const A3CON_MAPPING = [
-  { column: 'Fecha de factura', a3con: 'FECHA', description: 'Fecha de emisión en formato DD/MM/AAAA' },
-  { column: 'Número de factura', a3con: 'SERIE-NUMERO', description: 'Serie + número con formato serie-numero (ej: A-2025-001)' },
-  { column: 'NIF del cliente', a3con: 'NIF', description: 'NIF o CIF del cliente sin espacios ni guiones' },
-  { column: 'Nombre/Razón social', a3con: 'NOMBRE', description: 'Nombre completo o razón social del cliente' },
-  { column: 'Base imponible', a3con: 'BASE', description: 'Importe base sin IVA. Varias líneas si hay diferentes tipos' },
-  { column: 'Tipo de IVA', a3con: 'IVA%', description: 'Porcentaje de IVA aplicado (4%, 10%, 21%)' },
+  {
+    column: 'Fecha de factura',
+    a3con: 'FECHA',
+    description: 'Fecha de emisión en formato DD/MM/AAAA',
+  },
+  {
+    column: 'Número de factura',
+    a3con: 'SERIE-NUMERO',
+    description: 'Serie + número con formato serie-numero (ej: A-2025-001)',
+  },
+  {
+    column: 'NIF del cliente',
+    a3con: 'NIF',
+    description: 'NIF o CIF del cliente sin espacios ni guiones',
+  },
+  {
+    column: 'Nombre/Razón social',
+    a3con: 'NOMBRE',
+    description: 'Nombre completo o razón social del cliente',
+  },
+  {
+    column: 'Base imponible',
+    a3con: 'BASE',
+    description: 'Importe base sin IVA. Varias líneas si hay diferentes tipos',
+  },
+  {
+    column: 'Tipo de IVA',
+    a3con: 'IVA%',
+    description: 'Porcentaje de IVA aplicado (4%, 10%, 21%)',
+  },
   { column: 'Cuota de IVA', a3con: 'IVA_IMPORTE', description: 'Importe de la cuota de IVA' },
-  { column: 'Retención IRPF', a3con: 'IRPF%', description: 'Porcentaje de retención IRPF si aplica (7%, 15%)' },
-  { column: 'Total factura', a3con: 'TOTAL', description: 'Importe total incluyendo IVA menos IRPF' },
+  {
+    column: 'Retención IRPF',
+    a3con: 'IRPF%',
+    description: 'Porcentaje de retención IRPF si aplica (7%, 15%)',
+  },
+  {
+    column: 'Total factura',
+    a3con: 'TOTAL',
+    description: 'Importe total incluyendo IVA menos IRPF',
+  },
 ];
 
 const USE_CASES = [
@@ -325,8 +372,18 @@ const COMPARISON = [
   { label: 'Exportación a A3CON (Wolters Kluwer)', nova: true, holded: false, quipu: false },
   { label: 'Exportación a Cegid', nova: true, holded: false, quipu: false },
   { label: 'Exportación a Diamacon', nova: true, holded: false, quipu: false },
-  { label: 'Gratis para la asesoría', nova: 'Gratis hasta 2027', holded: 'Desde 40€/mes', quipu: 'Desde 25€/mes' },
-  { label: 'Sin límite de clientes en cartera', nova: true, holded: 'Según plan', quipu: 'Según plan' },
+  {
+    label: 'Gratis para la asesoría',
+    nova: 'Gratis hasta 2027',
+    holded: 'Desde 40€/mes',
+    quipu: 'Desde 25€/mes',
+  },
+  {
+    label: 'Sin límite de clientes en cartera',
+    nova: true,
+    holded: 'Según plan',
+    quipu: 'Según plan',
+  },
 ];
 
 export function NovafacturaSoftwareParaAsesoriasPage() {
@@ -352,6 +409,10 @@ export function NovafacturaSoftwareParaAsesoriasPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(comparisonTableJsonLd) }}
+      />
 
       <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950">
         <SiteHeader />
@@ -368,7 +429,10 @@ export function NovafacturaSoftwareParaAsesoriasPage() {
               Software para asesorías que hacen facturas por sus clientes
             </div>
 
-            <h1 data-speakable className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl md:text-6xl">
+            <h1
+              data-speakable
+              className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl md:text-6xl"
+            >
               Un solo panel para todos tus clientes.
               <br />
               <span className="text-indigo-600 dark:text-indigo-400">
@@ -377,7 +441,9 @@ export function NovafacturaSoftwareParaAsesoriasPage() {
             </h1>
 
             <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-              Si haces las facturas de tus autónomos, NovaFactura te da un panel centralizado con VeriFactu automático bajo cada NIF, exportación a Sage, A3CON, Cegid y Diamacon, y cero coste para tu asesoría.
+              Si haces las facturas de tus autónomos, NovaFactura te da un panel centralizado con
+              VeriFactu automático bajo cada NIF, exportación a Sage, A3CON, Cegid y Diamacon, y
+              cero coste para tu asesoría.
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -438,7 +504,9 @@ export function NovafacturaSoftwareParaAsesoriasPage() {
                         <Icon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                       </div>
                     </div>
-                    <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">{item.title}</h3>
+                    <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">
+                      {item.title}
+                    </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{item.description}</p>
                   </div>
                 );
@@ -473,7 +541,9 @@ export function NovafacturaSoftwareParaAsesoriasPage() {
                     <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">
                       {feature.title}
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{feature.description}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {feature.description}
+                    </p>
                   </div>
                 );
               })}
@@ -598,14 +668,17 @@ export function NovafacturaSoftwareParaAsesoriasPage() {
                 <Download className="h-4 w-4 text-gray-400" />
                 Compatible con:
               </span>
-              {['Sage Contabilidad', 'Cegid', 'Diamacon (Comeralia)', 'a3asesor | Wolters Kluwer'].map(
-                (s) => (
-                  <span key={s} className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    {s}
-                  </span>
-                )
-              )}
+              {[
+                'Sage Contabilidad',
+                'Cegid',
+                'Diamacon (Comeralia)',
+                'a3asesor | Wolters Kluwer',
+              ].map((s) => (
+                <span key={s} className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  {s}
+                </span>
+              ))}
             </div>
           </div>
         </section>
@@ -711,13 +784,25 @@ export function NovafacturaSoftwareParaAsesoriasPage() {
                         >
                           {typeof val === 'boolean' ? (
                             val ? (
-                              <CheckCircle2
-                                className={`mx-auto h-4 w-4 ${
-                                  isNova ? 'text-indigo-600' : 'text-gray-400'
-                                }`}
-                              />
+                              <>
+                                <CheckCircle2
+                                  aria-hidden="true"
+                                  className={`mx-auto h-4 w-4 ${
+                                    isNova ? 'text-indigo-600' : 'text-gray-400'
+                                  }`}
+                                />
+                                <span className="sr-only">Sí</span>
+                              </>
                             ) : (
-                              <span className="text-gray-300 dark:text-gray-600">—</span>
+                              <>
+                                <span
+                                  aria-hidden="true"
+                                  className="text-gray-300 dark:text-gray-600"
+                                >
+                                  —
+                                </span>
+                                <span className="sr-only">No</span>
+                              </>
                             )
                           ) : (
                             <span
@@ -737,6 +822,13 @@ export function NovafacturaSoftwareParaAsesoriasPage() {
                 </tbody>
               </table>
             </div>
+            <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+              En resumen: {brandConfig.app.name} es la única de las tres que incluye directorio de
+              empresas compartido, cambio de contexto en un clic y log de auditoría por cliente.
+              También es la única que exporta a A3CON (Wolters Kluwer), Cegid y Diamacon, además de
+              Sage. Y mientras Holded parte de 40€/mes y Quipu de 25€/mes, {brandConfig.app.name} es
+              gratuito para asesorías hasta 2027, sin límite de clientes.
+            </p>
             <p className="mt-4 text-center text-xs text-gray-400">
               * Datos basados en análisis de mercado a mayo de 2026. Los competidores pueden
               actualizar precios y funcionalidades en cualquier momento.
@@ -751,9 +843,7 @@ export function NovafacturaSoftwareParaAsesoriasPage() {
               <div className="mb-4 flex justify-center">
                 <Gift className="h-10 w-10 text-indigo-200" />
               </div>
-              <h2 className="mb-4 text-3xl font-bold">
-                Gratis para asesorías. Para siempre.
-              </h2>
+              <h2 className="mb-4 text-3xl font-bold">Gratis para asesorías. Para siempre.</h2>
               <p className="mb-8 text-lg text-indigo-100">
                 Sin límite de clientes, sin coste por cliente adicional, sin funcionalidades
                 restringidas. Durante el periodo de lanzamiento hasta 2027.

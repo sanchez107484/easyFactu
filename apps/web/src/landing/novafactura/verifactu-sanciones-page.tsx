@@ -9,9 +9,9 @@ import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
 
 export const novafacturaVerifactuSancionesMetadata: Metadata = {
-  title: `Sanciones por incumplimiento VeriFactu — Multas hasta 50.000€ | ${brandConfig.app.name}`,
+  title: `Sanciones VeriFactu 2026: Multas de 50.000 € y Cómo Evitarlas | ${brandConfig.app.name}`,
   description:
-    'Qué sanciones establece la Ley Antifraude por no usar software garante VeriFactu: multas de 1.000€ a 50.000€, inspecciones y cómo evitarlas usando software certificado.',
+    'Multa de 50.000 € al año para el usuario y 150.000 € al desarrollador (art. 201 bis LGT). Qué se considera infracción, quién inspecciona y cómo cumplir hoy.',
   keywords: [
     'sanciones verifactu',
     'multas verifactu',
@@ -26,9 +26,9 @@ export const novafacturaVerifactuSancionesMetadata: Metadata = {
   ],
   alternates: { canonical: `${brandConfig.app.url}/verifactu/sanciones` },
   openGraph: {
-    title: `Sanciones VeriFactu — Multas de hasta 50.000€ por no cumplir | ${brandConfig.app.name}`,
+    title: `Sanciones VeriFactu 2026: Multas de 50.000 € y Cómo Evitarlas | ${brandConfig.app.name}`,
     description:
-      'Las multas por no usar software garante VeriFactu van de 1.000€ a 50.000€. Conoce los riesgos y cómo evitarlos.',
+      'Multa de 50.000 € al año para el usuario y 150.000 € al desarrollador (art. 201 bis LGT). Qué se considera infracción, quién inspecciona y cómo cumplir hoy.',
     url: `${brandConfig.app.url}/verifactu/sanciones`,
     type: 'article',
     siteName: brandConfig.app.name,
@@ -38,9 +38,9 @@ export const novafacturaVerifactuSancionesMetadata: Metadata = {
   robots: { index: true, follow: true },
   twitter: {
     card: 'summary_large_image',
-    title: `Sanciones VeriFactu — Multas de hasta 50.000€ por no cumplir | ${brandConfig.app.name}`,
+    title: `Sanciones VeriFactu 2026: Multas de 50.000 € y Cómo Evitarlas | ${brandConfig.app.name}`,
     description:
-      'Las multas por no usar software garante VeriFactu van de 1.000€ a 50.000€. Conoce los riesgos y cómo evitarlos.',
+      'Multa de 50.000 € al año para el usuario y 150.000 € al desarrollador (art. 201 bis LGT). Qué se considera infracción, quién inspecciona y cómo cumplir hoy.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
@@ -70,7 +70,7 @@ const faqJsonLd = {
       name: '¿Hay multa si sigo facturando con Excel después del plazo?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Sí. Una vez superado el plazo obligatorio (1 de julio de 2027 para autónomos y pymes, y 1 de enero de 2027 para grandes empresas con IS >8M€), emitir facturas con Excel o cualquier software no certificado puede acarrear las sanciones establecidas en la Ley Antifraude.',
+        text: 'Sí. Una vez superado el plazo obligatorio (1 de enero de 2027 para sociedades y 1 de julio de 2027 para autónomos persona física), emitir facturas con Excel o cualquier software no certificado puede acarrear las sanciones establecidas en la Ley Antifraude.',
       },
     },
   ],
@@ -79,9 +79,9 @@ const faqJsonLd = {
 const articleJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline: 'Sanciones por incumplimiento VeriFactu — Multas de hasta 50.000€',
+  headline: 'Sanciones VeriFactu 2026: Multas de 50.000 € y Cómo Evitarlas',
   description:
-    'Análisis de las sanciones previstas en la Ley Antifraude 11/2021 por no usar software garante VeriFactu.',
+    'Multa de 50.000 € al año para el usuario y 150.000 € al desarrollador (art. 201 bis LGT). Qué se considera infracción, quién inspecciona y cómo cumplir hoy.',
   author: {
     '@type': 'Organization',
     name: brandConfig.app.name,
@@ -247,7 +247,10 @@ export function NovafacturaVerifactuSancionesPage(): React.JSX.Element {
               <AlertTriangle className="h-4 w-4" />
               Ley Antifraude 11/2021 — Multas hasta 50.000€
             </div>
-            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1
+              data-speakable
+              className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl"
+            >
               Sanciones por no cumplir VeriFactu
             </h1>
             <p className="mt-6 text-xl text-slate-600 leading-relaxed max-w-2xl">

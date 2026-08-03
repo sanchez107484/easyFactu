@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, Calendar, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatBlogDate, estimateReadingTime } from '@/lib/blog-helpers';
+import { slugify } from '@/lib/slugify';
 import type { SanityBlogPostCard } from '@/sanity/lib/queries';
 
 interface BlogCardFeaturedProps {
@@ -11,12 +12,13 @@ interface BlogCardFeaturedProps {
 
 export function BlogCardFeatured({ post }: BlogCardFeaturedProps) {
   const readingTime = estimateReadingTime(post.bodyText ?? post.excerpt);
+  const postUrl = `/blog/${slugify(post.slug)}`;
 
   return (
     <article className="group grid overflow-hidden rounded-2xl border bg-card transition-all duration-200 hover:shadow-xl lg:grid-cols-[1fr_45%]">
       {/* Image */}
       <Link
-        href={`/blog/${post.slug}`}
+        href={postUrl}
         className="relative block overflow-hidden bg-muted lg:order-last"
         tabIndex={-1}
       >
@@ -58,7 +60,7 @@ export function BlogCardFeatured({ post }: BlogCardFeaturedProps) {
             ))}
         </div>
 
-        <Link href={`/blog/${post.slug}`}>
+        <Link href={postUrl}>
           <h2 className="text-2xl font-bold leading-tight text-foreground transition-colors group-hover:text-primary sm:text-3xl">
             {post.title}
           </h2>
@@ -98,7 +100,7 @@ export function BlogCardFeatured({ post }: BlogCardFeaturedProps) {
         </div>
 
         <Link
-          href={`/blog/${post.slug}`}
+          href={postUrl}
           className="mt-6 inline-flex w-fit items-center gap-2 text-sm font-semibold text-primary transition-gap hover:gap-3"
         >
           Leer artículo <ArrowRight className="h-4 w-4" />

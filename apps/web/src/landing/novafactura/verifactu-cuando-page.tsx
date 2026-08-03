@@ -18,11 +18,12 @@ import PageBreadcrumb from '@/components/PageBreadcrumb';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
+import { VerifactuDeadlines } from '@/components/verifactu-deadlines';
 
 export const novafacturaVerifactuCuandoMetadata: Metadata = {
   title: `¿Cuándo es obligatorio VeriFactu? Fechas y plazos 2025-2027 | ${brandConfig.app.name}`,
   description:
-    'Fechas VeriFactu según el Real Decreto 254/2025: software certificado desde el 29 julio 2025, grandes empresas (IS >8M€) desde enero 2027 y autónomos y pymes desde julio 2027.',
+    'Fechas VeriFactu según el Real Decreto 1007/2023 y el Real Decreto 254/2025: software certificado desde el 29 julio 2025, sociedades desde el 1 enero 2027 y autónomos desde el 1 julio 2027.',
   keywords: [
     'cuando es obligatorio verifactu',
     'verifactu 2025 obligatorio',
@@ -38,7 +39,7 @@ export const novafacturaVerifactuCuandoMetadata: Metadata = {
   openGraph: {
     title: `¿Cuándo es obligatorio VeriFactu? 2025 vs 2027 | ${brandConfig.app.name}`,
     description:
-      'Plazos VeriFactu: software (29 julio 2025), grandes empresas IS >8M€ (1 enero 2027), autónomos y pymes (1 julio 2027). Excepciones incluidas.',
+      'Plazos VeriFactu: software (29 julio 2025), sociedades (1 enero 2027), autónomos (1 julio 2027). Excepciones incluidas.',
     url: `${brandConfig.app.url}/verifactu/cuando-es-obligatorio`,
     type: 'article',
     siteName: brandConfig.app.name,
@@ -50,7 +51,7 @@ export const novafacturaVerifactuCuandoMetadata: Metadata = {
     card: 'summary_large_image',
     title: `¿Cuándo es obligatorio VeriFactu? 2025 vs 2027 | ${brandConfig.app.name}`,
     description:
-      'Plazos VeriFactu: software (29 julio 2025), grandes empresas IS >8M€ (enero 2027), autónomos y pymes (julio 2027).',
+      'Plazos VeriFactu: software (29 julio 2025), sociedades (enero 2027), autónomos (julio 2027).',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
@@ -64,7 +65,7 @@ const faqJsonLd = {
       name: '¿Cuándo es obligatorio VeriFactu?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Según el Real Decreto 254/2025 (publicado el 1 de abril de 2025), los software de facturación debían cumplir desde el 29 de julio de 2025. Las grandes empresas (contribuyentes del IS con >8M€/año de facturación) tienen hasta el 1 de enero de 2027. El resto —autónomos y pymes— tiene de plazo hasta el 1 de julio de 2027.',
+        text: 'Los plazos oficiales son escalonados: el software de facturación solo puede comercializarse adaptado al Reglamento VeriFactu desde el 29 de julio de 2025; las sociedades (SL, SA y demás personas jurídicas) deben facturar con software VeriFactu desde el 1 de enero de 2027; y los autónomos persona física en estimación directa, desde el 1 de julio de 2027 (Real Decreto 1007/2023 y Real Decreto 254/2025, de 1 de abril).',
       },
     },
     {
@@ -131,7 +132,7 @@ const timeline = [
     date: '1 Abril 2025',
     title: 'Real Decreto 254/2025 publicado',
     description:
-      'El 1 de abril de 2025 se aprueba el Reglamento VeriFactu, que establece los requisitos técnicos y fija los plazos definitivos para cada tipo de contribuyente.',
+      'El Real Decreto 254/2025, de 1 de abril, modifica el Reglamento VeriFactu (aprobado por el Real Decreto 1007/2023) y fija los plazos definitivos para cada tipo de contribuyente.',
     status: 'past',
     who: 'Todos los contribuyentes',
   },
@@ -145,19 +146,19 @@ const timeline = [
   },
   {
     date: '1 Enero 2027',
-    title: 'Obligatorio para grandes empresas',
+    title: 'Obligatorio para sociedades',
     description:
-      'Los contribuyentes del Impuesto de Sociedades con facturación anual superior a 8 millones de euros deben usar software certificado VeriFactu.',
+      'Las sociedades (SL, SA, cooperativas y demás personas jurídicas) deben emitir facturas con software certificado VeriFactu.',
     status: 'upcoming',
-    who: 'Empresas IS con facturación > 8M€/año',
+    who: 'Sociedades y personas jurídicas',
   },
   {
     date: '1 Julio 2027',
-    title: 'Obligatorio para autónomos y pymes',
+    title: 'Obligatorio para autónomos',
     description:
-      'El resto de obligados tributarios: autónomos en estimación directa, pymes y sociedades con facturación < 8M€/año. Es el plazo más relevante para la mayoría.',
+      'Los autónomos persona física en estimación directa (normal o simplificada) deben emitir facturas con software certificado VeriFactu. Es el plazo más relevante para la mayoría.',
     status: 'future',
-    who: 'Autónomos, pymes y SL/SA con facturación < 8M€/año',
+    who: 'Autónomos persona física en estimación directa',
   },
 ];
 
@@ -172,18 +173,10 @@ const profiles = [
   },
   {
     icon: Building2,
-    title: 'Pymes y SL/SA (< 8M€/año)',
-    subtitle: 'Impuesto de Sociedades, facturación baja',
-    obligation: 'Obligatorio desde el 1 de julio de 2027',
-    note: 'La mayoría de pequeñas y medianas empresas con facturación anual inferior a 8 millones de euros.',
-    color: 'blue',
-  },
-  {
-    icon: BadgeCheck,
-    title: 'Grandes empresas (> 8M€/año)',
-    subtitle: 'Impuesto de Sociedades, alta facturación',
+    title: 'Sociedades (SL, SA y personas jurídicas)',
+    subtitle: 'Contribuyentes del Impuesto de Sociedades',
     obligation: 'Obligatorio desde el 1 de enero de 2027',
-    note: 'Contribuyentes del IS con facturación anual superior a 8 millones de euros. Plazo más próximo.',
+    note: 'Todas las sociedades sujetas al Impuesto de Sociedades deben facturar con software certificado VeriFactu. Es el plazo más próximo.',
     color: 'indigo',
   },
   {
@@ -207,7 +200,7 @@ const profiles = [
 const faqs = [
   {
     q: '¿Cuándo exactamente es obligatorio VeriFactu para cada tipo de contribuyente?',
-    a: 'Los plazos son escalonados según el Real Decreto 254/2025: desde el 1 de julio de 2025 para nuevos contribuyentes que se den de alta en el Censo de Empresarios a partir de esa fecha. Desde el 1 de enero de 2027 para sociedades (SL, SA, cooperativas y demás personas jurídicas). Desde el 1 de julio de 2027 para autónomos persona física en estimación directa ya dados de alta antes de julio de 2025. Estos plazos son definitivos — no se esperan nuevas prórrogas.',
+    a: 'Los plazos son escalonados según el Real Decreto 1007/2023 y el Real Decreto 254/2025: el software de facturación solo puede comercializarse adaptado desde el 29 de julio de 2025; las sociedades (SL, SA, cooperativas y demás personas jurídicas) deben facturar con software VeriFactu desde el 1 de enero de 2027; y los autónomos persona física en estimación directa, desde el 1 de julio de 2027. Estos plazos son definitivos — no se esperan nuevas prórrogas.',
   },
   {
     q: '¿Qué pasa si no cumplo con VeriFactu en la fecha límite?',
@@ -223,7 +216,7 @@ const faqs = [
   },
   {
     q: '¿Hay prórroga para autónomos que acaban de iniciar su actividad?',
-    a: 'No. El Reglamento VeriFactu no contempla ningún periodo de gracia por ser nuevo autónomo. Si te das de alta como autónomo a partir del 1 de julio de 2025, debes usar software certificado VeriFactu desde la primera factura que emitas. La obligación es inmediata e independiente de tu antigüedad, nivel de facturación o sector de actividad.',
+    a: 'El plazo es el mismo para todos los autónomos persona física: el 1 de julio de 2027, con independencia de la fecha de alta en el Censo de Empresarios. El Reglamento VeriFactu no contempla ningún periodo de gracia adicional una vez superado ese plazo: quien se dé de alta después del 1 de julio de 2027 deberá usar software certificado VeriFactu desde la primera factura que emita.',
   },
   {
     q: '¿Las facturas emitidas antes del plazo necesitan ser actualizadas?',
@@ -273,10 +266,10 @@ export function NovafacturaVerifactuCuandoPage(): React.JSX.Element {
               ¿Cuándo es obligatorio VeriFactu?
             </h1>
             <p className="mt-6 text-xl text-slate-600 leading-relaxed max-w-2xl">
-              Los <strong>software de facturación</strong> debían cumplir desde el{' '}
-              <strong>29 de julio de 2025</strong>. Los <strong>autónomos y pymes</strong> tienen
-              hasta el <strong>1 de julio de 2027</strong>. Adopta VeriFactu ahora y olvídate del
-              plazo.
+              El <strong>software de facturación</strong> solo puede comercializarse adaptado desde
+              el <strong>29 de julio de 2025</strong>. Las <strong>sociedades</strong> tienen hasta
+              el <strong>1 de enero de 2027</strong> y los <strong>autónomos</strong>, hasta el{' '}
+              <strong>1 de julio de 2027</strong>. Adopta VeriFactu ahora y olvídate del plazo.
             </p>
             <div className="mt-6 inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-600" />
@@ -285,6 +278,13 @@ export function NovafacturaVerifactuCuandoPage(): React.JSX.Element {
                 con tranquilidad.
               </span>
             </div>
+          </div>
+        </section>
+
+        {/* Canonical deadlines + BOE sources */}
+        <section className="pb-14 md:pb-20">
+          <div className="mx-auto max-w-4xl px-6">
+            <VerifactuDeadlines />
           </div>
         </section>
 

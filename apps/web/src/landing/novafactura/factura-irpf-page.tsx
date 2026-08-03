@@ -9,7 +9,7 @@ import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
 
 export const novafacturaFacturaIrpfMetadata: Metadata = {
-  title: `Factura con IRPF — Cuándo aplicarlo y cómo calcularlo 2026 | ${brandConfig.app.name}`,
+  title: `Factura con IRPF: Retención del 7% y 15% | ${brandConfig.app.name}`,
   description:
     'Guía completa sobre el IRPF en las facturas de autónomos: quién está obligado, porcentajes (7% o 15%), cómo calcular la retención y cómo rellenar la factura.',
   keywords: [
@@ -26,7 +26,7 @@ export const novafacturaFacturaIrpfMetadata: Metadata = {
   ],
   alternates: { canonical: `${brandConfig.app.url}/facturas/con-irpf` },
   openGraph: {
-    title: `Factura con IRPF — Guía completa 2026 | ${brandConfig.app.name}`,
+    title: `Factura con IRPF: Retención del 7% y 15% | ${brandConfig.app.name}`,
     description:
       'Quién debe aplicar IRPF, al 7% o al 15%, cómo se calcula y cómo se rellena la factura.',
     url: `${brandConfig.app.url}/facturas/con-irpf`,
@@ -38,9 +38,9 @@ export const novafacturaFacturaIrpfMetadata: Metadata = {
   robots: { index: true, follow: true },
   twitter: {
     card: 'summary_large_image',
-    title: `Factura con IRPF — Guía completa 2026 | ${brandConfig.app.name}`,
+    title: `Factura con IRPF: Retención del 7% y 15% | ${brandConfig.app.name}`,
     description:
-      'Quién debe aplicar IRPF en sus facturas, al 7% o al 15%, cómo se calcula y cómo rellenar la factura.',
+      'Cuándo aplicar el 7% o el 15% de IRPF en tus facturas, quién está obligado y ejemplo de factura con desglose.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
@@ -48,9 +48,9 @@ export const novafacturaFacturaIrpfMetadata: Metadata = {
 const articleJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline: 'Factura con IRPF — Cuándo aplicarlo y cómo calcularlo',
+  headline: 'Factura con IRPF: Retención del 7% y 15%',
   description:
-    'Guía sobre la retención de IRPF en facturas de autónomos en actividades profesionales.',
+    'Cuándo aplicar el 7% o el 15% de IRPF en tus facturas, quién está obligado y ejemplo de factura con desglose.',
   author: { '@type': 'Organization', name: brandConfig.app.name, url: brandConfig.app.url },
   publisher: {
     '@type': 'Organization',
@@ -203,7 +203,10 @@ export function NovafacturaFacturaIrpfPage(): React.JSX.Element {
               <BookOpen className="h-4 w-4" />
               Retención IRPF — Autónomos profesionales
             </div>
-            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1
+              data-speakable
+              className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl"
+            >
               Factura con IRPF: cuándo y cómo aplicarlo
             </h1>
             <p className="mt-6 text-xl text-slate-600 leading-relaxed max-w-2xl">

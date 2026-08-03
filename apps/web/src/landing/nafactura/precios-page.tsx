@@ -169,6 +169,17 @@ const comparisonRows = [
   { label: 'Sin permanencia', starter: true, pro: true, excel: true, otros: false },
 ];
 
+// Machine-readable version of the comparison table — the visual cells use
+// icons, so crawlers get this plus the sr-only text in each cell.
+const comparisonTableJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Table',
+  name: `Comparativa de planes y alternativas: ${brandConfig.app.name} Starter, PRO, Excel y otros software`,
+  about:
+    'Comparativa de funcionalidades y precio: límite de facturas, clientes, PDF, presupuestos, facturas recurrentes, VeriFactu, hash encadenado con QR, envío AEAT y permanencia.',
+  description: `Los planes Starter y PRO de ${brandConfig.app.name} incluyen VeriFactu automático, cumplimiento con Hacienda Foral de Navarra, hash encadenado con QR y envío a la AEAT sin coste adicional; la única diferencia entre ellos es el límite de 60 facturas al año del plan Starter. Excel/Word no cumple la normativa y la mayoría de otros software cobran estas funciones aparte.`,
+};
+
 const testimonials = [
   {
     name: 'Amaia Goñi',
@@ -343,6 +354,10 @@ export function NafacturaPreciosPage(): React.JSX.Element {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(comparisonTableJsonLd) }}
       />
       <div className="flex min-h-screen flex-col bg-white text-slate-900">
         <SiteHeader />
@@ -864,23 +879,50 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                         </td>
                         <td className="px-3 py-3 text-center">
                           {row.starter ? (
-                            <CheckCircle2 className="mx-auto h-4 w-4 text-slate-500" />
+                            <>
+                              <CheckCircle2
+                                aria-hidden="true"
+                                className="mx-auto h-4 w-4 text-slate-500"
+                              />
+                              <span className="sr-only">Sí</span>
+                            </>
                           ) : (
-                            <X className="mx-auto h-4 w-4 text-slate-300" />
+                            <>
+                              <X aria-hidden="true" className="mx-auto h-4 w-4 text-slate-300" />
+                              <span className="sr-only">No</span>
+                            </>
                           )}
                         </td>
                         <td className="bg-red-50/50 px-3 py-3 text-center">
                           {row.pro ? (
-                            <CheckCircle2 className="mx-auto h-4 w-4 text-red-600" />
+                            <>
+                              <CheckCircle2
+                                aria-hidden="true"
+                                className="mx-auto h-4 w-4 text-red-600"
+                              />
+                              <span className="sr-only">Sí</span>
+                            </>
                           ) : (
-                            <X className="mx-auto h-4 w-4 text-slate-300" />
+                            <>
+                              <X aria-hidden="true" className="mx-auto h-4 w-4 text-slate-300" />
+                              <span className="sr-only">No</span>
+                            </>
                           )}
                         </td>
                         <td className="px-3 py-3 text-center">
                           {row.excel === false ? (
-                            <X className="mx-auto h-4 w-4 text-slate-300" />
+                            <>
+                              <X aria-hidden="true" className="mx-auto h-4 w-4 text-slate-300" />
+                              <span className="sr-only">No</span>
+                            </>
                           ) : (
-                            <CheckCircle2 className="mx-auto h-4 w-4 text-green-500" />
+                            <>
+                              <CheckCircle2
+                                aria-hidden="true"
+                                className="mx-auto h-4 w-4 text-green-500"
+                              />
+                              <span className="sr-only">Sí</span>
+                            </>
                           )}
                         </td>
                         <td className="px-3 py-3 text-center">
@@ -889,9 +931,18 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                               {row.otros}
                             </span>
                           ) : row.otros ? (
-                            <CheckCircle2 className="mx-auto h-4 w-4 text-green-500" />
+                            <>
+                              <CheckCircle2
+                                aria-hidden="true"
+                                className="mx-auto h-4 w-4 text-green-500"
+                              />
+                              <span className="sr-only">Sí</span>
+                            </>
                           ) : (
-                            <X className="mx-auto h-4 w-4 text-slate-300" />
+                            <>
+                              <X aria-hidden="true" className="mx-auto h-4 w-4 text-slate-300" />
+                              <span className="sr-only">No</span>
+                            </>
                           )}
                         </td>
                       </tr>
@@ -899,6 +950,13 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                   </tbody>
                 </table>
               </div>
+              <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-slate-500">
+                En resumen: ni Excel/Word ni la mayoría de programas incluyen el cumplimiento con
+                Hacienda Foral de Navarra y el VeriFactu automático — lo cobran aparte o no lo
+                ofrecen. Con {brandConfig.app.name} lo tienes todo incluido tanto en Starter (hasta
+                60 facturas/año) como en PRO (facturas ilimitadas), gratis hasta 2027 y sin
+                permanencia.
+              </p>
               <p className="mt-4 text-center text-xs text-slate-400">
                 * Datos comparativos basados en análisis de mercado a julio de 2025.
               </p>

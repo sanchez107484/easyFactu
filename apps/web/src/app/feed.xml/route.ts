@@ -1,6 +1,7 @@
 import { sanityClient } from '@/sanity/lib/client';
 import { POSTS_QUERY } from '@/sanity/lib/queries';
 import type { SanityBlogPostCard } from '@/sanity/lib/queries';
+import { slugify } from '@/lib/slugify';
 
 const BRAND = process.env.NEXT_PUBLIC_BRAND ?? 'novafactura';
 
@@ -54,7 +55,7 @@ export async function GET(): Promise<Response> {
 
   const itemsXml = posts
     .map((post) => {
-      const url = `${info.siteUrl}/blog/${post.slug}`;
+      const url = `${info.siteUrl}/blog/${slugify(post.slug)}`;
       const pubDate = post.publishedAt ? formatRfc822Date(post.publishedAt) : new Date().toUTCString();
       const author = post.author?.name ? `<author>${escapeXml(post.author.name)}</author>` : '';
       const categories =

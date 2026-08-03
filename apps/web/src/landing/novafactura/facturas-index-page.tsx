@@ -80,8 +80,8 @@ const faqs = [
     a: 'La factura intracomunitaria es para operaciones entre empresas de países miembros de la Unión Europea. El IVA es 0% si ambas partes están en el ROI y el NIF europeo del cliente es válido en el VIES. La exportación es para clientes de países fuera de la UE (EE.UU., Reino Unido, etc.) y también lleva IVA 0%, pero requiere documento aduanero de exportación (DUA) y se declara en modelos diferentes al modelo 349 intracomunitario.',
   },
   {
-    q: '¿Todas las facturas necesitan VeriFactu desde julio 2025?',
-    a: 'Desde el 1 de julio de 2025, los nuevos contribuyentes que se den de alta están obligados a usar software VeriFactu desde la primera factura. Los autónomos ya dados de alta tienen plazo hasta el 1 de julio de 2027; las sociedades, hasta el 1 de enero de 2027. Todos los tipos de factura — ordinarias, rectificativas, simplificadas, intracomunitarias — deben cumplir los requisitos VeriFactu una vez entre en vigor el plazo correspondiente.',
+    q: '¿Todas las facturas necesitan VeriFactu?',
+    a: 'Sí, una vez superado el plazo que corresponda: el software de facturación solo puede comercializarse adaptado desde el 29 de julio de 2025; las sociedades deben facturar con software VeriFactu desde el 1 de enero de 2027; y los autónomos, desde el 1 de julio de 2027. Todos los tipos de factura — ordinarias, rectificativas, simplificadas, intracomunitarias — deben cumplir los requisitos VeriFactu una vez entre en vigor el plazo correspondiente.',
   },
 ];
 
@@ -276,7 +276,7 @@ export function NovafacturaFacturasIndexPage(): React.JSX.Element {
             {
               href: '/verifactu',
               label: 'VeriFactu AEAT',
-              description: 'El hash encadenado obligatorio desde 2025. Qué es y cómo cumplirlo.',
+              description: 'El hash encadenado del Reglamento VeriFactu. Qué es y cómo cumplirlo.',
             },
           ]}
         />

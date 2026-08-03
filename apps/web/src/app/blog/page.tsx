@@ -8,6 +8,7 @@ import { BlogCardFeatured } from '@/components/blog/BlogCardFeatured';
 import { fetchWithRevalidation } from '@/sanity/lib/client';
 import { POSTS_QUERY } from '@/sanity/lib/queries';
 import type { SanityBlogPostCard } from '@/sanity/lib/queries';
+import { slugify } from '@/lib/slugify';
 import { brandConfig } from '@easyfactura/brand-config';
 
 export const revalidate = 3600;
@@ -74,7 +75,7 @@ export default async function BlogPage() {
           itemListElement: posts.map((post, index) => ({
             '@type': 'ListItem',
             position: index + 1,
-            url: `${brandConfig.app.url}/blog/${post.slug}`,
+            url: `${brandConfig.app.url}/blog/${slugify(post.slug)}`,
             name: post.title,
           })),
         }

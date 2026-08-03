@@ -1,6 +1,7 @@
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { slugify } from '@/lib/slugify';
 
 function isValidSignature(body: string, signature: string, secret: string): boolean {
   const hmac = createHmac('sha256', secret);
@@ -49,7 +50,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const slug = payload.slug?.current;
   if (slug) {
+    // Revalidate both the raw Sanity slug and its canonical ASCII form —
+    // the accented variant serves a redirect that may also be cached.
     revalidatePath(`/blog/${slug}`);
+    const canonicalSlug = slugify(slug);
+    if (canonicalSlug !== slug) {
+      revalidatePath(`/blog/${canonicalSlug}`);
+    }
   }
 
   return NextResponse.json({ revalidated: true, slug: slug ?? null });

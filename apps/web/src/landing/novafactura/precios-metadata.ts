@@ -2,8 +2,8 @@
 import { brandConfig, PRICING } from '@easyfactura/brand-config';
 
 export const novafacturaPreciosMetadata: Metadata = {
-  title: `Precios — Software de facturación VeriFactu | ${brandConfig.app.name}`,
-  description: `Gratis hasta 2027 para los primeros ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscritos. Plan Starter desde ${PRICING.starter.monthly}€/mes o Plan PRO desde ${PRICING.pro.monthly}€/mes con VeriFactu automático incluido.`,
+  title: `Precios ${brandConfig.app.name}: Gratis hasta 2027. Luego desde ${PRICING.starter.monthly}€/mes.`,
+  description: `Gratis hasta 2027 para los primeros ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscritos. Plan Starter desde ${PRICING.starter.monthly}€/mes o Plan PRO desde ${PRICING.pro.monthly}€/mes. VeriFactu incluido en todos los planes. Regístrate gratis hasta 2027 sin tarjeta.`,
   keywords: [
     'precio software facturación',
     'verifactu precio',
@@ -15,8 +15,9 @@ export const novafacturaPreciosMetadata: Metadata = {
   ],
   alternates: { canonical: `${brandConfig.app.url}/precios` },
   openGraph: {
-    title: `Precios | ${brandConfig.app.name}`,
-    description: `Gratis hasta 2027. Luego desde ${PRICING.starter.monthly}€/mes.`,
+    title: `Precios ${brandConfig.app.name}: Gratis hasta 2027.`,
+    description: `Gratis hasta 2027. Plan Starter desde ${PRICING.starter.monthly}€/mes o Plan PRO desde ${PRICING.pro.monthly}€/mes. VeriFactu incluido en todos los planes. Regístrate gratis hasta 2027 sin tarjeta.`,
+
     url: `${brandConfig.app.url}/precios`,
     type: 'website',
     siteName: brandConfig.app.name,
