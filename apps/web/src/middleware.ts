@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { brandConfig } from '@easyfactura/brand-config';
 
-// Rutas públicas que no requieren autenticación
-const publicRoutes = [
+const PUBLIC_ROUTES = [
   '/',
   // Auth
   '/login',
@@ -24,22 +24,54 @@ const publicRoutes = [
   '/terminos-uso',
   '/cookies',
   '/tratamiento-datos',
-];
+] as const;
 
-// Rutas protegidas que requieren autenticación
-// La verificación real de auth se hace en el layout del dashboard (client-side)
-// porque los tokens están en localStorage, no en cookies
-const protectedPaths = ['/dashboard', '/setup'];
+const PROTECTED_PATHS = ['/dashboard', '/setup'] as const;
+
+const canonicalHost = brandConfig.app.url.replace(/^https?:\/\//, '').toLowerCase();
+
+function getRequestHost(request: NextRequest): string {
+  const hostHeader = request.headers.get('host');
+  return hostHeader ? hostHeader.split(':')[0].toLowerCase() : '';
+}
+
+function getRequestProtocol(request: NextRequest): string {
+  const forwardedProto = request.headers.get('x-forwarded-proto');
+  if (forwardedProto) {
+    return forwardedProto.split(',')[0].trim().replace(/:$/, '').toLowerCase();
+  }
+
+  return request.nextUrl.protocol.replace(/:$/, '').toLowerCase();
+}
+
+function isLocalhostHost(host: string): boolean {
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+}
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
+  const requestHost = getRequestHost(request);
 
-  // Permitir rutas públicas
-  if (publicRoutes.some((route) => pathname === route)) {
+  if (isLocalhostHost(requestHost) || process.env.NODE_ENV === 'development') {
     return NextResponse.next();
   }
 
-  // Permitir archivos estáticos y API
+  const requestProtocol = getRequestProtocol(request);
+  const isCanonicalHost = requestHost === canonicalHost;
+  const isHttps = requestProtocol === 'https';
+
+  if (!isCanonicalHost || !isHttps) {
+    const destination = new URL(request.url);
+    destination.protocol = 'https:';
+    destination.host = canonicalHost;
+    destination.search = search;
+    return NextResponse.redirect(destination, 301);
+  }
+
+  if (PUBLIC_ROUTES.some((route) => pathname === route)) {
+    return NextResponse.next();
+  }
+
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -49,25 +81,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Rutas protegidas - permitir acceso pero la verificación de auth
-  // se hace en el layout del dashboard (client-side con localStorage)
-  if (protectedPaths.some((path) => pathname.startsWith(path))) {
+  if (PROTECTED_PATHS.some((path) => pathname.startsWith(path))) {
     return NextResponse.next();
   }
 
-  // Por defecto, permitir paso y dejar que el layout maneje auth
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (images, etc)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|brand).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image).*)'],
 };

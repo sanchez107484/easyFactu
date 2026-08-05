@@ -29,9 +29,9 @@ import { VerifactuDeadlines } from '@/components/verifactu-deadlines';
 // Metadata
 // ─────────────────────────────────────────────────────────────────────────────
 export const nafacturaNavicketMetadata: Metadata = {
-  title: `NaTicket Navarra: qué es, fechas y cómo prepararte como autónomo | ${brandConfig.app.name}`,
+  title: `NaTicket Navarra 2027: qué es y cuándo será obligatorio | ${brandConfig.app.name}`,
   description:
-    'Guía completa sobre NaTicket, el nuevo sistema de facturación de Hacienda Foral de Navarra. Qué es, diferencias con VeriFactu y TicketBAI, a quién afecta y cómo prepararte siendo autónomo navarro.',
+    'Guía actualizada de NaTicket, el sistema de Hacienda Foral de Navarra: qué es, a quién obliga, calendario previsto y diferencias con VeriFactu y TicketBAI.',
   keywords: [
     'NaTicket',
     'NaTicket Navarra',
@@ -54,9 +54,9 @@ export const nafacturaNavicketMetadata: Metadata = {
   ],
   alternates: { canonical: `${brandConfig.app.url}/naticket` },
   openGraph: {
-    title: `NaTicket Navarra: qué es, fechas y cómo prepararte | ${brandConfig.app.name}`,
+    title: `NaTicket Navarra 2027: qué es y cuándo será obligatorio | ${brandConfig.app.name}`,
     description:
-      'Todo lo que necesitas saber sobre NaTicket como autónomo navarro: qué es, diferencias con VeriFactu y TicketBAI, a quién afecta y cómo prepararte.',
+      'Guía actualizada de NaTicket, el sistema de Hacienda Foral de Navarra: qué es, a quién obliga, calendario previsto y diferencias con VeriFactu y TicketBAI.',
     url: `${brandConfig.app.url}/naticket`,
     type: 'website',
     siteName: brandConfig.app.name,
@@ -72,9 +72,9 @@ export const nafacturaNavicketMetadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `NaTicket Navarra: qué es y cómo prepararte | ${brandConfig.app.name}`,
+    title: `NaTicket Navarra 2027: qué es y cuándo será obligatorio | ${brandConfig.app.name}`,
     description:
-      'Guía completa sobre NaTicket: el nuevo sistema de facturación de Hacienda Foral de Navarra para autónomos.',
+      'Guía actualizada de NaTicket, el sistema de Hacienda Foral de Navarra: qué es, a quién obliga, calendario previsto y diferencias con VeriFactu y TicketBAI.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   robots: { index: true, follow: true },
@@ -86,10 +86,9 @@ export const nafacturaNavicketMetadata: Metadata = {
 const articleJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline:
-    'NaTicket Navarra: qué es, cuándo será obligatorio y cómo prepararte como autónomo navarro',
+  headline: 'NaTicket Navarra 2027: qué es y cuándo será obligatorio',
   description:
-    'Guía completa sobre NaTicket, el sistema de trazabilidad de facturas de Hacienda Foral de Navarra. Diferencias con VeriFactu, TicketBAI, fechas y cómo prepararse.',
+    'Guía actualizada de NaTicket, el sistema de Hacienda Foral de Navarra: qué es, a quién obliga, calendario previsto y diferencias con VeriFactu y TicketBAI.',
   url: `${brandConfig.app.url}/naticket`,
   datePublished: '2026-05-19',
   dateModified: '2026-05-19',
@@ -399,8 +398,11 @@ export function NafacturaNavicketPage(): React.JSX.Element {
               <Map className="h-4 w-4" />
               Exclusivo Navarra · Hacienda Foral de Navarra
             </div>
-            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
-              NaTicket: qué es, cuándo será obligatorio en Navarra{' '}
+            <h1
+              data-speakable
+              className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl md:text-6xl"
+            >
+              NaTicket Navarra: qué es, cuándo será obligatorio en Navarra{' '}
               <span className="text-red-600">y cómo prepararte</span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-500">

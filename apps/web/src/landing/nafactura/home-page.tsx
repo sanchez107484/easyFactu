@@ -403,8 +403,8 @@ const homepageSoftwareJsonLd = {
 // SEO — Metadata
 // ─────────────────────────────────────────────────────────────────────────────
 export const nafacturaHomeMetadata: Metadata = {
-  title: `Software garante de facturación para autónomos navarros | ${brandConfig.app.name}`,
-  description: `${brandConfig.app.name}: software garante de facturación para autónomos y pymes navarros. Cumplimiento automático con Hacienda Foral de Navarra. VeriFactu incluido. Preparado para NaTicket. Gratis hasta 2027 sin tarjeta.`,
+  title: `Software de facturación Navarra 2027 | Gratis | ${brandConfig.app.name}`,
+  description: `Programa de facturación para autónomos navarros adaptado a Hacienda Foral de Navarra: VeriFactu, hash encadenado y preparado para NaTicket. Gratis hasta 2027, sin tarjeta.`,
   keywords: [
     'software facturación navarra',
     'programa facturación autónomos navarra',
@@ -432,8 +432,8 @@ export const nafacturaHomeMetadata: Metadata = {
     type: 'website',
     locale: 'es_ES',
     url: brandConfig.app.url,
-    title: `Software de facturación para autónomos navarros | ${brandConfig.app.name}`,
-    description: `Cumple con Hacienda Navarra de forma automática. Hash encadenado, código QR y envío a Hacienda Foral incluidos. Gratis hasta 2027. Sin tarjeta.`,
+    title: `Software de facturación Navarra 2027 | Gratis | ${brandConfig.app.name}`,
+    description: `Programa de facturación para autónomos navarros adaptado a Hacienda Foral de Navarra: VeriFactu, hash encadenado y preparado para NaTicket. Gratis hasta 2027, sin tarjeta.`,
     siteName: brandConfig.app.name,
     images: [
       {
@@ -446,8 +446,8 @@ export const nafacturaHomeMetadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `Software de facturación para autónomos navarros | ${brandConfig.app.name}`,
-    description: `Cumplimiento automático con Hacienda Navarra. Gratis hasta 2027. Sin tarjeta.`,
+    title: `Software de facturación Navarra 2027 | Gratis | ${brandConfig.app.name}`,
+    description: `Programa de facturación para autónomos navarros adaptado a Hacienda Foral de Navarra: VeriFactu, hash encadenado y preparado para NaTicket. Gratis hasta 2027, sin tarjeta.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   robots: { index: true, follow: true },
@@ -503,7 +503,10 @@ export function NafacturaHomePage() {
                 Preparado para NaTicket
               </div>
 
-              <h1 data-speakable className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
+              <h1
+                data-speakable
+                className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl"
+              >
                 Software de facturación para{' '}
                 <span className="relative whitespace-nowrap text-red-600">
                   autónomos navarros
@@ -1073,10 +1076,10 @@ export function NafacturaHomePage() {
               </div>
             </Card>
             <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-slate-500">
-              En síntesis: el software tradicional no está adaptado a la Hacienda Foral de Navarra
-              — sin hash encadenado, sin envío integrado a Hacienda Navarra y sin código QR
-              normativo. {brandConfig.app.name} lo incluye todo de serie, sin instalación, con
-              migración y soporte técnico sin coste adicional, y gratis hasta 2027.
+              En síntesis: el software tradicional no está adaptado a la Hacienda Foral de Navarra —
+              sin hash encadenado, sin envío integrado a Hacienda Navarra y sin código QR normativo.{' '}
+              {brandConfig.app.name} lo incluye todo de serie, sin instalación, con migración y
+              soporte técnico sin coste adicional, y gratis hasta 2027.
             </p>
           </div>
         </section>
