@@ -703,6 +703,33 @@ export interface QueryInvoicesInput {
   sortOrder?: 'asc' | 'desc';
   /** Filter to only REAGYP invoices (compensacionPercent is set) or only non-REAGYP. */
   isReagyp?: boolean;
+  /** When true, search also inside invoice lines (description, product name/reference). */
+  searchLines?: boolean;
+  /** Minimum unit price filter for line search. */
+  minUnitPrice?: number;
+  /** Maximum unit price filter for line search. */
+  maxUnitPrice?: number;
+}
+
+export interface InvoiceLineSearchResult {
+  id: string;
+  description: string;
+  unitPrice: number;
+  quantity: number;
+  discountPercent: number | null;
+  taxRate: number;
+  lineTotal: number;
+  sortOrder: number;
+  product: { id: string; name: string; reference: string | null } | null;
+}
+
+export interface InvoiceWithMatchedLines {
+  id: string;
+  number: string | null;
+  issueDate: string;
+  status: InvoiceStatus;
+  customer: { id: string; name: string; nif: string };
+  matchedLines: InvoiceLineSearchResult[];
 }
 
 export interface ConfirmInvoiceInput {

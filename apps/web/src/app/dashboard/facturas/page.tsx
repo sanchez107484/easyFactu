@@ -29,6 +29,8 @@ import {
   Undo2,
   Download,
   Building2,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -49,6 +51,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   useInvoices,
+  useInvoice,
   useConfirmInvoice,
   useUnmarkInvoiceAsPaid,
   useMarkInvoiceAsSent,
@@ -65,6 +68,7 @@ import {
   PaymentMethod,
   Invoice,
   QueryInvoicesInput,
+  InvoiceWithMatchedLines,
 } from '@easyfactura/shared-types';
 import { cn, formatCurrency, formatDateShort } from '@/lib/utils';
 import { SortableHeader } from '@/components/common/sortable-header';
@@ -74,6 +78,8 @@ import {
   PaymentStatusFilterPills,
 } from '@/components/common/invoice-status-filter-pills';
 import { EmptyState } from '@/components/common/empty-state';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { ConvertProformaModal } from '@/components/facturas/ConvertProformaModal';
 import { InvoicePaymentSection } from '@/components/facturas/InvoicePaymentSection';
 import { RegisterPaymentDialog } from '@/components/facturas/RegisterPaymentDialog';
@@ -127,6 +133,69 @@ function TableSkeleton() {
           <Skeleton className="h-7 w-7 rounded" />
         </div>
       ))}
+    </div>
+  );
+}
+
+function LineSearchResultRow({
+  result,
+  onViewInvoice,
+  onViewLine,
+}: {
+  result: InvoiceWithMatchedLines;
+  onViewInvoice: () => void;
+  onViewLine: (lineId: string) => void;
+}) {
+  return (
+    <div className="p-4 hover:bg-muted/50 transition-colors">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            onClick={onViewInvoice}
+            className="text-sm font-medium text-primary hover:underline truncate"
+          >
+            {result.number ?? 'Borrador'}
+          </button>
+          <Badge variant="outline" className="text-xs shrink-0">
+            {result.status}
+          </Badge>
+          <span className="text-xs text-muted-foreground shrink-0">
+            {formatDateShort(result.issueDate)}
+          </span>
+        </div>
+        <div className="text-sm text-muted-foreground truncate">
+          {result.customer.name}
+          <span className="text-xs ml-1">({result.customer.nif})</span>
+        </div>
+      </div>
+      <div className="space-y-1.5 ml-1">
+        {(result.matchedLines ?? []).map((line) => (
+          <button
+            key={line.id}
+            onClick={() => onViewLine(line.id)}
+            className="w-full flex items-center gap-3 rounded-md border bg-background p-2.5 text-sm hover:border-primary hover:ring-1 hover:ring-primary transition-colors cursor-pointer text-left"
+          >
+            <div className="flex-1 min-w-0">
+              <p className="font-medium truncate">{line.description}</p>
+              {line.product && (
+                <p className="text-xs text-muted-foreground truncate">
+                  {line.product.name}
+                  {line.product.reference && (
+                    <span className="ml-1">· Ref: {line.product.reference}</span>
+                  )}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-4 shrink-0 text-xs text-muted-foreground">
+              <span>{Number(line.quantity)} uds</span>
+              <span className="font-medium text-foreground">
+                {formatCurrency(Number(line.unitPrice))}/ud
+              </span>
+              <span className="font-medium">{formatCurrency(Number(line.lineTotal))}</span>
+            </div>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -393,6 +462,8 @@ export default function FacturasPage() {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [searchLines, setSearchLines] = useState(false);
+  const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
 
   // Dialog targets
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -404,7 +475,7 @@ export default function FacturasPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter, paymentStatusFilter, sortKey, sortDir, fromDate, toDate]);
+  }, [search, statusFilter, paymentStatusFilter, sortKey, sortDir, fromDate, toDate, searchLines]);
 
   const { data, isLoading, error, refetch } = useInvoices({
     search: search || undefined,
@@ -417,6 +488,7 @@ export default function FacturasPage() {
     limit: 10,
     sortBy: sortKey as QueryInvoicesInput['sortBy'],
     sortOrder: sortDir,
+    searchLines: searchLines && !!search ? true : undefined,
   });
 
   const confirmMutation = useConfirmInvoice();
@@ -445,7 +517,8 @@ export default function FacturasPage() {
     setConvertId(null);
   };
 
-  const invoices = data?.data ?? [];
+  const invoices = (data?.data ?? []) as Invoice[];
+  const lineResults = (data?.data ?? []) as unknown as InvoiceWithMatchedLines[];
   const total = data?.meta.total ?? 0;
   const totalPages = data?.meta.totalPages ?? 1;
   const hasActiveFilters =
@@ -505,7 +578,11 @@ export default function FacturasPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nº factura, cliente o NIF..."
+              placeholder={
+                searchLines
+                  ? 'Buscar en líneas: producto, descripción...'
+                  : 'Buscar por nº factura, cliente o NIF...'
+              }
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="pl-9 pr-9"
@@ -528,6 +605,25 @@ export default function FacturasPage() {
           >
             <SlidersHorizontal className="h-4 w-4" />
           </Button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Switch
+            id="search-lines-toggle"
+            checked={searchLines}
+            onCheckedChange={setSearchLines}
+          />
+          <Label
+            htmlFor="search-lines-toggle"
+            className="text-sm cursor-pointer select-none"
+          >
+            Buscar en líneas de factura
+          </Label>
+          {searchLines && (
+            <Badge variant="secondary" className="text-xs">
+              Modo líneas
+            </Badge>
+          )}
         </div>
 
         {showDateFilter && (
@@ -595,6 +691,40 @@ export default function FacturasPage() {
           <CardContent className="p-0">
             {isLoading ? (
               <TableSkeleton />
+            ) : searchLines && search ? (
+              lineResults.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-14 text-center px-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-3">
+                    <Search className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-medium">Sin resultados en líneas</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    No se encontraron líneas que coincidan con la búsqueda.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={() => {
+                      setSearchInput('');
+                      setSearchLines(false);
+                    }}
+                  >
+                    Limpiar búsqueda
+                  </Button>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {lineResults.map((result) => (
+                    <LineSearchResultRow
+                      key={result.id}
+                      result={result}
+                      onViewInvoice={() => router.push(`/dashboard/facturas/${result.id}`)}
+                      onViewLine={(lineId) => router.push(`/dashboard/facturas/${result.id}?highlightLine=${lineId}`)}
+                    />
+                  ))}
+                </div>
+              )
             ) : invoices.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-14 text-center px-6">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-3">
@@ -661,6 +791,7 @@ export default function FacturasPage() {
                   <table className="w-full">
                     <thead className="border-b bg-muted/40">
                       <tr>
+                        {searchLines && <th className="w-9 px-2 py-3" />}
                         <SortableHeader
                           label="Número"
                           sortKey="number"

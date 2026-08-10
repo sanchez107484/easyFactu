@@ -587,25 +587,31 @@ export class InvoiceService {
       sortBy = 'issueDate',
       sortOrder = 'desc',
       isReagyp,
+      searchLines,
+      minUnitPrice,
+      maxUnitPrice,
     } = query;
+
+    if (searchLines) {
+      return this.searchInvoiceLines(tenantId, {
+        search,
+        customerId,
+        fromDate,
+        toDate,
+        minUnitPrice,
+        maxUnitPrice,
+        page,
+        limit,
+      });
+    }
+
+    if (search) {
+      return this.searchInvoicesWithUnaccent(tenantId, query);
+    }
+
     const skip = (page - 1) * limit;
 
     const where: Prisma.InvoiceWhereInput = { tenantId };
-
-    if (search) {
-      // Search across invoice number, current customer name/NIF (covers drafts and
-      // customers that haven't changed), and snapshot fields (covers confirmed invoices
-      // whose customer later changed name or NIF). Both paths are needed so that a
-      // search for the old name still returns historical confirmed invoices, and a
-      // search for the new name still finds them via the live JOIN.
-      where.OR = [
-        { number: { contains: search, mode: 'insensitive' } },
-        { customer: { name: { contains: search, mode: 'insensitive' } } },
-        { customer: { nif: { contains: search, mode: 'insensitive' } } },
-        { customerSnapshotName: { contains: search, mode: 'insensitive' } },
-        { customerSnapshotNif: { contains: search, mode: 'insensitive' } },
-      ];
-    }
 
     if (status) {
       where.status = status;
@@ -707,6 +713,261 @@ export class InvoiceService {
 
     return {
       data: mappedData,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  private async searchInvoicesWithUnaccent(tenantId: string, query: QueryInvoiceDto) {
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      status,
+      paymentStatus,
+      customerId,
+      fromDate,
+      toDate,
+      sortBy = 'issueDate',
+      sortOrder = 'desc',
+    } = query;
+    const offset = (page - 1) * limit;
+    const pattern = `%${search}%`;
+
+    const statusFilter = status
+      ? Prisma.sql`AND i.status = ${status}::text::"InvoiceStatus"`
+      : Prisma.sql`AND i.status != 'QUOTE'::text::"InvoiceStatus"`;
+
+    const paymentStatusFilter = paymentStatus
+      ? Prisma.sql`AND i.payment_status = ${paymentStatus}::text::"PaymentStatus"`
+      : Prisma.empty;
+
+    const customerFilter = customerId
+      ? Prisma.sql`AND i.customer_id = ${customerId}`
+      : Prisma.empty;
+
+    const dateFilter = Prisma.sql`
+      ${fromDate ? Prisma.sql`AND i.issue_date >= ${fromDate}::date` : Prisma.empty}
+      ${toDate ? Prisma.sql`AND i.issue_date <= ${toDate}::date` : Prisma.empty}
+    `;
+
+    const sortColumn =
+      sortBy === 'customer'
+        ? Prisma.sql`c.name`
+        : sortBy === 'number'
+          ? Prisma.sql`i.number`
+          : sortBy === 'total'
+            ? Prisma.sql`i.total`
+            : Prisma.sql`i.issue_date`;
+    const sortDir = sortOrder === 'asc' ? Prisma.sql`ASC` : Prisma.sql`DESC`;
+
+    const [rows, countResult] = await Promise.all([
+      this.prisma.$queryRaw<Record<string, unknown>[]>`
+        SELECT
+          i.id, i.tenant_id AS "tenantId", i.number, i.invoice_type AS "invoiceType",
+          i.status, i.payment_status AS "paymentStatus",
+          i.quote_acceptance_status AS "quoteAcceptanceStatus",
+          i.issue_date AS "issueDate", i.due_date AS "dueDate",
+          i.valid_until AS "validUntil",
+          i.subtotal, i.tax_total AS "taxTotal", i.irpf_total AS "irpfTotal",
+          i.surcharge_total AS "surchargeTotal", i.total,
+          i.amount_paid AS "amountPaid", i.payment_method AS "paymentMethod",
+          i.notes, i.hash, i.compensacion_percent AS "compensacionPercent",
+          i.created_at AS "createdAt", i.updated_at AS "updatedAt",
+          i.created_by_user_id AS "createdByUserId",
+          i.customer_snapshot_name AS "customerSnapshotName",
+          i.customer_snapshot_nif AS "customerSnapshotNif",
+          json_build_object('id', c.id, 'name', c.name, 'nif', c.nif) AS customer,
+          json_build_object('id', s.id, 'name', s.name, 'prefix', s.prefix) AS series
+        FROM invoices i
+        JOIN customers c ON c.id = i.customer_id
+        LEFT JOIN invoice_series s ON s.id = i.series_id
+        WHERE i.tenant_id = ${tenantId}
+          AND (
+            i.number ILIKE ${pattern}
+            OR f_unaccent(c.name) ILIKE f_unaccent(${pattern})
+            OR c.nif ILIKE ${pattern}
+            OR f_unaccent(i.customer_snapshot_name) ILIKE f_unaccent(${pattern})
+            OR i.customer_snapshot_nif ILIKE ${pattern}
+          )
+          ${statusFilter}
+          ${paymentStatusFilter}
+          ${customerFilter}
+          ${dateFilter}
+        ORDER BY ${sortColumn} ${sortDir}
+        LIMIT ${limit}
+        OFFSET ${offset}
+      `,
+      this.prisma.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*) AS count
+        FROM invoices i
+        JOIN customers c ON c.id = i.customer_id
+        WHERE i.tenant_id = ${tenantId}
+          AND (
+            i.number ILIKE ${pattern}
+            OR f_unaccent(c.name) ILIKE f_unaccent(${pattern})
+            OR c.nif ILIKE ${pattern}
+            OR f_unaccent(i.customer_snapshot_name) ILIKE f_unaccent(${pattern})
+            OR i.customer_snapshot_nif ILIKE ${pattern}
+          )
+          ${statusFilter}
+          ${paymentStatusFilter}
+          ${customerFilter}
+          ${dateFilter}
+      `,
+    ]);
+
+    const total = Number(countResult[0].count);
+    const agencyUserIds = Array.from(
+      new Set(
+        rows
+          .map((r) => r.createdByUserId as string | null)
+          .filter((id): id is string => id !== null && id !== undefined)
+      )
+    );
+    const agencyMap = await this.loadAgencyInfoMap(agencyUserIds);
+
+    const data = rows.map(({ createdByUserId, ...invoice }) => ({
+      ...invoice,
+      createdByAgency: createdByUserId ? (agencyMap.get(createdByUserId as string) ?? null) : null,
+    }));
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  private async searchInvoiceLines(
+    tenantId: string,
+    params: {
+      search?: string;
+      customerId?: string;
+      fromDate?: string;
+      toDate?: string;
+      minUnitPrice?: number;
+      maxUnitPrice?: number;
+      page: number;
+      limit: number;
+    }
+  ) {
+    const { search, customerId, fromDate, toDate, minUnitPrice, maxUnitPrice, page, limit } =
+      params;
+    const offset = (page - 1) * limit;
+    const pattern = search ? `%${search}%` : null;
+    const numericPattern = search ? `%${search.replace(',', '.')}%` : null;
+
+    const textFilter = pattern
+      ? Prisma.sql`AND (
+          f_unaccent(il.description) ILIKE f_unaccent(${pattern})
+          OR f_unaccent(p.name) ILIKE f_unaccent(${pattern})
+          OR f_unaccent(p.reference) ILIKE f_unaccent(${pattern})
+          OR il.unit_price::text LIKE ${numericPattern}
+          OR il.line_total::text LIKE ${numericPattern}
+        )`
+      : Prisma.empty;
+
+    const customerFilter = customerId
+      ? Prisma.sql`AND i.customer_id = ${customerId}`
+      : Prisma.empty;
+
+    const dateFilter = Prisma.sql`
+      ${fromDate ? Prisma.sql`AND i.issue_date >= ${fromDate}::date` : Prisma.empty}
+      ${toDate ? Prisma.sql`AND i.issue_date <= ${toDate}::date` : Prisma.empty}
+    `;
+
+    const priceFilter = Prisma.sql`
+      ${minUnitPrice !== undefined ? Prisma.sql`AND il.unit_price >= ${minUnitPrice}` : Prisma.empty}
+      ${maxUnitPrice !== undefined ? Prisma.sql`AND il.unit_price <= ${maxUnitPrice}` : Prisma.empty}
+    `;
+
+    const [rows, countResult] = await Promise.all([
+      this.prisma.$queryRaw<Record<string, unknown>[]>`
+        SELECT
+          i.id AS "invoiceId", i.number AS "invoiceNumber",
+          i.issue_date AS "issueDate", i.status AS "invoiceStatus",
+          c.id AS "customerId", c.name AS "customerName", c.nif AS "customerNif",
+          il.id AS "lineId", il.description AS "lineDescription",
+          il.unit_price AS "unitPrice", il.quantity,
+          il.discount_percent AS "discountPercent",
+          il.tax_rate AS "taxRate", il.line_total AS "lineTotal",
+          il.sort_order AS "sortOrder",
+          p.id AS "productId", p.name AS "productName",
+          p.reference AS "productReference"
+        FROM invoice_lines il
+        JOIN invoices i ON i.id = il.invoice_id
+        JOIN customers c ON c.id = i.customer_id
+        LEFT JOIN products p ON p.id = il.product_id
+        WHERE i.tenant_id = ${tenantId}
+          AND i.status != 'QUOTE'::text::"InvoiceStatus"
+          ${textFilter}
+          ${customerFilter}
+          ${dateFilter}
+          ${priceFilter}
+        ORDER BY i.issue_date DESC, il.sort_order ASC
+        LIMIT ${limit}
+        OFFSET ${offset}
+      `,
+      this.prisma.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*) AS count
+        FROM invoice_lines il
+        JOIN invoices i ON i.id = il.invoice_id
+        LEFT JOIN products p ON p.id = il.product_id
+        WHERE i.tenant_id = ${tenantId}
+          AND i.status != 'QUOTE'::text::"InvoiceStatus"
+          ${textFilter}
+          ${customerFilter}
+          ${dateFilter}
+          ${priceFilter}
+      `,
+    ]);
+
+    const total = Number(countResult[0].count);
+
+    const invoiceMap = new Map<
+      string,
+      {
+        id: string;
+        number: string | null;
+        issueDate: Date;
+        status: string;
+        customer: { id: string; name: string; nif: string };
+        matchedLines: Record<string, unknown>[];
+      }
+    >();
+
+    for (const row of rows) {
+      const invoiceId = row.invoiceId as string;
+      if (!invoiceMap.has(invoiceId)) {
+        invoiceMap.set(invoiceId, {
+          id: invoiceId,
+          number: row.invoiceNumber as string | null,
+          issueDate: row.issueDate as Date,
+          status: row.invoiceStatus as string,
+          customer: {
+            id: row.customerId as string,
+            name: row.customerName as string,
+            nif: row.customerNif as string,
+          },
+          matchedLines: [],
+        });
+      }
+      invoiceMap.get(invoiceId)!.matchedLines.push({
+        id: row.lineId,
+        description: row.lineDescription,
+        unitPrice: row.unitPrice,
+        quantity: row.quantity,
+        discountPercent: row.discountPercent,
+        taxRate: row.taxRate,
+        lineTotal: row.lineTotal,
+        sortOrder: row.sortOrder,
+        product: row.productId
+          ? { id: row.productId, name: row.productName, reference: row.productReference }
+          : null,
+      });
+    }
+
+    return {
+      data: Array.from(invoiceMap.values()),
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }

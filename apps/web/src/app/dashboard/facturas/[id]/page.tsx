@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -81,7 +81,9 @@ import { VerifactuQrImage } from '@/components/invoice/VerifactuQrImage';
 export default function FacturaDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = params.id as string;
+  const highlightLineId = searchParams.get('highlightLine');
 
   const [showRectifyDialog, setShowRectifyDialog] = useState(false);
   const [rectifyReason, setRectifyReason] = useState('');
@@ -523,7 +525,7 @@ export default function FacturaDetailPage() {
             </div>
 
             {/* ZONA C — Líneas + totales */}
-            <InvoiceLinesCard invoice={invoice} template={template} />
+            <InvoiceLinesCard invoice={invoice} template={template} highlightLineId={highlightLineId ?? undefined} />
 
             {/* ZONA D — Forma de pago */}
             {activePaymentMethod && (

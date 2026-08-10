@@ -1,18 +1,28 @@
+import { useEffect, useRef } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { FileText } from 'lucide-react';
 import { SectionLabel } from '@/components/common/section-label';
 import { DataRow } from '@/components/common/data-row';
 import type { Invoice, InvoiceTemplate } from '@easyfactura/shared-types';
 import { EQUIVALENCE_SURCHARGE_RATES } from '@easyfactura/shared-constants';
-import { formatCurrency, parseNum } from '@/lib/utils';
+import { cn, formatCurrency, parseNum } from '@/lib/utils';
 import { formatUnitPriceCurrency } from '@/lib/math';
 
 interface InvoiceLinesCardProps {
   invoice: Invoice;
   template: InvoiceTemplate | null | undefined;
+  highlightLineId?: string;
 }
 
-export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
+export function InvoiceLinesCard({ invoice, template, highlightLineId }: InvoiceLinesCardProps) {
+  const highlightedRowRef = useRef<HTMLTableRowElement>(null);
+
+  useEffect(() => {
+    if (highlightLineId && highlightedRowRef.current) {
+      highlightedRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightLineId]);
+
   const taxRates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
   const taxLabel = taxRates.length === 1 ? `IVA (${taxRates[0]}%)` : 'IVA';
   const isReagyp = invoice.compensacionPercent != null;
@@ -74,7 +84,13 @@ export function InvoiceLinesCard({ invoice, template }: InvoiceLinesCardProps) {
         </thead>
         <tbody className="divide-y">
           {(invoice.lines ?? []).map((line) => (
-            <tr key={line.id}>
+            <tr
+              key={line.id}
+              ref={line.id === highlightLineId ? highlightedRowRef : undefined}
+              className={cn(
+                line.id === highlightLineId && 'ring-2 ring-primary rounded-md'
+              )}
+            >
               <td className="py-2.5 pr-4">{line.description}</td>
               {showQtyColumn && (
                 <td className="py-2.5 text-right tabular-nums">

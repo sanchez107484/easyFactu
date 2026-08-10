@@ -6,8 +6,9 @@ import {
   IsUUID,
   IsIn,
   IsBoolean,
+  IsNumber,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 import { InvoiceStatus, PaymentStatus, QuoteAcceptanceStatus } from '@easyfactura/shared-types';
@@ -73,4 +74,27 @@ export class QueryInvoiceDto extends PaginationDto {
   })
   @IsBoolean()
   isReagyp?: boolean;
+
+  @ApiPropertyOptional({ description: 'Buscar también en líneas de factura (descripción, producto)' })
+  @IsOptional()
+  @Transform(({ obj }) => {
+    const raw = (obj as Record<string, unknown>).searchLines;
+    if (raw === undefined || raw === null) return undefined;
+    if (raw === 'false' || raw === false) return false;
+    return raw === 'true' || raw === true;
+  })
+  @IsBoolean()
+  searchLines?: boolean;
+
+  @ApiPropertyOptional({ description: 'Precio unitario mínimo de la línea' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  minUnitPrice?: number;
+
+  @ApiPropertyOptional({ description: 'Precio unitario máximo de la línea' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  maxUnitPrice?: number;
 }
