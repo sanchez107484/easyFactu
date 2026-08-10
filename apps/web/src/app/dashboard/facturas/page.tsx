@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useDebounce } from '@/hooks/use-debounce';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -31,6 +31,9 @@ import {
   Building2,
   ChevronDown,
   ChevronRight,
+  Check,
+  ChevronsUpDown,
+  Users,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -80,6 +83,16 @@ import {
 import { EmptyState } from '@/components/common/empty-state';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { useCustomers } from '@/hooks/use-customers';
 import { ConvertProformaModal } from '@/components/facturas/ConvertProformaModal';
 import { InvoicePaymentSection } from '@/components/facturas/InvoicePaymentSection';
 import { RegisterPaymentDialog } from '@/components/facturas/RegisterPaymentDialog';
@@ -263,6 +276,82 @@ function DownloadDropdownItem({ invoiceId }: { invoiceId: string }) {
       <Download className="mr-2 h-4 w-4" />
       {isLoading ? 'Generando PDF...' : 'Descargar PDF'}
     </DropdownMenuItem>
+  );
+}
+
+function InvoiceLinesExpansion({ invoiceId }: { invoiceId: string }) {
+  const router = useRouter();
+  const { data: invoice, isLoading } = useInvoice(invoiceId);
+
+  if (isLoading) {
+    return (
+      <div className="px-6 py-4 space-y-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-8 w-full" />
+        ))}
+      </div>
+    );
+  }
+
+  const lines = invoice?.lines ?? [];
+
+  if (lines.length === 0) {
+    return (
+      <p className="px-6 py-4 text-sm text-muted-foreground">
+        Sin líneas
+      </p>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b bg-muted/20">
+            <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
+              Descripción
+            </th>
+            <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">
+              Cant.
+            </th>
+            <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">
+              Precio/ud
+            </th>
+            <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">
+              Dto.
+            </th>
+            <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">
+              IVA
+            </th>
+            <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">
+              Total
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {lines.map((line) => (
+            <tr
+              key={line.id}
+              onClick={() => router.push(`/dashboard/facturas/${invoiceId}?highlightLine=${line.id}`)}
+              className="hover:bg-muted/20 cursor-pointer transition-colors"
+            >
+              <td className="px-4 py-2 max-w-[280px] truncate">{line.description}</td>
+              <td className="px-4 py-2 text-right tabular-nums">{line.quantity}</td>
+              <td className="px-4 py-2 text-right tabular-nums">
+                {formatCurrency(Number(line.unitPrice))}
+              </td>
+              <td className="px-4 py-2 text-right tabular-nums">
+                {line.discountPercent ? `${line.discountPercent}%` : '—'}
+              </td>
+              <td className="px-4 py-2 text-right tabular-nums">{line.taxRate}%</td>
+              <td className="px-4 py-2 text-right tabular-nums font-medium">
+                {formatCurrency(Number(line.lineTotal))}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -459,9 +548,11 @@ export default function FacturasPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('ALL');
   const [page, setPage] = useState(1);
-  const [showDateFilter, setShowDateFilter] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [customerId, setCustomerId] = useState('');
+  const [customerComboOpen, setCustomerComboOpen] = useState(false);
   const [searchLines, setSearchLines] = useState(false);
   const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
 
@@ -473,15 +564,20 @@ export default function FacturasPage() {
 
   const { sortKey, sortDir, handleSort } = useSortTable('issueDate', 'desc');
 
+  const { data: customersData } = useCustomers({ limit: 500 }, { staleTime: 60_000 });
+  const customers = customersData?.data ?? [];
+  const selectedCustomer = customers.find((c) => c.id === customerId);
+
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter, paymentStatusFilter, sortKey, sortDir, fromDate, toDate, searchLines]);
+  }, [search, statusFilter, paymentStatusFilter, sortKey, sortDir, fromDate, toDate, searchLines, customerId]);
 
   const { data, isLoading, error, refetch } = useInvoices({
     search: search || undefined,
     status: statusFilter !== 'ALL' ? (statusFilter as InvoiceStatus) : undefined,
     paymentStatus:
       paymentStatusFilter !== 'ALL' ? (paymentStatusFilter as PaymentStatus) : undefined,
+    customerId: customerId || undefined,
     fromDate: fromDate || undefined,
     toDate: toDate || undefined,
     page,
@@ -526,7 +622,11 @@ export default function FacturasPage() {
     statusFilter !== 'ALL' ||
     paymentStatusFilter !== 'ALL' ||
     !!fromDate ||
-    !!toDate;
+    !!toDate ||
+    !!customerId;
+
+  const advancedFilterCount =
+    (fromDate ? 1 : 0) + (toDate ? 1 : 0) + (customerId ? 1 : 0);
 
   if (!isLoading && !error && total === 0 && !hasActiveFilters) {
     return (
@@ -597,13 +697,17 @@ export default function FacturasPage() {
             )}
           </div>
           <Button
-            variant={showDateFilter || fromDate || toDate ? 'secondary' : 'outline'}
-            size="icon"
-            onClick={() => setShowDateFilter((v) => !v)}
-            title="Filtrar por fechas"
-            className={cn('shrink-0', (fromDate || toDate) && 'ring-2 ring-primary ring-offset-1')}
+            variant={showAdvancedFilters || advancedFilterCount > 0 ? 'secondary' : 'outline'}
+            onClick={() => setShowAdvancedFilters((v) => !v)}
+            className={cn('shrink-0 gap-1.5', advancedFilterCount > 0 && 'ring-2 ring-primary ring-offset-1')}
           >
             <SlidersHorizontal className="h-4 w-4" />
+            <span className="hidden sm:inline text-sm">Filtros</span>
+            {advancedFilterCount > 0 && (
+              <Badge variant="default" className="h-5 min-w-5 px-1 text-xs">
+                {advancedFilterCount}
+              </Badge>
+            )}
           </Button>
         </div>
 
@@ -626,46 +730,134 @@ export default function FacturasPage() {
           )}
         </div>
 
-        {showDateFilter && (
-          <div className="flex items-end gap-3 rounded-lg border bg-muted/30 p-3">
-            <div className="flex-1">
-              <Label htmlFor="from-date" className="text-xs text-muted-foreground mb-1.5 block">
-                Desde
-              </Label>
-              <Input
-                id="from-date"
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="h-8 text-sm"
-              />
+        {showAdvancedFilters && (
+          <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Filtros avanzados
+              </span>
+              {advancedFilterCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => {
+                    setFromDate('');
+                    setToDate('');
+                    setCustomerId('');
+                  }}
+                >
+                  <X className="h-3.5 w-3.5 mr-1" />
+                  Limpiar todo
+                </Button>
+              )}
             </div>
-            <div className="flex-1">
-              <Label htmlFor="to-date" className="text-xs text-muted-foreground mb-1.5 block">
-                Hasta
-              </Label>
-              <Input
-                id="to-date"
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className="h-8 text-sm"
-              />
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  Cliente
+                </Label>
+                <Popover open={customerComboOpen} onOpenChange={setCustomerComboOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={customerComboOpen}
+                      className={cn(
+                        'w-full justify-between font-normal h-8 text-sm',
+                        !selectedCustomer && 'text-muted-foreground',
+                      )}
+                    >
+                      <span className="truncate">
+                        {selectedCustomer ? `${selectedCustomer.name}` : 'Todos los clientes'}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[280px] p-0" align="start">
+                    <Command
+                      filter={(value, search) => {
+                        const normalize = (s: string) =>
+                          s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                        return normalize(value).includes(normalize(search)) ? 1 : 0;
+                      }}
+                    >
+                      <CommandInput placeholder="Buscar cliente..." className="h-9" />
+                      <CommandList>
+                        <CommandEmpty>No se encontró ningún cliente.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value="todos-los-clientes"
+                            onSelect={() => {
+                              setCustomerId('');
+                              setCustomerComboOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4 shrink-0',
+                                !customerId ? 'opacity-100' : 'opacity-0',
+                              )}
+                            />
+                            Todos los clientes
+                          </CommandItem>
+                          {customers.map((c) => (
+                            <CommandItem
+                              key={c.id}
+                              value={`${c.name} ${c.nif}`}
+                              onSelect={() => {
+                                setCustomerId(c.id);
+                                setCustomerComboOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4 shrink-0',
+                                  customerId === c.id ? 'opacity-100' : 'opacity-0',
+                                )}
+                              />
+                              <span className="truncate">{c.name}</span>
+                              <span className="ml-1 text-muted-foreground text-xs shrink-0">
+                                {c.nif}
+                              </span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div>
+                <Label htmlFor="from-date" className="text-xs text-muted-foreground mb-1.5 block">
+                  Desde
+                </Label>
+                <Input
+                  id="from-date"
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="h-8 text-sm"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="to-date" className="text-xs text-muted-foreground mb-1.5 block">
+                  Hasta
+                </Label>
+                <Input
+                  id="to-date"
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="h-8 text-sm"
+                />
+              </div>
             </div>
-            {(fromDate || toDate) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs shrink-0"
-                onClick={() => {
-                  setFromDate('');
-                  setToDate('');
-                }}
-              >
-                <X className="h-3.5 w-3.5 mr-1" />
-                Limpiar
-              </Button>
-            )}
           </div>
         )}
 
@@ -743,6 +935,7 @@ export default function FacturasPage() {
                     setStatusFilter('ALL');
                     setFromDate('');
                     setToDate('');
+                    setCustomerId('');
                   }}
                 >
                   Limpiar filtros
@@ -754,35 +947,59 @@ export default function FacturasPage() {
                 <div className="divide-y sm:hidden">
                   {invoices.map((invoice) => {
                     const isProforma = invoice.invoiceType === 'proforma';
+                    const isExpanded = expandedInvoiceId === invoice.id;
                     return (
-                      <InvoiceCardRow
-                        key={invoice.id}
-                        invoice={invoice}
-                        onConfirm={() =>
-                          setConfirmTarget({
-                            id: invoice.id,
-                            number: invoice.number,
-                            customerName: invoice.customer?.name ?? '—',
-                            total: Number(invoice.total),
-                            isProforma,
-                          })
-                        }
-                        onRegisterPayment={() =>
-                          setPaidTarget({
-                            id: invoice.id,
-                            number: invoice.number,
-                            customerName: invoice.customer?.name ?? '—',
-                            total: Number(invoice.total),
-                            amountPaid: Number(invoice.amountPaid ?? 0),
-                            paymentMethod: invoice.paymentMethod,
-                          })
-                        }
-                        onConvert={() => setConvertId(invoice.id)}
-                        onDelete={() => setDeleteId(invoice.id)}
-                        onMarkSent={() => markSentMutation.mutate(invoice.id)}
-                        onUnmarkSent={() => unmarkSentMutation.mutate(invoice.id)}
-                        onUnmarkPaid={() => unmarkPaidMutation.mutate(invoice.id)}
-                      />
+                      <Fragment key={invoice.id}>
+                        <div>
+                          <div className="flex items-center px-2 pt-2">
+                            <button
+                              onClick={() =>
+                                setExpandedInvoiceId(isExpanded ? null : invoice.id)
+                              }
+                              className="p-1 rounded hover:bg-muted transition-colors"
+                              title={isExpanded ? 'Ocultar líneas' : 'Ver líneas'}
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </button>
+                          </div>
+                          <InvoiceCardRow
+                            invoice={invoice}
+                            onConfirm={() =>
+                              setConfirmTarget({
+                                id: invoice.id,
+                                number: invoice.number,
+                                customerName: invoice.customer?.name ?? '—',
+                                total: Number(invoice.total),
+                                isProforma,
+                              })
+                            }
+                            onRegisterPayment={() =>
+                              setPaidTarget({
+                                id: invoice.id,
+                                number: invoice.number,
+                                customerName: invoice.customer?.name ?? '—',
+                                total: Number(invoice.total),
+                                amountPaid: Number(invoice.amountPaid ?? 0),
+                                paymentMethod: invoice.paymentMethod,
+                              })
+                            }
+                            onConvert={() => setConvertId(invoice.id)}
+                            onDelete={() => setDeleteId(invoice.id)}
+                            onMarkSent={() => markSentMutation.mutate(invoice.id)}
+                            onUnmarkSent={() => unmarkSentMutation.mutate(invoice.id)}
+                            onUnmarkPaid={() => unmarkPaidMutation.mutate(invoice.id)}
+                          />
+                        </div>
+                        {isExpanded && (
+                          <div className="border-t bg-muted/10">
+                            <InvoiceLinesExpansion invoiceId={invoice.id} />
+                          </div>
+                        )}
+                      </Fragment>
                     );
                   })}
                 </div>
@@ -791,7 +1008,7 @@ export default function FacturasPage() {
                   <table className="w-full">
                     <thead className="border-b bg-muted/40">
                       <tr>
-                        {searchLines && <th className="w-9 px-2 py-3" />}
+                        <th className="w-9 px-2 py-3" />
                         <SortableHeader
                           label="Número"
                           sortKey="number"
@@ -847,9 +1064,10 @@ export default function FacturasPage() {
                       {invoices.map((invoice) => {
                         const overdue = isOverdue(invoice);
                         const isProforma = invoice.invoiceType === 'proforma';
+                        const isExpanded = expandedInvoiceId === invoice.id;
                         return (
+                          <Fragment key={invoice.id}>
                           <tr
-                            key={invoice.id}
                             onMouseEnter={() => prefetchInvoice(invoice.id)}
                             className={cn(
                               'group transition-colors hover:bg-muted/30',
@@ -857,6 +1075,22 @@ export default function FacturasPage() {
                                 'bg-overdue-50/50 hover:bg-overdue-50 dark:bg-overdue-950/10 dark:hover:bg-overdue-950/20',
                             )}
                           >
+                            {/* Expand toggle */}
+                            <td className="px-2 py-3">
+                              <button
+                                onClick={() =>
+                                  setExpandedInvoiceId(isExpanded ? null : invoice.id)
+                                }
+                                className="p-1 rounded hover:bg-muted transition-colors"
+                                title={isExpanded ? 'Ocultar líneas' : 'Ver líneas'}
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </button>
+                            </td>
                             {/* Número */}
                             <td className="px-6 py-3">
                               <Link
@@ -1087,6 +1321,14 @@ export default function FacturasPage() {
                               </DropdownMenu>
                             </td>
                           </tr>
+                          {isExpanded && (
+                            <tr>
+                              <td colSpan={10} className="bg-muted/10 p-0 border-b">
+                                <InvoiceLinesExpansion invoiceId={invoice.id} />
+                              </td>
+                            </tr>
+                          )}
+                          </Fragment>
                         );
                       })}
                     </tbody>
