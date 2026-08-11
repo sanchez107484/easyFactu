@@ -46,6 +46,8 @@ interface InvoiceLineItemProps {
   autoFocusDescription?: boolean;
   /** True when the tenant is in REAGYP regime — IVA does not apply per line. */
   isReagyp?: boolean;
+  /** True cuando la factura es rectificativa — permite precios/totales negativos */
+  allowNegativePrice?: boolean;
 }
 
 // ==================== CONSTANTS ====================
@@ -209,6 +211,7 @@ export function InvoiceLineItem({
   onFocus,
   autoFocusDescription = false,
   isReagyp = false,
+  allowNegativePrice = false,
 }: InvoiceLineItemProps) {
   const line: ExtendedLineData = useWatch({ control: form.control, name: `lines.${index}` }) ?? {};
   const mode: LineMode = line._mode ?? 'custom';
@@ -230,7 +233,7 @@ export function InvoiceLineItem({
 
   const [unitPriceRaw, setUnitPriceRaw] = useState<string>(() => {
     const v = line.unitPrice;
-    return v && v > 0 ? formatUnitPrice(v) : '';
+    return v && (allowNegativePrice ? true : v > 0) ? formatUnitPrice(v) : '';
   });
 
   // Local raw string for total input — only active when priceMode === 'total'.
@@ -279,7 +282,7 @@ export function InvoiceLineItem({
   useEffect(() => {
     if (priceMode !== 'total') return;
     const t = parseFloat((totalRaw ?? '').replace(',', '.'));
-    if (isNaN(t) || t <= 0) return;
+    if (isNaN(t) || (allowNegativePrice ? t === 0 : t <= 0)) return;
     const divisor =
       (mode === 'service' ? 1 : qty || 1) * (1 - discount / 100) * (1 + (isReagyp ? 0 : tax) / 100);
     if (divisor <= 0) return;
@@ -292,16 +295,16 @@ export function InvoiceLineItem({
       }),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qty, discount, tax, isReagyp, priceMode, totalRaw, mode, index]);
+  }, [qty, discount, tax, isReagyp, priceMode, totalRaw, mode, index, allowNegativePrice]);
 
   // Sync unitPriceRaw display when unitPrice is set externally (e.g. catalog import or draft load).
   // Skip when the user is actively typing inside the input.
   useEffect(() => {
     if (document.activeElement === unitPriceInputRef.current) return;
     const v = line.unitPrice ?? 0;
-    setUnitPriceRaw(v > 0 ? formatUnitPrice(v) : '');
+    setUnitPriceRaw(v !== 0 ? formatUnitPrice(v) : '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [line.unitPrice]);
+  }, [line.unitPrice, allowNegativePrice]);
 
   // -- Errors -------------------------------------------------------
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -544,7 +547,7 @@ export function InvoiceLineItem({
                 unitPriceIsEditedRef.current = true;
                 setUnitPriceRaw(raw);
                 const num = parseFloat(normalized);
-                if (!isNaN(num) && num >= 0) {
+                if (!isNaN(num) && (allowNegativePrice || num >= 0)) {
                   form.setValue(`lines.${index}.unitPrice`, num, { shouldValidate: false });
                   if (num > 0 && priceMode === 'total') {
                     form.setValue(`lines.${index}._priceMode`, 'unit');
@@ -558,13 +561,18 @@ export function InvoiceLineItem({
                 if (!wasEdited) {
                   // User didn't type anything — normalize display only, preserve form state precision.
                   const formValue = form.getValues(`lines.${index}.unitPrice`) as number;
-                  if (formValue > 0) setUnitPriceRaw(formatUnitPrice(formValue));
+                  if (allowNegativePrice ? formValue !== 0 : formValue > 0) {
+                    setUnitPriceRaw(formatUnitPrice(formValue));
+                  }
+
                   return;
                 }
 
                 const normalized = unitPriceRaw.replace(',', '.');
                 const num = parseFloat(normalized);
-                if (isNaN(num) || num <= 0) {
+                const isInvalid = isNaN(num) || (allowNegativePrice ? num === 0 : num <= 0);
+
+                if (isInvalid) {
                   setUnitPriceRaw('');
                   form.setValue(`lines.${index}.unitPrice`, 0, { shouldValidate: false });
                   if (priceMode === 'unit') {
@@ -584,6 +592,10 @@ export function InvoiceLineItem({
               €
             </span>
           </div>
+
+          {lineErrors?.unitPrice && (
+            <p className="text-xs text-destructive mt-1">{lineErrors.unitPrice.message}</p>
+          )}
 
           {/* IVA — hidden in REAGYP (Arts. 124-134 LIVA) */}
           {!isReagyp && (
@@ -664,7 +676,7 @@ export function InvoiceLineItem({
                 tabIndex={-1}
                 className="text-sm h-9 pr-6 text-right font-semibold bg-transparent border-dashed cursor-default focus-visible:ring-0 focus-visible:ring-offset-0"
                 value={
-                  lineTotal > 0
+                  lineTotal !== 0
                     ? lineTotal.toLocaleString('es-ES', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
@@ -686,7 +698,7 @@ export function InvoiceLineItem({
                     const normalized = raw.replace(',', '.');
                     setTotalRaw(raw);
                     const t = parseFloat(normalized);
-                    if (!isNaN(t) && t >= 0) {
+                    if (!isNaN(t) && (allowNegativePrice ? true : t >= 0)) {
                       const divisor =
                         (mode === 'service' ? 1 : qty || 1) *
                         (1 - discount / 100) *
@@ -703,7 +715,7 @@ export function InvoiceLineItem({
                   onBlur={() => {
                     const normalized = (totalRaw ?? '').replace(',', '.');
                     const num = parseFloat(normalized);
-                    if (isNaN(num) || num < 0) {
+                    if (isNaN(num) || (!allowNegativePrice && num < 0)) {
                       setTotalRaw('');
                       form.setValue(`lines.${index}.unitPrice`, 0, { shouldValidate: false });
                     } else {

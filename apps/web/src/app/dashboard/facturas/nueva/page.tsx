@@ -43,6 +43,7 @@ import { EQUIVALENCE_SURCHARGE_RATES } from '@easyfactura/shared-constants';
 import { useCustomers, useSharedCustomerPool, useImportFromPool } from '@/hooks/use-customers';
 import { resolveUrl } from '@/lib/utils';
 import { buildPreviewInvoice, buildCreateInput, calculateDueDate } from '@/lib/invoice-helpers';
+import type { RectificativePreviewInfo } from '@/lib/invoice-helpers';
 import { InvoiceTypeModal, InvoiceTypeOption } from '@/components/facturas/InvoiceTypeModal';
 import {
   ConfirmInvoiceDialog,
@@ -92,6 +93,23 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+// Construye el schema real usado por el resolver: solo bloquea unitPrice negativo
+// cuando la factura NO es rectificativa.
+function buildFormSchema(isRectificativa: boolean) {
+  return formSchema.superRefine((data, ctx) => {
+    if (isRectificativa) return;
+    data.lines.forEach((line, i) => {
+      if (line.unitPrice < 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'No puede ser negativo',
+          path: ['lines', i, 'unitPrice'],
+        });
+      }
+    });
+  });
+}
+
 // ==================== INNER FORM COMPONENT ====================
 
 interface InvoiceFormProps {
@@ -104,6 +122,8 @@ interface InvoiceFormProps {
   initialShowQr?: boolean;
   /** Abre el modal de selección de tipo al montar (cuando la URL no trae ?tipo=) */
   showTypeModalOnMount?: boolean;
+  /** Metadatos de rectificativa, solo presentes cuando se edita un borrador rectificativo */
+  rectificativeInfo?: RectificativePreviewInfo;
 }
 
 function InvoiceForm({
@@ -115,6 +135,7 @@ function InvoiceForm({
   invoiceDefaults,
   initialShowQr,
   showTypeModalOnMount = false,
+  rectificativeInfo,
 }: InvoiceFormProps) {
   const router = useRouter();
   const currentTenant = useAuthStore((s) => s.currentTenant);
@@ -177,9 +198,19 @@ function InvoiceForm({
   const customers: Customer[] = customersData?.data ?? [];
   const effectiveTemplate: InvoiceTemplate | null = selectedTemplate ?? defaultTemplate ?? null;
 
+  // REAGYP: compensation applies when tenant is in REAGYP and customer is NOT also in REAGYP
+  const tenant = tenantData;
+  const showCompensacion = tenant?.taxRegime === TaxRegime.REAGYP;
+  const isRectificativa = !!rectificativeInfo?.isRectificative;
+
   const availableSeries = useMemo(
-    () => (isProforma ? [] : (seriesData?.data ?? []).filter((s) => s.type === SeriesType.INVOICE)),
-    [isProforma, seriesData],
+    () =>
+      isProforma
+        ? []
+        : (seriesData?.data ?? []).filter(
+            (s) => s.type === (isRectificativa ? SeriesType.RECTIFICATIVE : SeriesType.INVOICE),
+          ),
+    [isProforma, isRectificativa, seriesData],
   );
 
   // Serie por defecto: la marcada como default o la primera. Fallback sin efectos ni refs.
@@ -189,7 +220,7 @@ function InvoiceForm({
   );
 
   const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(useMemo(() => buildFormSchema(isRectificativa), [isRectificativa])),
     defaultValues,
   });
 
@@ -218,10 +249,6 @@ function InvoiceForm({
   const selectedSeries = availableSeries.find((s) => s.id === effectiveSeriesId) ?? null;
   const selectedCustomer = customers.find((c) => c.id === watchedValues.customerId);
 
-  // REAGYP: compensation applies when tenant is in REAGYP and customer is NOT also in REAGYP
-  const tenant = tenantData;
-  const showCompensacion = tenant?.taxRegime === TaxRegime.REAGYP;
-
   // Auto-populate compensacionPercent when the customer or tenant changes.
   // This sets the sensible default but leaves the user free to override it.
   useEffect(() => {
@@ -245,6 +272,7 @@ function InvoiceForm({
     selectedSeries,
     showCompensacion ? (watchedValues.compensacionPercent ?? 0) : watchedValues.compensacionPercent,
     equivalenceSurchargeRates,
+    rectificativeInfo,
   );
   const activePaymentMethod = watchedValues.paymentMethod as PaymentMethod | undefined;
 
@@ -657,6 +685,7 @@ function InvoiceForm({
                 onCreateCustomer={() => setShowQuickClient(true)}
                 onSearchChange={setCustomerSearch}
                 onSelectSharedCustomer={handleSelectSharedCustomer}
+                isRectificativa={isRectificativa}
               />
 
               {/* ── Banner: guardar como predeterminado ── */}
@@ -692,6 +721,7 @@ function InvoiceForm({
                         onFocus={() => setActiveSection('lines-section')}
                         autoFocusDescription={index === lastAddedIndex}
                         isReagyp={showCompensacion}
+                        allowNegativePrice={isRectificativa}
                       />
                     ))}
                   </div>
@@ -908,6 +938,23 @@ export default function NuevaFacturaPage() {
         lines: [{ ...EMPTY_LINE }] as ExtendedLineData[],
       };
 
+  // Solo aplica cuando editamos un borrador que YA es rectificativo (no al duplicar)
+  const rectificativeInfo: RectificativePreviewInfo | undefined =
+    editId && sourceInvoice?.isRectificative
+      ? {
+          isRectificative: true,
+          rectificationType: sourceInvoice.rectificationType,
+          rectificationReason: sourceInvoice.rectificationReason,
+          rectifiedInvoiceId: sourceInvoice.rectifiedInvoiceId,
+          rectifiedInvoice: sourceInvoice.rectifiedInvoice
+            ? {
+                id: sourceInvoice.rectifiedInvoice.id,
+                number: sourceInvoice.rectifiedInvoice.number,
+              }
+            : null,
+        }
+      : undefined;
+
   return (
     <InvoiceForm
       defaultValues={defaultValues}
@@ -922,6 +969,7 @@ export default function NuevaFacturaPage() {
       invoiceDefaults={invoiceDefaults ?? null}
       initialShowQr={sourceInvoice?.layoutOverride?.footer?.showVerifactuQr ?? undefined}
       showTypeModalOnMount={showTypeModalOnMount}
+      rectificativeInfo={rectificativeInfo}
     />
   );
 }

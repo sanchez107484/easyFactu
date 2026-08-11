@@ -6,6 +6,7 @@ import {
   PaymentMethod,
   PaymentStatus,
   InvoiceSeries,
+  RectificationType,
 } from '@easyfactura/shared-types';
 import { EQUIVALENCE_SURCHARGE_RATES } from '@easyfactura/shared-constants';
 import { formatSeriesPreview } from '@easyfactura/shared-validators';
@@ -44,6 +45,14 @@ export interface InvoiceFormData {
   lines: ExtendedLineData[];
 }
 
+export interface RectificativePreviewInfo {
+  isRectificative: boolean;
+  rectificationType: RectificationType | null;
+  rectificationReason: string | null;
+  rectifiedInvoiceId: string | null;
+  rectifiedInvoice?: { id: string; number: string | null } | null;
+}
+
 // ==================== buildPreviewInvoice ====================
 
 /**
@@ -59,6 +68,7 @@ export function buildPreviewInvoice(
   selectedSeries?: InvoiceSeries | null,
   compensacionPercent?: number,
   equivalenceSurchargeRates?: Record<number, number>,
+  rectificativeInfo?: RectificativePreviewInfo,
 ): Invoice {
   const today = new Date().toISOString();
   const lines = data.lines ?? [];
@@ -131,7 +141,11 @@ export function buildPreviewInvoice(
   const irpfTotal = data.irpfPercent ? round2(irpfBase * (data.irpfPercent / 100)) : null;
 
   const total = round2(
-    subtotalAfterDiscount + taxTotal + surchargeTotal + previewCompensacionAmount - (irpfTotal ?? 0),
+    subtotalAfterDiscount +
+      taxTotal +
+      surchargeTotal +
+      previewCompensacionAmount -
+      (irpfTotal ?? 0),
   );
 
   const previewLines = lines.map((l, i) => {
@@ -147,7 +161,7 @@ export function buildPreviewInvoice(
     const lineSubtotal =
       lineDiscount > 0 ? grossSubtotal * (1 - lineDiscount / 100) : grossSubtotal;
     const lineSurchargeRate = isSurchargeActive
-      ? equivalenceSurchargeRates?.[l.taxRate ?? 0] ?? 0
+      ? (equivalenceSurchargeRates?.[l.taxRate ?? 0] ?? 0)
       : 0;
     const lineSurchargeAmount = isSurchargeActive
       ? round2(lineSubtotal * discFactor * (lineSurchargeRate / 100))
@@ -206,10 +220,11 @@ export function buildPreviewInvoice(
     verifactuQr: null,
     verifactuSentAt: null,
     verifactuResponse: null,
-    isRectificative: false,
-    rectifiedInvoiceId: null,
-    rectificationReason: null,
-    rectificationType: null,
+    isRectificative: rectificativeInfo?.isRectificative ?? false,
+    rectifiedInvoiceId: rectificativeInfo?.rectifiedInvoiceId ?? null,
+    rectificationReason: rectificativeInfo?.rectificationReason ?? null,
+    rectificationType: rectificativeInfo?.rectificationType ?? null,
+    rectifiedInvoice: rectificativeInfo?.rectifiedInvoice ?? null,
     amountPaid: 0,
     paymentStatus: PaymentStatus.UNPAID,
     createdAt: today,

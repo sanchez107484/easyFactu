@@ -29,7 +29,7 @@ export const extendedLineSchema = z.object({
   description: z.string().min(2, 'Mínimo 2 caracteres').max(500, 'Máximo 500 caracteres'),
   // quantity=0 means "not specified" in Libre mode → sent as 1 to API, hidden in invoice
   quantity: z.number().min(0).default(1),
-  unitPrice: z.number({ invalid_type_error: 'Requerido' }).min(0, 'No puede ser negativo'),
+  unitPrice: z.number({ invalid_type_error: 'Requerido' }),
   /** Per-line discount (0–100). Default 0 = no discount. */
   discountPercent: z.number().min(0).max(100).default(0),
   taxRate: z.number({ invalid_type_error: 'Requerido' }),

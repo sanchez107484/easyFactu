@@ -75,6 +75,7 @@ interface InvoiceGeneralDataCardProps {
   onCreateCustomer: () => void;
   onSearchChange: (v: string) => void;
   onSelectSharedCustomer: (customer: SharedPoolCustomer) => void;
+  isRectificativa?: boolean;
 }
 
 // ==================== COMPONENT ====================
@@ -98,6 +99,7 @@ export function InvoiceGeneralDataCard({
   onCreateCustomer,
   onSearchChange,
   onSelectSharedCustomer,
+  isRectificativa,
 }: InvoiceGeneralDataCardProps) {
   const { customerId, issueDate, dueDate, paymentMethod, paymentDetails } = form.watch();
   const activePaymentMethod = paymentMethod as PaymentMethod | undefined;
@@ -188,7 +190,8 @@ export function InvoiceGeneralDataCard({
             onFocus={() => onActiveSection('seriesId')}
           >
             <Label>
-              Serie de facturación <span className="text-destructive">*</span>
+              {isRectificativa ? 'Serie de rectificativas' : 'Serie de facturación'}{' '}
+              <span className="text-destructive">*</span>
             </Label>
             <Select
               value={effectiveSeriesId}
@@ -213,7 +216,9 @@ export function InvoiceGeneralDataCard({
                 {availableSeries.length === 0 && (
                   <div className="p-3 text-sm text-muted-foreground flex gap-2 items-start">
                     <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                    No hay series activas.{' '}
+                    {isRectificativa
+                      ? 'No hay series de rectificativas activas.'
+                      : 'No hay series activas.'}{' '}
                     <Link href="/dashboard/ajustes/facturacion" className="underline text-primary">
                       Crea una en ajustes
                     </Link>
