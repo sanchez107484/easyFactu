@@ -222,7 +222,10 @@ export function useRectifyInvoice() {
       toast.success('Factura rectificativa creada como borrador');
     },
     onError: (error: unknown) => {
-      toast.error(getApiErrorMessage(error));
+      const responseData = (error as { response?: { data?: { existingDraftId?: string } } })?.response?.data;
+      if (!responseData?.existingDraftId) {
+        toast.error(getApiErrorMessage(error));
+      }
     },
   });
 }

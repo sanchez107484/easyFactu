@@ -351,6 +351,7 @@ model Invoice {
   isRectificative     Boolean        @default(false) @map("is_rectificative")
   rectifiedInvoiceId  String?        @map("rectified_invoice_id")
   rectificationReason String?        @map("rectification_reason") @db.Text
+  rectificationType   RectificationType? @map("rectification_type")
   amountPaid          Decimal        @default(0) @map("amount_paid") @db.Decimal(12, 2)
   paymentStatus       PaymentStatus  @default(UNPAID) @map("payment_status")
   createdByUserId     String?        @map("created_by_user_id")
@@ -445,6 +446,11 @@ enum QuoteAcceptanceStatus {
   ACCEPTED
   REJECTED
   CONVERTED
+}
+
+enum RectificationType {
+  SUBSTITUTION
+  DIFFERENCES
 }
 
 enum VerifactuStatus {

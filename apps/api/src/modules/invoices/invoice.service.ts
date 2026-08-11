@@ -18,7 +18,12 @@ import { CreateInvoiceDto, CreateInvoiceLineDto } from './dto/create-invoice.dto
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { RectifyInvoiceDto } from './dto/rectify-invoice.dto';
 import { QueryInvoiceDto } from './dto/query-invoice.dto';
-import { InvoiceStatus, PaymentStatus, SeriesType } from '@easyfactura/shared-types';
+import {
+  InvoiceStatus,
+  PaymentStatus,
+  SeriesType,
+  RectificationType,
+} from '@easyfactura/shared-types';
 import { UpdateInvoiceNotesDto } from './dto/update-invoice-notes.dto';
 import { VerifactuService } from '../verifactu/services/verifactu.service';
 import { InvoiceNumberService } from './invoice-number.service';
@@ -372,12 +377,23 @@ export class InvoiceService {
 
   // ==================== END SNAPSHOT HELPERS ====================
 
-  private async resolveSeriesId(tenantId: string, seriesId?: string): Promise<string> {
+  private async resolveSeriesId(
+    tenantId: string,
+    seriesId?: string,
+    expectedType?: SeriesType
+  ): Promise<string> {
     if (seriesId) {
-      const series = await this.invoiceNumberService.validateSeries(tenantId, seriesId);
+      const series = await this.invoiceNumberService.validateSeries(
+        tenantId,
+        seriesId,
+        expectedType
+      );
       return series.id;
     }
-    const defaultSeries = await this.invoiceNumberService.findDefaultSeries(tenantId);
+    const defaultSeries = await this.invoiceNumberService.findDefaultSeries(
+      tenantId,
+      expectedType ?? SeriesType.INVOICE
+    );
     return defaultSeries.id;
   }
 
@@ -474,7 +490,9 @@ export class InvoiceService {
     // Otherwise derive it from the tenant/customer fiscal regime.
     const useFrontendCompensacion = dto.compensacionPercent !== undefined;
     const [seriesId, resolvedCompensacion] = await Promise.all([
-      isQuote ? Promise.resolve('') : this.resolveSeriesId(tenantId, dto.seriesId),
+      isQuote
+        ? Promise.resolve('')
+        : this.resolveSeriesId(tenantId, dto.seriesId, SeriesType.INVOICE),
       useFrontendCompensacion
         ? Promise.resolve(dto.compensacionPercent)
         : this.resolveCompensacionPercent(tenantId, dto.customerId),
@@ -1006,6 +1024,8 @@ export class InvoiceService {
         layoutOverride: true,
         isRectificative: true,
         rectifiedInvoiceId: true,
+        rectificationReason: true,
+        rectificationType: true,
         validUntil: true,
         quoteAcceptanceStatus: true,
         lines: {
@@ -1077,6 +1097,7 @@ export class InvoiceService {
           recurringInvoiceId: true,
           rectifiedInvoiceId: true,
           rectificationReason: true,
+          rectificationType: true,
           isRectificative: true,
           templateId: true,
           layoutOverride: true,
@@ -1136,6 +1157,23 @@ export class InvoiceService {
               digits: true,
             },
           },
+          rectifiedInvoice: {
+            select: {
+              id: true,
+              number: true,
+              issueDate: true,
+            },
+          },
+          rectificativeInvoices: {
+            select: {
+              id: true,
+              number: true,
+              issueDate: true,
+              status: true,
+              rectificationType: true,
+            },
+            orderBy: { createdAt: 'desc' },
+          },
         },
       }),
       this.prisma.invoiceLine.findMany({
@@ -1186,8 +1224,11 @@ export class InvoiceService {
     }
 
     const customerId = dto.customerId ?? invoice.customerId;
+    const expectedSeriesType = invoice.isRectificative
+      ? SeriesType.RECTIFICATIVE
+      : SeriesType.INVOICE;
     const seriesId = dto.seriesId
-      ? await this.resolveSeriesId(tenantId, dto.seriesId)
+      ? await this.resolveSeriesId(tenantId, dto.seriesId, expectedSeriesType)
       : invoice.seriesId;
 
     const linesToUse = dto.lines ?? (invoice.lines as unknown as CreateInvoiceLineDto[]);
@@ -1308,6 +1349,27 @@ export class InvoiceService {
       );
     }
 
+    // Validación específica para facturas rectificativas
+    if (invoice.isRectificative) {
+      const lines = invoice.lines as unknown as CreateInvoiceLineDto[];
+      if (!lines || lines.length === 0) {
+        throw new BadRequestException(
+          'La factura rectificativa debe tener al menos una línea antes de confirmar.'
+        );
+      }
+
+      // Para rectificativas por diferencias, el total no puede ser 0
+      if (invoice.rectificationType === RectificationType.DIFFERENCES) {
+        const total = Number(invoice.total);
+        if (total === 0) {
+          throw new BadRequestException(
+            'Una factura rectificativa por diferencias no puede tener un total de 0€. ' +
+              'Debe reflejar un ajuste positivo o negativo respecto a la factura original.'
+          );
+        }
+      }
+    }
+
     const lines = invoice.lines as unknown as CreateInvoiceLineDto[];
 
     // Re-take both snapshots at confirmation time — this is the legally binding moment.
@@ -1352,7 +1414,7 @@ export class InvoiceService {
 
         await tx.invoiceLine.deleteMany({ where: { invoiceId: id } });
 
-        return tx.invoice.update({
+        const updatedInvoice = await tx.invoice.update({
           where: { id },
           data: {
             number: invoiceNumber,
@@ -1377,6 +1439,16 @@ export class InvoiceService {
             series: true,
           },
         });
+
+        // Si es una rectificativa, marcar la original como RECTIFIED
+        if (invoice.isRectificative && invoice.rectifiedInvoiceId) {
+          await tx.invoice.update({
+            where: { id: invoice.rectifiedInvoiceId },
+            data: { status: PrismaInvoiceStatus.RECTIFIED },
+          });
+        }
+
+        return updatedInvoice;
       },
       { isolationLevel: 'Serializable' }
     );
@@ -1559,6 +1631,14 @@ export class InvoiceService {
         paymentMethod: original.paymentMethod as any,
         ...(paymentDetails != null ? { paymentDetails } : {}),
         notes: original.notes,
+        ...(original.isRectificative
+          ? {
+              isRectificative: true,
+              rectifiedInvoiceId: original.rectifiedInvoiceId,
+              rectificationReason: original.rectificationReason,
+              rectificationType: original.rectificationType,
+            }
+          : {}),
         lines: {
           create: this.buildLineCreateData(tenantId, lines, totals.lines),
         },
@@ -1584,6 +1664,29 @@ export class InvoiceService {
       throw new ConflictException('Esta factura ya ha sido rectificada');
     }
 
+    // Verificar si ya existe un borrador de rectificativa para esta factura
+    const existingDraft = await this.prisma.invoice.findFirst({
+      where: {
+        tenantId,
+        rectifiedInvoiceId: id,
+        status: InvoiceStatus.DRAFT,
+        isRectificative: true,
+      },
+    });
+
+    if (existingDraft) {
+      throw new ConflictException({
+        message:
+          'Ya existe un borrador de factura rectificativa para esta factura. Edita o elimina el borrador existente antes de crear uno nuevo.',
+        existingDraftId: existingDraft.id,
+      });
+    }
+
+    // Siempre requerir al menos una línea (tanto para SUBSTITUTION como DIFFERENCES)
+    if (dto.lines.length === 0) {
+      throw new BadRequestException('La factura rectificativa debe tener al menos una línea');
+    }
+
     const rectificativeSeries = await this.invoiceNumberService.findDefaultSeries(
       tenantId,
       SeriesType.RECTIFICATIVE
@@ -1591,7 +1694,6 @@ export class InvoiceService {
 
     await this.validateProductIds(tenantId, dto.lines);
 
-    // Rectificative invoices use the same regime as the original tenant config
     const compensacionPercent = await this.resolveCompensacionPercent(
       tenantId,
       original.customerId
@@ -1611,41 +1713,42 @@ export class InvoiceService {
     return this.runTransaction(
       'InvoiceService.createRectificative',
       async (tx: Prisma.TransactionClient) => {
-        await tx.invoice.update({
-          where: { id },
-          data: { status: PrismaInvoiceStatus.RECTIFIED },
-      });
+        // NO cambiar el estado de la original todavía.
+        // La original solo pasa a RECTIFIED cuando la rectificativa se confirma.
+        // Si el usuario abandona/elimina el borrador, la original permanece intacta.
 
-      return tx.invoice.create({
-        data: {
-          tenantId,
-          seriesId: rectificativeSeries.id,
-          customerId: original.customerId,
-          number: null,
-          issueDate: new Date(),
-          status: PrismaInvoiceStatus.DRAFT,
-          isRectificative: true,
-          rectifiedInvoiceId: id,
-          rectificationReason: dto.rectificationReason,
-          subtotal: totals.subtotal,
-          taxTotal: totals.taxTotal,
-          compensacionPercent: compensacionPercent ?? null,
-          compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
-          surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
-          total: totals.total,
-          paymentMethod: original.paymentMethod as any,
-          ...(paymentDetails != null ? { paymentDetails } : {}),
-          lines: {
-            create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
+        return tx.invoice.create({
+          data: {
+            tenantId,
+            seriesId: rectificativeSeries.id,
+            customerId: original.customerId,
+            number: null,
+            issueDate: new Date(),
+            status: PrismaInvoiceStatus.DRAFT,
+            isRectificative: true,
+            rectifiedInvoiceId: id,
+            rectificationReason: dto.rectificationReason,
+            rectificationType: dto.rectificationType,
+            subtotal: totals.subtotal,
+            taxTotal: totals.taxTotal,
+            compensacionPercent: compensacionPercent ?? null,
+            compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
+            surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
+            total: totals.total,
+            paymentMethod: original.paymentMethod as any,
+            ...(paymentDetails != null ? { paymentDetails } : {}),
+            lines: {
+              create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
+            },
           },
-        },
-        include: {
-          lines: { orderBy: { sortOrder: 'asc' } },
-          customer: true,
-          series: true,
-        },
-      });
-    });
+          include: {
+            lines: { orderBy: { sortOrder: 'asc' } },
+            customer: true,
+            series: true,
+          },
+        });
+      }
+    );
   }
 
   async remove(tenantId: string, id: string) {
@@ -1718,47 +1821,50 @@ export class InvoiceService {
     // La proforma es un documento no vinculante: una vez convertida a oficial deja de tener
     // sentido y se elimina para evitar confusión. Las líneas, logs y notas se borran en
     // cascada según las relaciones definidas en el schema de Prisma.
-    return this.runTransaction('InvoiceService.convertToOfficial', async (tx: Prisma.TransactionClient) => {
-      const newInvoice = await tx.invoice.create({
-        data: {
-          tenantId,
-          seriesId: invoice.seriesId,
-          customerId: invoice.customerId,
-          number: null,
-          issueDate: new Date(),
-          dueDate: invoice.dueDate ?? null,
-          status: PrismaInvoiceStatus.DRAFT,
-          invoiceType: 'standard',
-          templateId: invoice.templateId ?? null,
-          ...(invoice.layoutOverride != null ? { layoutOverride: invoice.layoutOverride } : {}),
-          subtotal: totals.subtotal,
-          discountPercent: invoice.discountPercent,
-          discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
-          taxTotal: totals.taxTotal,
-          irpfPercent: invoice.irpfPercent,
-          irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
-          compensacionPercent: compensacionPercent ?? null,
-          compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
-          surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
-          total: totals.total,
-          paymentMethod: invoice.paymentMethod as any,
-          ...(paymentDetails != null ? { paymentDetails } : {}),
-          notes: invoice.notes,
-          lines: {
-            create: this.buildLineCreateData(tenantId, lines, totals.lines),
+    return this.runTransaction(
+      'InvoiceService.convertToOfficial',
+      async (tx: Prisma.TransactionClient) => {
+        const newInvoice = await tx.invoice.create({
+          data: {
+            tenantId,
+            seriesId: invoice.seriesId,
+            customerId: invoice.customerId,
+            number: null,
+            issueDate: new Date(),
+            dueDate: invoice.dueDate ?? null,
+            status: PrismaInvoiceStatus.DRAFT,
+            invoiceType: 'standard',
+            templateId: invoice.templateId ?? null,
+            ...(invoice.layoutOverride != null ? { layoutOverride: invoice.layoutOverride } : {}),
+            subtotal: totals.subtotal,
+            discountPercent: invoice.discountPercent,
+            discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
+            taxTotal: totals.taxTotal,
+            irpfPercent: invoice.irpfPercent,
+            irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+            compensacionPercent: compensacionPercent ?? null,
+            compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
+            surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
+            total: totals.total,
+            paymentMethod: invoice.paymentMethod as any,
+            ...(paymentDetails != null ? { paymentDetails } : {}),
+            notes: invoice.notes,
+            lines: {
+              create: this.buildLineCreateData(tenantId, lines, totals.lines),
+            },
           },
-        },
-        include: {
-          lines: { orderBy: { sortOrder: 'asc' } },
-          customer: true,
-          series: true,
-        },
-      });
+          include: {
+            lines: { orderBy: { sortOrder: 'asc' } },
+            customer: true,
+            series: true,
+          },
+        });
 
-      await tx.invoice.delete({ where: { id } });
+        await tx.invoice.delete({ where: { id } });
 
-      return newInvoice;
-    });
+        return newInvoice;
+      }
+    );
   }
 
   // ==================== NOTE OPERATIONS ====================
@@ -1770,30 +1876,33 @@ export class InvoiceService {
     const newNotes = dto.notes !== undefined ? (dto.notes ?? null) : previousNotes;
 
     // Atomic: update + audit log either both succeed or both fail.
-    return this.runTransaction('InvoiceService.updateNotes', async (tx: Prisma.TransactionClient) => {
-      const updated = await tx.invoice.update({
-        where: { id },
-        data: { notes: newNotes },
-        include: {
-          lines: { orderBy: { sortOrder: 'asc' } },
-          customer: true,
-          series: true,
-          verifactuLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
-        },
-      });
+    return this.runTransaction(
+      'InvoiceService.updateNotes',
+      async (tx: Prisma.TransactionClient) => {
+        const updated = await tx.invoice.update({
+          where: { id },
+          data: { notes: newNotes },
+          include: {
+            lines: { orderBy: { sortOrder: 'asc' } },
+            customer: true,
+            series: true,
+            verifactuLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
+          },
+        });
 
-      await tx.invoiceNoteLog.create({
-        data: {
-          tenantId,
-          invoiceId: id,
-          userId,
-          previousNotes,
-          newNotes,
-        },
-      });
+        await tx.invoiceNoteLog.create({
+          data: {
+            tenantId,
+            invoiceId: id,
+            userId,
+            previousNotes,
+            newNotes,
+          },
+        });
 
-      return updated;
-    });
+        return updated;
+      }
+    );
   }
 
   // ==================== QUOTE CONVERSION ====================
@@ -1861,55 +1970,58 @@ export class InvoiceService {
     });
     const paymentDetails = invoice.paymentDetails;
 
-    return this.runTransaction('InvoiceService.convertQuoteToProforma', async (tx: Prisma.TransactionClient) => {
-      const proforma = await tx.invoice.create({
-        data: {
-          tenantId,
-          seriesId: defaultSeries.id,
-          customerId: invoice.customerId,
-          number: null,
-          issueDate: new Date(),
-          dueDate: invoice.dueDate ?? null,
-          status: PrismaInvoiceStatus.PROFORMA,
-          invoiceType: 'proforma',
-          templateId: invoice.templateId ?? null,
-          ...(invoice.layoutOverride != null ? { layoutOverride: invoice.layoutOverride } : {}),
-          subtotal: totals.subtotal,
-          discountPercent: invoice.discountPercent,
-          discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
-          taxTotal: totals.taxTotal,
-          irpfPercent: invoice.irpfPercent,
-          irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
-          compensacionPercent: compensacionPercent ?? null,
-          compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
-          surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
-          total: totals.total,
-          paymentMethod: invoice.paymentMethod as any,
-          ...(paymentDetails != null ? { paymentDetails } : {}),
-          notes: invoice.notes
-            ? `${invoice.notes}\n\nGenerada desde presupuesto ${invoice.number ?? invoice.id.slice(0, 8).toUpperCase()}`
-            : `Generada desde presupuesto ${invoice.number ?? invoice.id.slice(0, 8).toUpperCase()}`,
-          lines: {
-            create: this.buildLineCreateData(tenantId, lines, totals.lines),
+    return this.runTransaction(
+      'InvoiceService.convertQuoteToProforma',
+      async (tx: Prisma.TransactionClient) => {
+        const proforma = await tx.invoice.create({
+          data: {
+            tenantId,
+            seriesId: defaultSeries.id,
+            customerId: invoice.customerId,
+            number: null,
+            issueDate: new Date(),
+            dueDate: invoice.dueDate ?? null,
+            status: PrismaInvoiceStatus.PROFORMA,
+            invoiceType: 'proforma',
+            templateId: invoice.templateId ?? null,
+            ...(invoice.layoutOverride != null ? { layoutOverride: invoice.layoutOverride } : {}),
+            subtotal: totals.subtotal,
+            discountPercent: invoice.discountPercent,
+            discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
+            taxTotal: totals.taxTotal,
+            irpfPercent: invoice.irpfPercent,
+            irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+            compensacionPercent: compensacionPercent ?? null,
+            compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
+            surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
+            total: totals.total,
+            paymentMethod: invoice.paymentMethod as any,
+            ...(paymentDetails != null ? { paymentDetails } : {}),
+            notes: invoice.notes
+              ? `${invoice.notes}\n\nGenerada desde presupuesto ${invoice.number ?? invoice.id.slice(0, 8).toUpperCase()}`
+              : `Generada desde presupuesto ${invoice.number ?? invoice.id.slice(0, 8).toUpperCase()}`,
+            lines: {
+              create: this.buildLineCreateData(tenantId, lines, totals.lines),
+            },
           },
-        },
-        include: {
-          lines: { orderBy: { sortOrder: 'asc' } },
-          customer: true,
-          series: true,
-        },
-      });
+          include: {
+            lines: { orderBy: { sortOrder: 'asc' } },
+            customer: true,
+            series: true,
+          },
+        });
 
-      await tx.invoice.update({
-        where: { id },
-        data: {
-          quoteAcceptanceStatus: PrismaQuoteAcceptanceStatus.CONVERTED,
-          convertedToInvoiceId: proforma.id,
-        },
-      });
+        await tx.invoice.update({
+          where: { id },
+          data: {
+            quoteAcceptanceStatus: PrismaQuoteAcceptanceStatus.CONVERTED,
+            convertedToInvoiceId: proforma.id,
+          },
+        });
 
-      return proforma;
-    });
+        return proforma;
+      }
+    );
   }
 
   async convertQuoteToOfficial(tenantId: string, id: string) {
@@ -1949,55 +2061,58 @@ export class InvoiceService {
     });
     const paymentDetails = invoice.paymentDetails;
 
-    return this.runTransaction('InvoiceService.convertQuoteToOfficial', async (tx: Prisma.TransactionClient) => {
-      const draft = await tx.invoice.create({
-        data: {
-          tenantId,
-          seriesId: defaultSeries.id,
-          customerId: invoice.customerId,
-          number: null,
-          issueDate: new Date(),
-          dueDate: invoice.dueDate ?? null,
-          status: PrismaInvoiceStatus.DRAFT,
-          invoiceType: 'standard',
-          templateId: invoice.templateId ?? null,
-          ...(invoice.layoutOverride != null ? { layoutOverride: invoice.layoutOverride } : {}),
-          subtotal: totals.subtotal,
-          discountPercent: invoice.discountPercent,
-          discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
-          taxTotal: totals.taxTotal,
-          irpfPercent: invoice.irpfPercent,
-          irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
-          compensacionPercent: compensacionPercent ?? null,
-          compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
-          surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
-          total: totals.total,
-          paymentMethod: invoice.paymentMethod as any,
-          ...(paymentDetails != null ? { paymentDetails } : {}),
-          notes: invoice.notes
-            ? `${invoice.notes}\n\nGenerada desde presupuesto ${invoice.number ?? invoice.id.slice(0, 8).toUpperCase()}`
-            : `Generada desde presupuesto ${invoice.number ?? invoice.id.slice(0, 8).toUpperCase()}`,
-          lines: {
-            create: this.buildLineCreateData(tenantId, lines, totals.lines),
+    return this.runTransaction(
+      'InvoiceService.convertQuoteToOfficial',
+      async (tx: Prisma.TransactionClient) => {
+        const draft = await tx.invoice.create({
+          data: {
+            tenantId,
+            seriesId: defaultSeries.id,
+            customerId: invoice.customerId,
+            number: null,
+            issueDate: new Date(),
+            dueDate: invoice.dueDate ?? null,
+            status: PrismaInvoiceStatus.DRAFT,
+            invoiceType: 'standard',
+            templateId: invoice.templateId ?? null,
+            ...(invoice.layoutOverride != null ? { layoutOverride: invoice.layoutOverride } : {}),
+            subtotal: totals.subtotal,
+            discountPercent: invoice.discountPercent,
+            discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
+            taxTotal: totals.taxTotal,
+            irpfPercent: invoice.irpfPercent,
+            irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+            compensacionPercent: compensacionPercent ?? null,
+            compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
+            surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
+            total: totals.total,
+            paymentMethod: invoice.paymentMethod as any,
+            ...(paymentDetails != null ? { paymentDetails } : {}),
+            notes: invoice.notes
+              ? `${invoice.notes}\n\nGenerada desde presupuesto ${invoice.number ?? invoice.id.slice(0, 8).toUpperCase()}`
+              : `Generada desde presupuesto ${invoice.number ?? invoice.id.slice(0, 8).toUpperCase()}`,
+            lines: {
+              create: this.buildLineCreateData(tenantId, lines, totals.lines),
+            },
           },
-        },
-        include: {
-          lines: { orderBy: { sortOrder: 'asc' } },
-          customer: true,
-          series: true,
-        },
-      });
+          include: {
+            lines: { orderBy: { sortOrder: 'asc' } },
+            customer: true,
+            series: true,
+          },
+        });
 
-      await tx.invoice.update({
-        where: { id },
-        data: {
-          quoteAcceptanceStatus: PrismaQuoteAcceptanceStatus.CONVERTED,
-          convertedToInvoiceId: draft.id,
-        },
-      });
+        await tx.invoice.update({
+          where: { id },
+          data: {
+            quoteAcceptanceStatus: PrismaQuoteAcceptanceStatus.CONVERTED,
+            convertedToInvoiceId: draft.id,
+          },
+        });
 
-      return draft;
-    });
+        return draft;
+      }
+    );
   }
 
   // ==================== STATS & REPORTS ====================

@@ -209,6 +209,7 @@ export function buildPreviewInvoice(
     isRectificative: false,
     rectifiedInvoiceId: null,
     rectificationReason: null,
+    rectificationType: null,
     amountPaid: 0,
     paymentStatus: PaymentStatus.UNPAID,
     createdAt: today,

@@ -148,8 +148,15 @@ interface LiveInvoicePreviewProps {
   invoiceType?: string | null;
 }
 
-function resolveDocumentTitle(isRectificative: boolean, invoiceType?: string | null): string {
-  if (isRectificative) return 'FACTURA RECTIFICATIVA';
+function resolveDocumentTitle(
+  isRectificative: boolean,
+  invoiceType?: string | null,
+  rectificationType?: string | null
+): string {
+  if (isRectificative) {
+    const typeLabel = rectificationType === 'SUBSTITUTION' ? 'SUSTITUCIÓN' : 'DIFERENCIAS';
+    return `FACTURA RECTIFICATIVA (${typeLabel})`;
+  }
   if (invoiceType === 'proforma') return 'FACTURA PROFORMA';
   if (invoiceType === 'simplified') return 'FACTURA SIMPLIFICADA';
   if (invoiceType === 'quote') return 'PRESUPUESTO';
@@ -306,7 +313,11 @@ export function LiveInvoicePreview({
                 className="font-bold mb-3"
                 style={{ fontSize: `${typography.baseFontSize + 8}px`, color: colors.primary }}
               >
-                {resolveDocumentTitle(invoice.isRectificative ?? false, invoiceType)}
+                {resolveDocumentTitle(
+                  invoice.isRectificative ?? false,
+                  invoiceType,
+                  invoice.rectificationType
+                )}
               </h1>
               <div className="flex gap-8">
                 <div>
@@ -321,14 +332,23 @@ export function LiveInvoicePreview({
                   </p>
                   <p className="font-semibold text-[11px]">{formatDate(invoice.issueDate)}</p>
                 </div>
-                {invoice.dueDate && (
+                {invoice.isRectificative && invoice.rectifiedInvoice ? (
+                  <div>
+                    <p className="text-[9px] text-neutral-500 uppercase tracking-wide mb-0.5">
+                      Factura rectificada
+                    </p>
+                    <p className="font-semibold text-[11px]">
+                      {invoice.rectifiedInvoice.number || '—'}
+                    </p>
+                  </div>
+                ) : invoice.dueDate ? (
                   <div>
                     <p className="text-[9px] text-neutral-500 uppercase tracking-wide mb-0.5">
                       {invoiceType === 'quote' ? 'Válido hasta' : 'Vencimiento'}
                     </p>
                     <p className="font-semibold text-[11px]">{formatDate(invoice.dueDate)}</p>
                   </div>
-                )}
+                ) : null}
               </div>
             </PreviewSection>
 

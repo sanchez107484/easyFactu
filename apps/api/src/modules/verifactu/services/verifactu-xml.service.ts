@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { Invoice, InvoiceLine, Customer, Tenant } from '@prisma/client';
+import { RectificationType } from '@easyfactura/shared-types';
 
 interface InvoiceWithRelations extends Invoice {
   customer: Customer;
   lines: InvoiceLine[];
+  rectifiedInvoice?: Invoice | null;
 }
 
 @Injectable()
@@ -15,12 +17,12 @@ export class VerifactuXmlService {
    * Generate VeriFactu XML according to AEAT specification
    */
   async generateXml(tenantId: string, invoiceId: string): Promise<string> {
-    // Get invoice with all relations
     const invoice = await this.prisma.invoice.findFirst({
       where: { id: invoiceId, tenantId },
       include: {
         customer: true,
         lines: true,
+        rectifiedInvoice: true,
       },
     });
 
@@ -32,7 +34,6 @@ export class VerifactuXmlService {
       throw new Error('Solo se puede generar XML para facturas con número asignado (confirmadas)');
     }
 
-    // Get tenant data
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
     });
@@ -58,7 +59,6 @@ export class VerifactuXmlService {
   private buildXml(tenant: Tenant, invoice: InvoiceWithRelations): string {
     const issueDate = this.formatDate(invoice.issueDate);
 
-    // Issuer: prefer snapshot fields, fall back to live tenant data
     const issuerNif = invoice.issuerSnapshotNif ?? tenant.nif ?? '';
     const issuerName =
       invoice.issuerSnapshotLegalName ??
@@ -66,9 +66,18 @@ export class VerifactuXmlService {
       tenant.legalName ??
       tenant.businessName;
 
-    // Customer: prefer snapshot fields, fall back to live customer relation
     const custName = invoice.customerSnapshotName ?? invoice.customer.name;
     const custNif = invoice.customerSnapshotNif ?? invoice.customer.nif ?? '';
+
+    const tipoFactura = invoice.isRectificative ? 'R4' : 'F1';
+    const tipoRectificativa = invoice.isRectificative
+      ? invoice.rectificationType === RectificationType.SUBSTITUTION
+        ? 'I'
+        : 'S'
+      : null;
+
+    const facturasRectificadas = this.buildFacturasRectificadas(invoice);
+    const importeRectificacion = this.buildImporteRectificacion(invoice);
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <ven:VeriFactu xmlns:ven="https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroInformacion.xsd">
@@ -86,7 +95,9 @@ export class VerifactuXmlService {
       <NumSerieFactura>${this.escapeXml(invoice.number!)}</NumSerieFactura>
       <FechaExpedicionFactura>${issueDate}</FechaExpedicionFactura>
     </IDFactura>
-    <TipoFactura>F1</TipoFactura>
+    <TipoFactura>${tipoFactura}</TipoFactura>
+    ${tipoRectificativa ? `<TipoRectificativa>${tipoRectificativa}</TipoRectificativa>` : ''}
+    ${facturasRectificadas}
     ${invoice.compensacionPercent != null ? '<ClaveRegimenEspecial>02</ClaveRegimenEspecial>' : ''}
     <Destinatarios>
       <IDDestinatario>
@@ -98,6 +109,7 @@ export class VerifactuXmlService {
       ${this.buildTaxBreakdown(invoice)}
     </Desglose>
     <ImporteTotal>${invoice.total.toFixed(2)}</ImporteTotal>
+    ${importeRectificacion}
     <Huella>
       <Hash>${invoice.hash}</Hash>
       ${invoice.prevHash ? `<HashAnterior>${invoice.prevHash}</HashAnterior>` : ''}
@@ -191,6 +203,38 @@ export class VerifactuXmlService {
     });
 
     return breakdowns.join('\n      ');
+  }
+
+  private buildFacturasRectificadas(invoice: InvoiceWithRelations): string {
+    if (!invoice.isRectificative || !invoice.rectifiedInvoice) {
+      return '';
+    }
+
+    const original = invoice.rectifiedInvoice;
+    const originalDate = this.formatDate(original.issueDate);
+    const originalNumber = original.number ?? '';
+    const originalIssuerNif = original.issuerSnapshotNif ?? '';
+
+    return `<FacturasRectificadas>
+      <IDFacturaRectificada>
+        <IDEmisorFactura>
+          <NIF>${originalIssuerNif}</NIF>
+        </IDEmisorFactura>
+        <NumSerieFactura>${this.escapeXml(originalNumber)}</NumSerieFactura>
+        <FechaExpedicionFactura>${originalDate}</FechaExpedicionFactura>
+      </IDFacturaRectificada>
+    </FacturasRectificadas>`;
+  }
+
+  private buildImporteRectificacion(invoice: InvoiceWithRelations): string {
+    if (
+      !invoice.isRectificative ||
+      invoice.rectificationType !== RectificationType.DIFFERENCES
+    ) {
+      return '';
+    }
+
+    return `<ImporteRectificacion>${invoice.total.toFixed(2)}</ImporteRectificacion>`;
   }
 
   /**

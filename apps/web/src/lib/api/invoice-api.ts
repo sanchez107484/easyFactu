@@ -10,10 +10,12 @@ import {
   QueryInvoicesInput,
   InvoiceStats,
   InvoiceReportData,
+  RectificationType,
 } from '@easyfactura/shared-types';
 
 export interface RectifyInvoiceInput {
   rectificationReason: string;
+  rectificationType: RectificationType;
   lines: CreateInvoiceInput['lines'];
 }
 

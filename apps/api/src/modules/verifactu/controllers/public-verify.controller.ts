@@ -64,6 +64,11 @@ export class PublicVerifyController {
     const invoice = await this.prisma.invoice.findFirst({
       where: {
         hash: { equals: normalizedHash, mode: 'insensitive' },
+        // Solo verificamos facturas activas. Excluimos:
+        // - DRAFT/PROFORMA/QUOTE: aún no están confirmadas
+        // - RECTIFIED: la factura original fue rectificada y ya no es válida
+        // Las facturas rectificativas (isRectificative=true) sí son verificables
+        // cuando están en estado CONFIRMED/SENT/PAID.
         status: {
           in: [InvoiceStatus.CONFIRMED, InvoiceStatus.SENT, InvoiceStatus.PAID],
         },

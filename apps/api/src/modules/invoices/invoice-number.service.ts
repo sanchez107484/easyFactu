@@ -114,10 +114,14 @@ export class InvoiceNumberService {
   }
 
   /**
-   * Validates that a series belongs to a tenant and has not been used for the current year.
-   * Used to validate the seriesId provided by the user.
+   * Validates that a series belongs to a tenant, is for the current year, and optionally
+   * matches the expected series type.
+   *
+   * @param tenantId - The tenant ID
+   * @param seriesId - The series ID to validate
+   * @param expectedType - Optional expected series type (INVOICE, RECTIFICATIVE, QUOTE)
    */
-  async validateSeries(tenantId: string, seriesId: string) {
+  async validateSeries(tenantId: string, seriesId: string, expectedType?: SeriesType) {
     const series = await this.prisma.invoiceSeries.findFirst({
       where: { id: seriesId, tenantId },
     });
@@ -131,6 +135,13 @@ export class InvoiceNumberService {
       throw new BadRequestException(
         `La serie ${series.code} es del año ${series.year}. ` +
           `Para el año ${currentYear} debes usar o crear una serie de ese año.`
+      );
+    }
+
+    if (expectedType && series.type !== expectedType) {
+      throw new BadRequestException(
+        `La serie ${series.code} es de tipo ${series.type} pero se esperaba ${expectedType}. ` +
+          'Las facturas rectificativas deben usar series de tipo RECTIFICATIVE.'
       );
     }
 

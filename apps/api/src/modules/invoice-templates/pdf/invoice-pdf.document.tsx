@@ -353,7 +353,9 @@ export function createInvoicePdfElement(
 
         {/* Invoice meta */}
         <Text style={styles.invoiceTitle}>
-          {invoice.isRectificative ? 'FACTURA RECTIFICATIVA' : 'FACTURA'}
+          {invoice.isRectificative 
+            ? `FACTURA RECTIFICATIVA (${invoice.rectificationType === 'SUBSTITUTION' ? 'SUSTITUCIÓN' : 'DIFERENCIAS'})`
+            : 'FACTURA'}
         </Text>
         <View style={styles.metaRow}>
           <View style={styles.metaItem}>
@@ -364,13 +366,27 @@ export function createInvoicePdfElement(
             <Text style={styles.metaLabel}>Fecha de emisión</Text>
             <Text style={styles.metaValue}>{formatDate(invoice.issueDate)}</Text>
           </View>
-          {invoice.dueDate && (
+          {invoice.isRectificative && invoice.rectifiedInvoice ? (
+            <View style={styles.metaItem}>
+              <Text style={styles.metaLabel}>Factura rectificada</Text>
+              <Text style={styles.metaValue}>{invoice.rectifiedInvoice.number}</Text>
+            </View>
+          ) : invoice.dueDate ? (
             <View style={styles.metaItem}>
               <Text style={styles.metaLabel}>Fecha de vencimiento</Text>
               <Text style={styles.metaValue}>{formatDate(invoice.dueDate)}</Text>
             </View>
-          )}
+          ) : null}
         </View>
+
+        {invoice.isRectificative && invoice.rectificationReason && (
+          <View style={{ marginBottom: 12, padding: 8, backgroundColor: '#f5f5f5', borderRadius: 4 }}>
+            <Text style={{ fontSize: 9 }}>
+              <Text style={{ fontWeight: 'bold' }}>Motivo: </Text>
+              {invoice.rectificationReason}
+            </Text>
+          </View>
+        )}
 
         {/* Lines table */}
         <View>

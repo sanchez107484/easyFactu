@@ -95,6 +95,11 @@ export enum AgencyInvitationStatus {
   CANCELLED = 'CANCELLED',
 }
 
+export enum RectificationType {
+  SUBSTITUTION = 'SUBSTITUTION',
+  DIFFERENCES = 'DIFFERENCES',
+}
+
 export enum TaxRegime {
   GENERAL = 'GENERAL', // Régimen general de IVA (por defecto)
   REAGYP = 'REAGYP', // Régimen Especial Agricultura, Ganadería y Pesca (Arts. 124-134 LIVA)
@@ -539,6 +544,15 @@ export interface Invoice {
   isRectificative: boolean;
   rectifiedInvoiceId: string | null;
   rectificationReason: string | null;
+  rectificationType: RectificationType | null;
+  rectifiedInvoice?: Invoice | null;
+  rectificativeInvoices?: Array<{
+    id: string;
+    number: string | null;
+    issueDate: string;
+    status: InvoiceStatus;
+    rectificationType: RectificationType | null;
+  }> | null;
   /** ID of the recurring invoice that generated this invoice (or from which this was converted) */
   recurringInvoiceId?: string | null;
   /**

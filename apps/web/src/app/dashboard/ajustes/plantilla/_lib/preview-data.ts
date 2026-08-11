@@ -259,6 +259,7 @@ export function buildExampleInvoice(tenantId: string): Invoice {
     isRectificative: false,
     rectifiedInvoiceId: null,
     rectificationReason: null,
+    rectificationType: null,
     createdAt: now,
     updatedAt: now,
     customer: {
