@@ -137,7 +137,7 @@ export function InvoiceStatusHero({
               {convertPending ? 'Convirtiendo...' : 'Convertir a oficial'}
             </Button>
           )}
-          {isDraft && !isProforma && (
+          {isDraft && !isProforma && !invoice.isRectificative && (
             <Button
               size="sm"
               variant="outline"

@@ -54,12 +54,13 @@ export class CreateInvoiceLineDto {
 
   @ApiProperty({ description: 'Cantidad (hasta 4 decimales)', minimum: 0.0001 })
   @IsNumber({ maxDecimalPlaces: 4 }, { message: 'La cantidad admite hasta 4 decimales' })
-  @Min(0.0001, { message: 'La cantidad debe ser mayor a 0' })
+  // Sin @Min aquí a propósito: se valida en InvoiceService según si la factura
+  // es rectificativa (permite negativos) o no (exige > 0).
   quantity!: number;
 
   @ApiProperty({ description: 'Precio unitario (hasta 4 decimales)', minimum: 0 })
   @IsNumber({ maxDecimalPlaces: 4 }, { message: 'El precio admite hasta 4 decimales' })
-  @Min(0, { message: 'El precio debe ser mayor o igual a 0' })
+  // Sin @Min aquí a propósito: ver nota en `quantity`.
   unitPrice!: number;
 
   @ApiProperty({ description: 'Tipo de IVA (%)', enum: VALID_TAX_RATES })

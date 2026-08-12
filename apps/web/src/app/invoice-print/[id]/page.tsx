@@ -26,8 +26,15 @@ const FONT_FAMILY_MAP: Record<string, string> = {
 
 // ==================== HELPERS ====================
 
-function resolveDocumentTitle(isRectificative: boolean, invoiceType?: string | null): string {
-  if (isRectificative) return 'FACTURA RECTIFICATIVA';
+function resolveDocumentTitle(
+  isRectificative: boolean,
+  invoiceType?: string | null,
+  rectificationType?: string | null,
+): string {
+  if (isRectificative) {
+    const typeLabel = rectificationType === 'SUBSTITUTION' ? 'SUSTITUCIÓN' : 'DIFERENCIAS';
+    return `FACTURA RECTIFICATIVA (${typeLabel})`;
+  }
   if (invoiceType === 'proforma') return 'FACTURA PROFORMA';
   if (invoiceType === 'simplified') return 'FACTURA SIMPLIFICADA';
   if (invoiceType === 'quote') return 'PRESUPUESTO';
@@ -162,7 +169,11 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
   const { page, typography, colors } = effectiveLayout;
   const fontFamily = FONT_FAMILY_MAP[typography.fontFamily] ?? FONT_FAMILY_MAP['helvetica'];
   const paymentDetails = invoice.paymentDetails as PaymentDetails | undefined;
-  const documentTitle = resolveDocumentTitle(invoice.isRectificative ?? false, invoice.invoiceType);
+  const documentTitle = resolveDocumentTitle(
+    invoice.isRectificative ?? false,
+    invoice.invoiceType,
+    invoice.rectificationType,
+  );
 
   return (
     <>
@@ -288,7 +299,42 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
               </p>
             </div>
           )}
+
+          {invoice.isRectificative && invoice.rectifiedInvoice?.number && (
+            <div>
+              <p
+                style={{
+                  fontSize: '9px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  color: '#6b7280',
+                  fontWeight: 600,
+                  margin: '0 0 2px',
+                }}
+              >
+                Factura rectificada
+              </p>
+              <p style={{ fontWeight: 600, fontSize: '11px', margin: 0 }}>
+                {invoice.rectifiedInvoice.number}
+              </p>
+            </div>
+          )}
         </div>
+        {invoice.isRectificative && invoice.rectificationReason && (
+          <div
+            style={{
+              marginBottom: '16px',
+              padding: '8px 10px',
+              backgroundColor: '#f5f5f5',
+              borderRadius: '4px',
+            }}
+          >
+            <p style={{ fontSize: '9px', margin: 0 }}>
+              <span style={{ fontWeight: 700 }}>Motivo de la rectificación: </span>
+              {invoice.rectificationReason}
+            </p>
+          </div>
+        )}
 
         {/* 3 — Items table */}
         <ItemsTableBlock layout={effectiveLayout} invoice={invoice} />

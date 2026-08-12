@@ -264,12 +264,28 @@ export class InvoicePdfService {
     doc.text(`Email: ${issuerEmail || ''}`, 200, 120, { align: 'right' });
 
     // Datos factura
-    const docTypeLabel = this.resolveDocumentTypeLabel(invoice.invoiceType);
+    const docTypeLabel = this.resolveDocumentTitle(invoice);
     const docNumber = invoice.number ? `${docTypeLabel} Nº: ${invoice.number}` : docTypeLabel;
     doc.moveDown(2);
     doc.fontSize(14).text(docNumber, 40, undefined, { align: 'left' });
     doc.fontSize(10).text(`Fecha emisión: ${invoice.issueDate?.toString().slice(0, 10) || ''}`);
     if (invoice.dueDate) doc.text(`Fecha vencimiento: ${invoice.dueDate.toString().slice(0, 10)}`);
+
+    // Motivo de la rectificación (solo facturas rectificativas)
+    // Factura rectificada — referencia a la original (solo si es rectificativa)
+    if (invoice.isRectificative && invoice.rectifiedInvoice?.number) {
+      doc.text(`Factura rectificada: ${invoice.rectifiedInvoice.number}`);
+    }
+
+    // Motivo de la rectificación
+    if (invoice.isRectificative && invoice.rectificationReason) {
+      doc.moveDown(0.5);
+      doc
+        .fontSize(9)
+        .font('Helvetica-Bold')
+        .text('Motivo de la rectificación: ', 40, undefined, { continued: true });
+      doc.font('Helvetica').fontSize(10).text(invoice.rectificationReason);
+    }
 
     // Cliente — prefer immutable snapshot fields; fall back to live customer relation.
     const hasCustomerSnapshot = invoice.customerSnapshotNif != null;
@@ -397,6 +413,23 @@ export class InvoicePdfService {
     if (invoiceType === 'proforma') return 'Proforma';
     if (invoiceType === 'quote') return 'Presupuesto';
     return 'Factura';
+  }
+
+  /**
+   * Igual que resolveDocumentTypeLabel, pero antepone "Rectificativa (SUSTITUCIÓN/DIFERENCIAS)"
+   * cuando la factura es rectificativa — coincide con el título mostrado en LiveInvoicePreview.
+   */
+  private resolveDocumentTitle(invoice: {
+    isRectificative?: boolean;
+    rectificationType?: string | null;
+    invoiceType?: string | null;
+  }): string {
+    if (invoice.isRectificative) {
+      const typeLabel =
+        invoice.rectificationType === 'SUBSTITUTION' ? 'SUSTITUCIÓN' : 'DIFERENCIAS';
+      return `Factura Rectificativa (${typeLabel})`;
+    }
+    return this.resolveDocumentTypeLabel(invoice.invoiceType);
   }
 
   private resolveLogo(logoUrl: string | null): Buffer | undefined {

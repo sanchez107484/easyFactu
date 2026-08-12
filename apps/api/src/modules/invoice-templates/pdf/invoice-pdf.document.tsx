@@ -353,8 +353,8 @@ export function createInvoicePdfElement(
 
         {/* Invoice meta */}
         <Text style={styles.invoiceTitle}>
-          {invoice.isRectificative 
-            ? `FACTURA RECTIFICATIVA (${invoice.rectificationType === 'SUBSTITUTION' ? 'SUSTITUCIÓN' : 'DIFERENCIAS'})`
+          {invoice.isRectificative
+            ? `FACTURA RECTIFICATIVA (${invoice.rectificationType === 'SUBSTITUTION' ? 'SUSTITUCIÓN' : 'ABONOS'})`
             : 'FACTURA'}
         </Text>
         <View style={styles.metaRow}>
@@ -380,7 +380,9 @@ export function createInvoicePdfElement(
         </View>
 
         {invoice.isRectificative && invoice.rectificationReason && (
-          <View style={{ marginBottom: 12, padding: 8, backgroundColor: '#f5f5f5', borderRadius: 4 }}>
+          <View
+            style={{ marginBottom: 12, padding: 8, backgroundColor: '#f5f5f5', borderRadius: 4 }}
+          >
             <Text style={{ fontSize: 9 }}>
               <Text style={{ fontWeight: 'bold' }}>Motivo: </Text>
               {invoice.rectificationReason}

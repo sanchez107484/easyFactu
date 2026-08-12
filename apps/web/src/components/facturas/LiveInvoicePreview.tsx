@@ -151,10 +151,10 @@ interface LiveInvoicePreviewProps {
 function resolveDocumentTitle(
   isRectificative: boolean,
   invoiceType?: string | null,
-  rectificationType?: string | null
+  rectificationType?: string | null,
 ): string {
   if (isRectificative) {
-    const typeLabel = rectificationType === 'SUBSTITUTION' ? 'SUSTITUCIÓN' : 'DIFERENCIAS';
+    const typeLabel = rectificationType === 'SUBSTITUTION' ? 'SUSTITUCIÓN' : 'ABONOS';
     return `FACTURA RECTIFICATIVA (${typeLabel})`;
   }
   if (invoiceType === 'proforma') return 'FACTURA PROFORMA';
@@ -316,7 +316,7 @@ export function LiveInvoicePreview({
                 {resolveDocumentTitle(
                   invoice.isRectificative ?? false,
                   invoiceType,
-                  invoice.rectificationType
+                  invoice.rectificationType,
                 )}
               </h1>
               <div className="flex gap-8">
@@ -350,6 +350,21 @@ export function LiveInvoicePreview({
                   </div>
                 ) : null}
               </div>
+              {invoice.isRectificative && invoice.rectificationReason && (
+                <div
+                  style={{
+                    marginTop: '10px',
+                    padding: '8px 10px',
+                    backgroundColor: '#f5f5f5',
+                    borderRadius: '4px',
+                  }}
+                >
+                  <p style={{ fontSize: '9px', margin: 0 }}>
+                    <span style={{ fontWeight: 700 }}>Motivo de la rectificación: </span>
+                    {invoice.rectificationReason}
+                  </p>
+                </div>
+              )}
             </PreviewSection>
 
             {/* 3 — Items table */}

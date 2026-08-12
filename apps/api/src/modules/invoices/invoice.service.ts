@@ -424,6 +424,24 @@ export class InvoiceService {
   }
 
   /**
+   * Valida los importes de las líneas según el tipo de factura.
+   * - Normal/proforma/quote: quantity > 0, unitPrice >= 0 (regla de negocio estándar).
+   * - Rectificativa: sin restricciones de signo — permite negativos para reflejar
+   *   ajustes (abonos) respecto a la factura original.
+   */
+  private validateLineAmounts(lines: CreateInvoiceLineDto[], isRectificative: boolean): void {
+    if (isRectificative) return;
+    for (const line of lines) {
+      if (Number(line.quantity) <= 0) {
+        throw new BadRequestException('La cantidad debe ser mayor a 0');
+      }
+      if (Number(line.unitPrice) < 0) {
+        throw new BadRequestException('El precio debe ser mayor o igual a 0');
+      }
+    }
+  }
+
+  /**
    * Returns the agrarian compensation rate (%) to apply to the invoice, or undefined
    * if the regime is GENERAL or compensation does not apply to this customer.
    *
@@ -500,6 +518,10 @@ export class InvoiceService {
       this.validateProductIds(tenantId, dto.lines),
     ]);
     const compensacionPercent = resolvedCompensacion;
+    // create() nunca genera facturas rectificativas (esas solo salen de rectify()),
+    // así que aquí siempre aplican las reglas normales.
+    this.validateLineAmounts(dto.lines, false);
+
     const equivalenceSurchargeRates = await this.resolveEquivalenceSurchargeRates(
       tenantId,
       dto.customerId,
@@ -1232,7 +1254,10 @@ export class InvoiceService {
       : invoice.seriesId;
 
     const linesToUse = dto.lines ?? (invoice.lines as unknown as CreateInvoiceLineDto[]);
-    if (dto.lines) await this.validateProductIds(tenantId, dto.lines);
+    if (dto.lines) {
+      await this.validateProductIds(tenantId, dto.lines);
+      this.validateLineAmounts(dto.lines, invoice.isRectificative);
+    }
 
     const currentDiscount =
       dto.discountPercent !== undefined
@@ -1358,12 +1383,12 @@ export class InvoiceService {
         );
       }
 
-      // Para rectificativas por diferencias, el total no puede ser 0
+      // Para rectificativas por abonos, el total no puede ser 0
       if (invoice.rectificationType === RectificationType.DIFFERENCES) {
         const total = Number(invoice.total);
         if (total === 0) {
           throw new BadRequestException(
-            'Una factura rectificativa por diferencias no puede tener un total de 0€. ' +
+            'Una factura rectificativa por abonos no puede tener un total de 0€. ' +
               'Debe reflejar un ajuste positivo o negativo respecto a la factura original.'
           );
         }
@@ -1770,6 +1795,10 @@ export class InvoiceService {
 
     if (invoice.invoiceType === 'proforma') {
       throw new ConflictException('La factura ya es una proforma.');
+    }
+
+    if (invoice.isRectificative) {
+      throw new ConflictException('Las facturas rectificativas no se pueden convertir a proforma.');
     }
 
     if (invoice.status !== InvoiceStatus.DRAFT) {
