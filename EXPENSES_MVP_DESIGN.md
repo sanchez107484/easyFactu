@@ -4,7 +4,7 @@
 > **Ámbito**: Backend + Frontend  
 > **Plan objetivo**: PROFESSIONAL  
 > **Documento generado**: 2026-08-20  
-> **Estado**: Fase 1 en curso
+> **Estado**: Fase 2 completada; Fase 3 en curso
 
 ---
 
@@ -73,7 +73,7 @@ No existe un mecanismo de control de planes en el backend actualmente. Se crear�
 - `PlanGuard`: guard de NestJS que lee `request.user.tenantId`, consulta el `plan` del tenant y permite/deniega según el plan requerido.
 - `@RequirePlan(Plan.PROFESSIONAL)`: decorador que marca controladores/métodos.
 - `GuardsModule`: módulo compartido que provee y exporta `PlanGuard` para los módulos que lo necesitan.
-- Para el módulo de Gastos se aplicará `@RequirePlan(Plan.PROFESSIONAL)` a nivel de controlador. El downgrade PRO → FREE con acceso solo lectura se implementará en una fase posterior.
+- Para el módulo de Gastos se aplicará `@RequirePlan(Plan.PROFESSIONAL)` en los endpoints de escritura (POST, PUT, DELETE). Los endpoints de lectura (GET) están disponibles para todos los planes autenticados, de modo que un downgrade PRO → FREE mantiene acceso solo lectura a los datos históricos.
 
 > **Nota de seguridad**: el guard consulta el plan desde la base de datos en cada petición para evitar cache desactualizada. El JWT no incluye el plan.
 
@@ -232,19 +232,19 @@ El seed usa `upsert` por `slug` para ser idempotente.
 | Método | Ruta | Descripción | Plan |
 |--------|------|-------------|------|
 | POST | `/api/v1/expenses` | Crear gasto | PRO |
-| GET | `/api/v1/expenses` | Listar gastos | PRO (lectura) |
-| GET | `/api/v1/expenses/:id` | Obtener gasto | PRO (lectura) |
+| GET | `/api/v1/expenses` | Listar gastos | Todos (solo lectura si no PRO) |
+| GET | `/api/v1/expenses/:id` | Obtener gasto | Todos (solo lectura si no PRO) |
 | PUT | `/api/v1/expenses/:id` | Editar gasto | PRO |
 | DELETE | `/api/v1/expenses/:id` | Eliminar gasto | PRO |
-| GET | `/api/v1/expenses/summary` | Resumen mes/año | PRO (lectura) |
+| GET | `/api/v1/expenses/summary` | Resumen mes/año | Todos (solo lectura si no PRO) |
 
 ### 4.2 Suppliers
 
 | Método | Ruta | Descripción | Plan |
 |--------|------|-------------|------|
 | POST | `/api/v1/suppliers` | Crear proveedor | PRO |
-| GET | `/api/v1/suppliers` | Listar proveedores | PRO |
-| GET | `/api/v1/suppliers/:id` | Obtener proveedor | PRO |
+| GET | `/api/v1/suppliers` | Listar proveedores | Todos (solo lectura si no PRO) |
+| GET | `/api/v1/suppliers/:id` | Obtener proveedor | Todos (solo lectura si no PRO) |
 | PUT | `/api/v1/suppliers/:id` | Editar proveedor | PRO |
 | DELETE | `/api/v1/suppliers/:id` | Eliminar proveedor | PRO |
 
@@ -252,7 +252,7 @@ El seed usa `upsert` por `slug` para ser idempotente.
 
 | Método | Ruta | Descripción | Plan |
 |--------|------|-------------|------|
-| GET | `/api/v1/expense-categories` | Listar categorías | PRO (lectura) |
+| GET | `/api/v1/expense-categories` | Listar categorías | Todos autenticados |
 
 ### 4.4 Expense Attachments (Fase 3)
 
@@ -348,9 +348,11 @@ Se reutiliza la misma lista de tipos de IVA usada en facturas (21%, 10%, 4%, 0%)
 
 ### Fase 3 — Funcionalidades avanzadas
 
-1. Adjuntos: subida, descarga, eliminación.
-2. Creación inline de proveedor desde el formulario de gasto.
-3. Filtros avanzados (periodo personalizado, categoría, proveedor, cliente, búsqueda).
+1. ✅ Downgrade PRO → FREE: acceso solo lectura a gastos y proveedores (backend + frontend).
+2. ✅ Widget de resumen de gastos en el dashboard.
+3. ✅ Creación inline de proveedor desde el formulario de gasto.
+4. ⏳ Adjuntos: subida, descarga, eliminación.
+5. ⏳ Filtros avanzados (periodo personalizado, categoría, proveedor, cliente, búsqueda).
 
 ### Fase 4 — Tests de seguridad
 
@@ -370,7 +372,7 @@ Se reutiliza la misma lista de tipos de IVA usada en facturas (21%, 10%, 4%, 0%)
 - [ ] Manipulación manual de `id` devuelve 404, nunca datos ajenos ni 500.
 - [ ] Los totales (`vatAmount`, `totalAmount`) se recalculan siempre en backend.
 - [ ] Los documentos adjuntos de una empresa no son accesibles por otra.
-- [ ] Downgrade PRO → FREE con gastos ya creados: solo lectura.
+- [x] Downgrade PRO → FREE con gastos ya creados: solo lectura.
 
 ---
 

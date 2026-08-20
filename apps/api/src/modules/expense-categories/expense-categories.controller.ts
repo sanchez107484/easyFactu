@@ -3,14 +3,12 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiOkResponse } from '@nestjs/swa
 import { ExpenseCategoriesService } from './expense-categories.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PlanGuard } from '../../common/guards/plan.guard';
-import { RequirePlan } from '../../common/decorators/require-plan.decorator';
-import { Plan } from '@easyfactura/shared-types';
+
 
 @ApiTags('expense-categories')
 @Controller('expense-categories')
 @UseGuards(JwtAuthGuard, PlanGuard)
 @ApiBearerAuth()
-@RequirePlan(Plan.PROFESSIONAL)
 export class ExpenseCategoriesController {
   constructor(private readonly expenseCategoriesService: ExpenseCategoriesService) {}
 

@@ -35,11 +35,11 @@ import { TenantUserRole, Plan } from '@easyfactura/shared-types';
 @Controller('expenses')
 @UseGuards(JwtAuthGuard, PlanGuard)
 @ApiBearerAuth()
-@RequirePlan(Plan.PROFESSIONAL)
 export class ExpensesController {
   constructor(private readonly expensesService: ExpensesService) {}
 
   @Post()
+  @RequirePlan(Plan.PROFESSIONAL)
   @Roles(TenantUserRole.OWNER, TenantUserRole.ADMIN, TenantUserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Crear gasto' })
   @ApiCreatedResponse({ description: 'Gasto creado correctamente' })
@@ -73,6 +73,7 @@ export class ExpensesController {
   }
 
   @Put(':id')
+  @RequirePlan(Plan.PROFESSIONAL)
   @Roles(TenantUserRole.OWNER, TenantUserRole.ADMIN, TenantUserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Actualizar gasto' })
   @ApiOkResponse({ description: 'Gasto actualizado correctamente' })
@@ -86,6 +87,7 @@ export class ExpensesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RequirePlan(Plan.PROFESSIONAL)
   @Roles(TenantUserRole.OWNER, TenantUserRole.ADMIN, TenantUserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Eliminar gasto' })
   @ApiNoContentResponse({ description: 'Gasto eliminado correctamente' })
