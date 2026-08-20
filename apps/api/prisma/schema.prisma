@@ -55,6 +55,9 @@ model Tenant {
   invoiceNoteLogs    InvoiceNoteLog[]
   recurringInvoices  RecurringInvoice[]
   payments           Payment[]
+  suppliers          Supplier[]
+  expenses           Expense[]
+  expenseAttachments ExpenseAttachment[]
 
   // Agency relations
   preferredExportFormat   ExportFormat?           @map("preferred_export_format")
@@ -147,6 +150,7 @@ model User {
   invoiceExportEvents      InvoiceExportEvent[] @relation("InvoiceExportEventUser")
   invoicesCreated          Invoice[]            @relation("InvoiceCreatedBy")
   recurringInvoicesCreated RecurringInvoice[]   @relation("RecurringInvoiceCreatedBy")
+  expensesCreated          Expense[]            @relation("ExpenseCreatedBy")
   impersonationLogs        AgencyImpersonationLog[] @relation("ImpersonationActor")
 
   @@map("users")
@@ -186,6 +190,7 @@ model Customer {
   tenant           Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoices         Invoice[]
   recurringInvoices RecurringInvoice[]
+  expenses         Expense[]
 
   @@unique([tenantId, nif])
   @@index([tenantId])
@@ -841,4 +846,105 @@ model RecurringInvoiceLine {
   @@index([recurringInvoiceId])
   @@index([tenantId])
   @@map("recurring_invoice_lines")
+}
+
+// ==================== EXPENSES ====================
+
+model ExpenseCategory {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  name      String
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  expenses Expense[]
+
+  @@index([isActive, sortOrder])
+  @@map("expense_categories")
+}
+
+model Supplier {
+  id         String  @id @default(uuid())
+  tenantId   String  @map("tenant_id")
+  name       String
+  legalName  String? @map("legal_name")
+  taxId      String? @map("tax_id")
+  email      String?
+  phone      String?
+  address    String?
+  postalCode String? @map("postal_code")
+  city       String?
+  province   String?
+  country    String  @default("ES")
+  notes      String? @db.Text
+  isActive   Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  expenses Expense[]
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "suppliers_name_trgm_idx")
+  @@index([taxId(ops: raw("gin_trgm_ops"))], type: Gin, map: "suppliers_tax_id_trgm_idx")
+  @@map("suppliers")
+}
+
+model ExpenseAttachment {
+  id         String  @id @default(uuid())
+  tenantId   String  @map("tenant_id")
+  expenseId  String? @map("expense_id")
+  fileName   String  @map("file_name")
+  mimeType   String  @map("mime_type")
+  size       Int
+  storageKey String  @unique @map("storage_key")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant  Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  expense Expense[]
+
+  @@index([tenantId])
+  @@index([expenseId])
+  @@map("expense_attachments")
+}
+
+model Expense {
+  id              String  @id @default(uuid())
+  tenantId        String  @map("tenant_id")
+  date            DateTime @db.Date
+  description     String
+  categoryId      String  @map("category_id")
+  supplierId      String? @map("supplier_id")
+  clientId        String? @map("client_id")
+  baseAmount      Decimal @map("base_amount") @db.Decimal(12, 2)
+  vatRate         Decimal @map("vat_rate") @db.Decimal(5, 2)
+  vatAmount       Decimal @map("vat_amount") @db.Decimal(12, 2)
+  totalAmount     Decimal @map("total_amount") @db.Decimal(12, 2)
+  notes           String? @db.Text
+  attachmentId    String? @map("attachment_id")
+  createdByUserId String? @map("created_by_user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category      ExpenseCategory  @relation(fields: [categoryId], references: [id])
+  supplier      Supplier?        @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  client        Customer?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  attachment    ExpenseAttachment? @relation(fields: [attachmentId], references: [id], onDelete: SetNull)
+  createdByUser User?            @relation("ExpenseCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, date])
+  @@index([tenantId, categoryId])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, clientId])
+  @@index([tenantId, date, categoryId, supplierId, clientId])
+  @@index([description(ops: raw("gin_trgm_ops"))], type: Gin, map: "expenses_description_trgm_idx")
+  @@map("expenses")
 }

@@ -1052,6 +1052,149 @@ export interface UpdateInvoiceTemplateInput {
   layout?: Partial<InvoiceLayout>;
 }
 
+// ==================== EXPENSES ====================
+
+export interface ExpenseCategory {
+  id: string;
+  slug: string;
+  name: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Supplier {
+  id: string;
+  tenantId: string;
+  name: string;
+  legalName: string | null;
+  taxId: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  postalCode: string | null;
+  city: string | null;
+  province: string | null;
+  country: string;
+  notes: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExpenseAttachment {
+  id: string;
+  tenantId: string;
+  expenseId: string | null;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  storageKey: string;
+  createdAt: string;
+}
+
+export interface Expense {
+  id: string;
+  tenantId: string;
+  date: string;
+  description: string;
+  categoryId: string;
+  supplierId: string | null;
+  clientId: string | null;
+  baseAmount: number;
+  vatRate: number;
+  vatAmount: number;
+  totalAmount: number;
+  notes: string | null;
+  attachmentId: string | null;
+  createdByUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  category?: ExpenseCategory;
+  supplier?: Supplier | null;
+  client?: Customer | null;
+  attachment?: ExpenseAttachment | null;
+}
+
+export interface CreateExpenseInput {
+  date: string;
+  description: string;
+  categoryId: string;
+  supplierId?: string | null;
+  clientId?: string | null;
+  baseAmount: number;
+  vatRate: number;
+  notes?: string | null;
+  attachmentId?: string | null;
+}
+
+export interface UpdateExpenseInput {
+  date?: string;
+  description?: string;
+  categoryId?: string;
+  supplierId?: string | null;
+  clientId?: string | null;
+  baseAmount?: number;
+  vatRate?: number;
+  notes?: string | null;
+  attachmentId?: string | null;
+}
+
+export interface QueryExpensesInput {
+  page?: number;
+  limit?: number;
+  search?: string;
+  categoryId?: string;
+  supplierId?: string;
+  clientId?: string;
+  fromDate?: string;
+  toDate?: string;
+  sortBy?: 'date' | 'description' | 'totalAmount' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface ExpenseSummary {
+  monthTotal: number;
+  yearTotal: number;
+}
+
+export interface CreateSupplierInput {
+  name: string;
+  legalName?: string;
+  taxId?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  postalCode?: string;
+  city?: string;
+  province?: string;
+  country?: string;
+  notes?: string;
+}
+
+export interface UpdateSupplierInput {
+  name?: string;
+  legalName?: string;
+  taxId?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  postalCode?: string;
+  city?: string;
+  province?: string;
+  country?: string;
+  notes?: string;
+}
+
+export interface QuerySuppliersInput {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: 'name' | 'taxId' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
 // ==================== REPORTS ====================
 
 export interface DashboardStats {

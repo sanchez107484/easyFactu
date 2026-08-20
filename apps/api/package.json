@@ -4,6 +4,9 @@
   "description": "NovaFactura API - Backend NestJS",
   "private": true,
   "license": "UNLICENSED",
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "scripts": {
     "postinstall": "prisma generate --schema=./prisma/schema.prisma && node scripts/sync-prisma-client.js",
     "build": "nest build",
