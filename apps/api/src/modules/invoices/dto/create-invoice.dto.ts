@@ -193,13 +193,13 @@ export class CreateInvoiceDto {
 
   @ApiProperty({
     type: [CreateInvoiceLineDto],
-    description: 'Líneas de la factura (mínimo 1, máximo 50)',
+    description: 'Líneas de la factura (mínimo 1, máximo 100)',
   })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateInvoiceLineDto)
   @ArrayMinSize(1, { message: 'La factura debe tener al menos una línea' })
-  @ArrayMaxSize(50, { message: 'La factura no puede tener más de 50 líneas' })
+  @ArrayMaxSize(100, { message: 'La factura no puede tener más de 100 líneas' })
   lines!: CreateInvoiceLineDto[];
 
   @ApiPropertyOptional({ description: 'Notas adicionales', maxLength: 1000 })

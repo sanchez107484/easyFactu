@@ -83,7 +83,7 @@ const formSchema = z.object({
     .optional(),
   paymentDetails: paymentDetailsSchema,
   notes: z.string().max(1000, 'Máximo 1000 caracteres').optional(),
-  lines: z.array(extendedLineSchema).min(1, 'Añade al menos una línea').max(50),
+  lines: z.array(extendedLineSchema).min(1, 'Añade al menos una línea').max(100),
 });
 
 type FormData = z.infer<typeof formSchema>;

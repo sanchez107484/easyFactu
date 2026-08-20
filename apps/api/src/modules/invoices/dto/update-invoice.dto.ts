@@ -81,7 +81,7 @@ export class UpdateInvoiceDto {
   @ValidateNested({ each: true })
   @Type(() => CreateInvoiceLineDto)
   @ArrayMinSize(1, { message: 'La factura debe tener al menos una línea' })
-  @ArrayMaxSize(50, { message: 'La factura no puede tener más de 50 líneas' })
+  @ArrayMaxSize(100, { message: 'La factura no puede tener más de 100 líneas' })
   lines?: CreateInvoiceLineDto[];
 
   @ApiPropertyOptional({ maxLength: 1000 })

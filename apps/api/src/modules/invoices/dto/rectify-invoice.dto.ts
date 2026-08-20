@@ -96,6 +96,6 @@ export class RectifyInvoiceDto {
   @ValidateNested({ each: true })
   @Type(() => CreateRectificativeLineDto)
   @ArrayMinSize(1, { message: 'La factura rectificativa debe tener al menos una línea' })
-  @ArrayMaxSize(50, { message: 'La factura rectificativa no puede tener más de 50 líneas' })
+  @ArrayMaxSize(100, { message: 'La factura rectificativa no puede tener más de 100 líneas' })
   lines!: CreateRectificativeLineDto[];
 }
