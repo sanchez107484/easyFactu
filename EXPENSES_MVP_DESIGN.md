@@ -181,10 +181,11 @@ model ExpenseAttachment {
   mimeType    String   @map("mime_type")
   size        Int
   storageKey  String   @unique @map("storage_key")
+  content     String?  @db.Text
   createdAt   DateTime @default(now()) @map("created_at")
 
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  expense     Expense?
+  expense     Expense[]
 
   @@index([tenantId])
   @@index([expenseId])
@@ -352,7 +353,8 @@ Se reutiliza la misma lista de tipos de IVA usada en facturas (21%, 10%, 4%, 0%)
 2. ✅ Widget de resumen de gastos en el dashboard.
 3. ✅ Creación inline de proveedor desde el formulario de gasto.
 4. ✅ Adjuntos: subida, descarga, eliminación (almacenados como data URL base64 en `content`).
-5. ⏳ Filtros avanzados (periodo personalizado, categoría, proveedor, cliente, búsqueda).
+5. ✅ Tests de seguridad: IDOR, plan gating, validaciones y redondeo (33 tests).
+6. ⏳ Filtros avanzados (periodo personalizado, categoría, proveedor, cliente, búsqueda).
 
 ### Fase 4 — Tests de seguridad
 

@@ -25,6 +25,7 @@ export class ExpensesService {
   async create(tenantId: string, userId: string, dto: CreateExpenseDto) {
     await this.validateRelations(tenantId, dto);
     this.validateDate(dto.date);
+    this.validateBaseAmount(dto.baseAmount);
 
     const { vatAmount, totalAmount } = this.calculationService.calculate(
       dto.baseAmount,
@@ -173,6 +174,9 @@ export class ExpensesService {
     }
 
     const baseAmount = dto.baseAmount ?? existing.baseAmount;
+    if (dto.baseAmount !== undefined) {
+      this.validateBaseAmount(dto.baseAmount);
+    }
     const vatRate = dto.vatRate ?? existing.vatRate;
     const { vatAmount, totalAmount } = this.calculationService.calculate(
       Number(baseAmount),
@@ -299,6 +303,12 @@ export class ExpensesService {
       throw new BadRequestException(
         'La fecha debe estar dentro de un rango de 10 años desde hoy'
       );
+    }
+  }
+
+  private validateBaseAmount(baseAmount: number): void {
+    if (baseAmount <= 0) {
+      throw new BadRequestException('La base imponible debe ser mayor que 0');
     }
   }
 }
