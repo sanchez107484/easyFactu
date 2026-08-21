@@ -902,6 +902,7 @@ model ExpenseAttachment {
   mimeType   String  @map("mime_type")
   size       Int
   storageKey String  @unique @map("storage_key")
+  content    String? @db.Text
 
   createdAt DateTime @default(now()) @map("created_at")
 

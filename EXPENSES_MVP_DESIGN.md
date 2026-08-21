@@ -351,7 +351,7 @@ Se reutiliza la misma lista de tipos de IVA usada en facturas (21%, 10%, 4%, 0%)
 1. ✅ Downgrade PRO → FREE: acceso solo lectura a gastos y proveedores (backend + frontend).
 2. ✅ Widget de resumen de gastos en el dashboard.
 3. ✅ Creación inline de proveedor desde el formulario de gasto.
-4. ⏳ Adjuntos: subida, descarga, eliminación.
+4. ✅ Adjuntos: subida, descarga, eliminación (almacenados como data URL base64 en `content`).
 5. ⏳ Filtros avanzados (periodo personalizado, categoría, proveedor, cliente, búsqueda).
 
 ### Fase 4 — Tests de seguridad
@@ -381,4 +381,4 @@ Se reutiliza la misma lista de tipos de IVA usada en facturas (21%, 10%, 4%, 0%)
 - Los tipos compartidos (`Expense`, `Supplier`, `ExpenseCategory`, etc.) se añadirán a `packages/shared-types` para uso front/back.
 - Los DTOs de entrada se mantienen en `apps/api` siguiendo el patrón actual.
 - El cálculo de totales se hace con `Decimal` de Prisma para precisión; la lógica de redondeo usa `Math.round(value * 100) / 100`.
-- Los adjuntos se almacenan inicialmente en el filesystem bajo `uploads/expenses/` con `storageKey` único; en Fase 3 se evaluará si se migra a base de datos (data URL) siguiendo el patrón de logo/certificado.
+- Los adjuntos se almacenan como data URL base64 en la columna `content` de `expense_attachments`, siguiendo el patrón usado para el logo del tenant. Esto evita dependencias del filesystem en entornos serverless.

@@ -18,6 +18,7 @@ export default function NuevoGastoPage() {
       baseAmount: data.baseAmount,
       vatRate: data.vatRate,
       notes: data.notes || null,
+      attachmentId: data.attachmentId || null,
     });
     router.push('/dashboard/gastos');
   };

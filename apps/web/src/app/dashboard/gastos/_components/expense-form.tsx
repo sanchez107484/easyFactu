@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -18,12 +18,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Calendar, FileText, Euro, Percent, Loader2, Receipt, User } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  FileText,
+  Euro,
+  Percent,
+  Loader2,
+  Receipt,
+  User,
+  Paperclip,
+  Download,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { Expense, ExpenseCategory, Supplier, Customer } from '@easyfactura/shared-types';
 import { TAX_RATE_SELECT_OPTIONS } from '@easyfactura/shared-constants';
 import { useExpenseCategories } from '@/hooks/use-expense-categories';
 import { useSuppliers } from '@/hooks/use-suppliers';
 import { useCustomers } from '@/hooks/use-customers';
+import {
+  useUploadExpenseAttachment,
+  useDeleteExpenseAttachment,
+} from '@/hooks/use-expense-attachments';
 import { CreateSupplierDialog } from './create-supplier-dialog';
 import { round2 } from '@/lib/math';
 
@@ -36,6 +53,7 @@ const expenseSchema = z.object({
   baseAmount: z.number({ invalid_type_error: 'Introduce un importe válido' }).min(0.01, 'La base imponible debe ser mayor que 0'),
   vatRate: z.number().min(0).max(100),
   notes: z.string().max(2000).optional(),
+  attachmentId: z.string().uuid().optional().or(z.literal('')),
 });
 
 export type ExpenseFormData = z.infer<typeof expenseSchema>;
@@ -52,6 +70,135 @@ function formatCurrency(amount: number) {
   return amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+interface AttachmentsSectionProps {
+  expenseId?: string;
+  attachment?: Expense['attachment'];
+  readOnly?: boolean;
+  onAttachmentChange: (id: string | null) => void;
+}
+
+function AttachmentsSection({ expenseId, attachment, readOnly, onAttachmentChange }: AttachmentsSectionProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadMutation = useUploadExpenseAttachment();
+  const deleteMutation = useDeleteExpenseAttachment();
+
+  const handleFile = async (file: File) => {
+    const uploaded = await uploadMutation.mutateAsync({ file, expenseId });
+    onAttachmentChange(uploaded.id);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) void handleFile(file);
+    if (e.target.value) e.target.value = '';
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) void handleFile(file);
+  };
+
+  const handleRemove = async () => {
+    if (!attachment) return;
+    await deleteMutation.mutateAsync(attachment.id);
+    onAttachmentChange(null);
+  };
+
+  const handleDownload = () => {
+    if (!attachment) return;
+    window.open(`/api/expense-attachments/${attachment.id}/download`, '_blank');
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium flex items-center gap-2">
+          <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+          Adjunto <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
+        </Label>
+        {!readOnly && !attachment && (
+          <span className="text-xs text-muted-foreground">Máx. 5MB (JPG, PNG, PDF)</span>
+        )}
+      </div>
+
+      {attachment ? (
+        <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
+            <Paperclip className="h-4 w-4 text-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium truncate">{attachment.fileName}</p>
+            <p className="text-xs text-muted-foreground">{formatFileSize(attachment.size)}</p>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={handleDownload}
+              title="Descargar"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+            {!readOnly && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                onClick={handleRemove}
+                disabled={deleteMutation.isPending}
+                title="Eliminar"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      ) : readOnly ? (
+        <p className="text-sm text-muted-foreground italic">Sin adjunto</p>
+      ) : (
+        <div
+          onClick={() => fileInputRef.current?.click()}
+          onDrop={handleDrop}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          className={
+            'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-6 transition-colors ' +
+            (isDragging
+              ? 'border-primary bg-primary/5'
+              : 'border-muted-foreground/25 bg-muted/30 hover:bg-muted/50')
+          }
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+            <Upload className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <p className="text-sm font-medium">Arrastra un archivo o haz clic para subir</p>
+          <p className="text-xs text-muted-foreground">JPG, PNG, WEBP, GIF o PDF</p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+            onChange={handleInputChange}
+            disabled={uploadMutation.isPending}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = false }: ExpenseFormProps) {
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
@@ -64,6 +211,7 @@ export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = fal
       baseAmount: 0,
       vatRate: 21,
       notes: '',
+      attachmentId: '',
     },
   });
 
@@ -95,6 +243,7 @@ export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = fal
         baseAmount: base,
         vatRate: vat,
         notes: expense.notes ?? '',
+        attachmentId: expense.attachmentId ?? '',
       });
       setBaseAmountRaw(base > 0 ? formatBaseAmount(base) : '');
       setTotalRaw(base > 0 ? formatTotal(round2(base * (1 + vat / 100))) : '');
@@ -318,6 +467,13 @@ export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = fal
                     className="resize-none text-sm"
                   />
                 </div>
+
+                <AttachmentsSection
+                  expenseId={expense?.id}
+                  attachment={expense?.attachment}
+                  readOnly={readOnly}
+                  onAttachmentChange={(id) => form.setValue('attachmentId', id ?? '', { shouldValidate: true })}
+                />
               </div>
             </div>
 

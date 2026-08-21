@@ -21,6 +21,7 @@ import { PartnerModule } from './modules/partner/partner.module';
 import { ExpenseCategoriesModule } from './modules/expense-categories/expense-categories.module';
 import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
+import { ExpenseAttachmentsModule } from './modules/expense-attachments/expense-attachments.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { ExpensesModule } from './modules/expenses/expenses.module';
     ExpenseCategoriesModule,
     SuppliersModule,
     ExpensesModule,
+    ExpenseAttachmentsModule,
   ],
   controllers: [],
   providers: [

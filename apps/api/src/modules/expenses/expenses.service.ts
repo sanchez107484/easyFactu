@@ -51,7 +51,7 @@ export class ExpensesService {
         category: true,
         supplier: true,
         client: { select: { id: true, name: true, nif: true } },
-        attachment: true,
+        attachment: { select: { id: true, fileName: true, mimeType: true, size: true, storageKey: true, createdAt: true } },
       },
     });
   }
@@ -152,7 +152,7 @@ export class ExpensesService {
         category: true,
         supplier: true,
         client: { select: { id: true, name: true, nif: true } },
-        attachment: true,
+        attachment: { select: { id: true, fileName: true, mimeType: true, size: true, storageKey: true, createdAt: true } },
       },
     });
 
@@ -215,7 +215,7 @@ export class ExpensesService {
         category: true,
         supplier: true,
         client: { select: { id: true, name: true, nif: true } },
-        attachment: true,
+        attachment: { select: { id: true, fileName: true, mimeType: true, size: true, storageKey: true, createdAt: true } },
       },
     });
   }
