@@ -707,28 +707,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Resumen de gastos */}
-      {(isStillLoading || hasAnyData) && (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <StatCard
-            title="Gastos este mes"
-            value={formatCurrency(expenseSummary?.monthTotal ?? 0)}
-            description="Total registrado"
-            icon={Receipt}
-            isLoading={loadingExpenseSummary}
-            href="/dashboard/gastos"
-          />
-          <StatCard
-            title="Gastos acumulados"
-            value={formatCurrency(expenseSummary?.yearTotal ?? 0)}
-            description={`Ene – ${YTD_MONTHS[now.getMonth()]} ${now.getFullYear()}`}
-            icon={CalendarDays}
-            isLoading={loadingExpenseSummary}
-            href="/dashboard/gastos"
-          />
-        </div>
-      )}
-
       {/* Grafica + Ultimas facturas */}
       {(isStillLoading || hasAnyData) && (
         <div className="grid gap-6 lg:grid-cols-5">

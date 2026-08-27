@@ -5,6 +5,7 @@ export const prismaTest = new PrismaService();
 
 export async function cleanupTestData(ids: {
   expenseIds?: string[];
+  recurringExpenseIds?: string[];
   supplierIds?: string[];
   attachmentIds?: string[];
   categoryIds?: string[];
@@ -14,6 +15,11 @@ export async function cleanupTestData(ids: {
   if (ids.expenseIds?.length) {
     await prismaTest.expense.deleteMany({
       where: { id: { in: ids.expenseIds } },
+    });
+  }
+  if (ids.recurringExpenseIds?.length) {
+    await prismaTest.recurringExpense.deleteMany({
+      where: { id: { in: ids.recurringExpenseIds } },
     });
   }
   if (ids.attachmentIds?.length) {

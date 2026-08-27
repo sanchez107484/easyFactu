@@ -42,8 +42,10 @@ import {
   X,
   Euro,
   Calendar,
+  User,
+  Repeat,
 } from 'lucide-react';
-import { Expense, ExpenseCategory, Supplier, QueryExpensesInput } from '@easyfactura/shared-types';
+import { Expense, ExpenseCategory, Supplier, Customer, QueryExpensesInput } from '@easyfactura/shared-types';
 import {
   useExpenses,
   useDeleteExpense,
@@ -52,6 +54,7 @@ import {
 } from '@/hooks/use-expenses';
 import { useExpenseCategories } from '@/hooks/use-expense-categories';
 import { useSuppliers } from '@/hooks/use-suppliers';
+import { useCustomers } from '@/hooks/use-customers';
 import { useSortTable } from '@/hooks/use-sort-table';
 import { useHasProfessionalPlan } from '@/hooks/use-current-plan';
 import { SortableHeader } from '@/components/common/sortable-header';
@@ -178,18 +181,24 @@ export default function GastosPage() {
   const search = useDebounce(searchInput, 300);
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [supplierFilter, setSupplierFilter] = useState<string>('ALL');
+  const [clientFilter, setClientFilter] = useState<string>('ALL');
+  const [fromDate, setFromDate] = useState<string>('');
+  const [toDate, setToDate] = useState<string>('');
   const [page, setPage] = useState(1);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const { sortKey, sortDir, handleSort } = useSortTable('date', 'desc');
 
   useEffect(() => {
     setPage(1);
-  }, [search, categoryFilter, supplierFilter, sortKey, sortDir]);
+  }, [search, categoryFilter, supplierFilter, clientFilter, fromDate, toDate, sortKey, sortDir]);
 
   const { data, isLoading, error, refetch } = useExpenses({
     search: search || undefined,
     categoryId: categoryFilter !== 'ALL' ? categoryFilter : undefined,
     supplierId: supplierFilter !== 'ALL' ? supplierFilter : undefined,
+    clientId: clientFilter !== 'ALL' ? clientFilter : undefined,
+    fromDate: fromDate || undefined,
+    toDate: toDate || undefined,
     sortBy: sortKey as QueryExpensesInput['sortBy'],
     sortOrder: sortDir,
     page,
@@ -199,6 +208,7 @@ export default function GastosPage() {
   const { data: summaryData, isLoading: isSummaryLoading } = useExpenseSummary();
   const { data: categoriesData } = useExpenseCategories();
   const { data: suppliersData } = useSuppliers({ limit: 500 });
+  const { data: customersData } = useCustomers({ limit: 500 });
   const deleteMutation = useDeleteExpense();
   const prefetchExpense = usePrefetchExpense();
 
@@ -206,10 +216,16 @@ export default function GastosPage() {
   const total = data?.meta?.total ?? 0;
   const categories = categoriesData ?? [];
   const suppliers = suppliersData?.data ?? [];
+  const customers = customersData?.data ?? [];
   const canWrite = useHasProfessionalPlan();
 
   const isFiltered =
-    searchInput.trim().length > 0 || categoryFilter !== 'ALL' || supplierFilter !== 'ALL';
+    searchInput.trim().length > 0 ||
+    categoryFilter !== 'ALL' ||
+    supplierFilter !== 'ALL' ||
+    clientFilter !== 'ALL' ||
+    fromDate !== '' ||
+    toDate !== '';
 
   const handleDeleteConfirm = async () => {
     if (!expenseToDelete) return;
@@ -317,14 +333,24 @@ export default function GastosPage() {
               )}
             </div>
           </div>
-          {canWrite && (
-            <Link href="/dashboard/gastos/nuevo">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Nuevo gasto
-              </Button>
-            </Link>
-          )}
+          <div className="flex items-center gap-2">
+            {canWrite && (
+              <Link href="/dashboard/gastos/recurrentes">
+                <Button variant="outline">
+                  <Repeat className="mr-2 h-4 w-4" />
+                  Recurrentes
+                </Button>
+              </Link>
+            )}
+            {canWrite && (
+              <Link href="/dashboard/gastos/nuevo">
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nuevo gasto
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Read-only banner */}
@@ -399,6 +425,44 @@ export default function GastosPage() {
                   ))}
                 </SelectContent>
               </Select>
+
+              <Select value={clientFilter} onValueChange={setClientFilter}>
+                <SelectTrigger className="w-44">
+                  <SelectValue placeholder="Todos los clientes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Todos los clientes</SelectItem>
+                  {customers.map((customer: Customer) => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      {customer.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type="date"
+                    placeholder="Desde"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    className="pl-9 w-40"
+                  />
+                </div>
+                <span className="text-muted-foreground">-</span>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type="date"
+                    placeholder="Hasta"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    className="pl-9 w-40"
+                  />
+                </div>
+              </div>
             </div>
 
             {isFiltered && !isLoading && (
@@ -430,6 +494,9 @@ export default function GastosPage() {
                   setSearchInput('');
                   setCategoryFilter('ALL');
                   setSupplierFilter('ALL');
+                  setClientFilter('ALL');
+                  setFromDate('');
+                  setToDate('');
                 }}
               >
                 Limpiar filtros

@@ -22,6 +22,8 @@ import { ExpenseCategoriesModule } from './modules/expense-categories/expense-ca
 import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
 import { ExpenseAttachmentsModule } from './modules/expense-attachments/expense-attachments.module';
+import { RecurringExpensesModule } from './modules/recurring-expenses/recurring-expenses.module';
+import { ActivitySummaryModule } from './modules/activity-summary/activity-summary.module';
 
 @Module({
   imports: [
@@ -64,6 +66,8 @@ import { ExpenseAttachmentsModule } from './modules/expense-attachments/expense-
     SuppliersModule,
     ExpensesModule,
     ExpenseAttachmentsModule,
+    RecurringExpensesModule,
+    ActivitySummaryModule,
   ],
   controllers: [],
   providers: [

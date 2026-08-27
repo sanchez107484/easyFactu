@@ -191,6 +191,42 @@ model ExpenseAttachment {
   @@index([expenseId])
   @@map("expense_attachments")
 }
+
+model RecurringExpense {
+  id                  String                   @id @default(uuid())
+  tenantId            String                   @map("tenant_id")
+  description         String
+  categoryId          String                   @map("category_id")
+  supplierId          String?                  @map("supplier_id")
+  clientId            String?                  @map("client_id")
+  baseAmount          Decimal                  @map("base_amount") @db.Decimal(12, 2)
+  vatRate             Decimal                  @map("vat_rate") @db.Decimal(5, 2)
+  vatAmount           Decimal                  @map("vat_amount") @db.Decimal(12, 2)
+  totalAmount         Decimal                  @map("total_amount") @db.Decimal(12, 2)
+  frequency           RecurringExpenseFrequency
+  startDate           DateTime                 @map("start_date") @db.Date
+  endDate             DateTime?                @map("end_date") @db.Date
+  lastGeneratedDate   DateTime?                @map("last_generated_date") @db.Date
+  isActive            Boolean                  @default(true) @map("is_active")
+  notes               String?                  @db.Text
+  createdByUserId     String?                  @map("created_by_user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category      ExpenseCategory @relation(fields: [categoryId], references: [id])
+  supplier      Supplier?       @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  client        Customer?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  createdByUser User?           @relation("RecurringExpenseCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  generatedExpenses Expense[]   @relation("RecurringExpenseGenerated")
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+  @@index([tenantId, frequency])
+  @@index([description(ops: raw("gin_trgm_ops"))], type: Gin, map: "recurring_expenses_description_trgm_idx")
+  @@map("recurring_expenses")
+}
 ```
 
 ### 3.2 Cambios en modelos existentes
@@ -353,8 +389,10 @@ Se reutiliza la misma lista de tipos de IVA usada en facturas (21%, 10%, 4%, 0%)
 2. ✅ Widget de resumen de gastos en el dashboard.
 3. ✅ Creación inline de proveedor desde el formulario de gasto.
 4. ✅ Adjuntos: subida, descarga, eliminación (almacenados como data URL base64 en `content`).
-5. ✅ Tests de seguridad: IDOR, plan gating, validaciones y redondeo (33 tests).
-6. ⏳ Filtros avanzados (periodo personalizado, categoría, proveedor, cliente, búsqueda).
+5. ✅ Tests de seguridad: IDOR, plan gating, validaciones y redondeo (40 tests, incluyendo recurrentes).
+6. ✅ Filtros avanzados (periodo personalizado, categoría, proveedor, cliente, búsqueda).
+7. ✅ Sección Proveedores en sidebar principal (acceso PRO).
+8. ✅ Gastos recurrentes: modelo, backend, frontend y generación de gastos.
 
 ### Fase 4 — Tests de seguridad
 

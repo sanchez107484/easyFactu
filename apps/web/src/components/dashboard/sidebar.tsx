@@ -27,6 +27,8 @@ import {
   ShieldCheck,
   Upload,
   Receipt,
+  Truck,
+  Activity,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -60,11 +62,13 @@ type NavEntry = NavItem | NavSeparator;
 
 const defaultNavItems: NavEntry[] = [
   { title: 'Inicio', href: '/dashboard', icon: LayoutDashboard },
+  { title: 'Mi actividad', href: '/dashboard/mi-actividad', icon: Activity, requiredPlan: Plan.PROFESSIONAL },
   { title: 'Facturas', href: '/dashboard/facturas', icon: FileText },
   { title: 'Clientes', href: '/dashboard/clientes', icon: Users },
   { title: 'Productos', href: '/dashboard/productos', icon: Package },
   { title: 'Presupuestos', href: '/dashboard/presupuestos', icon: ClipboardList },
   { title: 'Gastos', href: '/dashboard/gastos', icon: Receipt, readOnlyBelowPlan: Plan.PROFESSIONAL },
+  { title: 'Proveedores', href: '/dashboard/proveedores', icon: Truck, requiredPlan: Plan.PROFESSIONAL },
   { title: 'Recurrentes', href: '/dashboard/recurrentes', icon: RefreshCw },
   {
     title: 'Importar',
@@ -82,6 +86,7 @@ const actingAsNavItems: NavEntry[] = defaultNavItems;
 const agencyNavItems: NavEntry[] = [
   // ── Facturación propia de la asesoría ─────────────────────────────────────
   { title: 'Inicio', href: '/dashboard', icon: LayoutDashboard },
+  { title: 'Mi actividad', href: '/dashboard/mi-actividad', icon: Activity, requiredPlan: Plan.PROFESSIONAL },
   { title: 'Facturas', href: '/dashboard/facturas', icon: FileText },
   {
     title: 'Clientes para facturar',
@@ -92,6 +97,7 @@ const agencyNavItems: NavEntry[] = [
   { title: 'Productos', href: '/dashboard/productos', icon: Package },
   { title: 'Presupuestos', href: '/dashboard/presupuestos', icon: ClipboardList },
   { title: 'Gastos', href: '/dashboard/gastos', icon: Receipt, readOnlyBelowPlan: Plan.PROFESSIONAL },
+  { title: 'Proveedores', href: '/dashboard/proveedores', icon: Truck, requiredPlan: Plan.PROFESSIONAL },
   { title: 'Recurrentes', href: '/dashboard/recurrentes', icon: RefreshCw },
   {
     title: 'Importar',

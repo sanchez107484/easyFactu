@@ -1195,6 +1195,84 @@ export interface QuerySuppliersInput {
   sortOrder?: 'asc' | 'desc';
 }
 
+export enum RecurringExpenseFrequency {
+  WEEKLY = 'WEEKLY',
+  MONTHLY = 'MONTHLY',
+  BIMONTHLY = 'BIMONTHLY',
+  QUARTERLY = 'QUARTERLY',
+  YEARLY = 'YEARLY',
+}
+
+export interface RecurringExpense {
+  id: string;
+  tenantId: string;
+  description: string;
+  categoryId: string;
+  supplierId: string | null;
+  clientId: string | null;
+  baseAmount: number;
+  vatRate: number;
+  vatAmount: number;
+  totalAmount: number;
+  frequency: RecurringExpenseFrequency;
+  startDate: string;
+  endDate: string | null;
+  lastGeneratedDate: string | null;
+  isActive: boolean;
+  notes: string | null;
+  createdByUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  category?: ExpenseCategory;
+  supplier?: Supplier | null;
+  client?: Customer | null;
+}
+
+export interface CreateRecurringExpenseInput {
+  description: string;
+  categoryId: string;
+  supplierId?: string | null;
+  clientId?: string | null;
+  baseAmount: number;
+  vatRate: number;
+  frequency: RecurringExpenseFrequency;
+  startDate: string;
+  endDate?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateRecurringExpenseInput {
+  description?: string;
+  categoryId?: string;
+  supplierId?: string | null;
+  clientId?: string | null;
+  baseAmount?: number;
+  vatRate?: number;
+  frequency?: RecurringExpenseFrequency;
+  startDate?: string;
+  endDate?: string | null;
+  isActive?: boolean;
+  notes?: string | null;
+}
+
+export interface QueryRecurringExpensesInput {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isActive?: boolean;
+  sortBy?: 'description' | 'startDate' | 'totalAmount' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface GenerateRecurringExpensesInput {
+  upToDate?: string;
+}
+
+export interface GenerateRecurringExpensesResult {
+  generatedCount: number;
+  lastGeneratedDate: string | null;
+}
+
 // ==================== REPORTS ====================
 
 export interface DashboardStats {
@@ -1274,12 +1352,18 @@ export interface InvoiceReportData {
   };
 }
 
-export interface QueryReportsInput {
-  fromDate: string;
-  toDate: string;
-}
 
-// ==================== AGENCY ====================
+
+export interface ActivitySummary {
+  incomeThisMonth: number;
+  incomeLastMonth: number;
+  incomeThisYear: number;
+  expenseThisMonth: number;
+  expenseLastMonth: number;
+  expenseThisYear: number;
+  monthlyChart: Array<{ month: string; ingresos: number; gastos: number }>;
+  topExpenseCategories: Array<{ categoryId: string; name: string; amount: number }>;
+}
 
 export interface AgencyClientRelation {
   id: string;
