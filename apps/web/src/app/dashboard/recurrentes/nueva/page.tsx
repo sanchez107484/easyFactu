@@ -102,7 +102,25 @@ const formSchema = z
       return data.endDate >= data.startDate;
     },
     { message: 'La fecha de fin debe ser posterior a la fecha de inicio', path: ['endDate'] },
-  );
+  )
+  .superRefine((data, ctx) => {
+    data.lines.forEach((line, i) => {
+      if (line.quantity <= 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'La cantidad debe ser mayor a 0',
+          path: ['lines', i, 'quantity'],
+        });
+      }
+      if (line.unitPrice < 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'No puede ser negativo',
+          path: ['lines', i, 'unitPrice'],
+        });
+      }
+    });
+  });
 
 type FormData = z.infer<typeof formSchema>;
 

@@ -154,7 +154,8 @@ export function buildPreviewInvoice(
     // - product: always show
     // - custom: hide only when _hideQty=true (user left quantity blank)
     const hideQty = l._mode === 'service' || (l._mode === 'custom' && l._hideQty === true);
-    const effectiveQty = l.quantity && l.quantity > 0 ? l.quantity : 1;
+    // Respect negative/zero quantities so rectification previews reflect the real line values.
+    const effectiveQty = l.quantity != null ? l.quantity : 1;
     // No intermediate round2 — preserve full unitPrice precision for accurate lineTotal
     const grossSubtotal = effectiveQty * (l.unitPrice ?? 0);
     const lineDiscount = l.discountPercent ?? 0;

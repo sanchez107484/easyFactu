@@ -27,8 +27,9 @@ export const LINE_MODE_META: Record<LineMode, { label: string; color: string }> 
 
 export const extendedLineSchema = z.object({
   description: z.string().min(2, 'Mínimo 2 caracteres').max(500, 'Máximo 500 caracteres'),
-  // quantity=0 means "not specified" in Libre mode → sent as 1 to API, hidden in invoice
-  quantity: z.number().min(0).default(1),
+  // quantity=0 means "not specified" in Libre mode → hidden in invoice.
+  // Negative values are allowed at schema level; non-rectificativa invoices validate > 0 in the form.
+  quantity: z.number().default(1),
   unitPrice: z.number({ invalid_type_error: 'Requerido' }),
   /** Per-line discount (0–100). Default 0 = no discount. */
   discountPercent: z.number().min(0).max(100).default(0),
@@ -69,7 +70,7 @@ export function stripLineMetaFields(
     _mode === 'service' || (_mode === 'custom' && (_hideQty === true || rest.quantity === 0));
   return {
     ...rest,
-    quantity: rest.quantity > 0 ? rest.quantity : 1,
+    quantity: rest.quantity != null ? rest.quantity : 1,
     hideQty,
   };
 }

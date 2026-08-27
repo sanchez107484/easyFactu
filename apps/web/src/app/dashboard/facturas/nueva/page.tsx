@@ -93,8 +93,8 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-// Construye el schema real usado por el resolver: solo bloquea unitPrice negativo
-// cuando la factura NO es rectificativa.
+// Construye el schema real usado por el resolver: bloquea cantidades y precios
+// negativos cuando la factura NO es rectificativa.
 function buildFormSchema(isRectificativa: boolean) {
   return formSchema.superRefine((data, ctx) => {
     if (isRectificativa) return;
@@ -104,6 +104,13 @@ function buildFormSchema(isRectificativa: boolean) {
           code: z.ZodIssueCode.custom,
           message: 'No puede ser negativo',
           path: ['lines', i, 'unitPrice'],
+        });
+      }
+      if (line.quantity <= 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'La cantidad debe ser mayor a 0',
+          path: ['lines', i, 'quantity'],
         });
       }
     });

@@ -84,6 +84,23 @@ const formSchema = z.object({
   paymentDetails: paymentDetailsSchema,
   notes: z.string().max(1000, 'Máximo 1000 caracteres').optional(),
   lines: z.array(extendedLineSchema).min(1, 'Añade al menos una línea').max(100),
+}).superRefine((data, ctx) => {
+  data.lines.forEach((line, i) => {
+    if (line.quantity <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'La cantidad debe ser mayor a 0',
+        path: ['lines', i, 'quantity'],
+      });
+    }
+    if (line.unitPrice < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'No puede ser negativo',
+        path: ['lines', i, 'unitPrice'],
+      });
+    }
+  });
 });
 
 type FormData = z.infer<typeof formSchema>;

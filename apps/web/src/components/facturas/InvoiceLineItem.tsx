@@ -268,7 +268,7 @@ export function InvoiceLineItem({
     if (newMode === 'product') {
       form.setValue(`lines.${index}._hideQty`, false);
       const currentQty = form.getValues(`lines.${index}.quantity`) as number;
-      if (!currentQty || currentQty < 1) {
+      if (!allowNegativePrice && (!currentQty || currentQty < 1)) {
         form.setValue(`lines.${index}.quantity`, 1);
       }
     }
@@ -473,7 +473,7 @@ export function InvoiceLineItem({
               <Input
                 type="number"
                 step="0.1"
-                min={mode === 'product' ? '1' : '0'}
+                min={allowNegativePrice ? undefined : mode === 'product' ? '1' : '0'}
                 placeholder="Cant."
                 className="w-[96px] text-sm h-9 pr-1"
                 data-invoice-qty={index}
@@ -502,13 +502,13 @@ export function InvoiceLineItem({
                     const safeNum = isNaN(num) ? 1 : num;
                     form.setValue(
                       `lines.${index}.quantity`,
-                      mode === 'product' ? Math.max(0, safeNum) : safeNum,
+                      mode === 'product' && !allowNegativePrice ? Math.max(0, safeNum) : safeNum,
                     );
                     form.setValue(`lines.${index}._hideQty`, false);
                   }
                 }}
                 onBlur={() => {
-                  if (mode === 'product') {
+                  if (mode === 'product' && !allowNegativePrice) {
                     const qty = form.getValues(`lines.${index}.quantity`) as number;
                     if (!qty || qty < 1) {
                       form.setValue(`lines.${index}.quantity`, 1);

@@ -172,7 +172,7 @@ export class InvoiceCalculationService {
     let taxTotal = 0;
 
     if (!isReagyp) {
-      const discountRatio = subtotal > 0 ? subtotalAfterDiscount / subtotal : 1;
+      const discountRatio = subtotal !== 0 ? subtotalAfterDiscount / subtotal : 1;
       const taxMap = new Map<number, { baseAmount: number; taxAmount: number; surchargeRate: number; surchargeAmount: number }>();
 
       lines.forEach((line, index) => {
