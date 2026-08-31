@@ -32,7 +32,7 @@ function resolveDocumentTitle(
   rectificationType?: string | null,
 ): string {
   if (isRectificative) {
-    const typeLabel = rectificationType === 'SUBSTITUTION' ? 'SUSTITUCIÓN' : 'DIFERENCIAS';
+    const typeLabel = rectificationType === 'SUBSTITUTION' ? 'SUSTITUCIÓN' : 'ABONOS';
     return `FACTURA RECTIFICATIVA (${typeLabel})`;
   }
   if (invoiceType === 'proforma') return 'FACTURA PROFORMA';

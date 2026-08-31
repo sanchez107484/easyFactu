@@ -296,11 +296,7 @@ function InvoiceLinesExpansion({ invoiceId }: { invoiceId: string }) {
   const lines = invoice?.lines ?? [];
 
   if (lines.length === 0) {
-    return (
-      <p className="px-6 py-4 text-sm text-muted-foreground">
-        Sin líneas
-      </p>
-    );
+    return <p className="px-6 py-4 text-sm text-muted-foreground">Sin líneas</p>;
   }
 
   return (
@@ -317,12 +313,8 @@ function InvoiceLinesExpansion({ invoiceId }: { invoiceId: string }) {
             <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">
               Precio/ud
             </th>
-            <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">
-              Dto.
-            </th>
-            <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">
-              IVA
-            </th>
+            <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Dto.</th>
+            <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">IVA</th>
             <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">
               Total
             </th>
@@ -332,7 +324,9 @@ function InvoiceLinesExpansion({ invoiceId }: { invoiceId: string }) {
           {lines.map((line) => (
             <tr
               key={line.id}
-              onClick={() => router.push(`/dashboard/facturas/${invoiceId}?highlightLine=${line.id}`)}
+              onClick={() =>
+                router.push(`/dashboard/facturas/${invoiceId}?highlightLine=${line.id}`)
+              }
               className="hover:bg-muted/20 cursor-pointer transition-colors"
             >
               <td className="px-4 py-2 max-w-[280px] truncate">{line.description}</td>
@@ -399,11 +393,6 @@ function InvoiceCardRow({
             {invoice.number ?? (isProforma ? 'PROFORMA' : 'BORRADOR')}
           </Link>
           <div className="flex flex-wrap gap-1 mt-0.5">
-            {invoice.isRectificative && (
-              <span className="text-[10px] text-muted-foreground bg-muted rounded px-1 py-0.5">
-                rectif.
-              </span>
-            )}
             {invoice.recurringInvoiceId && (
               <span className="text-[10px] font-medium text-primary bg-primary/10 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5">
                 <RefreshCw className="h-2.5 w-2.5" />
@@ -489,7 +478,8 @@ function InvoiceCardRow({
               <Copy className="mr-2 h-4 w-4" />
               Duplicar
             </DropdownMenuItem>
-            {(invoice.status === InvoiceStatus.DRAFT || invoice.status === InvoiceStatus.PROFORMA) && (
+            {(invoice.status === InvoiceStatus.DRAFT ||
+              invoice.status === InvoiceStatus.PROFORMA) && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -570,7 +560,17 @@ export default function FacturasPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter, paymentStatusFilter, sortKey, sortDir, fromDate, toDate, searchLines, customerId]);
+  }, [
+    search,
+    statusFilter,
+    paymentStatusFilter,
+    sortKey,
+    sortDir,
+    fromDate,
+    toDate,
+    searchLines,
+    customerId,
+  ]);
 
   const { data, isLoading, error, refetch } = useInvoices({
     search: search || undefined,
@@ -625,8 +625,7 @@ export default function FacturasPage() {
     !!toDate ||
     !!customerId;
 
-  const advancedFilterCount =
-    (fromDate ? 1 : 0) + (toDate ? 1 : 0) + (customerId ? 1 : 0);
+  const advancedFilterCount = (fromDate ? 1 : 0) + (toDate ? 1 : 0) + (customerId ? 1 : 0);
 
   if (!isLoading && !error && total === 0 && !hasActiveFilters) {
     return (
@@ -699,7 +698,10 @@ export default function FacturasPage() {
           <Button
             variant={showAdvancedFilters || advancedFilterCount > 0 ? 'secondary' : 'outline'}
             onClick={() => setShowAdvancedFilters((v) => !v)}
-            className={cn('shrink-0 gap-1.5', advancedFilterCount > 0 && 'ring-2 ring-primary ring-offset-1')}
+            className={cn(
+              'shrink-0 gap-1.5',
+              advancedFilterCount > 0 && 'ring-2 ring-primary ring-offset-1',
+            )}
           >
             <SlidersHorizontal className="h-4 w-4" />
             <span className="hidden sm:inline text-sm">Filtros</span>
@@ -712,15 +714,8 @@ export default function FacturasPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Switch
-            id="search-lines-toggle"
-            checked={searchLines}
-            onCheckedChange={setSearchLines}
-          />
-          <Label
-            htmlFor="search-lines-toggle"
-            className="text-sm cursor-pointer select-none"
-          >
+          <Switch id="search-lines-toggle" checked={searchLines} onCheckedChange={setSearchLines} />
+          <Label htmlFor="search-lines-toggle" className="text-sm cursor-pointer select-none">
             Buscar en líneas de factura
           </Label>
           {searchLines && (
@@ -781,7 +776,10 @@ export default function FacturasPage() {
                     <Command
                       filter={(value, search) => {
                         const normalize = (s: string) =>
-                          s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                          s
+                            .toLowerCase()
+                            .normalize('NFD')
+                            .replace(/[\u0300-\u036f]/g, '');
                         return normalize(value).includes(normalize(search)) ? 1 : 0;
                       }}
                     >
@@ -912,7 +910,9 @@ export default function FacturasPage() {
                       key={result.id}
                       result={result}
                       onViewInvoice={() => router.push(`/dashboard/facturas/${result.id}`)}
-                      onViewLine={(lineId) => router.push(`/dashboard/facturas/${result.id}?highlightLine=${lineId}`)}
+                      onViewLine={(lineId) =>
+                        router.push(`/dashboard/facturas/${result.id}?highlightLine=${lineId}`)
+                      }
                     />
                   ))}
                 </div>
@@ -953,9 +953,7 @@ export default function FacturasPage() {
                         <div>
                           <div className="flex items-center px-2 pt-2">
                             <button
-                              onClick={() =>
-                                setExpandedInvoiceId(isExpanded ? null : invoice.id)
-                              }
+                              onClick={() => setExpandedInvoiceId(isExpanded ? null : invoice.id)}
                               className="p-1 rounded hover:bg-muted transition-colors"
                               title={isExpanded ? 'Ocultar líneas' : 'Ver líneas'}
                             >
@@ -1067,121 +1065,144 @@ export default function FacturasPage() {
                         const isExpanded = expandedInvoiceId === invoice.id;
                         return (
                           <Fragment key={invoice.id}>
-                          <tr
-                            onMouseEnter={() => prefetchInvoice(invoice.id)}
-                            className={cn(
-                              'group transition-colors hover:bg-muted/30',
-                              overdue &&
-                                'bg-overdue-50/50 hover:bg-overdue-50 dark:bg-overdue-950/10 dark:hover:bg-overdue-950/20',
-                            )}
-                          >
-                            {/* Expand toggle */}
-                            <td className="px-2 py-3">
-                              <button
-                                onClick={() =>
-                                  setExpandedInvoiceId(isExpanded ? null : invoice.id)
-                                }
-                                className="p-1 rounded hover:bg-muted transition-colors"
-                                title={isExpanded ? 'Ocultar líneas' : 'Ver líneas'}
-                              >
-                                {isExpanded ? (
-                                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                ) : (
-                                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                                )}
-                              </button>
-                            </td>
-                            {/* Número */}
-                            <td className="px-6 py-3">
-                              <Link
-                                href={`/dashboard/facturas/${invoice.id}`}
-                                className="font-mono text-sm font-medium hover:text-primary transition-colors"
-                              >
-                                {invoice.number ?? (isProforma ? 'PROFORMA' : 'BORRADOR')}
-                              </Link>
-                              <div className="flex flex-wrap gap-1 mt-0.5">
-                                {invoice.isRectificative && (
-                                  <span className="text-[10px] text-muted-foreground bg-muted rounded px-1 py-0.5">
-                                    rectif.
-                                  </span>
-                                )}
-                                {invoice.recurringInvoiceId && (
-                                  <span className="text-[10px] font-medium text-primary bg-primary/10 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5">
-                                    <RefreshCw className="h-2.5 w-2.5" />
-                                    recurrente
-                                  </span>
-                                )}
-                                {isProforma && (
-                                  <span className="text-[10px] font-medium text-proforma-700 bg-proforma-100 dark:text-proforma-300 dark:bg-proforma-900/40 rounded px-1.5 py-0.5">
-                                    proforma
-                                  </span>
-                                )}
-                                {invoice.createdByAgency && (
-                                  <span
-                                    className="text-[10px] font-medium text-agency-700 bg-agency-100 dark:text-agency-300 dark:bg-agency-900/40 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5"
-                                    title={`Creada por ${invoice.createdByAgency.agencyName} · ${invoice.createdByAgency.userName}`}
-                                  >
-                                    <Building2 className="h-2.5 w-2.5" />
-                                    asesoría
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium truncate max-w-[180px]">
-                                  {invoice.customerSnapshotName ?? invoice.customer?.name ?? '-'}
-                                </p>
-                                {(invoice.customerSnapshotNif ?? invoice.customer?.nif) && (
-                                  <p className="text-xs font-mono text-muted-foreground">
-                                    {invoice.customerSnapshotNif ?? invoice.customer?.nif}
-                                  </p>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-sm text-muted-foreground hidden sm:table-cell whitespace-nowrap">
-                              {formatDateShort(invoice.issueDate)}
-                            </td>
-                            <td className="px-4 py-3 hidden lg:table-cell whitespace-nowrap">
-                              {invoice.dueDate ? (
-                                <span
-                                  className={cn(
-                                    'inline-flex items-center gap-1 text-sm',
-                                    overdue
-                                      ? 'text-overdue-600 dark:text-overdue-400 font-medium'
-                                      : 'text-muted-foreground',
-                                  )}
+                            <tr
+                              onMouseEnter={() => prefetchInvoice(invoice.id)}
+                              className={cn(
+                                'group transition-colors hover:bg-muted/30',
+                                overdue &&
+                                  'bg-overdue-50/50 hover:bg-overdue-50 dark:bg-overdue-950/10 dark:hover:bg-overdue-950/20',
+                              )}
+                            >
+                              {/* Expand toggle */}
+                              <td className="px-2 py-3">
+                                <button
+                                  onClick={() =>
+                                    setExpandedInvoiceId(isExpanded ? null : invoice.id)
+                                  }
+                                  className="p-1 rounded hover:bg-muted transition-colors"
+                                  title={isExpanded ? 'Ocultar líneas' : 'Ver líneas'}
                                 >
-                                  {overdue && <CalendarClock className="h-3.5 w-3.5 shrink-0" />}
-                                  {formatDateShort(invoice.dueDate)}
-                                  {overdue && (
-                                    <span className="ml-1 rounded-full bg-overdue-100 dark:bg-overdue-900/50 border border-overdue-200 dark:border-overdue-800 text-overdue-600 dark:text-overdue-400 text-[10px] font-semibold px-1.5 py-0.5">
-                                      Vencida
+                                  {isExpanded ? (
+                                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                  )}
+                                </button>
+                              </td>
+                              {/* Número */}
+                              <td className="px-6 py-3">
+                                <Link
+                                  href={`/dashboard/facturas/${invoice.id}`}
+                                  className="font-mono text-sm font-medium hover:text-primary transition-colors"
+                                >
+                                  {invoice.number ?? (isProforma ? 'PROFORMA' : 'BORRADOR')}
+                                </Link>
+                                <div className="flex flex-wrap gap-1 mt-0.5">
+                                  {invoice.recurringInvoiceId && (
+                                    <span className="text-[10px] font-medium text-primary bg-primary/10 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5">
+                                      <RefreshCw className="h-2.5 w-2.5" />
+                                      recurrente
                                     </span>
                                   )}
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">-</span>
-                              )}
-                            </td>
-                            {/* Total */}
-                            <td className="px-4 py-3 text-right text-sm font-semibold tabular-nums whitespace-nowrap">
-                              {formatCurrency(Number(invoice.total))}
-                            </td>
-                            {/* Estado */}
-                            <td className="px-4 py-3">
-                              <InvoiceStatusBadge
-                                status={isProforma ? InvoiceStatus.PROFORMA : invoice.status}
-                              />
-                            </td>
-                            {/* Cobro */}
-                            <td className="px-4 py-3 hidden sm:table-cell">
-                              {invoice.status !== InvoiceStatus.DRAFT &&
-                              invoice.status !== InvoiceStatus.PROFORMA ? (
-                                <InvoicePaymentSection
+                                  {isProforma && (
+                                    <span className="text-[10px] font-medium text-proforma-700 bg-proforma-100 dark:text-proforma-300 dark:bg-proforma-900/40 rounded px-1.5 py-0.5">
+                                      proforma
+                                    </span>
+                                  )}
+                                  {invoice.createdByAgency && (
+                                    <span
+                                      className="text-[10px] font-medium text-agency-700 bg-agency-100 dark:text-agency-300 dark:bg-agency-900/40 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5"
+                                      title={`Creada por ${invoice.createdByAgency.agencyName} · ${invoice.createdByAgency.userName}`}
+                                    >
+                                      <Building2 className="h-2.5 w-2.5" />
+                                      asesoría
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate max-w-[180px]">
+                                    {invoice.customerSnapshotName ?? invoice.customer?.name ?? '-'}
+                                  </p>
+                                  {(invoice.customerSnapshotNif ?? invoice.customer?.nif) && (
+                                    <p className="text-xs font-mono text-muted-foreground">
+                                      {invoice.customerSnapshotNif ?? invoice.customer?.nif}
+                                    </p>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-muted-foreground hidden sm:table-cell whitespace-nowrap">
+                                {formatDateShort(invoice.issueDate)}
+                              </td>
+                              <td className="px-4 py-3 hidden lg:table-cell whitespace-nowrap">
+                                {invoice.dueDate ? (
+                                  <span
+                                    className={cn(
+                                      'inline-flex items-center gap-1 text-sm',
+                                      overdue
+                                        ? 'text-overdue-600 dark:text-overdue-400 font-medium'
+                                        : 'text-muted-foreground',
+                                    )}
+                                  >
+                                    {overdue && <CalendarClock className="h-3.5 w-3.5 shrink-0" />}
+                                    {formatDateShort(invoice.dueDate)}
+                                    {overdue && (
+                                      <span className="ml-1 rounded-full bg-overdue-100 dark:bg-overdue-900/50 border border-overdue-200 dark:border-overdue-800 text-overdue-600 dark:text-overdue-400 text-[10px] font-semibold px-1.5 py-0.5">
+                                        Vencida
+                                      </span>
+                                    )}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">-</span>
+                                )}
+                              </td>
+                              {/* Total */}
+                              <td className="px-4 py-3 text-right text-sm font-semibold tabular-nums whitespace-nowrap">
+                                {formatCurrency(Number(invoice.total))}
+                              </td>
+                              {/* Estado */}
+                              <td className="px-4 py-3">
+                                <InvoiceStatusBadge
+                                  status={isProforma ? InvoiceStatus.PROFORMA : invoice.status}
+                                />
+                              </td>
+                              {/* Cobro */}
+                              <td className="px-4 py-3 hidden sm:table-cell">
+                                {invoice.status !== InvoiceStatus.DRAFT &&
+                                invoice.status !== InvoiceStatus.PROFORMA ? (
+                                  <InvoicePaymentSection
+                                    invoice={invoice}
+                                    showIcon={false}
+                                    onRegisterPayment={() =>
+                                      setPaidTarget({
+                                        id: invoice.id,
+                                        number: invoice.number,
+                                        customerName: invoice.customer?.name ?? '—',
+                                        total: Number(invoice.total),
+                                        amountPaid: Number(invoice.amountPaid ?? 0),
+                                        paymentMethod: invoice.paymentMethod,
+                                      })
+                                    }
+                                  />
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">—</span>
+                                )}
+                              </td>
+                              {/* Acción rápida */}
+                              <td className="px-4 py-3 hidden md:table-cell">
+                                <QuickActionButton
                                   invoice={invoice}
-                                  showIcon={false}
-                                  onRegisterPayment={() =>
+                                  onRequestConfirm={() =>
+                                    setConfirmTarget({
+                                      id: invoice.id,
+                                      number: invoice.number,
+                                      customerName: invoice.customer?.name ?? '—',
+                                      total: Number(invoice.total),
+                                      isProforma,
+                                    })
+                                  }
+                                  onRequestPaid={() =>
                                     setPaidTarget({
                                       id: invoice.id,
                                       number: invoice.number,
@@ -1191,143 +1212,116 @@ export default function FacturasPage() {
                                       paymentMethod: invoice.paymentMethod,
                                     })
                                   }
+                                  onRequestConvert={() => setConvertId(invoice.id)}
                                 />
-                              ) : (
-                                <span className="text-sm text-muted-foreground">—</span>
-                              )}
-                            </td>
-                            {/* Acción rápida */}
-                            <td className="px-4 py-3 hidden md:table-cell">
-                              <QuickActionButton
-                                invoice={invoice}
-                                onRequestConfirm={() =>
-                                  setConfirmTarget({
-                                    id: invoice.id,
-                                    number: invoice.number,
-                                    customerName: invoice.customer?.name ?? '—',
-                                    total: Number(invoice.total),
-                                    isProforma,
-                                  })
-                                }
-                                onRequestPaid={() =>
-                                  setPaidTarget({
-                                    id: invoice.id,
-                                    number: invoice.number,
-                                    customerName: invoice.customer?.name ?? '—',
-                                    total: Number(invoice.total),
-                                    amountPaid: Number(invoice.amountPaid ?? 0),
-                                    paymentMethod: invoice.paymentMethod,
-                                  })
-                                }
-                                onRequestConvert={() => setConvertId(invoice.id)}
-                              />
-                            </td>
-                            {/* Menú ⋮ */}
-                            <td className="px-4 py-3 text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem asChild>
-                                    <Link href={`/dashboard/facturas/${invoice.id}`}>
-                                      <FileText className="mr-2 h-4 w-4" />
-                                      Ver detalle
-                                    </Link>
-                                  </DropdownMenuItem>
-                                  {invoice.status === InvoiceStatus.DRAFT && (
+                              </td>
+                              {/* Menú ⋮ */}
+                              <td className="px-4 py-3 text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
                                     <DropdownMenuItem asChild>
-                                      <Link href={`/dashboard/facturas/nueva?edit=${invoice.id}`}>
-                                        <Pencil className="mr-2 h-4 w-4" />
-                                        {isProforma ? 'Editar proforma' : 'Editar borrador'}
+                                      <Link href={`/dashboard/facturas/${invoice.id}`}>
+                                        <FileText className="mr-2 h-4 w-4" />
+                                        Ver detalle
                                       </Link>
                                     </DropdownMenuItem>
-                                  )}
-                                  {invoice.status === InvoiceStatus.DRAFT && !isProforma && (
+                                    {invoice.status === InvoiceStatus.DRAFT && (
+                                      <DropdownMenuItem asChild>
+                                        <Link href={`/dashboard/facturas/nueva?edit=${invoice.id}`}>
+                                          <Pencil className="mr-2 h-4 w-4" />
+                                          {isProforma ? 'Editar proforma' : 'Editar borrador'}
+                                        </Link>
+                                      </DropdownMenuItem>
+                                    )}
+                                    {invoice.status === InvoiceStatus.DRAFT && !isProforma && (
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          setConfirmTarget({
+                                            id: invoice.id,
+                                            number: invoice.number,
+                                            customerName: invoice.customer?.name ?? '—',
+                                            total: Number(invoice.total),
+                                          })
+                                        }
+                                      >
+                                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                                        Confirmar factura
+                                      </DropdownMenuItem>
+                                    )}
+                                    {invoice.status === InvoiceStatus.DRAFT && isProforma && (
+                                      <DropdownMenuItem onClick={() => setConvertId(invoice.id)}>
+                                        <ArrowRightLeft className="mr-2 h-4 w-4" />
+                                        Convertir a factura oficial
+                                      </DropdownMenuItem>
+                                    )}
+                                    {invoice.status === InvoiceStatus.CONFIRMED && (
+                                      <DropdownMenuItem
+                                        onClick={() => markSentMutation.mutate(invoice.id)}
+                                        disabled={markSentMutation.isPending}
+                                      >
+                                        <Send className="mr-2 h-4 w-4" />
+                                        Marcar como enviada
+                                      </DropdownMenuItem>
+                                    )}
+                                    {invoice.status === InvoiceStatus.SENT && (
+                                      <DropdownMenuItem
+                                        onClick={() => unmarkSentMutation.mutate(invoice.id)}
+                                        disabled={unmarkSentMutation.isPending}
+                                      >
+                                        <Undo2 className="mr-2 h-4 w-4" />
+                                        Deshacer envío
+                                      </DropdownMenuItem>
+                                    )}
+                                    {invoice.status === InvoiceStatus.PAID && (
+                                      <DropdownMenuItem
+                                        onClick={() => unmarkPaidMutation.mutate(invoice.id)}
+                                        disabled={unmarkPaidMutation.isPending}
+                                      >
+                                        <Undo2 className="mr-2 h-4 w-4" />
+                                        Deshacer pago
+                                      </DropdownMenuItem>
+                                    )}
+                                    {invoice.number && (
+                                      <DownloadDropdownItem invoiceId={invoice.id} />
+                                    )}
                                     <DropdownMenuItem
                                       onClick={() =>
-                                        setConfirmTarget({
-                                          id: invoice.id,
-                                          number: invoice.number,
-                                          customerName: invoice.customer?.name ?? '—',
-                                          total: Number(invoice.total),
-                                        })
+                                        router.push(
+                                          `/dashboard/facturas/nueva?duplicate=${invoice.id}`,
+                                        )
                                       }
                                     >
-                                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                                      Confirmar factura
+                                      <Copy className="mr-2 h-4 w-4" />
+                                      Duplicar
                                     </DropdownMenuItem>
-                                  )}
-                                  {invoice.status === InvoiceStatus.DRAFT && isProforma && (
-                                    <DropdownMenuItem onClick={() => setConvertId(invoice.id)}>
-                                      <ArrowRightLeft className="mr-2 h-4 w-4" />
-                                      Convertir a factura oficial
-                                    </DropdownMenuItem>
-                                  )}
-                                  {invoice.status === InvoiceStatus.CONFIRMED && (
-                                    <DropdownMenuItem
-                                      onClick={() => markSentMutation.mutate(invoice.id)}
-                                      disabled={markSentMutation.isPending}
-                                    >
-                                      <Send className="mr-2 h-4 w-4" />
-                                      Marcar como enviada
-                                    </DropdownMenuItem>
-                                  )}
-                                  {invoice.status === InvoiceStatus.SENT && (
-                                    <DropdownMenuItem
-                                      onClick={() => unmarkSentMutation.mutate(invoice.id)}
-                                      disabled={unmarkSentMutation.isPending}
-                                    >
-                                      <Undo2 className="mr-2 h-4 w-4" />
-                                      Deshacer envío
-                                    </DropdownMenuItem>
-                                  )}
-                                  {invoice.status === InvoiceStatus.PAID && (
-                                    <DropdownMenuItem
-                                      onClick={() => unmarkPaidMutation.mutate(invoice.id)}
-                                      disabled={unmarkPaidMutation.isPending}
-                                    >
-                                      <Undo2 className="mr-2 h-4 w-4" />
-                                      Deshacer pago
-                                    </DropdownMenuItem>
-                                  )}
-                                  {invoice.number && (
-                                    <DownloadDropdownItem invoiceId={invoice.id} />
-                                  )}
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      router.push(
-                                        `/dashboard/facturas/nueva?duplicate=${invoice.id}`,
-                                      )
-                                    }
-                                  >
-                                    <Copy className="mr-2 h-4 w-4" />
-                                    Duplicar
-                                  </DropdownMenuItem>
-                                  {(invoice.status === InvoiceStatus.DRAFT || invoice.status === InvoiceStatus.PROFORMA) && (
-                                    <>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem
-                                        className="text-destructive focus:text-destructive"
-                                        onClick={() => setDeleteId(invoice.id)}
-                                      >
-                                        {isProforma ? 'Eliminar proforma' : 'Eliminar borrador'}
-                                      </DropdownMenuItem>
-                                    </>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </td>
-                          </tr>
-                          {isExpanded && (
-                            <tr>
-                              <td colSpan={10} className="bg-muted/10 p-0 border-b">
-                                <InvoiceLinesExpansion invoiceId={invoice.id} />
+                                    {(invoice.status === InvoiceStatus.DRAFT ||
+                                      invoice.status === InvoiceStatus.PROFORMA) && (
+                                      <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          className="text-destructive focus:text-destructive"
+                                          onClick={() => setDeleteId(invoice.id)}
+                                        >
+                                          {isProforma ? 'Eliminar proforma' : 'Eliminar borrador'}
+                                        </DropdownMenuItem>
+                                      </>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </td>
                             </tr>
-                          )}
+                            {isExpanded && (
+                              <tr>
+                                <td colSpan={10} className="bg-muted/10 p-0 border-b">
+                                  <InvoiceLinesExpansion invoiceId={invoice.id} />
+                                </td>
+                              </tr>
+                            )}
                           </Fragment>
                         );
                       })}

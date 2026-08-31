@@ -13,6 +13,7 @@ import {
   InvoiceType as PrismaInvoiceType,
   PaymentStatus as PrismaPaymentStatus,
   QuoteAcceptanceStatus as PrismaQuoteAcceptanceStatus,
+  RectificationType as PrismaRectificationType,
 } from '@prisma/client';
 import { CreateInvoiceDto, CreateInvoiceLineDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
@@ -727,6 +728,11 @@ export class InvoiceService {
           customerSnapshotNif: true,
           customer: { select: { id: true, name: true, nif: true } },
           series: { select: { id: true, name: true, prefix: true } },
+          isRectificative: true,
+          rectifiedInvoiceId: true,
+          rectificationReason: true,
+          rectificationType: true,
+          rectifiedInvoice: { select: { id: true, number: true, issueDate: true } },
           payments: {
             select: { id: true, amount: true, paymentDate: true, paymentMethod: true, notes: true },
             orderBy: { paymentDate: 'desc' },
@@ -812,6 +818,10 @@ export class InvoiceService {
           i.surcharge_total AS "surchargeTotal", i.total,
           i.amount_paid AS "amountPaid", i.payment_method AS "paymentMethod",
           i.notes, i.hash, i.compensacion_percent AS "compensacionPercent",
+          i.is_rectificative AS "isRectificative",
+          i.rectified_invoice_id AS "rectifiedInvoiceId",
+          i.rectification_reason AS "rectificationReason",
+          i.rectification_type AS "rectificationType",
           i.created_at AS "createdAt", i.updated_at AS "updatedAt",
           i.created_by_user_id AS "createdByUserId",
           i.customer_snapshot_name AS "customerSnapshotName",
@@ -1050,6 +1060,7 @@ export class InvoiceService {
         rectificationType: true,
         validUntil: true,
         quoteAcceptanceStatus: true,
+        series: { select: { id: true, type: true } },
         lines: {
           orderBy: { sortOrder: 'asc' },
           select: {
@@ -1245,6 +1256,34 @@ export class InvoiceService {
       );
     }
 
+    // Defensive: a rectificative series must always be paired with isRectificative=true.
+    // If this ever happens it means the invoice metadata was corrupted externally.
+    if (invoice.series?.type === SeriesType.RECTIFICATIVE && !invoice.isRectificative) {
+      throw new ConflictException(
+        'Inconsistencia detectada: la factura usa una serie rectificativa pero no está marcada como rectificativa.'
+      );
+    }
+
+    // Rectificatives are tied to the original invoice's customer. Changing the customer
+    // would create a legally inconsistent document (a credit note for someone else's invoice).
+    if (invoice.isRectificative && dto.customerId && dto.customerId !== invoice.customerId) {
+      throw new BadRequestException(
+        'No se puede cambiar el cliente de una factura rectificativa. ' +
+          'La rectificativa debe pertenecer al mismo cliente que la factura original.'
+      );
+    }
+
+    // Rectificatives cannot be turned into proformas or quotes.
+    if (
+      invoice.isRectificative &&
+      dto.invoiceType &&
+      (dto.invoiceType === 'proforma' || dto.invoiceType === 'quote')
+    ) {
+      throw new BadRequestException(
+        'No se puede convertir una factura rectificativa en proforma o presupuesto.'
+      );
+    }
+
     const customerId = dto.customerId ?? invoice.customerId;
     const expectedSeriesType = invoice.isRectificative
       ? SeriesType.RECTIFICATIVE
@@ -1337,6 +1376,11 @@ export class InvoiceService {
         subtotal: totals.subtotal,
         taxTotal: totals.taxTotal,
         total: totals.total,
+        // Defensive: rectification metadata must never be dropped by an update.
+        isRectificative: invoice.isRectificative,
+        rectifiedInvoiceId: invoice.rectifiedInvoiceId,
+        rectificationReason: invoice.rectificationReason,
+        rectificationType: invoice.rectificationType as PrismaRectificationType | undefined,
       };
 
       return tx.invoice.update({
@@ -1346,6 +1390,7 @@ export class InvoiceService {
           lines: { orderBy: { sortOrder: 'asc' } },
           customer: true,
           series: true,
+          rectifiedInvoice: { select: { id: true, number: true, issueDate: true } },
         },
       });
     });
@@ -1374,12 +1419,28 @@ export class InvoiceService {
       );
     }
 
+    // Defensive: a rectificative series must always be paired with isRectificative=true.
+    if (invoice.series?.type === SeriesType.RECTIFICATIVE && !invoice.isRectificative) {
+      throw new ConflictException(
+        'Inconsistencia detectada: la factura usa una serie rectificativa pero no está marcada como rectificativa.'
+      );
+    }
+
     // Validación específica para facturas rectificativas
     if (invoice.isRectificative) {
       const lines = invoice.lines as unknown as CreateInvoiceLineDto[];
       if (!lines || lines.length === 0) {
         throw new BadRequestException(
           'La factura rectificativa debe tener al menos una línea antes de confirmar.'
+        );
+      }
+
+      // Defensive: a rectificative invoice must always reference the original invoice
+      // and carry its type + reason. If any of these is missing the document is invalid.
+      if (!invoice.rectifiedInvoiceId || !invoice.rectificationType || !invoice.rectificationReason) {
+        throw new BadRequestException(
+          'La factura rectificativa no tiene completa la información de rectificación ' +
+            '(factura original, tipo o motivo). Crea una nueva rectificativa desde la factura original.'
         );
       }
 
@@ -1462,10 +1523,13 @@ export class InvoiceService {
             lines: { orderBy: { sortOrder: 'asc' } },
             customer: true,
             series: true,
+            rectifiedInvoice: { select: { id: true, number: true, issueDate: true } },
           },
         });
 
-        // Si es una rectificativa, marcar la original como RECTIFIED
+        // Mark the original invoice as RECTIFIED so the user can see it has been
+        // rectified, regardless of whether it is a substitution or a credit note.
+        // Aggregates handle the two cases differently (see getStats/getReports).
         if (invoice.isRectificative && invoice.rectifiedInvoiceId) {
           await tx.invoice.update({
             where: { id: invoice.rectifiedInvoiceId },
@@ -1770,6 +1834,7 @@ export class InvoiceService {
             lines: { orderBy: { sortOrder: 'asc' } },
             customer: true,
             series: true,
+            rectifiedInvoice: { select: { id: true, number: true, issueDate: true } },
           },
         });
       }
@@ -2146,6 +2211,39 @@ export class InvoiceService {
 
   // ==================== STATS & REPORTS ====================
 
+  /**
+   * Returns a SQL predicate that selects:
+   * - Normal confirmed/sent/paid invoices.
+   - Invoices marked as RECTIFIED whose confirmed rectificatives are **only**
+   *   credit notes (DIFFERENCES). Those originals remain economically valid and
+   *   must be summed algebraically with their credit notes.
+   * - It excludes RECTIFIED invoices that were substituted (SUBSTITUTION), because
+   *   the substitute invoice already replaces them in the aggregates.
+   */
+  private buildRectificationAwareStatusFilter(alias: string = 'i'): Prisma.Sql {
+    const prefix = alias ? `${alias}.` : '';
+    return Prisma.sql`
+      (
+        ${Prisma.raw(`${prefix}status`)} IN ('CONFIRMED', 'SENT', 'PAID')
+        OR (
+          ${Prisma.raw(`${prefix}status`)} = 'RECTIFIED'
+          AND EXISTS (
+            SELECT 1 FROM invoices r
+            WHERE r.rectified_invoice_id = ${Prisma.raw(`${prefix}id`)}
+              AND r.rectification_type = 'DIFFERENCES'
+              AND r.status IN ('CONFIRMED', 'SENT', 'PAID')
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM invoices r
+            WHERE r.rectified_invoice_id = ${Prisma.raw(`${prefix}id`)}
+              AND r.rectification_type = 'SUBSTITUTION'
+              AND r.status IN ('CONFIRMED', 'SENT', 'PAID')
+          )
+        )
+      )
+    `;
+  }
+
   async getStats(tenantId: string, year?: number) {
     const now = new Date();
     const targetYear = year ?? now.getFullYear();
@@ -2187,43 +2285,43 @@ export class InvoiceService {
     ] = await Promise.all([
       this.prisma.$queryRaw<MonthlyRow[]>(Prisma.sql`
         SELECT
-          EXTRACT(MONTH FROM issue_date)::int AS month,
-          SUM(total)::text                    AS total
-        FROM invoices
-        WHERE tenant_id = ${tenantId}
-          AND status IN ('CONFIRMED', 'SENT', 'PAID')
-          AND issue_date >= ${yearStart}
-          AND issue_date <  ${yearEnd}
+          EXTRACT(MONTH FROM i.issue_date)::int AS month,
+          SUM(i.total)::text                    AS total
+        FROM invoices i
+        WHERE i.tenant_id = ${tenantId}
+          AND ${this.buildRectificationAwareStatusFilter('i')}
+          AND i.issue_date >= ${yearStart}
+          AND i.issue_date <  ${yearEnd}
         GROUP BY month
       `),
       this.prisma.$queryRaw<MonthlyRow[]>(Prisma.sql`
         SELECT
-          EXTRACT(MONTH FROM issue_date)::int AS month,
-          SUM(total)::text                    AS total
-        FROM invoices
-        WHERE tenant_id = ${tenantId}
-          AND status IN ('CONFIRMED', 'SENT', 'PAID')
-          AND issue_date >= ${prevYearStart}
-          AND issue_date <  ${prevYearEnd}
+          EXTRACT(MONTH FROM i.issue_date)::int AS month,
+          SUM(i.total)::text                    AS total
+        FROM invoices i
+        WHERE i.tenant_id = ${tenantId}
+          AND ${this.buildRectificationAwareStatusFilter('i')}
+          AND i.issue_date >= ${prevYearStart}
+          AND i.issue_date <  ${prevYearEnd}
         GROUP BY month
       `),
       this.prisma.$queryRaw<KpiRow[]>(Prisma.sql`
         SELECT
-          SUM(total) FILTER (WHERE issue_date >= ${thisMonthStart} AND issue_date < ${nextMonthStart})::text AS this_month_total,
-          COUNT(*)   FILTER (WHERE issue_date >= ${thisMonthStart} AND issue_date < ${nextMonthStart})       AS this_month_count,
-          SUM(total) FILTER (WHERE issue_date >= ${lastMonthStart} AND issue_date < ${thisMonthStart})::text AS last_month_total
-        FROM invoices
-        WHERE tenant_id = ${tenantId}
-          AND status IN ('CONFIRMED', 'SENT', 'PAID')
-          AND issue_date >= ${lastMonthStart}
-          AND issue_date <  ${nextMonthStart}
+          SUM(i.total) FILTER (WHERE i.issue_date >= ${thisMonthStart} AND i.issue_date < ${nextMonthStart})::text AS this_month_total,
+          COUNT(*)     FILTER (WHERE i.issue_date >= ${thisMonthStart} AND i.issue_date < ${nextMonthStart})       AS this_month_count,
+          SUM(i.total) FILTER (WHERE i.issue_date >= ${lastMonthStart} AND i.issue_date < ${thisMonthStart})::text AS last_month_total
+        FROM invoices i
+        WHERE i.tenant_id = ${tenantId}
+          AND ${this.buildRectificationAwareStatusFilter('i')}
+          AND i.issue_date >= ${lastMonthStart}
+          AND i.issue_date <  ${nextMonthStart}
       `),
       this.prisma.$queryRaw<PendingRow[]>(Prisma.sql`
-        SELECT SUM(total - amount_paid)::text AS pending
-        FROM invoices
-        WHERE tenant_id = ${tenantId}
-          AND status IN ('CONFIRMED', 'SENT')
-          AND payment_status IN ('UNPAID', 'PARTIALLY_PAID')
+        SELECT SUM(i.total - i.amount_paid)::text AS pending
+        FROM invoices i
+        WHERE i.tenant_id = ${tenantId}
+          AND ${this.buildRectificationAwareStatusFilter('i')}
+          AND i.payment_status IN ('UNPAID', 'PARTIALLY_PAID')
       `),
       this.prisma.customer.count({ where: { tenantId } }),
       this.prisma.product.count({ where: { tenantId } }),
@@ -2236,22 +2334,22 @@ export class InvoiceService {
       `),
       this.prisma.$queryRaw<OverdueRow[]>(Prisma.sql`
         SELECT
-          COUNT(*)::bigint         AS count,
-          SUM(total - amount_paid)::text AS amount
-        FROM invoices
-        WHERE tenant_id = ${tenantId}
-          AND status IN ('CONFIRMED', 'SENT')
-          AND payment_status IN ('UNPAID', 'PARTIALLY_PAID')
-          AND due_date IS NOT NULL
-          AND due_date < ${today}
+          COUNT(*)::bigint                 AS count,
+          SUM(i.total - i.amount_paid)::text AS amount
+        FROM invoices i
+        WHERE i.tenant_id = ${tenantId}
+          AND ${this.buildRectificationAwareStatusFilter('i')}
+          AND i.payment_status IN ('UNPAID', 'PARTIALLY_PAID')
+          AND i.due_date IS NOT NULL
+          AND i.due_date < ${today}
       `),
       this.prisma.$queryRaw<VatRow[]>(Prisma.sql`
-        SELECT SUM(tax_total)::text AS vat, SUM(surcharge_total)::text AS surcharge
-        FROM invoices
-        WHERE tenant_id = ${tenantId}
-          AND status IN ('CONFIRMED', 'SENT', 'PAID')
-          AND issue_date >= ${thisQuarterStart}
-          AND issue_date <  ${nextQuarterStart}
+        SELECT SUM(i.tax_total)::text AS vat, SUM(i.surcharge_total)::text AS surcharge
+        FROM invoices i
+        WHERE i.tenant_id = ${tenantId}
+          AND ${this.buildRectificationAwareStatusFilter('i')}
+          AND i.issue_date >= ${thisQuarterStart}
+          AND i.issue_date < ${nextQuarterStart}
       `),
     ]);
 
@@ -2336,14 +2434,14 @@ export class InvoiceService {
     const [monthlyRows, customerRows, summaryRows] = await Promise.all([
       this.prisma.$queryRaw<MonthlyRow[]>(Prisma.sql`
         SELECT
-          TO_CHAR(issue_date, 'YYYY-MM') AS month,
-          SUM(total)::text               AS revenue,
-          COUNT(*)                       AS invoices
-        FROM invoices
-        WHERE tenant_id = ${tenantId}
-          AND status IN ('CONFIRMED', 'SENT', 'PAID')
-          AND issue_date >= ${from}
-          AND issue_date <= ${to}
+          TO_CHAR(i.issue_date, 'YYYY-MM') AS month,
+          SUM(i.total)::text               AS revenue,
+          COUNT(*)                         AS invoices
+        FROM invoices i
+        WHERE i.tenant_id = ${tenantId}
+          AND ${this.buildRectificationAwareStatusFilter('i')}
+          AND i.issue_date >= ${from}
+          AND i.issue_date <= ${to}
         GROUP BY month
         ORDER BY month ASC
       `),
@@ -2356,7 +2454,7 @@ export class InvoiceService {
         FROM invoices i
         JOIN customers c ON c.id = i.customer_id
         WHERE i.tenant_id = ${tenantId}
-          AND i.status IN ('CONFIRMED', 'SENT', 'PAID')
+          AND ${this.buildRectificationAwareStatusFilter('i')}
           AND i.issue_date >= ${from}
           AND i.issue_date <= ${to}
         GROUP BY c.id, c.name
@@ -2365,16 +2463,16 @@ export class InvoiceService {
       `),
       this.prisma.$queryRaw<SummaryRow[]>(Prisma.sql`
         SELECT
-          SUM(subtotal)::text        AS total_subtotal,
-          SUM(tax_total)::text       AS total_iva,
-          SUM(irpf_total)::text      AS total_irpf,
-          SUM(surcharge_total)::text AS total_surcharge,
-          COUNT(*)                   AS invoices_count
-        FROM invoices
-        WHERE tenant_id = ${tenantId}
-          AND status IN ('CONFIRMED', 'SENT', 'PAID')
-          AND issue_date >= ${from}
-          AND issue_date <= ${to}
+          SUM(i.subtotal)::text        AS total_subtotal,
+          SUM(i.tax_total)::text       AS total_iva,
+          SUM(i.irpf_total)::text      AS total_irpf,
+          SUM(i.surcharge_total)::text AS total_surcharge,
+          COUNT(*)                     AS invoices_count
+        FROM invoices i
+        WHERE i.tenant_id = ${tenantId}
+          AND ${this.buildRectificationAwareStatusFilter('i')}
+          AND i.issue_date >= ${from}
+          AND i.issue_date <= ${to}
       `),
     ]);
 

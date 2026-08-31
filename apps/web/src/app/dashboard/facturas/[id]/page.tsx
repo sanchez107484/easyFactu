@@ -534,7 +534,7 @@ export default function FacturaDetailPage() {
             )}
 
             {/* ZONA A.6 — Información rectificativa */}
-            {invoice.isRectificative && invoice.rectificationReason && (
+            {invoice.isRectificative && (
               <div className="rounded-xl border border-rectificativa-200 dark:border-rectificativa-800 bg-rectificativa-50 dark:bg-rectificativa-950/30 px-4 py-3">
                 <div className="flex items-start gap-3">
                   <ArrowRightLeft className="h-4 w-4 text-rectificativa-600 dark:text-rectificativa-400 shrink-0 mt-0.5" />
@@ -545,10 +545,12 @@ export default function FacturaDetailPage() {
                         ? 'sustitución'
                         : 'abonos'}
                     </p>
-                    <p className="text-xs text-rectificativa-600 dark:text-rectificativa-400 mt-1">
-                      <span className="font-medium">Motivo:</span> {invoice.rectificationReason}
-                    </p>
-                    {invoice.rectifiedInvoiceId && (
+                    {invoice.rectificationReason && (
+                      <p className="text-xs text-rectificativa-600 dark:text-rectificativa-400 mt-1">
+                        <span className="font-medium">Motivo:</span> {invoice.rectificationReason}
+                      </p>
+                    )}
+                    {invoice.rectifiedInvoiceId ? (
                       <p className="text-xs text-rectificativa-600 dark:text-rectificativa-400 mt-0.5">
                         <span className="font-medium">Rectifica a:</span>{' '}
                         <Link
@@ -558,6 +560,10 @@ export default function FacturaDetailPage() {
                           Ver factura original →
                         </Link>
                       </p>
+                    ) : (
+                      <p className="text-xs text-destructive mt-0.5">
+                        Falta la factura original de referencia.
+                      </p>
                     )}
                   </div>
                 </div>
@@ -565,37 +571,49 @@ export default function FacturaDetailPage() {
             )}
 
             {/* ZONA A.7 — Facturas rectificativas emitidas */}
-            {invoice.status === InvoiceStatus.RECTIFIED &&
-              invoice.rectificativeInvoices &&
-              invoice.rectificativeInvoices.length > 0 && (
-                <div className="rounded-xl border border-rectificativa-200 dark:border-rectificativa-800 bg-rectificativa-50 dark:bg-rectificativa-950/30 px-4 py-3">
-                  <div className="flex items-start gap-3">
-                    <ArrowRightLeft className="h-4 w-4 text-rectificativa-600 dark:text-rectificativa-400 shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-rectificativa-700 dark:text-rectificativa-300 leading-tight">
-                        Factura{invoice.rectificativeInvoices.length > 1 ? 's' : ''} rectificativa
-                        {invoice.rectificativeInvoices.length > 1 ? 's' : ''} emitida
-                        {invoice.rectificativeInvoices.length > 1 ? 's' : ''}
-                      </p>
-                      <div className="mt-2 space-y-1">
-                        {invoice.rectificativeInvoices.map((rect) => (
-                          <Link
-                            key={rect.id}
-                            href={`/dashboard/facturas/${rect.id}`}
-                            className="block text-xs text-rectificativa-600 dark:text-rectificativa-400 hover:text-rectificativa-700 dark:hover:text-rectificativa-300 underline"
-                          >
-                            {rect.number ?? 'Borrador'} —{' '}
-                            {new Date(rect.issueDate).toLocaleDateString('es-ES')} —{' '}
-                            {rect.rectificationType === RectificationType.SUBSTITUTION
-                              ? 'Sustitución'
-                              : 'Abonos'}
-                          </Link>
-                        ))}
-                      </div>
+            {invoice.rectificativeInvoices && invoice.rectificativeInvoices.length > 0 && (
+              <div className="rounded-xl border border-rectificativa-200 dark:border-rectificativa-800 bg-rectificativa-50 dark:bg-rectificativa-950/30 px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <ArrowRightLeft className="h-4 w-4 text-rectificativa-600 dark:text-rectificativa-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    {(() => {
+                      const hasSubstitution = invoice.rectificativeInvoices!.some(
+                        (r) => r.rectificationType === RectificationType.SUBSTITUTION,
+                      );
+                      return (
+                        <>
+                          <p className="text-sm font-medium text-rectificativa-700 dark:text-rectificativa-300 leading-tight">
+                            {hasSubstitution
+                              ? `Factura${invoice.rectificativeInvoices!.length > 1 ? 's' : ''} rectificativa${invoice.rectificativeInvoices!.length > 1 ? 's' : ''} que la sustituye${invoice.rectificativeInvoices!.length > 1 ? 'n' : ''}`
+                              : `Ajuste${invoice.rectificativeInvoices!.length > 1 ? 's' : ''} por abono emitido${invoice.rectificativeInvoices!.length > 1 ? 's' : ''} sobre esta factura`}
+                          </p>
+                          <p className="text-xs text-rectificativa-600 dark:text-rectificativa-400 mt-0.5">
+                            {hasSubstitution
+                              ? 'La factura original queda neutralizada; la sustitutiva es el documento válido.'
+                              : 'La factura original sigue vigente; el abono se suma algebraicamente.'}
+                          </p>
+                        </>
+                      );
+                    })()}
+                    <div className="mt-2 space-y-1">
+                      {invoice.rectificativeInvoices.map((rect) => (
+                        <Link
+                          key={rect.id}
+                          href={`/dashboard/facturas/${rect.id}`}
+                          className="block text-xs text-rectificativa-600 dark:text-rectificativa-400 hover:text-rectificativa-700 dark:hover:text-rectificativa-300 underline"
+                        >
+                          {rect.number ?? 'Borrador'} —{' '}
+                          {new Date(rect.issueDate).toLocaleDateString('es-ES')} —{' '}
+                          {rect.rectificationType === RectificationType.SUBSTITUTION
+                            ? 'Sustitución'
+                            : 'Abonos'}
+                        </Link>
+                      ))}
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
             {/* ZONA B — Cliente */}
             <div className="rounded-xl border bg-card p-5">

@@ -426,7 +426,7 @@ export class InvoicePdfService {
   }): string {
     if (invoice.isRectificative) {
       const typeLabel =
-        invoice.rectificationType === 'SUBSTITUTION' ? 'SUSTITUCIÓN' : 'DIFERENCIAS';
+        invoice.rectificationType === 'SUBSTITUTION' ? 'SUSTITUCIÓN' : 'ABONOS';
       return `Factura Rectificativa (${typeLabel})`;
     }
     return this.resolveDocumentTypeLabel(invoice.invoiceType);
