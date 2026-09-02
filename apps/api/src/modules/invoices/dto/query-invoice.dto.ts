@@ -31,8 +31,25 @@ export class QueryInvoiceDto extends PaginationDto {
 
   @ApiPropertyOptional({ enum: InvoiceStatus })
   @IsOptional()
-  @IsEnum(InvoiceStatus)
-  status?: InvoiceStatus;
+  @ApiPropertyOptional({ enum: InvoiceStatus, isArray: true })
+  @IsOptional()
+  @Transform(({ value, obj }) => {
+    const raw = value ?? (obj as Record<string, unknown>).status;
+    if (raw === undefined || raw === null) return undefined;
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === 'string') {
+      // Accept comma separated values (status=A,B) or single value
+      if (raw.includes(','))
+        return raw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+      return [raw];
+    }
+    return raw;
+  })
+  @IsEnum(InvoiceStatus, { each: true })
+  status?: InvoiceStatus | InvoiceStatus[];
 
   @ApiPropertyOptional({ enum: PaymentStatus })
   @IsOptional()
@@ -75,7 +92,9 @@ export class QueryInvoiceDto extends PaginationDto {
   @IsBoolean()
   isReagyp?: boolean;
 
-  @ApiPropertyOptional({ description: 'Buscar también en líneas de factura (descripción, producto)' })
+  @ApiPropertyOptional({
+    description: 'Buscar también en líneas de factura (descripción, producto)',
+  })
   @IsOptional()
   @Transform(({ obj }) => {
     const raw = (obj as Record<string, unknown>).searchLines;
@@ -97,4 +116,9 @@ export class QueryInvoiceDto extends PaginationDto {
   @Type(() => Number)
   @IsNumber()
   maxUnitPrice?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  rectifiableOnly?: boolean;
 }

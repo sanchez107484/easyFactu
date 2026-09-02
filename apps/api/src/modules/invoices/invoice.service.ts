@@ -653,13 +653,35 @@ export class InvoiceService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.InvoiceWhereInput = { tenantId };
-
+    /*
     if (status) {
       where.status = status;
     } else {
       // Exclude quotes from the invoices list — they have their own section
       where.status = { not: PrismaInvoiceStatus.QUOTE };
     }
+      */
+
+    // Support array status (e.g. [CONFIRMED, SENT, PAID]) and rectifiableOnly flag
+    const q = query as any;
+    if (q?.rectifiableOnly) {
+      where.status = {
+        in: [PrismaInvoiceStatus.CONFIRMED, PrismaInvoiceStatus.SENT, PrismaInvoiceStatus.PAID],
+      };
+    } else if (Array.isArray(status)) {
+      if (status.length > 0) {
+        where.status = { in: status as PrismaInvoiceStatus[] };
+      } else {
+        // Empty array sent from client -> treat as no filter (keep default exclusion)
+        where.status = { not: PrismaInvoiceStatus.QUOTE };
+      }
+    } else if (status) {
+      where.status = status as PrismaInvoiceStatus;
+    } else {
+      // Exclude quotes from the invoices list — they have their own section
+      where.status = { not: PrismaInvoiceStatus.QUOTE };
+    }
+
     if (customerId) where.customerId = customerId;
 
     if (fromDate || toDate) {
@@ -779,9 +801,26 @@ export class InvoiceService {
     const offset = (page - 1) * limit;
     const pattern = `%${search}%`;
 
-    const statusFilter = status
-      ? Prisma.sql`AND i.status = ${status}::text::"InvoiceStatus"`
-      : Prisma.sql`AND i.status != 'QUOTE'::text::"InvoiceStatus"`;
+    let statusFilter: Prisma.Sql;
+    if (status) {
+      if (Array.isArray(status)) {
+        if (status.length === 0) {
+          // Treat empty arrays as no filter
+          statusFilter = Prisma.sql`AND i.status != 'QUOTE'::text::"InvoiceStatus"`;
+        } else {
+          // Build a safe IN list with explicit enum casts for Postgres
+          const statusList = Prisma.join(
+            status.map((s) => Prisma.sql`${s}::text::"InvoiceStatus"`),
+            ','
+          );
+          statusFilter = Prisma.sql`AND i.status IN (${statusList})`;
+        }
+      } else {
+        statusFilter = Prisma.sql`AND i.status = ${status}::text::"InvoiceStatus"`;
+      }
+    } else {
+      statusFilter = Prisma.sql`AND i.status != 'QUOTE'::text::"InvoiceStatus"`;
+    }
 
     const paymentStatusFilter = paymentStatus
       ? Prisma.sql`AND i.payment_status = ${paymentStatus}::text::"PaymentStatus"`
@@ -1437,7 +1476,11 @@ export class InvoiceService {
 
       // Defensive: a rectificative invoice must always reference the original invoice
       // and carry its type + reason. If any of these is missing the document is invalid.
-      if (!invoice.rectifiedInvoiceId || !invoice.rectificationType || !invoice.rectificationReason) {
+      if (
+        !invoice.rectifiedInvoiceId ||
+        !invoice.rectificationType ||
+        !invoice.rectificationReason
+      ) {
         throw new BadRequestException(
           'La factura rectificativa no tiene completa la información de rectificación ' +
             '(factura original, tipo o motivo). Crea una nueva rectificativa desde la factura original.'

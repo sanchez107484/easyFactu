@@ -27,6 +27,8 @@ import {
   CalendarDays,
   Receipt,
   BarChart2,
+  RotateCcw,
+  Banknote,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -564,10 +566,8 @@ export default function DashboardPage() {
       {!tenant?.setupCompleted && !isBannerDismissed && (
         <SetupBanner completedSteps={completedSteps} onDismiss={dismissBanner} />
       )}
-
       {/* Pending agency invitations */}
       <InvitationCards />
-
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -591,9 +591,8 @@ export default function DashboardPage() {
           </Button>
         </Link>
       </div>
-
       {/* Acciones rapidas */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      {/* <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Link href="/dashboard/facturas/nueva?tipo=standard">
           <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer h-full">
             <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
@@ -628,6 +627,68 @@ export default function DashboardPage() {
             <div className="min-w-0">
               <p className="text-sm font-medium leading-tight">Rectificativa</p>
               <p className="text-xs text-muted-foreground leading-tight mt-0.5">Corregir factura</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/clientes/nuevo">
+          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-customer-400/50 hover:bg-customer-50 dark:hover:bg-customer-950/20 transition-all cursor-pointer h-full">
+            <div className="h-9 w-9 rounded-lg bg-customer-100 dark:bg-customer-900/30 flex items-center justify-center shrink-0 group-hover:bg-customer-200 dark:group-hover:bg-customer-900/50 transition-colors">
+              <UserPlus className="h-4 w-4 text-customer-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium leading-tight">Nuevo cliente</p>
+              <p className="text-xs text-muted-foreground leading-tight mt-0.5">Añadir cliente</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/productos/nuevo">
+          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-product-400/50 hover:bg-product-50 dark:hover:bg-product-950/20 transition-all cursor-pointer h-full">
+            <div className="h-9 w-9 rounded-lg bg-product-100 dark:bg-product-900/30 flex items-center justify-center shrink-0 group-hover:bg-product-200 dark:group-hover:bg-product-900/50 transition-colors">
+              <Package className="h-4 w-4 text-product-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium leading-tight">Nuevo producto</p>
+              <p className="text-xs text-muted-foreground leading-tight mt-0.5">O servicio</p>
+            </div>
+          </div>
+        </Link>
+      </div> */}
+      {/* // grid-cols-5 ahora con 5 botones también pero nuevos */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <Link href="/dashboard/facturas/nueva?tipo=standard">
+          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer h-full">
+            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+              <FilePlus className="h-4 w-4 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium leading-tight">Nueva factura</p>
+              <p className="text-xs text-muted-foreground leading-tight mt-0.5">Factura estandar</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/facturas/rectificar?tipo=sustitucion">
+          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-rectificativa-400/50 hover:bg-rectificativa-50 transition-all h-full">
+            <div className="h-9 w-9 rounded-lg bg-rectificativa-100 flex items-center justify-center">
+              <RotateCcw className="h-4 w-4 text-rectificativa-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium leading-tight">Crear Rectificativa</p>
+              <p className="text-xs text-muted-foreground">Por sustitución</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/facturas/rectificar?tipo=abono">
+          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-orange-400/50 hover:bg-orange-50 transition-all h-full">
+            <div className="h-9 w-9 rounded-lg bg-orange-100 flex items-center justify-center">
+              <Banknote className="h-4 w-4 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium leading-tight">Crear Abono / Devolución</p>
+              <p className="text-xs text-muted-foreground">Por ajuste</p>
             </div>
           </div>
         </Link>
@@ -704,7 +765,6 @@ export default function DashboardPage() {
           />
         </div>
       )}
-
       {/* Grafica + Ultimas facturas */}
       {(isStillLoading || hasAnyData) && (
         <div className="grid gap-6 lg:grid-cols-5">
@@ -812,7 +872,6 @@ export default function DashboardPage() {
           </Card>
         </div>
       )}
-
       {/* Empty state primer uso */}
       {!isStillLoading && !hasAnyData && (
         <Card className="border-dashed">
