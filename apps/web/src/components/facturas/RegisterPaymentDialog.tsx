@@ -31,8 +31,7 @@ import { cn, formatCurrency } from '@/lib/utils';
 
 const partialPaymentSchema = z.object({
   amount: z
-    .number({ invalid_type_error: 'El importe es obligatorio' })
-    .positive('El importe debe ser mayor que 0'),
+    .number({ invalid_type_error: 'El importe es obligatorio' }),
   paymentDate: z.string().min(1, 'La fecha es obligatoria'),
   paymentMethod: z.nativeEnum(PaymentMethod).optional(),
   notes: z.string().max(500).optional(),
