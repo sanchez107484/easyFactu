@@ -7,56 +7,100 @@ import { brandConfig } from '@easyfactura/brand-config';
 import {
   ArrowRight,
   CheckCircle2,
-  Shield,
-  Repeat,
-  Gift,
-  AlertTriangle,
-  Eye,
+  FileText,
   Users,
+  ShieldCheck,
+  MousePointerClick,
+  UserPlus,
+  Eye,
+  Download,
+  ArrowDownToLine,
   FileSpreadsheet,
 } from 'lucide-react';
 
 const faqs = [
   {
-    q: '¿Puede mi asesoría hacer las facturas de mis clientes sin que ellos tengan cuenta?',
-    a: 'Sí. Puedes dar de alta a tus clientes directamente desde tu panel de asesoría con sus datos fiscales. Ellos no necesitan crear ninguna cuenta ni recibir ningún correo. Tú gestionas todo, ellos reciben el PDF de su factura igual que siempre.',
+    q: '¿Puede una asesoría hacer las facturas de sus clientes?',
+    a: 'Sí. Puedes añadir a tus clientes desde el panel de asesoría y comenzar a gestionar su facturación directamente.',
   },
   {
-    q: '¿Las facturas quedan a nombre de mi cliente o de mi asesoría?',
-    a: 'Siempre a nombre del cliente. Aunque tú las emites desde tu sesión de asesoría, cada factura pertenece al NIF del cliente con su propia serie correlativa y su cadena VeriFactu. Hacienda la ve como emitida por el cliente, no por tu despacho.',
+    q: '¿Qué programa puedo utilizar para hacer las facturas de mis clientes?',
+    a: 'NovaFactura permite a las asesorías gestionar la facturación de diferentes clientes desde un único panel, con cada cliente separado por su correspondiente entorno y NIF.',
   },
   {
-    q: '¿Qué pasa si ahora hago las facturas con Excel?',
-    a: 'Desde julio de 2027, emitir facturas con Excel será ilegal para autónomos. Si tú haces las facturas de tus clientes, necesitas un software garante VeriFactu antes de esa fecha. NovaFactura es gratis para tu asesoría y cumple desde la primera factura.',
+    q: '¿Puedo emitir facturas de diferentes clientes desde una misma cuenta?',
+    a: 'Sí. El panel de asesoría permite cambiar entre clientes sin tener que cerrar sesión ni utilizar una cuenta diferente para cada cliente.',
   },
   {
-    q: '¿Cuánto cuesta para mi asesoría?',
-    a: 'Cero euros. El plan de asesoría es completamente gratuito, sin límite de clientes, sin coste mensual y sin letra pequeña.',
+    q: '¿Mis clientes necesitan crear una cuenta?',
+    a: 'No para que puedas comenzar a gestionar su facturación desde el panel de asesoría. Puedes añadirlos y empezar a trabajar con ellos directamente.',
   },
   {
-    q: '¿Cómo sé a qué cliente le estoy haciendo la factura?',
-    a: 'Hay un banner permanente visible en toda la pantalla que muestra el nombre y NIF del cliente con el que estás trabajando. No desaparece hasta que cambias de cliente manualmente.',
+    q: '¿Cada cliente mantiene su propio NIF y facturación?',
+    a: 'Sí. Cada cliente dispone de su propio entorno de facturación y sus datos fiscales se mantienen separados de los demás clientes.',
   },
   {
-    q: '¿Puedo importar mis clientes desde Excel?',
-    a: 'Sí. Si tienes una lista de clientes en Excel o CSV con su nombre, NIF y datos de contacto, puedes importarla directamente al panel en cuestión de minutos.',
+    q: '¿Cuánto cuesta para la asesoría?',
+    a: 'El panel de asesoría es gratuito. No pagas una cuota mensual por gestionar tus clientes desde NovaFactura.',
+  },
+  {
+    q: '¿Puedo seguir gestionando al cliente si él empieza a hacer sus propias facturas?',
+    a: 'Sí. El cliente puede utilizar su propia cuenta y continuar vinculado a tu asesoría para que puedas consultar y gestionar su información de facturación.',
+  },
+  {
+    q: '¿Está preparado para VeriFactu?',
+    a: 'NovaFactura está diseñado para cumplir los requisitos aplicables a los sistemas informáticos de facturación y permite gestionar la facturación de cada cliente desde su correspondiente entorno.',
   },
 ];
 
+export const novafacturaAsesoriaFacturasMetadata: Metadata = {
+  title: `Software para hacer facturas de clientes | Asesorías | NovaFactura`,
+  description:
+    '¿Haces las facturas de tus clientes? Gestiona todos sus NIF desde un único panel y emite sus facturas en nombre de cada uno con NovaFactura. Gratis para asesorías.',
+  alternates: {
+    canonical: `${brandConfig.app.url}/asesoria-facturas-clientes`,
+  },
+  openGraph: {
+    title: `Software para hacer facturas de clientes | Asesorías | ${brandConfig.app.name}`,
+    description:
+      'Gestiona las facturas de todos tus clientes desde un único panel. Gratis para asesorías.',
+    url: `${brandConfig.app.url}/asesoria-facturas-clientes`,
+    type: 'website',
+    siteName: brandConfig.app.name,
+    locale: 'es_ES',
+    images: [
+      {
+        url: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
+        width: 1200,
+        height: 630,
+        alt: `${brandConfig.app.name} — Facturación de clientes para asesorías`,
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `Software para hacer facturas de clientes | Asesorías | ${brandConfig.app.name}`,
+    description:
+      'Haz las facturas de todos tus clientes desde un único panel. Gratis para asesorías.',
+    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
+  },
+};
+
+// --- SCHEMAS ---
 const softwareJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
-  name: `${brandConfig.app.name} — Asesoría que hace facturas por sus clientes`,
+  name: `${brandConfig.app.name} — Facturación de clientes para asesorías`,
   applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web',
   url: `${brandConfig.app.url}/asesoria-facturas-clientes`,
   description:
-    'Software de facturación VeriFactu para asesorías que emiten facturas en nombre de sus clientes autónomos. Panel multi-NIF, VeriFactu automático, gratis para asesorías.',
+    'Software para asesorías que hacen las facturas de sus clientes desde un único panel.',
   offers: {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'EUR',
-    description: 'Completamente gratuito para asesorías y gestorías',
+    description: 'Panel gratuito para asesorías',
   },
 };
 
@@ -68,7 +112,7 @@ const breadcrumbJsonLd = {
     {
       '@type': 'ListItem',
       position: 2,
-      name: 'Asesoría que hace facturas a sus clientes',
+      name: 'Asesoría que hace facturas de sus clientes',
       item: `${brandConfig.app.url}/asesoria-facturas-clientes`,
     },
   ],
@@ -84,47 +128,32 @@ const faqJsonLd = {
   })),
 };
 
-export const novafacturaAsesoriaFacturasMetadata: Metadata = {
-  title: `Asesoría que hace facturas a sus clientes autónomos | ${brandConfig.app.name}`,
+const howToJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: 'Cómo hacer las facturas de tus clientes desde NovaFactura',
   description:
-    '¿Tu asesoría hace las facturas de tus clientes? Gestiona todos sus NIFs desde un solo panel con VeriFactu automático. Gratis para asesorías. Sin que tus clientes toquen nada.',
-  keywords: [
-    'asesoría hace facturas por sus clientes',
-    'empresa hace facturas autónomo asesoría',
-    'programa hacer facturas clientes autónomos',
-    'gestión facturas múltiples clientes asesoría',
-    'asesoría emite facturas VeriFactu clientes',
-    'software asesoría facturación por terceros',
-    'hacer facturas clientes desde asesoría',
-    'panel multi-nif asesoría autónomos',
+    'Pasos para emitir facturas en nombre de tus clientes desde un panel centralizado de asesoría.',
+  step: [
+    {
+      '@type': 'HowToStep',
+      position: 1,
+      name: 'Añade al cliente',
+      text: 'Introduce sus datos fiscales o importa la información de tu cartera desde Excel.',
+    },
+    {
+      '@type': 'HowToStep',
+      position: 2,
+      name: 'Selecciona su entorno',
+      text: 'Elige el cliente para el que quieres trabajar desde tu panel de asesoría con un clic.',
+    },
+    {
+      '@type': 'HowToStep',
+      position: 3,
+      name: 'Haz la factura',
+      text: 'Crea la factura utilizando los datos fiscales y la configuración de ese cliente automáticamente.',
+    },
   ],
-  alternates: {
-    canonical: `${brandConfig.app.url}/asesoria-facturas-clientes`,
-  },
-  openGraph: {
-    title: `Asesoría que hace facturas a sus clientes autónomos | ${brandConfig.app.name}`,
-    description:
-      '¿Tu asesoría hace las facturas de tus clientes? Gestiona todos sus NIFs desde un solo panel con VeriFactu automático. Gratis.',
-    url: `${brandConfig.app.url}/asesoria-facturas-clientes`,
-    type: 'website',
-    siteName: brandConfig.app.name,
-    locale: 'es_ES',
-    images: [
-      {
-        url: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
-        width: 1200,
-        height: 630,
-        alt: `${brandConfig.app.name} — Asesoría que hace facturas a sus clientes`,
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: `Asesoría que hace facturas a sus clientes | ${brandConfig.app.name}`,
-    description:
-      'Gestiona todos los NIFs de tus clientes desde un solo panel con VeriFactu automático. Gratis.',
-    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
-  },
 };
 
 export function NovafacturaAsesoriaFacturasPage() {
@@ -142,125 +171,118 @@ export function NovafacturaAsesoriaFacturasPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }}
+      />
 
       <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950">
         <SiteHeader />
 
-        {/* Hero */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-indigo-50 to-white dark:from-indigo-950/30 dark:to-gray-950 py-24 md:py-32">
-          <div className="absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_at_top,white,transparent)]">
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#e0e7ff_1px,transparent_1px),linear-gradient(to_bottom,#e0e7ff_1px,transparent_1px)] bg-[size:64px_64px] opacity-40 dark:opacity-10" />
-          </div>
-
+        {/* HERO - INTENCIÓN: FACTURAR POR CLIENTES */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-indigo-50 to-white py-24 dark:from-indigo-950/30 dark:to-gray-950 md:py-32">
           <div className="mx-auto max-w-5xl px-6 text-center">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300">
-              <Gift className="h-4 w-4" />
-              Para asesorías que hacen las facturas por sus clientes
+              <FileText className="h-4 w-4" />
+              Para asesorías que hacen las facturas de sus clientes
             </div>
 
-            <h1 data-speakable className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl md:text-6xl">
-              ¿Emites tú las facturas
+            <h1
+              data-speakable
+              className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl md:text-6xl"
+            >
+              ¿Haces las facturas
               <br />
-              <span className="text-indigo-600 dark:text-indigo-400">de tus autónomos?</span>
+              <span className="text-indigo-600 dark:text-indigo-400">de tus clientes?</span>
+              <br />
+              <span className="text-indigo-600 dark:text-indigo-400">
+                Hazlas todas desde un solo panel
+              </span>
             </h1>
 
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-              Con un solo panel gestionas todos sus NIFs, todas las facturas van a la AEAT automáticamente con VeriFactu, y tú no cambias cómo trabajas.
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-gray-600 dark:text-gray-400">
+              Software de facturación para asesorías que emiten facturas en nombre de sus clientes.
+              Gestiona múltiples NIF desde un único panel y trabaja con VeriFactu sin que tus
+              clientes tengan que aprender a utilizar otro programa.
             </p>
 
-            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <div className="mt-10">
               <Link
                 href="/registro/asesoria"
-                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-8 py-4 text-base font-semibold text-white shadow-lg transition-all hover:bg-indigo-700 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-8 py-4 font-semibold text-white shadow-lg hover:bg-indigo-700"
               >
                 Crear cuenta de asesoría — gratis
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </div>
 
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-gray-500">
-              <span className="flex items-center gap-1.5">
+            <div className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm text-gray-500">
+              <span className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
-                Sin tarjeta al registrarte
+                Gratis para asesorías
               </span>
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
-                Gratis para asesorías para siempre
+                Sin límite de clientes
               </span>
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
-                Sin límite de clientes en cartera
+                Sin cambiar de cuenta entre clientes
               </span>
-            </div>
-
-            {/* Alerta */}
-            <div className="mx-auto mt-10 max-w-3xl rounded-2xl border border-amber-200 bg-amber-50 p-5 text-left dark:border-amber-800 dark:bg-amber-950/30">
-              <div className="flex gap-3">
-                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-                <div>
-                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                    Si ahora haces las facturas con Excel, necesitas un software garante antes de julio 2027.
-                  </p>
-                  <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
-                    Las sanciones por incumplimiento VeriFactu llegan a 50.000 € por ejercicio. NovaFactura es gratis para tu asesoría y cumple desde la primera factura.
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
         </section>
 
-        {/* El Problema */}
-        <section className="bg-white py-20 dark:bg-gray-950 md:py-28">
+        {/* PROBLEMA */}
+        <section className="py-20 md:py-28">
           <div className="mx-auto max-w-5xl px-6">
-            <div className="mb-12 text-center">
-              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-                Tu situación diaria
+            <div className="mx-auto max-w-3xl text-center">
+              <p className="text-sm font-bold uppercase tracking-widest text-indigo-600">
+                Si haces las facturas de tus clientes
               </p>
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-                Un problema de VeriFactu
+              <h2 className="mt-3 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
+                Tu problema no es hacer una factura.
                 <br />
-                multiplicado por cada cliente
+                Es hacerlas para 20, 30 o 50 clientes sin equivocarte de NIF.
               </h2>
-              <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-                Una asesoría de pueblo con 40 autónomos a los que hace las facturas tiene un problema de VeriFactu multiplicado por 40. No es un problema de cumplimiento puntual, es un problema operativo serio.
+              <p className="mt-5 text-lg leading-8 text-gray-600 dark:text-gray-400">
+                Cuando una asesoría gestiona la facturación de muchos autónomos, entrar y salir de
+                diferentes cuentas o mantener archivos separados acaba complicando un trabajo que
+                debería ser sencillo.
               </p>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="rounded-2xl border border-red-100 bg-red-50 p-6 dark:border-red-900/50 dark:bg-red-950/20">
-                <h3 className="mb-4 flex items-center gap-2 text-base font-bold text-red-700 dark:text-red-400">
-                  <span className="text-lg">❌</span> Cómo es ahora
+            <div className="mt-14 grid gap-5 md:grid-cols-2">
+              <div className="rounded-2xl border border-red-100 bg-red-50 p-7 dark:border-red-900/40 dark:bg-red-950/20">
+                <h3 className="text-lg font-bold text-red-700 dark:text-red-400">
+                  Sin un panel central
                 </h3>
-                <ul className="space-y-3">
+                <ul className="mt-5 space-y-3 text-sm text-gray-700 dark:text-gray-300">
                   {[
-                    'Un Excel diferente para cada uno de tus 40 clientes',
-                    'Copias datos a mano cada fin de mes',
-                    '40 problemas de VeriFactu sin resolver',
-                    'En 2027 esto será ilegal y sancionable',
-                    'Tus clientes quedan expuestos a multas de hasta 50.000€',
+                    'Una cuenta o archivo diferente por cliente.',
+                    'Cambios constantes de contexto.',
+                    'Datos fiscales que hay que revisar cada vez.',
+                    'Más posibilidades de cometer errores.',
                   ].map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                      <span className="mt-0.5 text-red-500">×</span>
+                    <li key={item} className="flex items-start gap-2">
+                      <span className="text-red-500">×</span>
                       {item}
                     </li>
                   ))}
                 </ul>
               </div>
-
-              <div className="rounded-2xl border border-green-100 bg-green-50 p-6 dark:border-green-900/50 dark:bg-green-950/20">
-                <h3 className="mb-4 flex items-center gap-2 text-base font-bold text-green-700 dark:text-green-400">
-                  <span className="text-lg">✓</span> Cómo es con NovaFactura
+              <div className="rounded-2xl border border-green-100 bg-green-50 p-7 dark:border-green-900/40 dark:bg-green-950/20">
+                <h3 className="text-lg font-bold text-green-700 dark:text-green-400">
+                  Con NovaFactura
                 </h3>
-                <ul className="space-y-3">
+                <ul className="mt-5 space-y-3 text-sm text-gray-700 dark:text-gray-300">
                   {[
-                    'Un solo panel con los 40 clientes',
-                    'Cambia de NIF en un clic, sin cerrar sesión',
-                    'Cada factura va a la AEAT automáticamente',
-                    'VeriFactu se genera solo — QR, hash, envío',
-                    'Tus 40 clientes cumplen sin tocar nada',
+                    'Todos tus clientes en un único panel.',
+                    'Cambio de cliente desde la misma sesión.',
+                    'Cada entorno mantiene sus datos fiscales.',
+                    'Facturación centralizada para toda tu cartera.',
                   ].map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <li key={item} className="flex items-start gap-2">
                       <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
                       {item}
                     </li>
@@ -271,101 +293,57 @@ export function NovafacturaAsesoriaFacturasPage() {
           </div>
         </section>
 
-        {/* Cifras */}
-        <section className="bg-gray-950 py-14 md:py-16">
-          <div className="mx-auto max-w-5xl px-6">
-            <div className="grid grid-cols-2 gap-8 text-center md:grid-cols-4">
-              <div>
-                <div className="text-4xl font-black text-white md:text-5xl">
-                  0<span className="text-emerald-400">€</span>
-                </div>
-                <p className="mt-2 text-sm text-gray-400">
-                  Coste para tu asesoría
-                </p>
-              </div>
-              <div>
-                <div className="text-4xl font-black text-white md:text-5xl">∞</div>
-                <p className="mt-2 text-sm text-gray-400">
-                  Clientes sin límite
-                </p>
-              </div>
-              <div>
-                <div className="text-4xl font-black text-white md:text-5xl">
-                  &lt;60<span className="text-emerald-400">s</span>
-                </div>
-                <p className="mt-2 text-sm text-gray-400">
-                  Por factura con VeriFactu
-                </p>
-              </div>
-              <div>
-                <div className="text-4xl font-black text-white md:text-5xl">
-                  50<span className="text-emerald-400">k</span>
-                </div>
-                <p className="mt-2 text-sm text-gray-400">
-                  € multa que evitas
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Funcionalidades clave */}
+        {/* COMO FUNCIONA */}
         <section className="bg-gray-50 py-20 dark:bg-gray-900/50 md:py-28">
           <div className="mx-auto max-w-5xl px-6">
-            <div className="mb-12 text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-                Todo lo que necesitas para no cambiar cómo trabajas
+            <div className="mx-auto max-w-3xl text-center">
+              <p className="text-sm font-bold uppercase tracking-widest text-indigo-600">
+                Así funciona
+              </p>
+              <h2 className="mt-3 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
+                Cómo emitir facturas en nombre de tus clientes
               </h2>
+              <p className="mt-5 text-lg text-gray-600 dark:text-gray-400">
+                Tres pasos para empezar a gestionar la facturación de tu cartera desde un único
+                lugar.
+              </p>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-14 grid gap-6 md:grid-cols-3">
               {[
                 {
-                  icon: Eye,
-                  title: 'Panel central de todos tus clientes',
-                  description: 'Ve el estado de cada cliente de un vistazo sin entrar en cada cuenta por separado.',
+                  number: '01',
+                  icon: UserPlus,
+                  title: 'Añade al cliente',
+                  text: 'Introduce sus datos fiscales o importa la información de tu cartera.',
                 },
                 {
-                  icon: Repeat,
-                  title: 'Cambio de NIF en un clic',
-                  description: 'Pasa de un cliente al siguiente sin cerrar sesión. Un banner te recuerda siempre bajo qué NIF operas.',
+                  number: '02',
+                  icon: MousePointerClick,
+                  title: 'Selecciona su entorno',
+                  text: 'Elige el cliente para el que quieres trabajar desde tu panel de asesoría.',
                 },
                 {
-                  icon: Shield,
-                  title: 'VeriFactu automático bajo cada NIF',
-                  description: 'Cada factura queda registrada bajo el NIF del cliente con hash encadenado y QR verificable.',
+                  number: '03',
+                  icon: FileText,
+                  title: 'Haz la factura',
+                  text: 'Crea la factura utilizando los datos y configuración de ese cliente.',
                 },
-                {
-                  icon: Users,
-                  title: 'Directorio de clientes compartido',
-                  description: 'Define las empresas una sola vez y reutilízalas en todas las facturas sin volver a introducir datos.',
-                },
-                {
-                  icon: FileSpreadsheet,
-                  title: 'Envío automático a la AEAT',
-                  description: 'Cada factura se transmite en tiempo real al registro de la Agencia Tributaria. Sin configurar nada.',
-                },
-                {
-                  icon: CheckCircle2,
-                  title: 'Auditoría de acciones',
-                  description: 'Cada factura queda marcada con tu usuario de asesoría. Registro completo para cualquier revisión.',
-                },
-              ].map((feature) => {
-                const Icon = feature.icon;
+              ].map((step) => {
+                const Icon = step.icon;
                 return (
                   <div
-                    key={feature.title}
-                    className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+                    key={step.number}
+                    className="rounded-2xl border border-gray-200 bg-white p-7 dark:border-gray-800 dark:bg-gray-950"
                   >
-                    <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950">
-                      <Icon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                    <div className="flex items-center justify-between">
+                      <Icon className="h-7 w-7 text-indigo-600" />
+                      <span className="text-sm font-black text-gray-300">{step.number}</span>
                     </div>
-                    <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">
-                      {feature.title}
+                    <h3 className="mt-6 text-xl font-bold text-gray-900 dark:text-white">
+                      {step.title}
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {feature.description}
-                    </p>
+                    <p className="mt-3 leading-7 text-gray-600 dark:text-gray-400">{step.text}</p>
                   </div>
                 );
               })}
@@ -373,46 +351,272 @@ export function NovafacturaAsesoriaFacturasPage() {
           </div>
         </section>
 
-        {/* CTA Final */}
+        {/* EXPORTACIÓN CONTABLE */}
         <section className="py-20 md:py-28">
-          <div className="mx-auto max-w-3xl px-6">
-            <div className="rounded-3xl bg-indigo-600 p-12 text-center text-white shadow-2xl dark:bg-indigo-700">
-              <h2 className="mb-4 text-3xl font-bold">
-                Tus clientes merecen seguir sin preocuparse.
-                <br />
-                Ese es tu trabajo.
+          <div className="mx-auto max-w-5xl px-6">
+            <div className="mb-12 text-center">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+                <FileSpreadsheet className="h-4 w-4" />
+                Integración contable
+              </div>
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+                Exporta a Sage, A3CON, Cegid y Diamacon
               </h2>
-              <p className="mb-8 text-lg text-indigo-100">
-                Dales la tranquilidad de cumplir con Hacienda. Sin pedirles que aprendan nada. Gratis para tu despacho.
+              <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
+                Descarga las facturas de cada cliente en el formato que necesita tu programa de
+                contabilidad. Archivos listos para importar — sin reacondicionar datos.
               </p>
-              <Link
-                href="/registro/asesoria"
-                className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 text-base font-semibold text-indigo-600 shadow-lg transition-all hover:bg-indigo-50"
-              >
-                Crear cuenta de asesoría — gratis
-                <ArrowRight className="h-5 w-5" />
-              </Link>
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-indigo-200">
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Sin tarjeta
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm dark:border-emerald-800 dark:bg-gray-900">
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950">
+                  <FileSpreadsheet className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+                  Sage, Cegid y Diamacon
+                </h3>
+                <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                  Archivos Excel (.xlsx) con estructura compatible. Descarga desde el panel del
+                  cliente, selecciona el periodo e importa directamente en tu programa.
+                </p>
+                <ul className="space-y-2">
+                  {[
+                    'Una factura por fila, sin duplicados',
+                    'NIF, Base, IVA, IRPF, Total — todo incluido',
+                    'Compatible con cualquier versión de Sage',
+                  ].map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400"
+                    >
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="rounded-2xl border border-orange-100 bg-white p-6 shadow-sm dark:border-orange-800 dark:bg-gray-900">
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-950">
+                  <ArrowDownToLine className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+                  a3asesor | Wolters Kluwer
+                </h3>
+                <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                  Guía paso a paso con el mapeo exacto de columnas para A3CON. La plantilla se
+                  guarda y se reutiliza en importaciones futuras.
+                </p>
+                <ul className="space-y-2">
+                  {[
+                    'Mapeo de columnas incluido en la descarga',
+                    'Plantilla reusable — configúrala una vez',
+                    'Soporte para múltiples tipos de IVA',
+                  ].map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400"
+                    >
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <h3 className="mb-4 text-base font-semibold text-gray-900 dark:text-white">
+                Mapeo de columnas para A3CON (a3asesor | Wolters Kluwer)
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
+                      <th className="px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">
+                        Campo NovaFactura
+                      </th>
+                      <th className="px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">
+                        Columna A3CON
+                      </th>
+                      <th className="px-4 py-3 font-semibold text-gray-700 dark:text-gray-300">
+                        Descripción
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                        Fecha de factura
+                      </td>
+                      <td className="px-4 py-3 text-indigo-600 dark:text-indigo-400 font-mono text-xs">
+                        FECHA
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                        Fecha de emisión en formato DD/MM/AAAA
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                        Número de factura
+                      </td>
+                      <td className="px-4 py-3 text-indigo-600 dark:text-indigo-400 font-mono text-xs">
+                        SERIE-NUMERO
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                        Serie + número (ej: A-2025-001)
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                        NIF del cliente
+                      </td>
+                      <td className="px-4 py-3 text-indigo-600 dark:text-indigo-400 font-mono text-xs">
+                        NIF
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                        NIF o CIF sin espacios ni guiones
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                        Nombre/Razón social
+                      </td>
+                      <td className="px-4 py-3 text-indigo-600 dark:text-indigo-400 font-mono text-xs">
+                        NOMBRE
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                        Nombre completo o razón social
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                        Base imponible
+                      </td>
+                      <td className="px-4 py-3 text-indigo-600 dark:text-indigo-400 font-mono text-xs">
+                        BASE
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                        Importe base sin IVA. Varias líneas si hay diferentes tipos
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                        Tipo de IVA
+                      </td>
+                      <td className="px-4 py-3 text-indigo-600 dark:text-indigo-400 font-mono text-xs">
+                        IVA%
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                        Porcentaje de IVA aplicado (4%, 10%, 21%)
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                        Cuota de IVA
+                      </td>
+                      <td className="px-4 py-3 text-indigo-600 dark:text-indigo-400 font-mono text-xs">
+                        IVA_IMPORTE
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                        Importe de la cuota de IVA
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                        Retención IRPF
+                      </td>
+                      <td className="px-4 py-3 text-indigo-600 dark:text-indigo-400 font-mono text-xs">
+                        IRPF%
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                        Porcentaje de retención si aplica (7%, 15%)
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                        Total factura
+                      </td>
+                      <td className="px-4 py-3 text-indigo-600 dark:text-indigo-400 font-mono text-xs">
+                        TOTAL
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                        Importe total incluyendo IVA menos IRPF
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="mt-8 rounded-2xl border border-gray-100 bg-gray-50 p-6 dark:border-gray-800 dark:bg-gray-900/50">
+              <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-gray-600 dark:text-gray-400">
+                <span className="flex items-center gap-2 font-medium">
+                  <Download className="h-4 w-4 text-gray-400" />
+                  Compatible con:
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Gratis para siempre
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Clientes ilimitados
-                </span>
+                {[
+                  'Sage Contabilidad',
+                  'Cegid',
+                  'Diamacon (Comeralia)',
+                  'a3asesor | Wolters Kluwer',
+                ].map((s) => (
+                  <span key={s} className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    {s}
+                  </span>
+                ))}
               </div>
             </div>
           </div>
         </section>
 
-        {/* FAQ */}
-        <FaqSection faqs={faqs} title="Lo que nos preguntan las asesorías" />
+        {/* VERIFACTU CON ENLACE INTERNO */}
+        <section className="py-20 md:py-24">
+          <div className="mx-auto max-w-4xl px-6 text-center">
+            <ShieldCheck className="mx-auto h-10 w-10 text-indigo-600" />
+            <h2 className="mt-5 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl">
+              Facturación preparada para VeriFactu
+            </h2>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-gray-600 dark:text-gray-400">
+              Gestiona la facturación de tus clientes desde un sistema diseñado para los requisitos
+              aplicables a los sistemas informáticos de facturación.
+            </p>
+            <Link
+              href="/asesoria"
+              className="mt-7 inline-flex items-center gap-2 font-semibold text-indigo-600"
+            >
+              Conoce todos los requisitos de VeriFactU para asesorías
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </section>
 
+        {/* GRATIS */}
+        <section className="bg-gray-950 py-20 text-white md:py-24">
+          <div className="mx-auto max-w-4xl px-6 text-center">
+            <div className="text-6xl font-black">
+              0<span className="text-emerald-400">€</span>
+            </div>
+            <h2 className="mt-5 text-3xl font-bold sm:text-4xl">
+              Tu asesoría no paga por gestionar sus clientes
+            </h2>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-gray-400">
+              Empieza con tu cartera actual y añade clientes a medida que los necesites. El acceso
+              al panel de asesoría es gratuito.
+            </p>
+            <Link
+              href="/registro/asesoria"
+              className="mt-9 inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 font-semibold text-gray-900 hover:bg-gray-100"
+            >
+              Crear cuenta de asesoría — gratis
+              <ArrowRight className="h-5 w-5" />
+            </Link>
+          </div>
+        </section>
+
+        <FaqSection faqs={faqs} title="Preguntas frecuentes sobre hacer facturas de clientes" />
         <FooterLanding />
       </div>
     </>

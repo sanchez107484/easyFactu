@@ -4,11 +4,31 @@ import SiteHeader from '@/components/site-header';
 import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
 import { brandConfig } from '@easyfactura/brand-config';
+import {
+  ArrowRight,
+  CheckCircle2,
+  LayoutDashboard,
+  FileText,
+  Sparkles,
+  Shield,
+  TrendingUp,
+  UserCheck,
+  Repeat,
+  Gift,
+  ChevronRight,
+  FileSpreadsheet,
+  Download,
+  ArrowDownToLine,
+  AlertTriangle,
+  Eye,
+  ClipboardCheck,
+  Users,
+} from 'lucide-react';
 
 const faqs = [
   {
     q: '¿Mis clientes tienen que crearse una cuenta en NovaFactura?',
-    a: 'No es necesario. Puedes dar de alta a tus clientes directamente desde tu panel de asesoría con sus datos fiscales. Ellos no reciben ningún correo ni tienen que hacer nada. Si en el futuro quieren acceder a su propio histórico de facturas, pueden hacerlo, pero no es obligatorio.',
+    a: 'No es necesario. Puedes dar de alto a tus clientes directamente desde tu panel de asesoría con sus datos fiscales. Ellos no reciben ningún correo ni tienen que hacer nada. Si en el futuro quieren acceder a su propio histórico de facturas, pueden hacerlo, pero no es obligatorio.',
   },
   {
     q: '¿Las facturas que emito desde mi panel quedan a nombre de mis clientes?',
@@ -31,62 +51,35 @@ const faqs = [
     a: 'Sí. Si tienes una lista de clientes en Excel o CSV con su nombre, NIF y datos de contacto, puedes importarla directamente al panel. En cuestión de minutos tienes toda tu cartera cargada sin introducir nada a mano.',
   },
   {
-    q: '¿NovaFactura está homologado por la AEAT como software garante?',
-    a: 'Sí. NovaFactura está certificado como software garante VeriFactu por la Agencia Tributaria, cumpliendo íntegramente el Real Decreto 254/2025. Genera automáticamente el hash SHA-256, el código QR verificable y transmite cada factura al registro de la AEAT en tiempo real.',
+    q: '¿NovaFactura está certificado por la AEAT?',
+    a: 'NovaFactura cumple íntegramente el Real Decreto 254/2025. Como productor del sistema, emitimos la declaración responsable correspondiente, generando automáticamente el hash SHA-256, el código QR verificable y transmitiendo cada factura al registro de la AEAT en tiempo real.',
   },
   {
     q: '¿Hay un límite de facturas que puedo emitir al mes?',
     a: 'No para la asesoría. El plan de asesoría no tiene límite de facturas ni de clientes.',
   },
 ];
-import {
-  ArrowRight,
-  CheckCircle2,
-  LayoutDashboard,
-  FileText,
-  Sparkles,
-  Shield,
-  TrendingUp,
-  UserCheck,
-  Repeat,
-  Gift,
-  ChevronRight,
-  FileSpreadsheet,
-  Download,
-  ArrowDownToLine,
-  AlertTriangle,
-  Eye,
-  ClipboardCheck,
-  Users,
-} from 'lucide-react';
 
 export const novafacturaAsesoriaMetadata: Metadata = {
-  title: `VeriFactu para asesorías que gestionan facturas de sus clientes | ${brandConfig.app.name}`,
+  title: `VeriFactu para asesorías y gestorías | ${brandConfig.app.name}`,
   description:
-    '¿Emites tú las facturas de tus clientes autónomos? Gestiona todos sus NIFs desde un solo panel con VeriFactu automático. Gratis para asesorías. Sin límite de clientes.',
+    'Cumple con VeriFactu en tu asesoría sin que tus clientes tengan que aprender a facturar. Panel centralizado, gratuito y preparado para el RD 254/2025.',
   keywords: [
     'verifactu para asesorías',
-    'programa facturación gestorías',
-    'panel multi-nif verifactu',
-    'hacer facturas clientes autónomos',
-    'verifactu asesoría gratis',
-    'software facturación despacho profesional',
-    'gestión facturas múltiples clientes asesoría',
-    'empresa hace facturas por sus clientes',
-    'software para gestorías pequeña cartera',
-    'facturar por mis clientes verifactu',
-    'migrar excel verifactu asesoría',
-    'software asesoría autónoma 2026',
-    'gestión multi-cliente asesoría autónomos',
-    'empresa hace facturas autónomo asesoría',
+    'verifactu asesoría',
+    'verifactu gestorías',
+    'cumplimiento verifactu asesoría',
+    'software garante verifactu',
+    'rd 254/2025 asesorías',
+    'declaración responsable software facturación',
   ],
   alternates: {
     canonical: `${brandConfig.app.url}/asesoria`,
   },
   openGraph: {
-    title: `VeriFactu para asesorías que hacen las facturas a sus clientes | ${brandConfig.app.name}`,
+    title: `VeriFactu para asesorías y gestorías | ${brandConfig.app.name}`,
     description:
-      'Panel centralizado para emitir facturas con VeriFactu en nombre de todos tus autónomos. Gratis para asesorías. Sin límite de clientes.',
+      'Cumple con VeriFactu en tu asesoría sin que tus clientes tengan que aprender a facturar. Panel centralizado y gratuito.',
     url: `${brandConfig.app.url}/asesoria`,
     type: 'website',
     siteName: brandConfig.app.name,
@@ -102,14 +95,15 @@ export const novafacturaAsesoriaMetadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `VeriFactu para asesorías que hacen facturas a sus clientes | ${brandConfig.app.name}`,
+    title: `VeriFactu para asesorías y gestorías | ${brandConfig.app.name}`,
     description:
-      'Panel centralizado para emitir facturas con VeriFactu en nombre de todos tus autónomos. Gratis para siempre.',
+      'Cumple con VeriFactu en tu asesoría sin que tus clientes tengan que aprender a facturar. Panel centralizado y gratuito.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   robots: { index: true, follow: true },
 };
 
+// --- SCHEMAS ---
 const softwareJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
@@ -154,27 +148,6 @@ const faqJsonLd = {
     name: q,
     acceptedAnswer: { '@type': 'Answer', text: a },
   })),
-};
-
-const serviceJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Service',
-  name: `${brandConfig.app.name} para Asesorías y Gestorías`,
-  serviceType: 'Software de facturación VeriFactu para gestorías',
-  description:
-    'Software de facturación VeriFactu gratuito para asesorías y gestorías. Panel centralizado, VeriFactu automático bajo el NIF de cada cliente y directorio de empresas compartido sin coste.',
-  provider: {
-    '@type': 'Organization',
-    name: brandConfig.app.name,
-    url: brandConfig.app.url,
-  },
-  areaServed: { '@type': 'Country', name: 'España' },
-  offers: {
-    '@type': 'Offer',
-    price: '0',
-    priceCurrency: 'EUR',
-    description: 'Completamente gratuito para asesorías y gestorías',
-  },
 };
 
 const FEATURES = [
@@ -225,34 +198,6 @@ const FEATURES = [
     title: 'Acceso desde cualquier dispositivo',
     description:
       'Funciona desde el ordenador de la asesoría, desde una tablet o desde el móvil. Sin instalaciones, sin actualizaciones manuales. Siempre con la última versión y el cumplimiento al día.',
-  },
-];
-
-const FOR_WHO = [
-  'Asesorías fiscales y contables',
-  'Gestorías que gestionan autónomos y PYMEs',
-  'Despachos de abogados con clientes empresariales',
-  'Contables freelance con múltiples clientes',
-];
-
-const HOW_IT_WORKS = [
-  {
-    step: '01',
-    title: 'Crea tu cuenta de asesoría',
-    description:
-      'Regístrate con el email de tu despacho en menos de 2 minutos. Sin tarjeta de crédito, sin permanencia. El acceso para tu asesoría es gratuito para siempre.',
-  },
-  {
-    step: '02',
-    title: 'Da de alta a tus clientes',
-    description:
-      'Añade a cada autónomo con su nombre, NIF y datos fiscales. Puedes importar desde Excel si ya tienes una lista. Tus clientes no necesitan crear ninguna cuenta si no quieren.',
-  },
-  {
-    step: '03',
-    title: 'Emite sus facturas como si fueras ellos',
-    description:
-      'Selecciona el cliente, introduce los datos de la factura y pulsa enviar. El sistema genera el QR, calcula el hash encadenado y lo registra en la AEAT bajo el NIF del cliente. Todo automático.',
   },
 ];
 
@@ -342,42 +287,6 @@ const ASESOR_COMPARISON: {
   { label: 'Log de auditoría por cliente', novafactura: true, holded: false, quipu: false },
 ];
 
-// Machine-readable version of the comparison table — the visual cells use
-// icons, so crawlers get this plus the sr-only text in each cell.
-const comparisonTableJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Table',
-  name: `Comparativa de software para asesorías: ${brandConfig.app.name} vs. Holded vs. Quipu`,
-  about:
-    'Comparativa de funcionalidades de software de facturación para asesorías: precio, panel multi-cliente, VeriFactu por NIF de cliente, directorio de clientes compartido, cambio de contexto, límite de clientes y log de auditoría.',
-  description: `${brandConfig.app.name} es gratuito para asesorías para siempre e incluye panel multi-cliente, VeriFactu bajo el NIF de cada cliente, directorio de clientes compartido, cambio de contexto en un clic, clientes ilimitados y log de auditoría por cliente. Holded (40-90€/mes) y Quipu (25€+/mes) no ofrecen directorio compartido, cambio de contexto ni log de auditoría, y limitan los clientes según el plan.`,
-};
-
-const exportServiceJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Service',
-  name: `${brandConfig.app.name} — Exportación a programas de contabilidad`,
-  serviceType: 'Exportación de facturas para asesoría contable',
-  description:
-    'Exporta facturas a Sage, a3asesor (Wolters Kluwer), Cegid y Diamacon. Archivos formateados para importar directamente en tu programa de contabilidad habitual.',
-  provider: {
-    '@type': 'Organization',
-    name: brandConfig.app.name,
-    url: brandConfig.app.url,
-  },
-  areaServed: { '@type': 'Country', name: 'España' },
-  hasOfferCatalog: {
-    '@type': 'OfferCatalog',
-    name: 'Formatos de exportación contable',
-    itemListElement: [
-      { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Sage Contabilidad' } },
-      { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'a3asesor | Wolters Kluwer' } },
-      { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Cegid' } },
-      { '@type': 'Offer', itemOffered: { '@type': 'Service', name: 'Diamacon (Comeralia)' } },
-    ],
-  },
-};
-
 export function NovafacturaAsesoriaPage() {
   return (
     <>
@@ -393,23 +302,11 @@ export function NovafacturaAsesoriaPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(exportServiceJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(comparisonTableJsonLd) }}
-      />
 
       <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950">
         <SiteHeader />
 
-        {/* Hero */}
+        {/* Hero - INTENCIÓN: VERIFACTU */}
         <section className="relative overflow-hidden bg-gradient-to-b from-indigo-50 to-white dark:from-indigo-950/30 dark:to-gray-950 py-24 md:py-32">
           <div className="absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_at_top,white,transparent)]">
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#e0e7ff_1px,transparent_1px),linear-gradient(to_bottom,#e0e7ff_1px,transparent_1px)] bg-[size:64px_64px] opacity-40 dark:opacity-10" />
@@ -421,14 +318,20 @@ export function NovafacturaAsesoriaPage() {
               Gratis para asesorías · Sin límite de clientes
             </div>
 
-            <h1 data-speakable className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl md:text-6xl">
-              ¿Haces tú las facturas
+            <h1
+              data-speakable
+              className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl md:text-6xl"
+            >
+              Cumple con VeriFactu en tu asesoría
               <br />
-              <span className="text-indigo-600 dark:text-indigo-400">de tus clientes autónomos?</span>
+              <span className="text-indigo-600 dark:text-indigo-400">
+                sin que tus clientes toquen nada
+              </span>
             </h1>
 
             <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-              Gestiona todos sus NIFs desde un solo panel. Emite sus facturas con VeriFactu automático, como si fueras cada uno de ellos. Sin que ellos tengan que tocar nada.
+              Gestiona la facturación de tus clientes, genera el QR y hash SHA-256 y transmite a la
+              AEAT automáticamente. Todo desde un panel gratuito para tu despacho.
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -440,10 +343,11 @@ export function NovafacturaAsesoriaPage() {
                 <ArrowRight className="h-5 w-5" />
               </Link>
               <Link
-                href="#como-funciona"
+                href="/asesoria-facturas-clientes"
                 className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-8 py-4 text-base font-semibold text-gray-900 shadow-sm transition-all hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
               >
-                Ver cómo funciona
+                ¿Haces las facturas? Conoce el panel multi-NIF
+                <ArrowRight className="h-5 w-5" />
               </Link>
             </div>
 
@@ -454,28 +358,27 @@ export function NovafacturaAsesoriaPage() {
               </span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
-                Gratis para asesorías para siempre
+                Declaración responsable RD 254/2025
               </span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
                 Sin límite de clientes en cartera
               </span>
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                VeriFactu certificado AEAT
-              </span>
             </div>
 
-            {/* Alerta normativa */}
+            {/* Alerta normativa MODIFICADA */}
             <div className="mx-auto mt-10 max-w-3xl rounded-2xl border border-amber-200 bg-amber-50 p-5 text-left dark:border-amber-800 dark:bg-amber-950/30">
               <div className="flex gap-3">
                 <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
                 <div>
                   <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                    Julio 2027 se acerca.
+                    La normativa de facturación cambia en julio de 2027.
                   </p>
                   <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
-                    Desde esa fecha, emitir facturas con Excel o Word será ilegal para tus clientes autónomos. Las sanciones llegan a 50.000 € por ejercicio. Si ahora haces tú sus facturas, necesitas un software garante VeriFactu antes de esa fecha — y NovaFactura es gratis para tu despacho.
+                    Desde esa fecha, los sistemas informáticos de facturación deben cumplir el RD
+                    254/2025. Si tu asesoría hace las facturas de sus clientes, necesitas un sistema
+                    que cumpla por ti y evite errores manuales. NovaFactura está preparado para esa
+                    fecha.
                   </p>
                 </div>
               </div>
@@ -491,143 +394,61 @@ export function NovafacturaAsesoriaPage() {
                 La situación que conoces
               </p>
               <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-                Tus clientes no saben facturar.
-                <br />
-                Tú lo haces por ellos.
-                <br />
-                VeriFactu cambia eso.
+                VeriFactu llega y tus clientes dependen de ti
               </h2>
               <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-                Tienes 30, 40, quizás 50 autónomos en cartera. Agricultores, fontaneros, electricistas, pequeños comerciantes. Gente de confianza que lleva años contigo. No saben de software. Cuando llega fin de mes, eres tú quien abre el Excel, rellena la factura, la imprime o la manda por email.
-              </p>
-              <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-                Eso ha funcionado siempre. <strong className="text-gray-900 dark:text-white">Pero Excel dejará de ser legal en 2027.</strong> Y la alternativa no puede ser pedirles a tus clientes que aprendan a usar un programa de facturación solos.
+                Tienes 30, 40 o 50 autónomos en cartera. Agricultores, fontaneros, electricistas.
+                Gente que lleva años contigo y que no sabe de software fiscal. Cuando llega la
+                obligación de VeriFactu, eres tú quien tiene que garantizar que sus facturas están
+                bien.
               </p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
-              {/* Antes */}
               <div className="rounded-2xl border border-red-100 bg-red-50 p-6 dark:border-red-900/50 dark:bg-red-950/20">
                 <h3 className="mb-4 flex items-center gap-2 text-base font-bold text-red-700 dark:text-red-400">
-                  <span className="text-lg">❌</span> Cómo es ahora
+                  <span className="text-lg">❌</span> Sin software preparado
                 </h3>
                 <ul className="space-y-3">
                   {[
-                    'Abres un Excel diferente para cada cliente',
-                    'Copias datos a mano cada vez',
-                    'Mandas el PDF por email o WhatsApp',
-                    'No hay rastro en Hacienda de la factura',
-                    'En 2027 esto será ilegal y sancionable',
-                    'Tus clientes quedan expuestos a multas',
+                    'Facturas en Excel o Word sin trazabilidad',
+                    'No hay registro en Hacienda automático',
+                    'Riesgo de duplicar o alterar facturas sin querer',
+                    'Tus clientes no saben cumplir la normativa solos',
+                    'Mucho trabajo administrativo para tu despacho',
                   ].map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <li
+                      key={item}
+                      className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300"
+                    >
                       <span className="mt-0.5 text-red-500">×</span>
                       {item}
                     </li>
                   ))}
                 </ul>
               </div>
-
-              {/* Después */}
               <div className="rounded-2xl border border-green-100 bg-green-50 p-6 dark:border-green-900/50 dark:bg-green-950/20">
                 <h3 className="mb-4 flex items-center gap-2 text-base font-bold text-green-700 dark:text-green-400">
-                  <span className="text-lg">✓</span> Cómo es con NovaFactura
+                  <span className="text-lg">✓</span> Con NovaFactura
                 </h3>
                 <ul className="space-y-3">
                   {[
+                    'VeriFactu se genera solo: QR, hash, AEAT',
+                    'Trazabilidad total e inalterabilidad',
                     'Un solo panel con todos tus clientes',
-                    'Cambias de NIF en un clic',
-                    'Emites la factura en menos de un minuto',
-                    'VeriFactu se genera solo — QR, hash, AEAT',
                     'Tus clientes cumplen sin tocar nada',
-                    'Tú y tu despacho quedáis cubiertos',
+                    'Tu despacho queda cubierto ante inspecciones',
                   ].map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <li
+                      key={item}
+                      className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300"
+                    >
                       <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
                       {item}
                     </li>
                   ))}
                 </ul>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Cifras */}
-        <section className="bg-gray-950 py-14 md:py-16">
-          <div className="mx-auto max-w-5xl px-6">
-            <div className="grid grid-cols-2 gap-8 text-center md:grid-cols-4">
-              <div>
-                <div className="text-4xl font-black text-white md:text-5xl">
-                  0<span className="text-emerald-400">€</span>
-                </div>
-                <p className="mt-2 text-sm text-gray-400">
-                  Coste para tu asesoría,
-                  <br />
-                  para siempre
-                </p>
-              </div>
-              <div>
-                <div className="text-4xl font-black text-white md:text-5xl">∞</div>
-                <p className="mt-2 text-sm text-gray-400">
-                  Clientes en cartera,
-                  <br />
-                  sin límite
-                </p>
-              </div>
-              <div>
-                <div className="text-4xl font-black text-white md:text-5xl">
-                  &lt;60<span className="text-emerald-400">s</span>
-                </div>
-                <p className="mt-2 text-sm text-gray-400">
-                  Para emitir una factura
-                  <br />
-                  con VeriFactu incluido
-                </p>
-              </div>
-              <div>
-                <div className="text-4xl font-black text-white md:text-5xl">
-                  50<span className="text-emerald-400">k</span>
-                </div>
-                <p className="mt-2 text-sm text-gray-400">
-                  € de multa máxima que
-                  <br />
-                  evitas a cada cliente
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* How it works */}
-        <section className="py-20 md:py-28">
-          <div className="mx-auto max-w-5xl px-6">
-            <div className="mb-16 text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-                En marcha en 3 pasos
-              </h2>
-              <p className="mt-4 text-gray-600 dark:text-gray-400">
-                Sin migraciones, sin formación, sin trabajo previo.
-              </p>
-            </div>
-
-            <div className="grid gap-8 md:grid-cols-3">
-              {HOW_IT_WORKS.map((step, index) => (
-                <div key={step.step} className="relative">
-                  {index < HOW_IT_WORKS.length - 1 && (
-                    <div className="absolute right-0 top-6 hidden h-0.5 w-1/2 translate-x-full bg-indigo-100 dark:bg-indigo-900 md:block" />
-                  )}
-                  <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                    <div className="mb-4 text-4xl font-black text-indigo-100 dark:text-indigo-900">
-                      {step.step}
-                    </div>
-                    <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                      {step.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{step.description}</p>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </section>
@@ -640,7 +461,6 @@ export function NovafacturaAsesoriaPage() {
                 Todo lo que necesitas para gestionar tu cartera
               </h2>
             </div>
-
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {FEATURES.map((feature) => {
                 const Icon = feature.icon;
@@ -665,7 +485,7 @@ export function NovafacturaAsesoriaPage() {
           </div>
         </section>
 
-        {/* Export section */}
+        {/* Export section (Sin tabla A3CON, la tabla extensa solo en /asesoria-facturas-clientes) */}
         <section className="py-20 md:py-28">
           <div className="mx-auto max-w-5xl px-6">
             <div className="mb-12 text-center">
@@ -677,67 +497,23 @@ export function NovafacturaAsesoriaPage() {
                 Exporta las facturas directamente a tu programa de contabilidad
               </h2>
               <p className="mt-4 text-gray-600 dark:text-gray-400">
-                Genera archivos perfectamente formateados para Sage, A3CON, Cegid y Diamacon. Tú sigues trabajando con tus herramientas de siempre — nosotros generamos los datos en el formato que necesitas.
+                Genera archivos perfectamente formateados para Sage, A3CON, Cegid y Diamacon. Tú
+                sigues trabajando con tus herramientas de siempre — nosotros generamos los datos en
+                el formato que necesitas.
               </p>
             </div>
-
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm dark:border-emerald-800 dark:bg-gray-900">
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-950">
-                  <FileSpreadsheet className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">Sage, Cegid y Diamacon</h3>
-                <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                  Archivos Excel (.xlsx) con estructura compatible. Solo tienes que importar el archivo en tu programa — las columnas coinciden exactamente con el formato requerido.
-                </p>
-                <ul className="space-y-2">
-                  <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                    Descarga en un clic desde el panel
-                  </li>
-                  <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                    Una factura por fila, sin duplicados
-                  </li>
-                  <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                    NIF, Base, IVA, IRPF, Total — todo incluido
-                  </li>
-                </ul>
-              </div>
-
-              <div className="rounded-2xl border border-orange-100 bg-white p-6 shadow-sm dark:border-orange-800 dark:bg-gray-900">
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-950">
-                  <ArrowDownToLine className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                </div>
-                <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">a3asesor | Wolters Kluwer</h3>
-                <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                  Guía paso a paso con el mapeo exacto de columnas para A3CON. La plantilla se guarda y se reutiliza en importaciones futuras — sin configuración cada vez.
-                </p>
-                <ul className="space-y-2">
-                  <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
-                    Columnas mapeadas: Fecha, Número, NIF, Nombre, Base, IVA, IRPF
-                  </li>
-                  <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
-                    Plantilla reusable — configúrala una vez
-                  </li>
-                  <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
-                    Soporte para múltiples tipos de IVA en una misma factura
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="mt-8 rounded-2xl border border-gray-100 bg-gray-50 p-6 dark:border-gray-800 dark:bg-gray-900/50">
+            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-6 dark:border-gray-800 dark:bg-gray-900/50">
               <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-gray-600 dark:text-gray-400">
                 <span className="flex items-center gap-2 font-medium">
                   <Download className="h-4 w-4 text-gray-400" />
                   Compatible con:
                 </span>
-                {['Sage Contabilidad', 'Cegid', 'Diamacon (Comeralia)', 'a3asesor | Wolters Kluwer'].map((s) => (
+                {[
+                  'Sage Contabilidad',
+                  'Cegid',
+                  'Diamacon (Comeralia)',
+                  'a3asesor | Wolters Kluwer',
+                ].map((s) => (
                   <span key={s} className="flex items-center gap-1.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                     {s}
@@ -839,9 +615,6 @@ export function NovafacturaAsesoriaPage() {
                 <br />
                 gestione facturas de terceros
               </h2>
-              <p className="mt-4 text-gray-600 dark:text-gray-400">
-                El perfil más habitual son asesorías con 20-60 autónomos en cartera a los que se les hace la facturación directamente.
-              </p>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {USE_CASES.map((useCase) => {
@@ -849,11 +622,7 @@ export function NovafacturaAsesoriaPage() {
                 return (
                   <div
                     key={useCase.title}
-                    className={`rounded-2xl border p-8 shadow-sm dark:bg-gray-900 ${
-                      useCase.badge
-                        ? 'border-indigo-200 bg-indigo-50/50 dark:border-indigo-800 dark:bg-indigo-950/20'
-                        : 'border-gray-100 bg-white dark:border-gray-800'
-                    }`}
+                    className={`rounded-2xl border p-8 shadow-sm dark:bg-gray-900 ${useCase.badge ? 'border-indigo-200 bg-indigo-50/50 dark:border-indigo-800 dark:bg-indigo-950/20' : 'border-gray-100 bg-white dark:border-gray-800'}`}
                   >
                     {useCase.badge && (
                       <span className="mb-3 inline-block rounded-full bg-indigo-600 px-3 py-0.5 text-xs font-semibold text-white">
@@ -887,7 +656,7 @@ export function NovafacturaAsesoriaPage() {
           </div>
         </section>
 
-        {/* Comparativa para asesorías */}
+        {/* Comparativa */}
         <section className="py-20 md:py-28">
           <div className="mx-auto max-w-4xl px-6">
             <div className="mb-12 text-center">
@@ -920,9 +689,7 @@ export function NovafacturaAsesoriaPage() {
                   {ASESOR_COMPARISON.map((row, i) => (
                     <tr
                       key={i}
-                      className={`border-b border-gray-50 last:border-0 dark:border-gray-800 ${
-                        i % 2 === 0 ? '' : 'bg-gray-50/50 dark:bg-gray-800/30'
-                      }`}
+                      className={`border-b border-gray-50 last:border-0 dark:border-gray-800 ${i % 2 === 0 ? '' : 'bg-gray-50/50 dark:bg-gray-800/30'}`}
                     >
                       <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">
                         {row.label}
@@ -936,24 +703,23 @@ export function NovafacturaAsesoriaPage() {
                       ).map(({ col, val, isNova }) => (
                         <td
                           key={col}
-                          className={`px-4 py-3 text-center ${
-                            isNova ? 'bg-indigo-50/50 dark:bg-indigo-950/30' : ''
-                          }`}
+                          className={`px-4 py-3 text-center ${isNova ? 'bg-indigo-50/50 dark:bg-indigo-950/30' : ''}`}
                         >
                           {typeof val === 'boolean' ? (
                             val ? (
                               <>
                                 <CheckCircle2
                                   aria-hidden="true"
-                                  className={`mx-auto h-4 w-4 ${
-                                    isNova ? 'text-indigo-600' : 'text-gray-400'
-                                  }`}
+                                  className={`mx-auto h-4 w-4 ${isNova ? 'text-indigo-600' : 'text-gray-400'}`}
                                 />
                                 <span className="sr-only">Sí</span>
                               </>
                             ) : (
                               <>
-                                <span aria-hidden="true" className="text-gray-300 dark:text-gray-600">
+                                <span
+                                  aria-hidden="true"
+                                  className="text-gray-300 dark:text-gray-600"
+                                >
                                   —
                                 </span>
                                 <span className="sr-only">No</span>
@@ -961,11 +727,7 @@ export function NovafacturaAsesoriaPage() {
                             )
                           ) : (
                             <span
-                              className={`text-xs font-semibold ${
-                                isNova
-                                  ? 'text-indigo-700 dark:text-indigo-300'
-                                  : 'text-gray-500 dark:text-gray-400'
-                              }`}
+                              className={`text-xs font-semibold ${isNova ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-500 dark:text-gray-400'}`}
                             >
                               {val}
                             </span>
@@ -977,22 +739,10 @@ export function NovafacturaAsesoriaPage() {
                 </tbody>
               </table>
             </div>
-            <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-              En resumen: {brandConfig.app.name} es gratuito para asesorías para siempre, mientras
-              Holded parte de 40-90€/mes y Quipu de 25€+/mes. Además, es la única de las tres con
-              directorio de clientes compartido, cambio de contexto en un clic y log de auditoría
-              por cliente, y la única que no limita el número de clientes en cartera.
-            </p>
-            <p className="mt-4 text-center text-xs text-gray-400">
-              * Datos basados en análisis de mercado a mayo de 2026. Los competidores pueden
-              actualizar precios y funcionalidades en cualquier momento.
-            </p>
           </div>
         </section>
 
-        {/* FAQ */}
-        <FaqSection faqs={faqs} title="Lo que nos preguntan las asesorías" />
-
+        <FaqSection faqs={faqs} title="Lo que nos preguntan las asesorías sobre VeriFactu" />
         <FooterLanding />
       </div>
     </>
