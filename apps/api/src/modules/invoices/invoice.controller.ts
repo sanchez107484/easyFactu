@@ -29,6 +29,7 @@ import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { RectifyInvoiceDto } from './dto/rectify-invoice.dto';
 import { QueryInvoiceDto } from './dto/query-invoice.dto';
+import { QuerySelectableInvoicesForRectificationDto } from './dto/query-selectable-for-rectification.dto';
 import { UpdateInvoiceNotesDto } from './dto/update-invoice-notes.dto';
 import { QueryStatsDto } from './dto/query-stats.dto';
 import { QueryReportsDto } from './dto/query-reports.dto';
@@ -72,6 +73,21 @@ export class InvoiceController {
   @ApiOkResponse({ description: 'Lista paginada de facturas' })
   findAll(@CurrentTenant() tenantId: string, @Query() query: QueryInvoiceDto) {
     return this.invoiceService.findAll(tenantId, query);
+  }
+
+  @Get('selectable-for-rectification')
+  @ApiOperation({
+    summary: 'Listar facturas optimizadas para la pantalla de selección de rectificativas',
+  })
+  @ApiOkResponse({
+    description:
+      'Facturas rectificables (CONFIRMED/SENT/PAID) con resumen de hijas. Por defecto excluye las ya rectificadas.',
+  })
+  findSelectableForRectification(
+    @CurrentTenant() tenantId: string,
+    @Query() query: QuerySelectableInvoicesForRectificationDto,
+  ) {
+    return this.invoiceService.findSelectableForRectification(tenantId, query);
   }
 
   @Get('stats')

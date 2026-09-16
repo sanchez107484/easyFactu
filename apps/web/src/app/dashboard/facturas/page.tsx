@@ -34,6 +34,7 @@ import {
   Check,
   ChevronsUpDown,
   Users,
+  Banknote,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -62,6 +63,7 @@ import {
   useDeleteInvoice,
   useConvertProformaToOfficial,
   usePrefetchInvoice,
+  useRectifyInvoice,
 } from '@/hooks/use-invoices';
 import { useSortTable } from '@/hooks/use-sort-table';
 import { useDownloadInvoicePdf } from '@/hooks/use-download-invoice-pdf';
@@ -72,6 +74,7 @@ import {
   Invoice,
   QueryInvoicesInput,
   InvoiceWithMatchedLines,
+  RectificationType,
 } from '@easyfactura/shared-types';
 import { cn, formatCurrency, formatDateShort } from '@/lib/utils';
 import { SortableHeader } from '@/components/common/sortable-header';
@@ -97,6 +100,7 @@ import { ConvertProformaModal } from '@/components/facturas/ConvertProformaModal
 import { InvoicePaymentSection } from '@/components/facturas/InvoicePaymentSection';
 import { RegisterPaymentDialog } from '@/components/facturas/RegisterPaymentDialog';
 import { DownloadInvoiceButton } from '@/components/ui/download-invoice-button';
+import { RectifyInvoiceDialog } from '@/components/facturas/RectifyInvoiceDialog';
 
 // ==================== TYPES ====================
 
@@ -360,6 +364,8 @@ interface InvoiceCardRowProps {
   onMarkSent: () => void;
   onUnmarkSent: () => void;
   onUnmarkPaid: () => void;
+  onRectifySubstitution: (id: string) => void;
+  onRectifyAbono: (id: string) => void;
 }
 
 function InvoiceCardRow({
@@ -371,6 +377,8 @@ function InvoiceCardRow({
   onMarkSent,
   onUnmarkSent,
   onUnmarkPaid,
+  onRectifySubstitution,
+  onRectifyAbono,
 }: InvoiceCardRowProps) {
   const router = useRouter();
   const overdue = isOverdue(invoice);
@@ -478,6 +486,29 @@ function InvoiceCardRow({
               <Copy className="mr-2 h-4 w-4" />
               Duplicar
             </DropdownMenuItem>
+            {(invoice.status === InvoiceStatus.CONFIRMED ||
+              invoice.status === InvoiceStatus.SENT ||
+              invoice.status === InvoiceStatus.PAID) && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() =>
+                    onRectifySubstitution(invoice.id)
+                  }
+                >
+                  <ArrowRightLeft className="mr-2 h-4 w-4" />
+                  Crear rectificativa
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    onRectifyAbono(invoice.id)
+                  }
+                >
+                  <Banknote className="mr-2 h-4 w-4" />
+                  Abono / Devolución
+                </DropdownMenuItem>
+              </>
+            )}
             {(invoice.status === InvoiceStatus.DRAFT ||
               invoice.status === InvoiceStatus.PROFORMA) && (
               <>
@@ -551,6 +582,7 @@ export default function FacturasPage() {
   const [convertId, setConvertId] = useState<string | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<ActionTarget | null>(null);
   const [paidTarget, setPaidTarget] = useState<PaymentTarget | null>(null);
+  const [rectifyTarget, setRectifyTarget] = useState<{ id: string; type: RectificationType } | null>(null);
 
   const { sortKey, sortDir, handleSort } = useSortTable('issueDate', 'desc');
 
@@ -594,6 +626,10 @@ export default function FacturasPage() {
   const deleteMutation = useDeleteInvoice();
   const convertMutation = useConvertProformaToOfficial();
   const prefetchInvoice = usePrefetchInvoice();
+  const rectifyMutation = useRectifyInvoice();
+  const { data: fullRectifyInvoice } = useInvoice(rectifyTarget?.id ?? '', {
+    enabled: Boolean(rectifyTarget),
+  });
 
   const handleConfirmInvoice = async () => {
     if (!confirmTarget) return;
@@ -990,6 +1026,12 @@ export default function FacturasPage() {
                             onMarkSent={() => markSentMutation.mutate(invoice.id)}
                             onUnmarkSent={() => unmarkSentMutation.mutate(invoice.id)}
                             onUnmarkPaid={() => unmarkPaidMutation.mutate(invoice.id)}
+                            onRectifySubstitution={(id) =>
+                              setRectifyTarget({ id, type: RectificationType.SUBSTITUTION })
+                            }
+                            onRectifyAbono={(id) =>
+                              setRectifyTarget({ id, type: RectificationType.DIFFERENCES })
+                            }
                           />
                         </div>
                         {isExpanded && (
@@ -1299,6 +1341,35 @@ export default function FacturasPage() {
                                       <Copy className="mr-2 h-4 w-4" />
                                       Duplicar
                                     </DropdownMenuItem>
+                                    {(invoice.status === InvoiceStatus.CONFIRMED ||
+                                      invoice.status === InvoiceStatus.SENT ||
+                                      invoice.status === InvoiceStatus.PAID) && (
+                                      <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            setRectifyTarget({
+                                              id: invoice.id,
+                                              type: RectificationType.SUBSTITUTION,
+                                            })
+                                          }
+                                        >
+                                          <ArrowRightLeft className="mr-2 h-4 w-4" />
+                                          Crear rectificativa
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            setRectifyTarget({
+                                              id: invoice.id,
+                                              type: RectificationType.DIFFERENCES,
+                                            })
+                                          }
+                                        >
+                                          <Banknote className="mr-2 h-4 w-4" />
+                                          Abono / Devolución
+                                        </DropdownMenuItem>
+                                      </>
+                                    )}
                                     {(invoice.status === InvoiceStatus.DRAFT ||
                                       invoice.status === InvoiceStatus.PROFORMA) && (
                                       <>
@@ -1442,6 +1513,18 @@ export default function FacturasPage() {
         onCancel={() => setConvertId(null)}
         onConfirm={handleConvertToOfficial}
       />
+
+      {rectifyTarget && fullRectifyInvoice && (
+        <RectifyInvoiceDialog
+          open={Boolean(rectifyTarget)}
+          onOpenChange={(open) => {
+            if (!open) setRectifyTarget(null);
+          }}
+          invoice={fullRectifyInvoice}
+          defaultType={rectifyTarget.type}
+          typeSelectable={false}
+        />
+      )}
     </div>
   );
 }

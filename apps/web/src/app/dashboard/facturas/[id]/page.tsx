@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -48,7 +47,6 @@ import {
   useMarkInvoiceAsSent,
   useUnmarkInvoiceAsSent,
   useDeleteInvoice,
-  useRectifyInvoice,
   useConvertProformaToOfficial,
   useConvertDraftToProforma,
   useUpdateInvoiceNotes,
@@ -56,6 +54,7 @@ import {
 import { ConvertProformaModal } from '@/components/facturas/ConvertProformaModal';
 import { ConvertDraftToProformaModal } from '@/components/facturas/ConvertDraftToProformaModal';
 import { RegisterPaymentDialog } from '@/components/facturas/RegisterPaymentDialog';
+import { RectifyInvoiceDialog } from '@/components/facturas/RectifyInvoiceDialog';
 import { InvoiceDetailSkeleton } from '@/components/facturas/InvoiceDetailSkeleton';
 import { SectionLabel } from '@/components/common/section-label';
 import { InvoiceStatusHero } from './_components/invoice-status-hero';
@@ -87,12 +86,7 @@ export default function FacturaDetailPage() {
   const highlightLineId = searchParams.get('highlightLine');
 
   const [showRectifyDialog, setShowRectifyDialog] = useState(false);
-  const [rectifyReason, setRectifyReason] = useState('');
-  const [rectificationType, setRectificationType] = useState<RectificationType>(
-    RectificationType.SUBSTITUTION,
-  );
-  const [adjustmentAmount, setAdjustmentAmount] = useState('');
-  const [adjustmentTaxRate, setAdjustmentTaxRate] = useState<number>(21);
+  const [showRectifyAbonoDialog, setShowRectifyAbonoDialog] = useState(false);
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [showConvertToProformaModal, setShowConvertToProformaModal] = useState(false);
   const [showConvertToRecurringModal, setShowConvertToRecurringModal] = useState(false);
@@ -109,7 +103,6 @@ export default function FacturaDetailPage() {
   const markSentMutation = useMarkInvoiceAsSent();
   const unmarkSentMutation = useUnmarkInvoiceAsSent();
   const deleteMutation = useDeleteInvoice();
-  const rectifyMutation = useRectifyInvoice();
   const convertMutation = useConvertProformaToOfficial();
   const convertToProformaMutation = useConvertDraftToProforma();
   const updateNotesMutation = useUpdateInvoiceNotes();
@@ -199,62 +192,6 @@ export default function FacturaDetailPage() {
       sourceInvoiceId: id,
     });
     setShowConvertToRecurringModal(false);
-  };
-
-  const handleRectify = async () => {
-    if (!rectifyReason.trim()) return;
-
-    let lines;
-    if (rectificationType === RectificationType.SUBSTITUTION) {
-      lines = (invoice!.lines ?? []).map((l) => ({
-        description: l.description,
-        quantity: l.quantity,
-        unitPrice: l.unitPrice,
-        taxRate: l.taxRate,
-      }));
-    } else {
-      // DIFFERENCES (Abonos): crear línea genérica con el importe de ajuste
-      const amount = parseFloat(adjustmentAmount);
-      if (isNaN(amount) || amount === 0) return;
-      lines = [
-        {
-          description: `Ajuste rectificativo - Abonos`,
-          quantity: 1,
-          unitPrice: amount,
-          taxRate: adjustmentTaxRate,
-        },
-      ];
-    }
-
-    try {
-      const rect = await rectifyMutation.mutateAsync({
-        id,
-        data: {
-          rectificationReason: rectifyReason,
-          rectificationType,
-          lines,
-        },
-      });
-      setShowRectifyDialog(false);
-      setAdjustmentAmount('');
-      // Redirigir a edición para que el usuario pueda ajustar las líneas
-      router.push(`/dashboard/facturas/nueva?edit=${rect.id}`);
-    } catch (error) {
-      const responseData = (error as { response?: { data?: { existingDraftId?: string } } })
-        ?.response?.data;
-      if (responseData?.existingDraftId) {
-        setShowRectifyDialog(false);
-        toast.error('Ya existe un borrador de rectificativa', {
-          description: 'Esta factura ya tiene un borrador de factura rectificativa en curso.',
-          action: {
-            label: 'Ver borrador →',
-            onClick: () =>
-              router.push(`/dashboard/facturas/nueva?edit=${responseData.existingDraftId}`),
-          },
-          duration: 8000,
-        });
-      }
-    }
   };
 
   // ==================== LOADING / ERROR ====================
@@ -417,10 +354,16 @@ export default function FacturaDetailPage() {
                 </DropdownMenuItem>
               )}
               {canRectify && (
-                <DropdownMenuItem onClick={() => setShowRectifyDialog(true)}>
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Emitir rectificativa
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuItem onClick={() => setShowRectifyDialog(true)}>
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Crear rectificativa
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowRectifyAbonoDialog(true)}>
+                    <Banknote className="mr-2 h-4 w-4" />
+                    Abono / Devolución
+                  </DropdownMenuItem>
+                </>
               )}
               {(!isDraft || isProforma) && (
                 <DropdownMenuItem asChild>
@@ -786,152 +729,23 @@ export default function FacturaDetailPage() {
         onConfirm={handleConvertToRecurring}
       />
 
-      {/* Rectify dialog */}
-      <AlertDialog open={showRectifyDialog} onOpenChange={setShowRectifyDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Emitir factura rectificativa</AlertDialogTitle>
-            <AlertDialogDescription>
-              Se creará una nueva factura rectificativa basada en esta. Indica el tipo y el motivo
-              de la rectificación.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tipo de rectificación</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setRectificationType(RectificationType.SUBSTITUTION)}
-                  className={`rounded-md border p-3 text-left text-sm transition-colors ${
-                    rectificationType === RectificationType.SUBSTITUTION
-                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  <p className="font-medium">Sustitución</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Reemplaza la factura original con los importes corregidos
-                  </p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRectificationType(RectificationType.DIFFERENCES)}
-                  className={`rounded-md border p-3 text-left text-sm transition-colors ${
-                    rectificationType === RectificationType.DIFFERENCES
-                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  <p className="font-medium">Abonos</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Solo refleja el ajuste (positivo o negativo) respecto a la original
-                  </p>
-                </button>
-              </div>
-            </div>
-            {rectificationType === RectificationType.SUBSTITUTION && (
-              <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3">
-                <p className="text-xs text-blue-700 dark:text-blue-300">
-                  <span className="font-medium">Sustitución:</span> Se copiarán las líneas de la
-                  factura original. Podrás modificarlas para reflejar los importes finales
-                  corregidos.
-                </p>
-              </div>
-            )}
-            {rectificationType === RectificationType.DIFFERENCES && (
-              <div className="space-y-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3">
-                <p className="text-xs text-amber-700 dark:text-amber-300">
-                  <span className="font-medium">Abonos:</span> Indica el importe del ajuste
-                  (positivo o negativo). Se creará una línea con este importe que podrás editar
-                  después.
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-2 space-y-1">
-                    <label className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                      Importe del ajuste (€)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      placeholder="Ej: -150.00 o 50.00"
-                      value={adjustmentAmount}
-                      onChange={(e) => setAdjustmentAmount(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                      IVA (%)
-                    </label>
-                    <select
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      value={adjustmentTaxRate}
-                      onChange={(e) => setAdjustmentTaxRate(Number(e.target.value))}
-                    >
-                      <option value={0}>0%</option>
-                      <option value={4}>4%</option>
-                      <option value={10}>10%</option>
-                      <option value={21}>21%</option>
-                    </select>
-                  </div>
-                </div>
-                {adjustmentAmount && parseFloat(adjustmentAmount) === 0 && (
-                  <p className="text-xs text-destructive">El importe del ajuste no puede ser 0€</p>
-                )}
-              </div>
-            )}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Motivo de la rectificación</label>
-              <textarea
-                className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="Motivo de la rectificación (mínimo 5 caracteres)..."
-                value={rectifyReason}
-                onChange={(e) => setRectifyReason(e.target.value)}
-                maxLength={500}
-              />
-              <div className="flex justify-between items-center">
-                {rectifyReason.length > 0 && rectifyReason.length < 5 && (
-                  <p className="text-xs text-destructive">
-                    El motivo debe tener al menos 5 caracteres
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground ml-auto">{rectifyReason.length}/500</p>
-              </div>
-            </div>
-            <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3">
-              <p className="text-xs text-blue-700 dark:text-blue-300">
-                <span className="font-medium">Nota:</span> Se creará un borrador de factura
-                rectificativa. La factura original permanecerá intacta hasta que confirmes la
-                rectificativa. Si eliminas el borrador, la original no se verá afectada.
-              </p>
-            </div>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => {
-                setRectifyReason('');
-                setRectificationType(RectificationType.SUBSTITUTION);
-                setAdjustmentAmount('');
-                setAdjustmentTaxRate(21);
-              }}
-            >
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleRectify}
-              disabled={
-                rectifyReason.trim().length < 5 ||
-                rectifyMutation.isPending ||
-                (rectificationType === RectificationType.DIFFERENCES &&
-                  (!adjustmentAmount || parseFloat(adjustmentAmount) === 0))
-              }
-            >
-              {rectifyMutation.isPending ? 'Creando...' : 'Crear rectificativa'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Rectify dialog - Substitution */}
+      <RectifyInvoiceDialog
+        open={showRectifyDialog}
+        onOpenChange={setShowRectifyDialog}
+        invoice={invoice}
+        defaultType={RectificationType.SUBSTITUTION}
+        typeSelectable={false}
+      />
+
+      {/* Rectify dialog - Abono / Devolución */}
+      <RectifyInvoiceDialog
+        open={showRectifyAbonoDialog}
+        onOpenChange={setShowRectifyAbonoDialog}
+        invoice={invoice}
+        defaultType={RectificationType.DIFFERENCES}
+        typeSelectable={false}
+      />
 
       <RegisterPaymentDialog
         open={showPaymentDialog}

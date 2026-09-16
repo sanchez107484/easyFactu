@@ -11,6 +11,8 @@ import {
   InvoiceStats,
   InvoiceReportData,
   RectificationType,
+  SelectableInvoiceForRectification,
+  QuerySelectableInvoicesForRectificationInput,
 } from '@easyfactura/shared-types';
 
 export interface RectifyInvoiceInput {
@@ -25,6 +27,15 @@ export const invoiceApi = {
       .get<
         ApiResponse<PaginatedResponse<Invoice>>
       >(`/invoices${buildQueryString(filters as Record<string, unknown>)}`)
+      .then(unwrapApiResponse),
+
+  getSelectableForRectification: (
+    filters: QuerySelectableInvoicesForRectificationInput = {},
+  ): Promise<PaginatedResponse<SelectableInvoiceForRectification>> =>
+    apiClient
+      .get<
+        ApiResponse<PaginatedResponse<SelectableInvoiceForRectification>>
+      >(`/invoices/selectable-for-rectification${buildQueryString(filters as Record<string, unknown>)}`)
       .then(unwrapApiResponse),
 
   getById: (id: string): Promise<Invoice> =>

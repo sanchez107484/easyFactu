@@ -29,6 +29,10 @@ import {
   BarChart2,
   RotateCcw,
   Banknote,
+  LayoutTemplate,
+  FileBarChart,
+  RefreshCw,
+  Settings,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -311,9 +315,9 @@ function BillingChartCard({
 
   return (
     <Card className="lg:col-span-3 flex flex-col">
-      <CardHeader className="px-5 pt-5 pb-3">
+      <CardHeader className="px-4 pt-4 pb-2">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <CardTitle className="text-base">Facturación {year}</CardTitle>
+          <CardTitle className="text-sm">Facturación {year}</CardTitle>
           <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
             {CHART_VIEWS.map((v) => (
               <button
@@ -333,7 +337,7 @@ function BillingChartCard({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-5 pb-4 pt-4 flex-1 min-h-0">
+      <CardContent className="px-4 pb-3 pt-2 flex-1 min-h-0">
         {isLoading ? (
           <div className="flex items-end gap-1 h-full pb-2">
             {Array.from({ length: 12 }).map((_, i) => (
@@ -493,7 +497,7 @@ export default function DashboardPage() {
 
   // Últimas 6 facturas para la lista reciente (query independiente, rápida)
   const { data: recentData, isLoading: loadingRecent } = useInvoices({
-    limit: 6,
+    limit: 5,
     sortBy: 'issueDate',
     sortOrder: 'desc',
   });
@@ -561,7 +565,7 @@ export default function DashboardPage() {
   const hasAnyData = (recentData?.meta?.total ?? 0) > 0 || totalCustomers > 0 || totalProducts > 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Setup banner — shown until setupCompleted is true in the database */}
       {!tenant?.setupCompleted && !isBannerDismissed && (
         <SetupBanner completedSteps={completedSteps} onDismiss={dismissBanner} />
@@ -569,15 +573,14 @@ export default function DashboardPage() {
       {/* Pending agency invitations */}
       <InvitationCards />
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-xl font-bold tracking-tight">
             {getGreeting()}, {user?.firstName ?? 'usuario'} 👋
           </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
+          <p className="text-muted-foreground text-xs mt-0.5">
             {tenant?.businessName} &middot;{' '}
             {now.toLocaleDateString('es-ES', {
-              weekday: 'long',
               day: 'numeric',
               month: 'long',
               year: 'numeric',
@@ -585,78 +588,14 @@ export default function DashboardPage() {
           </p>
         </div>
         <Link href="/dashboard/facturas/nueva">
-          <Button className="shrink-0">
-            <Plus className="mr-1.5 h-4 w-4" />
+          <Button className="shrink-0 h-8 text-sm">
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
             Nueva factura
           </Button>
         </Link>
       </div>
-      {/* Acciones rapidas */}
-      {/* <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <Link href="/dashboard/facturas/nueva?tipo=standard">
-          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer h-full">
-            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-              <FilePlus className="h-4 w-4 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium leading-tight">Nueva factura</p>
-              <p className="text-xs text-muted-foreground leading-tight mt-0.5">Factura estandar</p>
-            </div>
-          </div>
-        </Link>
-
-        <Link href="/dashboard/facturas/nueva?tipo=proforma">
-          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-proforma-400/50 hover:bg-proforma-50 dark:hover:bg-proforma-950/20 transition-all cursor-pointer h-full">
-            <div className="h-9 w-9 rounded-lg bg-proforma-100 dark:bg-proforma-900/30 flex items-center justify-center shrink-0 group-hover:bg-proforma-200 dark:group-hover:bg-proforma-900/50 transition-colors">
-              <ClipboardList className="h-4 w-4 text-proforma-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium leading-tight">Proforma</p>
-              <p className="text-xs text-muted-foreground leading-tight mt-0.5">
-                Presupuesto previo
-              </p>
-            </div>
-          </div>
-        </Link>
-
-        <Link href="/dashboard/facturas">
-          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-rectificativa-400/50 hover:bg-rectificativa-50 dark:hover:bg-rectificativa-950/20 transition-all cursor-pointer h-full">
-            <div className="h-9 w-9 rounded-lg bg-rectificativa-100 dark:bg-rectificativa-900/30 flex items-center justify-center shrink-0 group-hover:bg-rectificativa-200 dark:group-hover:bg-rectificativa-900/50 transition-colors">
-              <FileText className="h-4 w-4 text-rectificativa-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium leading-tight">Rectificativa</p>
-              <p className="text-xs text-muted-foreground leading-tight mt-0.5">Corregir factura</p>
-            </div>
-          </div>
-        </Link>
-
-        <Link href="/dashboard/clientes/nuevo">
-          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-customer-400/50 hover:bg-customer-50 dark:hover:bg-customer-950/20 transition-all cursor-pointer h-full">
-            <div className="h-9 w-9 rounded-lg bg-customer-100 dark:bg-customer-900/30 flex items-center justify-center shrink-0 group-hover:bg-customer-200 dark:group-hover:bg-customer-900/50 transition-colors">
-              <UserPlus className="h-4 w-4 text-customer-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium leading-tight">Nuevo cliente</p>
-              <p className="text-xs text-muted-foreground leading-tight mt-0.5">Añadir cliente</p>
-            </div>
-          </div>
-        </Link>
-
-        <Link href="/dashboard/productos/nuevo">
-          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-product-400/50 hover:bg-product-50 dark:hover:bg-product-950/20 transition-all cursor-pointer h-full">
-            <div className="h-9 w-9 rounded-lg bg-product-100 dark:bg-product-900/30 flex items-center justify-center shrink-0 group-hover:bg-product-200 dark:group-hover:bg-product-900/50 transition-colors">
-              <Package className="h-4 w-4 text-product-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium leading-tight">Nuevo producto</p>
-              <p className="text-xs text-muted-foreground leading-tight mt-0.5">O servicio</p>
-            </div>
-          </div>
-        </Link>
-      </div> */}
-      {/* // grid-cols-5 ahora con 5 botones también pero nuevos */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      {/* Acciones rapidas — 10 botones en grid 2x5 */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <Link href="/dashboard/facturas/nueva?tipo=standard">
           <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer h-full">
             <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
@@ -716,11 +655,71 @@ export default function DashboardPage() {
             </div>
           </div>
         </Link>
+
+        <Link href="/dashboard/ajustes/plantilla">
+          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-template-400/50 hover:bg-template-50 dark:hover:bg-template-950/20 transition-all cursor-pointer h-full">
+            <div className="h-9 w-9 rounded-lg bg-template-100 dark:bg-template-900/30 flex items-center justify-center shrink-0 group-hover:bg-template-200 dark:group-hover:bg-template-900/50 transition-colors">
+              <LayoutTemplate className="h-4 w-4 text-template-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium leading-tight">Crear Plantilla</p>
+              <p className="text-xs text-muted-foreground leading-tight mt-0.5">Diseño de factura</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/facturas/nueva?tipo=proforma">
+          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-proforma-400/50 hover:bg-proforma-50 dark:hover:bg-proforma-950/20 transition-all cursor-pointer h-full">
+            <div className="h-9 w-9 rounded-lg bg-proforma-100 dark:bg-proforma-900/30 flex items-center justify-center shrink-0 group-hover:bg-proforma-200 dark:group-hover:bg-proforma-900/50 transition-colors">
+              <ClipboardList className="h-4 w-4 text-proforma-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium leading-tight">Crear Proforma</p>
+              <p className="text-xs text-muted-foreground leading-tight mt-0.5">Presupuesto previo</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/presupuestos/nueva">
+          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-budget-400/50 hover:bg-budget-50 dark:hover:bg-budget-950/20 transition-all cursor-pointer h-full">
+            <div className="h-9 w-9 rounded-lg bg-budget-100 dark:bg-budget-900/30 flex items-center justify-center shrink-0 group-hover:bg-budget-200 dark:group-hover:bg-budget-900/50 transition-colors">
+              <FileBarChart className="h-4 w-4 text-budget-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium leading-tight">Crear Presupuesto</p>
+              <p className="text-xs text-muted-foreground leading-tight mt-0.5">Presupuesto formal</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/recurrentes/nueva">
+          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-recurring-400/50 hover:bg-recurring-50 dark:hover:bg-recurring-950/20 transition-all cursor-pointer h-full">
+            <div className="h-9 w-9 rounded-lg bg-recurring-100 dark:bg-recurring-900/30 flex items-center justify-center shrink-0 group-hover:bg-recurring-200 dark:group-hover:bg-recurring-900/50 transition-colors">
+              <RefreshCw className="h-4 w-4 text-recurring-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium leading-tight">Factura Recurrente</p>
+              <p className="text-xs text-muted-foreground leading-tight mt-0.5">Facturación automática</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/dashboard/ajustes">
+          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-settings-400/50 hover:bg-settings-50 dark:hover:bg-settings-950/20 transition-all cursor-pointer h-full">
+            <div className="h-9 w-9 rounded-lg bg-settings-100 dark:bg-settings-900/30 flex items-center justify-center shrink-0 group-hover:bg-settings-200 dark:group-hover:bg-settings-900/50 transition-colors">
+              <Settings className="h-4 w-4 text-settings-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium leading-tight">Ajustes</p>
+              <p className="text-xs text-muted-foreground leading-tight mt-0.5">Configuración</p>
+            </div>
+          </div>
+        </Link>
       </div>
 
       {/* KPIs */}
       {(isStillLoading || hasAnyData) && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <StatCard
             title="Facturado este mes"
             value={formatCurrency(billedThisMonth)}
@@ -767,7 +766,7 @@ export default function DashboardPage() {
       )}
       {/* Grafica + Ultimas facturas */}
       {(isStillLoading || hasAnyData) && (
-        <div className="grid gap-6 lg:grid-cols-5">
+        <div className="grid gap-4 lg:grid-cols-5">
           {/* Grafica mensual */}
           <BillingChartCard
             year={now.getFullYear()}
@@ -778,22 +777,22 @@ export default function DashboardPage() {
 
           {/* Ultimas facturas */}
           <Card className="lg:col-span-2">
-            <CardHeader className="px-5 pt-5 pb-3">
+            <CardHeader className="px-4 pt-4 pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Ultimas facturas</CardTitle>
+                <CardTitle className="text-sm">Ultimas facturas</CardTitle>
                 <Link href="/dashboard/facturas">
-                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1">
+                  <Button variant="ghost" size="sm" className="h-6 text-xs gap-1">
                     Ver todas
-                    <ArrowUpRight className="h-3.5 w-3.5" />
+                    <ArrowUpRight className="h-3 w-3" />
                   </Button>
                 </Link>
               </div>
             </CardHeader>
-            <CardContent className="pb-3">
+            <CardContent className="pb-2">
               {loadingRecent ? (
                 <div className="space-y-px">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-3 px-5 py-3.5">
+                    <div key={i} className="flex items-center gap-3 px-4 py-2.5">
                       <div className="flex-1 space-y-1.5">
                         <Skeleton className="h-3.5 w-20" />
                         <Skeleton className="h-3 w-28" />
@@ -803,13 +802,13 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : recentInvoices.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center px-5">
-                  <FileText className="h-10 w-10 text-muted-foreground/30 mb-3" />
+                <div className="flex flex-col items-center justify-center py-8 text-center px-4">
+                  <FileText className="h-8 w-8 text-muted-foreground/30 mb-2" />
                   <p className="text-sm font-medium">Sin facturas aun</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Crea tu primera factura para empezar
                   </p>
-                  <Link href="/dashboard/facturas/nueva?tipo=standard" className="mt-3">
+                  <Link href="/dashboard/facturas/nueva?tipo=standard" className="mt-2">
                     <Button size="sm" variant="outline">
                       <Plus className="mr-1.5 h-3.5 w-3.5" />
                       Crear factura
@@ -822,7 +821,7 @@ export default function DashboardPage() {
                     const statusCfg = INVOICE_STATUS_CONFIG[invoice.status as InvoiceStatus];
                     return (
                       <Link key={invoice.id} href={`/dashboard/facturas/${invoice.id}`}>
-                        <div className="flex items-center gap-3.5 px-5 py-3.5 hover:bg-muted/40 transition-colors border-b last:border-b-0">
+                        <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/40 transition-colors border-b last:border-b-0">
                           <div
                             className={cn(
                               'h-2 w-2 rounded-full shrink-0 mt-px',
@@ -875,15 +874,15 @@ export default function DashboardPage() {
       {/* Empty state primer uso */}
       {!isStillLoading && !hasAnyData && (
         <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-14 text-center">
-            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-              <FileText className="h-7 w-7 text-primary" />
+          <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+            <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
+              <FileText className="h-6 w-6 text-primary" />
             </div>
-            <h3 className="text-lg font-semibold mb-1">Empieza a facturar</h3>
+            <h3 className="text-base font-semibold mb-1">Empieza a facturar</h3>
             <p className="text-sm text-muted-foreground max-w-xs">
               Configura tus clientes, productos y lanza tu primera factura en minutos.
             </p>
-            <div className="flex flex-wrap gap-2 justify-center mt-5">
+            <div className="flex flex-wrap gap-2 justify-center mt-4">
               <Link href="/dashboard/clientes/nuevo">
                 <Button variant="outline" size="sm">
                   <UserPlus className="mr-1.5 h-3.5 w-3.5" />

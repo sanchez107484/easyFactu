@@ -69,6 +69,10 @@ export interface ThemeConfig {
     agency: ThemeColorScale;
     overdue: ThemeColorScale;
     neutral: ThemeColorScale;
+    template: ThemeColorScale;
+    budget: ThemeColorScale;
+    recurring: ThemeColorScale;
+    settings: ThemeColorScale;
   };
   cssVars: {
     light: ThemeCssVars;
