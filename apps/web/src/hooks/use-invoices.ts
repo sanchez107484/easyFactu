@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { invoiceApi, paymentApi, RectifyInvoiceInput } from '@/lib/api/invoice-api';
 import {
   QueryInvoicesInput,
+  QuerySelectableInvoicesForRectificationInput,
+  SelectableInvoiceForRectification,
   CreateInvoiceInput,
   UpdateInvoiceInput,
   CreatePaymentInput,
@@ -20,6 +22,8 @@ export const invoiceKeys = {
   all: ['invoices'] as const,
   lists: () => [...invoiceKeys.all, 'list'] as const,
   list: (filters: QueryInvoicesInput) => [...invoiceKeys.lists(), filters] as const,
+  selectableForRectification: (filters: QuerySelectableInvoicesForRectificationInput) =>
+    [...invoiceKeys.lists(), 'selectable-for-rectification', filters] as const,
   details: () => [...invoiceKeys.all, 'detail'] as const,
   detail: (id: string) => [...invoiceKeys.details(), id] as const,
 };
@@ -34,6 +38,24 @@ export function useInvoices(filters: QueryInvoicesInput = {}) {
     placeholderData: keepPreviousData, // mantiene datos previos al paginar/filtrar
   });
 }
+
+/**
+ * Hook para la pantalla de selección de rectificativas. Devuelve solo facturas
+ * rectificables (CONFIRMED/SENT/PAID), con el resumen de rectificativas hijas
+ * y excluyendo por defecto las ya rectificadas.
+ */
+export function useSelectableInvoicesForRectification(
+  filters: QuerySelectableInvoicesForRectificationInput = {},
+) {
+  return useQuery({
+    queryKey: invoiceKeys.selectableForRectification(filters),
+    queryFn: () => invoiceApi.getSelectableForRectification(filters),
+    staleTime: 30_000,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export type { SelectableInvoiceForRectification };
 
 export function useInvoiceStats(year?: number) {
   return useQuery<InvoiceStats>({

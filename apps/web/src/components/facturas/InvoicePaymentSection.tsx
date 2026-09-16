@@ -58,7 +58,10 @@ export function InvoicePaymentSection({
 
   const total = parseNum(invoice.total);
   const amountPaid = parseNum(invoice.amountPaid);
-  const remaining = Math.round((total - amountPaid) * 100) / 100;
+  const isCreditNote = total < 0;
+  const displayTotal = Math.abs(total);
+  const displayAmountPaid = Math.abs(amountPaid);
+  const remaining = Math.round(Math.abs(total - amountPaid) * 100) / 100;
   const payments = (invoice.payments ?? []) as Payment[];
   const paymentStatus = (invoice.paymentStatus as PaymentStatus) ?? PaymentStatus.UNPAID;
 
@@ -69,12 +72,17 @@ export function InvoicePaymentSection({
 
   const style = STATUS_STYLES[paymentStatus] ?? STATUS_STYLES[PaymentStatus.UNPAID];
 
+  const actionWord = isCreditNote ? 'abono' : 'cobro';
+  const actionVerb = isCreditNote ? 'Abonado' : 'Cobrado';
+  const actionLabel = isCreditNote ? 'Abonada' : 'Cobrada';
+  const pendingLabel = isCreditNote ? 'Pendiente de abono' : 'Pendiente de cobro';
+
   const statusLabel =
     paymentStatus === PaymentStatus.PAID
-      ? 'Cobrada'
+      ? actionLabel
       : paymentStatus === PaymentStatus.PARTIALLY_PAID
-        ? `Cobrado ${formatCurrency(amountPaid)} de ${formatCurrency(total)}`
-        : 'Pendiente de cobro';
+        ? `${actionVerb} ${formatCurrency(displayAmountPaid)} de ${formatCurrency(displayTotal)}`
+        : pendingLabel;
 
   const hasDetails = payments.length > 0 || canRegisterPayment;
 
@@ -101,77 +109,80 @@ export function InvoicePaymentSection({
             {payments.length > 0 && (
               <div className="space-y-1">
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">
-                  Cobros registrados
+                  {actionVerb === 'Abonado' ? 'Abonos registrados' : 'Cobros registrados'}
                 </p>
-                {payments.map((payment) => (
-                  <div key={payment.id} className="flex items-center justify-between gap-2 text-sm">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-medium tabular-nums">
-                        {formatCurrency(parseNum(payment.amount))}
-                      </span>
-                      {payment.notes && (
-                        <Popover>
-                          <PopoverTrigger asChild>
+                {payments.map((payment) => {
+                  const payAmount = Math.abs(parseNum(payment.amount));
+                  return (
+                    <div key={payment.id} className="flex items-center justify-between gap-2 text-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-medium tabular-nums">
+                          {formatCurrency(payAmount)}
+                        </span>
+                        {payment.notes && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                title={payment.notes}
+                                className="inline-flex items-center text-muted-foreground/60 hover:text-muted-foreground cursor-help"
+                              >
+                                <StickyNote className="h-3 w-3" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent side="top" className="w-56 p-2.5 text-xs">
+                              <p className="font-semibold text-foreground mb-1">Nota del {actionWord}</p>
+                              <p className="text-muted-foreground">{payment.notes}</p>
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          {formatDateShort(payment.paymentDate)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {payment.paymentMethod && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {PAYMENT_METHOD_LABELS[payment.paymentMethod as PaymentMethodType]}
+                          </span>
+                        )}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
                             <button
                               type="button"
-                              title={payment.notes}
-                              className="inline-flex items-center text-muted-foreground/60 hover:text-muted-foreground cursor-help"
+                              className="h-5 w-5 inline-flex items-center justify-center rounded text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
                             >
-                              <StickyNote className="h-3 w-3" />
+                              <Trash2 className="h-3 w-3" />
                             </button>
-                          </PopoverTrigger>
-                          <PopoverContent side="top" className="w-56 p-2.5 text-xs">
-                            <p className="font-semibold text-foreground mb-1">Nota del cobro</p>
-                            <p className="text-muted-foreground">{payment.notes}</p>
-                          </PopoverContent>
-                        </Popover>
-                      )}
-                      <span className="text-xs text-muted-foreground">
-                        {formatDateShort(payment.paymentDate)}
-                      </span>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Eliminar {actionWord}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                ¿Eliminar este {actionWord} de {formatCurrency(payAmount)}? El
+                                importe {isCreditNote ? 'abonado' : 'cobrado'} se actualizará automáticamente.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() =>
+                                  deletePayment.mutate({
+                                    invoiceId: invoice.id,
+                                    paymentId: payment.id,
+                                  })
+                                }
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {payment.paymentMethod && (
-                        <span className="text-[10px] text-muted-foreground">
-                          {PAYMENT_METHOD_LABELS[payment.paymentMethod as PaymentMethodType]}
-                        </span>
-                      )}
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <button
-                            type="button"
-                            className="h-5 w-5 inline-flex items-center justify-center rounded text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Eliminar cobro</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              ¿Eliminar este cobro de {formatCurrency(parseNum(payment.amount))}? El
-                              importe cobrado se actualizará automáticamente.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              onClick={() =>
-                                deletePayment.mutate({
-                                  invoiceId: invoice.id,
-                                  paymentId: payment.id,
-                                })
-                              }
-                            >
-                              Eliminar
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -184,7 +195,7 @@ export function InvoicePaymentSection({
                 onClick={onRegisterPayment}
               >
                 <Plus className="mr-1 h-3 w-3" />
-                Registrar cobro
+                Registrar {actionWord}
               </Button>
             )}
           </PopoverContent>

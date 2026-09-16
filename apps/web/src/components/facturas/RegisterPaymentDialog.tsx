@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,15 +29,25 @@ import { PaymentMethod, PaymentType } from '@easyfactura/shared-types';
 import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import { cn, formatCurrency } from '@/lib/utils';
 
-const partialPaymentSchema = z.object({
-  amount: z
-    .number({ invalid_type_error: 'El importe es obligatorio' }),
-  paymentDate: z.string().min(1, 'La fecha es obligatoria'),
-  paymentMethod: z.nativeEnum(PaymentMethod).optional(),
-  notes: z.string().max(500).optional(),
-});
+function buildPaymentSchema(isCreditNote: boolean) {
+  return z.object({
+    amount: z
+      .number({ invalid_type_error: 'El importe es obligatorio' })
+      .refine((val) => val !== 0, {
+        message: isCreditNote
+          ? 'El importe del abono debe ser distinto de 0'
+          : 'El importe debe ser mayor que 0',
+      })
+      .refine((val) => (isCreditNote ? val > 0 : true), {
+        message: 'El importe del abono debe ser positivo',
+      }),
+    paymentDate: z.string().min(1, 'La fecha es obligatoria'),
+    paymentMethod: z.nativeEnum(PaymentMethod).optional(),
+    notes: z.string().max(500).optional(),
+  });
+}
 
-type PartialPaymentFormData = z.infer<typeof partialPaymentSchema>;
+type PartialPaymentFormData = z.infer<ReturnType<typeof buildPaymentSchema>>;
 
 interface RegisterPaymentDialogProps {
   open: boolean;
@@ -60,14 +70,23 @@ export function RegisterPaymentDialog({
   invoiceNumber,
   customerName,
 }: RegisterPaymentDialogProps) {
-  const remaining = Math.round((invoiceTotal - amountPaid) * 100) / 100;
+  const isCreditNote = invoiceTotal < 0;
+
+  const remaining = useMemo(
+    () => Math.round((invoiceTotal - amountPaid) * 100) / 100,
+    [invoiceTotal, amountPaid],
+  );
+  const displayRemaining = Math.abs(remaining);
+
+  const schema = useMemo(() => buildPaymentSchema(isCreditNote), [isCreditNote]);
+
   const createPayment = useCreatePayment();
   const [paymentType, setPaymentType] = useState<PaymentType>(PaymentType.FULL);
 
   const form = useForm<PartialPaymentFormData>({
-    resolver: zodResolver(partialPaymentSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
-      amount: remaining,
+      amount: displayRemaining,
       paymentDate: new Date().toISOString().split('T')[0],
       paymentMethod: defaultPaymentMethod ?? undefined,
       notes: '',
@@ -76,7 +95,7 @@ export function RegisterPaymentDialog({
 
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
-      const newRemaining = Math.round((invoiceTotal - amountPaid) * 100) / 100;
+      const newRemaining = Math.abs(Math.round((invoiceTotal - amountPaid) * 100) / 100);
       setPaymentType(PaymentType.FULL);
       form.reset({
         amount: newRemaining,
@@ -91,16 +110,19 @@ export function RegisterPaymentDialog({
   const handlePaymentTypeChange = (type: PaymentType) => {
     setPaymentType(type);
     if (type === PaymentType.FULL) {
-      form.setValue('amount', remaining, { shouldValidate: true });
+      form.setValue('amount', displayRemaining, { shouldValidate: true });
     }
   };
+
+  const toBackendAmount = (displayAmount: number) =>
+    isCreditNote ? -Math.abs(displayAmount) : displayAmount;
 
   const handleFullPayment = () => {
     createPayment.mutate(
       {
         invoiceId,
         data: {
-          amount: remaining,
+          amount: toBackendAmount(displayRemaining),
           paymentDate: new Date().toISOString().split('T')[0],
           paymentMethod: defaultPaymentMethod ?? undefined,
           notes: undefined,
@@ -117,7 +139,7 @@ export function RegisterPaymentDialog({
       {
         invoiceId,
         data: {
-          amount: data.amount,
+          amount: toBackendAmount(data.amount),
           paymentDate: data.paymentDate,
           paymentMethod: data.paymentMethod,
           notes: data.notes || undefined,
@@ -129,11 +151,16 @@ export function RegisterPaymentDialog({
     );
   };
 
+  const actionLabel = isCreditNote ? 'abono' : 'cobro';
+  const verb = isCreditNote ? 'Abonar' : 'Cobrar';
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Registrar cobro</DialogTitle>
+          <DialogTitle>
+            {isCreditNote ? 'Registrar abono / devolución' : 'Registrar cobro'}
+          </DialogTitle>
           <DialogDescription>
             {invoiceNumber && customerName ? (
               <>
@@ -143,9 +170,13 @@ export function RegisterPaymentDialog({
               </>
             ) : null}
             Pendiente:{' '}
-            <span className="font-semibold text-foreground">{formatCurrency(remaining)}</span>
+            <span className="font-semibold text-foreground">
+              {formatCurrency(displayRemaining)}
+            </span>
             {' de '}
-            <span className="font-semibold text-foreground">{formatCurrency(invoiceTotal)}</span>
+            <span className="font-semibold text-foreground">
+              {formatCurrency(Math.abs(invoiceTotal))}
+            </span>
           </DialogDescription>
         </DialogHeader>
 
@@ -174,9 +205,9 @@ export function RegisterPaymentDialog({
                   paymentType === PaymentType.FULL ? 'text-primary' : 'text-foreground',
                 )}
               >
-                Cobro completo
+                {actionLabel === 'abono' ? 'Abono completo' : 'Cobro completo'}
               </p>
-              <p className="text-xs text-muted-foreground">{formatCurrency(remaining)}</p>
+              <p className="text-xs text-muted-foreground">{formatCurrency(displayRemaining)}</p>
             </div>
           </button>
           <button
@@ -204,7 +235,7 @@ export function RegisterPaymentDialog({
                     : 'text-foreground',
                 )}
               >
-                Cobro parcial
+                {actionLabel === 'abono' ? 'Abono parcial' : 'Cobro parcial'}
               </p>
               <p className="text-xs text-muted-foreground">Importe personalizado</p>
             </div>
@@ -215,8 +246,10 @@ export function RegisterPaymentDialog({
         {paymentType === PaymentType.FULL && (
           <div className="space-y-3 pt-1">
             <p className="text-sm text-muted-foreground">
-              Se registrará el cobro completo de{' '}
-              <span className="font-semibold text-foreground">{formatCurrency(remaining)}</span>
+              Se registrará el {actionLabel} completo de{' '}
+              <span className="font-semibold text-foreground">
+                {formatCurrency(displayRemaining)}
+              </span>
               {defaultPaymentMethod
                 ? ` mediante ${PAYMENT_METHOD_LABELS[defaultPaymentMethod]}`
                 : ''}
@@ -227,7 +260,9 @@ export function RegisterPaymentDialog({
               onClick={handleFullPayment}
               disabled={createPayment.isPending}
             >
-              {createPayment.isPending ? 'Registrando...' : `Cobrar ${formatCurrency(remaining)}`}
+              {createPayment.isPending
+                ? 'Registrando...'
+                : `${verb} ${formatCurrency(displayRemaining)}`}
             </Button>
           </div>
         )}
@@ -243,7 +278,7 @@ export function RegisterPaymentDialog({
                   type="number"
                   step="0.01"
                   min="0.01"
-                  max={remaining}
+                  max={displayRemaining}
                   {...form.register('amount', { valueAsNumber: true })}
                 />
                 {form.formState.errors.amount && (
@@ -303,7 +338,7 @@ export function RegisterPaymentDialog({
                 Cancelar
               </Button>
               <Button type="submit" disabled={createPayment.isPending}>
-                {createPayment.isPending ? 'Registrando...' : 'Registrar cobro parcial'}
+                {createPayment.isPending ? 'Registrando...' : `Registrar ${actionLabel} parcial`}
               </Button>
             </DialogFooter>
           </form>

@@ -19,6 +19,7 @@ import { CreateInvoiceDto, CreateInvoiceLineDto } from './dto/create-invoice.dto
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { RectifyInvoiceDto } from './dto/rectify-invoice.dto';
 import { QueryInvoiceDto } from './dto/query-invoice.dto';
+import { QuerySelectableInvoicesForRectificationDto } from './dto/query-selectable-for-rectification.dto';
 import {
   InvoiceStatus,
   PaymentStatus,
@@ -33,6 +34,41 @@ import { withTransactionRetry } from '../../prisma/with-transaction-retry';
 
 const RECTIFIABLE_STATUSES = [InvoiceStatus.CONFIRMED, InvoiceStatus.SENT, InvoiceStatus.PAID];
 const EDITABLE_STATUSES = [InvoiceStatus.DRAFT, InvoiceStatus.PROFORMA, InvoiceStatus.QUOTE];
+
+/**
+ * Calcula el resumen de rectificativas hijas para una factura.
+ * Se usa en la pantalla de selección para alimentar badges y el filtro
+ * de exclusión. Una rectificativa se considera "ya emitida" cuando su
+ * estado es CONFIRMED, SENT, PAID o RECTIFIED (cualquier estado no-DRAFT).
+ */
+function buildRectificationSummary(
+  children: Array<{ id: string; status: PrismaInvoiceStatus }>,
+): {
+  totalCount: number;
+  hasConfirmed: boolean;
+  hasPendingDraft: boolean;
+  pendingDraftId: string | null;
+} {
+  let hasConfirmed = false;
+  let pendingDraftId: string | null = null;
+  for (const child of children) {
+    const isNonDraft =
+      child.status === PrismaInvoiceStatus.CONFIRMED ||
+      child.status === PrismaInvoiceStatus.SENT ||
+      child.status === PrismaInvoiceStatus.PAID ||
+      child.status === PrismaInvoiceStatus.RECTIFIED;
+    if (isNonDraft) hasConfirmed = true;
+    if (child.status === PrismaInvoiceStatus.DRAFT && pendingDraftId === null) {
+      pendingDraftId = child.id;
+    }
+  }
+  return {
+    totalCount: children.length,
+    hasConfirmed,
+    hasPendingDraft: pendingDraftId !== null,
+    pendingDraftId,
+  };
+}
 
 // Interactive transactions need headroom beyond Prisma's defaults (maxWait 2s, timeout 5s).
 // On Vercel serverless the first query after a cold start includes the TLS + pooler handshake,
@@ -653,13 +689,35 @@ export class InvoiceService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.InvoiceWhereInput = { tenantId };
-
+    /*
     if (status) {
       where.status = status;
     } else {
       // Exclude quotes from the invoices list — they have their own section
       where.status = { not: PrismaInvoiceStatus.QUOTE };
     }
+      */
+
+    // Support array status (e.g. [CONFIRMED, SENT, PAID]) and rectifiableOnly flag
+    const q = query as any;
+    if (q?.rectifiableOnly) {
+      where.status = {
+        in: [PrismaInvoiceStatus.CONFIRMED, PrismaInvoiceStatus.SENT, PrismaInvoiceStatus.PAID],
+      };
+    } else if (Array.isArray(status)) {
+      if (status.length > 0) {
+        where.status = { in: status as PrismaInvoiceStatus[] };
+      } else {
+        // Empty array sent from client -> treat as no filter (keep default exclusion)
+        where.status = { not: PrismaInvoiceStatus.QUOTE };
+      }
+    } else if (status) {
+      where.status = status as PrismaInvoiceStatus;
+    } else {
+      // Exclude quotes from the invoices list — they have their own section
+      where.status = { not: PrismaInvoiceStatus.QUOTE };
+    }
+
     if (customerId) where.customerId = customerId;
 
     if (fromDate || toDate) {
@@ -763,6 +821,121 @@ export class InvoiceService {
     };
   }
 
+  /**
+   * Devuelve facturas rectificables optimizadas para la pantalla de selección
+   * de rectificativas. Incluye el resumen de rectificativas hijas
+   * (totalCount, hasConfirmed, hasPendingDraft, pendingDraftId) para alimentar
+   * los badges y el filtro de exclusión en frontend.
+   *
+   * Por defecto excluye facturas que ya tienen una rectificativa confirmada.
+   */
+  async findSelectableForRectification(
+    tenantId: string,
+    query: QuerySelectableInvoicesForRectificationDto,
+  ) {
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      customerId,
+      fromDate,
+      toDate,
+      sortBy = 'issueDate',
+      sortOrder = 'desc',
+      excludeAlreadyRectified = true,
+    } = query;
+
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.InvoiceWhereInput = {
+      tenantId,
+      status: {
+        in: [
+          PrismaInvoiceStatus.CONFIRMED,
+          PrismaInvoiceStatus.SENT,
+          PrismaInvoiceStatus.PAID,
+        ],
+      },
+    };
+
+    if (customerId) where.customerId = customerId;
+
+    if (fromDate || toDate) {
+      where.issueDate = {
+        ...(fromDate && { gte: new Date(fromDate) }),
+        ...(toDate && { lte: new Date(toDate) }),
+      };
+    }
+
+    const validSortFields: Record<string, true> = {
+      number: true,
+      issueDate: true,
+      dueDate: true,
+      total: true,
+      createdAt: true,
+    };
+    const orderBy: Prisma.InvoiceOrderByWithRelationInput =
+      sortBy === 'customer'
+        ? { customer: { name: sortOrder } }
+        : { [validSortFields[sortBy] ? sortBy : 'issueDate']: sortOrder };
+
+    const [data, total] = await Promise.all([
+      this.prisma.invoice.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy,
+        select: {
+          id: true,
+          tenantId: true,
+          number: true,
+          invoiceType: true,
+          status: true,
+          paymentStatus: true,
+          issueDate: true,
+          dueDate: true,
+          subtotal: true,
+          taxTotal: true,
+          irpfTotal: true,
+          surchargeTotal: true,
+          total: true,
+          amountPaid: true,
+          paymentMethod: true,
+          notes: true,
+          compensacionPercent: true,
+          createdAt: true,
+          updatedAt: true,
+          customerSnapshotName: true,
+          customerSnapshotNif: true,
+          customer: { select: { id: true, name: true, nif: true } },
+          series: { select: { id: true, name: true, prefix: true } },
+          isRectificative: true,
+          // Solo necesitamos id + status para calcular el resumen de hijas.
+          rectificativeInvoices: {
+            select: { id: true, status: true },
+          },
+        },
+      }),
+      this.prisma.invoice.count({ where }),
+    ]);
+
+    const mappedData = data.map((invoice) => {
+      const { rectificativeInvoices, ...rest } = invoice;
+      const summary = buildRectificationSummary(rectificativeInvoices);
+      return { ...rest, rectificativeSummary: summary };
+    });
+
+    // Filtro en memoria: excluir facturas con rectificativa confirmada.
+    const filtered = excludeAlreadyRectified
+      ? mappedData.filter((inv) => !inv.rectificativeSummary.hasConfirmed)
+      : mappedData;
+
+    return {
+      data: filtered,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
   private async searchInvoicesWithUnaccent(tenantId: string, query: QueryInvoiceDto) {
     const {
       page = 1,
@@ -779,9 +952,26 @@ export class InvoiceService {
     const offset = (page - 1) * limit;
     const pattern = `%${search}%`;
 
-    const statusFilter = status
-      ? Prisma.sql`AND i.status = ${status}::text::"InvoiceStatus"`
-      : Prisma.sql`AND i.status != 'QUOTE'::text::"InvoiceStatus"`;
+    let statusFilter: Prisma.Sql;
+    if (status) {
+      if (Array.isArray(status)) {
+        if (status.length === 0) {
+          // Treat empty arrays as no filter
+          statusFilter = Prisma.sql`AND i.status != 'QUOTE'::text::"InvoiceStatus"`;
+        } else {
+          // Build a safe IN list with explicit enum casts for Postgres
+          const statusList = Prisma.join(
+            status.map((s) => Prisma.sql`${s}::text::"InvoiceStatus"`),
+            ','
+          );
+          statusFilter = Prisma.sql`AND i.status IN (${statusList})`;
+        }
+      } else {
+        statusFilter = Prisma.sql`AND i.status = ${status}::text::"InvoiceStatus"`;
+      }
+    } else {
+      statusFilter = Prisma.sql`AND i.status != 'QUOTE'::text::"InvoiceStatus"`;
+    }
 
     const paymentStatusFilter = paymentStatus
       ? Prisma.sql`AND i.payment_status = ${paymentStatus}::text::"PaymentStatus"`
@@ -1437,7 +1627,11 @@ export class InvoiceService {
 
       // Defensive: a rectificative invoice must always reference the original invoice
       // and carry its type + reason. If any of these is missing the document is invalid.
-      if (!invoice.rectifiedInvoiceId || !invoice.rectificationType || !invoice.rectificationReason) {
+      if (
+        !invoice.rectifiedInvoiceId ||
+        !invoice.rectificationType ||
+        !invoice.rectificationReason
+      ) {
         throw new BadRequestException(
           'La factura rectificativa no tiene completa la información de rectificación ' +
             '(factura original, tipo o motivo). Crea una nueva rectificativa desde la factura original.'
@@ -1527,13 +1721,18 @@ export class InvoiceService {
           },
         });
 
-        // Mark the original invoice as RECTIFIED so the user can see it has been
-        // rectified, regardless of whether it is a substitution or a credit note.
-        // Aggregates handle the two cases differently (see getStats/getReports).
+        // Mark the original invoice as RECTIFIED only for SUBSTITUTION rectifications.
+        // For DIFFERENCES (abono/credit note), the original invoice keeps its status
+        // so payments can still be registered on the remaining balance.
         if (invoice.isRectificative && invoice.rectifiedInvoiceId) {
           await tx.invoice.update({
             where: { id: invoice.rectifiedInvoiceId },
-            data: { status: PrismaInvoiceStatus.RECTIFIED },
+            data: {
+              status:
+                invoice.rectificationType === RectificationType.SUBSTITUTION
+                  ? PrismaInvoiceStatus.RECTIFIED
+                  : invoice.status,
+            },
           });
         }
 

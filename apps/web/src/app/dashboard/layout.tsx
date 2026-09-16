@@ -106,7 +106,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <ActingAsBanner />
 
         <main className="flex-1 overflow-y-auto bg-muted/40">
-          <div className="p-6 h-full">{children}</div>
+          <div className="px-4 py-4 h-full">{children}</div>
         </main>
       </div>
     </div>

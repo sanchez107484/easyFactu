@@ -756,6 +756,47 @@ export interface RectifyInvoiceInput {
   lines: CreateInvoiceLineInput[];
 }
 
+/**
+ * Resumen de las rectificativas hijas de una factura.
+ * Usado en la pantalla de selección para mostrar contadores y badges.
+ */
+export interface RectificationInvoiceSummary {
+  /** Número total de rectificativas hijas (cualquier estado). */
+  totalCount: number;
+  /** True si existe alguna hija con estado distinto a DRAFT (CONFIRMED/SENT/PAID/RECTIFIED). */
+  hasConfirmed: boolean;
+  /** True si existe alguna hija en estado DRAFT (borrador pendiente). */
+  hasPendingDraft: boolean;
+  /** ID de la hija en DRAFT (para CTA 'Ver borrador'). Null si no hay. */
+  pendingDraftId: string | null;
+}
+
+/**
+ * Factura tal como se devuelve en GET /invoices/selectable-for-rectification.
+ * Extiende Invoice con campos derivados de las rectificativas hijas para
+ * alimentar los badges y el filtro de exclusión del listado de selección.
+ */
+export interface SelectableInvoiceForRectification extends Invoice {
+  rectificativeSummary: RectificationInvoiceSummary;
+}
+
+/**
+ * Filtros disponibles en GET /invoices/selectable-for-rectification.
+ * Por defecto excluye facturas que ya tienen una rectificativa confirmada.
+ */
+export interface QuerySelectableInvoicesForRectificationInput {
+  page?: number;
+  limit?: number;
+  search?: string;
+  customerId?: string;
+  fromDate?: string;
+  toDate?: string;
+  sortBy?: 'number' | 'issueDate' | 'dueDate' | 'total' | 'createdAt' | 'customer';
+  sortOrder?: 'asc' | 'desc';
+  /** Si false, incluye facturas con rectificativa confirmada. Por defecto true. */
+  excludeAlreadyRectified?: boolean;
+}
+
 // ==================== VERIFACTU ====================
 
 export interface VerifactuLog {

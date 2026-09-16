@@ -91,6 +91,11 @@ export function InvoiceStatusHero({
           <p className="text-3xl font-bold tracking-tight tabular-nums">
             {formatCurrency(invoice.total)}
           </p>
+          {parseNum(invoice.total) < 0 && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Importe en abono (nota de crédito)
+            </p>
+          )}
           <p className="text-xs text-muted-foreground mt-1">
             Base: {formatCurrency(invoice.subtotal)} ·{' '}
             {invoice.compensacionPercent != null ? (
@@ -196,12 +201,18 @@ export function InvoiceStatusHero({
               {unmarkPaidPending ? 'Procesando...' : 'Deshacer pago'}
             </Button>
           )}
-          {!isDraft && parseNum(invoice.amountPaid) < parseNum(invoice.total) && (
-            <Button size="sm" onClick={onShowPaymentDialog} className="min-w-[140px]">
-              <Banknote className="mr-1.5 h-3.5 w-3.5" />
-              Registrar cobro
-            </Button>
-          )}
+          {(() => {
+            const t = parseNum(invoice.total);
+            const paid = parseNum(invoice.amountPaid);
+            const isCreditNote = t < 0;
+            const canPay = isCreditNote ? paid > t : paid < t;
+            return canPay ? (
+              <Button size="sm" onClick={onShowPaymentDialog} className="min-w-[140px]">
+                <Banknote className="mr-1.5 h-3.5 w-3.5" />
+                {isCreditNote ? 'Registrar abono' : 'Registrar cobro'}
+              </Button>
+            ) : null;
+          })()}
           {(!isDraft || isProforma) && (
             <DownloadInvoiceButton
               invoiceId={id}

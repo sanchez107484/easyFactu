@@ -73,6 +73,10 @@ const config: Config = {
         agency: scale(themeConfig.scales.agency),
         overdue: scale(themeConfig.scales.overdue),
         neutral: scale(themeConfig.scales.neutral),
+        template: scale(themeConfig.scales.template),
+        budget: scale(themeConfig.scales.budget),
+        recurring: scale(themeConfig.scales.recurring),
+        settings: scale(themeConfig.scales.settings),
       },
       borderRadius: {
         lg: 'var(--radius)',
