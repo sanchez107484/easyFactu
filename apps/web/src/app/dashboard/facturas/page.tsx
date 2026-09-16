@@ -256,6 +256,8 @@ function QuickActionButton({
   }
 
   if (invoice.status === InvoiceStatus.CONFIRMED || invoice.status === InvoiceStatus.SENT) {
+    const total = Number(invoice.total);
+    const isCreditNote = total < 0;
     return (
       <Button
         size="sm"
@@ -264,7 +266,7 @@ function QuickActionButton({
         onClick={onRequestPaid}
       >
         <Coins className="h-3.5 w-3.5 mr-1.5" />
-        Registrar cobro
+        {isCreditNote ? 'Registrar abono' : 'Registrar cobro'}
       </Button>
     );
   }

@@ -1,6 +1,6 @@
 import {
   IsNumber,
-  IsPositive,
+  IsNotEmpty,
   IsDateString,
   IsOptional,
   IsString,
@@ -11,9 +11,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentMethod } from '@easyfactura/shared-types';
 
 export class CreatePaymentDto {
-  @ApiProperty({ description: 'Importe del cobro', example: 500.0 })
+  @ApiProperty({ description: 'Importe del cobro/abono. Negativo para notas de crédito.', example: 500.0 })
   @IsNumber({ maxDecimalPlaces: 2 })
-  @IsPositive({ message: 'El importe debe ser mayor que 0' })
+  @IsNotEmpty({ message: 'El importe es obligatorio' })
   amount!: number;
 
   @ApiProperty({ description: 'Fecha del cobro', example: '2026-04-16' })

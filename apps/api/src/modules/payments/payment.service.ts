@@ -31,11 +31,36 @@ export class PaymentService {
       const invoiceTotal = Number(invoice.total);
       const newAmount = dto.amount;
 
-      if (currentPaid + newAmount > invoiceTotal) {
-        const remaining = Math.round((invoiceTotal - currentPaid) * 100) / 100;
-        throw new BadRequestException(
-          `El importe supera el pendiente de cobro. Máximo: ${remaining} €`
-        );
+      // Validate payment amount sign matches invoice direction.
+      // Normal invoice (total > 0): payment must be positive.
+      // Credit note (total < 0): payment (refund) must be negative.
+      if (invoiceTotal > 0 && newAmount <= 0) {
+        throw new BadRequestException('El importe debe ser mayor que 0');
+      }
+      if (invoiceTotal < 0 && newAmount >= 0) {
+        throw new BadRequestException('El importe del abono debe ser menor que 0');
+      }
+      if (newAmount === 0) {
+        throw new BadRequestException('El importe no puede ser 0');
+      }
+
+      // Check that payment doesn't exceed the remaining balance.
+      // For credit notes, both remaining and newAmount are negative,
+      // so we use Math.max (closer to zero = less paid).
+      const remaining = Math.round((invoiceTotal - currentPaid) * 100) / 100;
+      if (invoiceTotal < 0) {
+        // Credit note: remaining = -100, newAmount = -50 is valid; newAmount = -150 is not
+        if (newAmount < remaining) {
+          throw new BadRequestException(
+            `El importe supera el pendiente de abono. Máximo: ${Math.abs(remaining)} €`
+          );
+        }
+      } else {
+        if (newAmount > remaining) {
+          throw new BadRequestException(
+            `El importe supera el pendiente de cobro. Máximo: ${remaining} €`
+          );
+        }
       }
 
       const payment = await tx.payment.create({
@@ -93,10 +118,7 @@ export class PaymentService {
 
       await tx.payment.delete({ where: { id: paymentId } });
 
-      const updatedAmountPaid = Math.max(
-        0,
-        Math.round((Number(invoice.amountPaid) - Number(payment.amount)) * 100) / 100
-      );
+      const updatedAmountPaid = Math.round((Number(invoice.amountPaid) - Number(payment.amount)) * 100) / 100;
       const invoiceTotal = Number(invoice.total);
       const paymentStatus = this.resolvePaymentStatus(updatedAmountPaid, invoiceTotal);
 
@@ -166,6 +188,12 @@ export class PaymentService {
   }
 
   private resolvePaymentStatus(amountPaid: number, total: number): PrismaPaymentStatus {
+    if (total < 0) {
+      // Credit note / abono: amountPaid is negative (refunds) or 0
+      if (amountPaid === 0) return PrismaPaymentStatus.UNPAID;
+      if (amountPaid <= total) return PrismaPaymentStatus.PAID;
+      return PrismaPaymentStatus.PARTIALLY_PAID;
+    }
     if (amountPaid <= 0) return PrismaPaymentStatus.UNPAID;
     if (amountPaid >= total) return PrismaPaymentStatus.PAID;
     return PrismaPaymentStatus.PARTIALLY_PAID;

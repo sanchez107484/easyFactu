@@ -1721,13 +1721,18 @@ export class InvoiceService {
           },
         });
 
-        // Mark the original invoice as RECTIFIED so the user can see it has been
-        // rectified, regardless of whether it is a substitution or a credit note.
-        // Aggregates handle the two cases differently (see getStats/getReports).
+        // Mark the original invoice as RECTIFIED only for SUBSTITUTION rectifications.
+        // For DIFFERENCES (abono/credit note), the original invoice keeps its status
+        // so payments can still be registered on the remaining balance.
         if (invoice.isRectificative && invoice.rectifiedInvoiceId) {
           await tx.invoice.update({
             where: { id: invoice.rectifiedInvoiceId },
-            data: { status: PrismaInvoiceStatus.RECTIFIED },
+            data: {
+              status:
+                invoice.rectificationType === RectificationType.SUBSTITUTION
+                  ? PrismaInvoiceStatus.RECTIFIED
+                  : invoice.status,
+            },
           });
         }
 

@@ -136,7 +136,7 @@ export function RectifyInvoiceDialog({
             </strong>
             .{' '}
             {typeSelectable
-              ? 'Indica el tipo y el motivo de la rectificación.'
+              ? 'Elige el tipo de rectificación. Sustitución anula la original; abono deja la original vigente.'
               : isAbono
                 ? 'Se generará un abono por la diferencia que indiques a continuación.'
                 : 'Se generará una factura que anula y reemplaza por completo a la original.'}
