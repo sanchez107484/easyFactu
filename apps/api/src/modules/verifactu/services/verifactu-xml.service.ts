@@ -129,7 +129,9 @@ export class VerifactuXmlService {
     // ── REAGYP path ────────────────────────────────────────────────────────────
     if (invoice.compensacionPercent != null && invoice.compensacionAmount != null) {
       const base = invoice.lines.reduce((s, l) => s + Number(l.subtotal), 0);
-      const discountedBase = invoice.discountAmount ? base - Number(invoice.discountAmount) : base;
+      const discountedBase = invoice.discountAmount
+        ? base - Number(invoice.discountAmount)
+        : base;
       const compensacionPercent = Number(invoice.compensacionPercent);
       const compensacionAmount = Number(invoice.compensacionAmount);
       const irpfAmount = invoice.irpfTotal ? Number(invoice.irpfTotal) : 0;
@@ -139,7 +141,7 @@ export class VerifactuXmlService {
         <TipoImpositivo>${compensacionPercent.toFixed(2)}</TipoImpositivo>
         <CuotaImpuesto>${compensacionAmount.toFixed(2)}</CuotaImpuesto>
         ${
-          irpfAmount > 0
+          irpfAmount !== 0
             ? `<BaseRetencion>${(discountedBase + compensacionAmount).toFixed(2)}</BaseRetencion>
         <RetencionSoportada>${irpfAmount.toFixed(2)}</RetencionSoportada>`
             : ''
@@ -171,7 +173,7 @@ export class VerifactuXmlService {
         irpf: current.irpf + Number(line.irpfAmount || 0),
         surchargeAmount: current.surchargeAmount + lineSurcharge,
         surchargeRate:
-          lineSurcharge > 0 && current.surchargeRate === 0
+          lineSurcharge !== 0 && current.surchargeRate === 0
             ? Number(line.surchargeRate || 0)
             : current.surchargeRate,
       });
@@ -179,7 +181,7 @@ export class VerifactuXmlService {
 
     // Build XML for each tax group
     const breakdowns = Array.from(taxGroups.entries()).map(([rate, amounts]) => {
-      const hasSurcharge = amounts.surchargeAmount > 0;
+      const hasSurcharge = amounts.surchargeAmount !== 0;
       return `<DetalleDesglose>
         <BaseImponible>${amounts.base.toFixed(2)}</BaseImponible>
         <TipoImpositivo>${rate.toFixed(2)}</TipoImpositivo>
@@ -194,7 +196,7 @@ export class VerifactuXmlService {
             : ''
         }
         ${
-          amounts.irpf > 0
+          amounts.irpf !== 0
             ? `<BaseRetencion>${amounts.base.toFixed(2)}</BaseRetencion>
         <RetencionSoportada>${amounts.irpf.toFixed(2)}</RetencionSoportada>`
             : ''
@@ -234,7 +236,10 @@ export class VerifactuXmlService {
       return '';
     }
 
-    return `<ImporteRectificacion>${invoice.total.toFixed(2)}</ImporteRectificacion>`;
+    // AEAT expects the absolute difference amount. The sign of the tax fields
+    // within <Desglose> already indicates credit vs debit.
+    const absoluteTotal = Math.abs(Number(invoice.total));
+    return `<ImporteRectificacion>${absoluteTotal.toFixed(2)}</ImporteRectificacion>`;
   }
 
   /**

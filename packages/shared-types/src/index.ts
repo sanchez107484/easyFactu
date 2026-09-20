@@ -546,13 +546,15 @@ export interface Invoice {
   rectificationReason: string | null;
   rectificationType: RectificationType | null;
   rectifiedInvoice?: Invoice | null;
-  rectificativeInvoices?: Array<{
+   rectificativeInvoices?: Array<{
     id: string;
     number: string | null;
     issueDate: string;
     status: InvoiceStatus;
     rectificationType: RectificationType | null;
   }> | null;
+  /** True when this invoice has at least one child rectificativa (any status). */
+  hasRectificativa?: boolean;
   /** ID of the recurring invoice that generated this invoice (or from which this was converted) */
   recurringInvoiceId?: string | null;
   /**

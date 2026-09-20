@@ -74,9 +74,9 @@ export function RectifyTypeSelector({ value, onChange }: RectifyTypeSelectorProp
               : 'border-border hover:border-primary/50',
           )}
         >
-          <p className="font-medium">Sustitución</p>
+          <p className="font-medium">Sustitución completa</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Reemplaza la factura original con los importes corregidos
+            Anulas la original y creas una nueva con los datos correctos
           </p>
         </button>
         <button
@@ -89,9 +89,9 @@ export function RectifyTypeSelector({ value, onChange }: RectifyTypeSelectorProp
               : 'border-border hover:border-primary/50',
           )}
         >
-          <p className="font-medium">Abonos</p>
+          <p className="font-medium">Abono / Ajuste de importe</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Solo refleja el ajuste (positivo o negativo) respecto a la original
+            Devuelves dinero al cliente o le cobras un adicional sin cambiar las líneas
           </p>
         </button>
       </div>
@@ -113,6 +113,7 @@ export function SubstitutionBody({ invoice }: SubstitutionBodyProps) {
   const lines = invoice.lines ?? [];
   const lineCount = lines.length;
   const totalQty = lines.reduce((acc, l) => acc + Number(l.quantity), 0);
+  const isReagyp = invoice.compensacionPercent != null;
 
   return (
     <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 space-y-2">
@@ -128,6 +129,23 @@ export function SubstitutionBody({ invoice }: SubstitutionBodyProps) {
           <span className="font-semibold tabular-nums">{totalQty}</span> unidades en total
         </span>
       </div>
+      {isReagyp && (
+        <div className="rounded-md border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/30 px-3 py-2">
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5 h-5 w-5 rounded-md bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center shrink-0">
+              <span className="text-[10px] font-bold text-purple-700 dark:text-purple-400">RE</span>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-purple-800 dark:text-purple-300">
+                Cliente en régimen REAGYP
+              </p>
+              <p className="text-xs text-purple-700 dark:text-purple-400 mt-0.5">
+                La rectificativa heredará la compensación del {invoice.compensacionPercent}% de la factura original.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <p className="text-[11px] text-blue-600 dark:text-blue-400">
         Consejo: usa esta opción si los importes correctos son totalmente distintos a los de la
         factura original.
@@ -143,54 +161,203 @@ interface AbonoBodyProps {
   onAmountChange: (v: string) => void;
   taxRate: number;
   onTaxRateChange: (v: number) => void;
+  isReagyp?: boolean;
+  compensacionPercent?: number;
 }
+
+type AbonoDirection = 'refund' | 'charge';
 
 /**
  * ABONO: input de importe + selector de IVA.
+ * El usuario elige la dirección (devolver vs cobrar adicional) y entra un valor positivo.
+ * El signo se gestiona internamente.
  */
-export function AbonoBody({ amount, onAmountChange, taxRate, onTaxRateChange }: AbonoBodyProps) {
+export function AbonoBody({ amount, onAmountChange, taxRate, onTaxRateChange, isReagyp, compensacionPercent }: AbonoBodyProps) {
+  // Determine direction from the sign of stored amount
+  const direction: AbonoDirection = amount === '+' || (amount && parseFloat(amount) > 0)
+    ? 'charge'
+    : 'refund';
+  // Store the absolute value for the input
+  const rawAmount = amount && amount !== '+' && amount !== '-' ? Math.abs(parseFloat(amount) || 0) : 0;
+
+  const compensacionAmount = isReagyp && compensacionPercent && rawAmount !== 0
+    ? Math.round(rawAmount * (compensacionPercent / 100) * 100) / 100
+    : 0;
+  const ivaAmount = !isReagyp && rawAmount !== 0
+    ? Math.round(rawAmount * (taxRate / 100) * 100) / 100
+    : 0;
+  const total = isReagyp
+    ? Math.round((rawAmount + compensacionAmount) * 100) / 100
+    : Math.round((rawAmount + ivaAmount) * 100) / 100;
+  const hasBreakdown = rawAmount !== 0 && (isReagyp || taxRate > 0);
+
+  const signPrefix = direction === 'refund' ? '−' : '+';
+  const signClass = direction === 'refund' ? 'text-destructive' : 'text-secondary-600 dark:text-secondary-400';
+
+  const handleAmountInput = (val: string) => {
+    if (val === '' || val === '+' || val === '-') {
+      onAmountChange(val);
+      return;
+    }
+    const num = parseFloat(val);
+    if (isNaN(num)) {
+      onAmountChange('');
+    } else {
+      const absVal = Math.abs(num);
+      onAmountChange(direction === 'refund' ? String(-absVal) : String(absVal));
+    }
+  };
+
   return (
     <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 space-y-3">
       <p className="text-xs text-amber-700 dark:text-amber-300">
-        <span className="font-medium">Así funciona:</span> indica el importe del ajuste (positivo o
-        negativo). Se creará una línea con este importe que podrás editar después.
+        <span className="font-medium">Qué es un abono:</span> es un ajuste económico sobre la factura
+        original. Puede ser a tu favor (cobras más) o a favor del cliente (le devuelves).
       </p>
-      <div className="grid grid-cols-3 gap-2">
-        <div className="col-span-2">
+
+      {/* Direction toggle */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            const absVal = amount ? Math.abs(parseFloat(amount) || 0) : 0;
+            onAmountChange(absVal > 0 ? String(-absVal) : '-');
+          }}
+          className={cn(
+            'rounded-lg border px-3 py-2 text-left transition-all',
+            direction === 'refund'
+              ? 'border-destructive bg-destructive/5 ring-1 ring-destructive/30'
+              : 'border-border hover:border-muted-foreground/40',
+          )}
+        >
+          <div>
+            <p className={cn('text-sm font-medium', direction === 'refund' ? 'text-destructive' : 'text-foreground')}>
+              Devolver al cliente
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">Ej: producto defectuoso, descuento no aplicado</p>
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const absVal = amount ? Math.abs(parseFloat(amount) || 0) : 0;
+            onAmountChange(absVal > 0 ? String(absVal) : '+');
+          }}
+          className={cn(
+            'rounded-lg border px-3 py-2 text-left transition-all',
+            direction === 'charge'
+              ? 'border-blue-500 bg-blue-500/5 ring-1 ring-blue-500/30'
+              : 'border-border hover:border-muted-foreground/40',
+          )}
+        >
+          <div>
+            <p className={cn('text-sm font-medium', direction === 'charge' ? 'text-blue-600 dark:text-blue-400' : 'text-foreground')}>
+              Cobrar adicional al cliente
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">Ej: error en precio de venta, importe olvidado</p>
+          </div>
+        </button>
+      </div>
+
+      {isReagyp && (
+        <div className="rounded-md border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/30 px-3 py-2.5">
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5 h-5 w-5 rounded-md bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center shrink-0">
+              <span className="text-[10px] font-bold text-purple-700 dark:text-purple-400">RE</span>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-purple-800 dark:text-purple-300">
+                Cliente en régimen REAGYP
+              </p>
+              <p className="text-xs text-purple-700 dark:text-purple-400 mt-0.5">
+                Este abono llevará la compensación del {compensacionPercent}% en vez de IVA, como la factura original.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className={cn('gap-2', isReagyp ? 'grid grid-cols-1' : 'grid grid-cols-3')}>
+        <div className={isReagyp ? '' : 'col-span-2'}>
           <label htmlFor="rectify-amount" className="text-xs font-medium">
-            Importe del ajuste (€)
+            Importe base (€)
           </label>
-          <input
-            id="rectify-amount"
-            type="number"
-            step="0.01"
-            placeholder="-150.00"
-            value={amount}
-            onChange={(e) => onAmountChange(e.target.value)}
-            className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
-          />
-          <p className="text-[11px] text-muted-foreground mt-1">Negativo = devolución</p>
+          <div className="relative mt-1">
+            <span className={cn(
+              'pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold select-none',
+              signClass,
+            )}>
+              {signPrefix}
+            </span>
+            <input
+              id="rectify-amount"
+              type="number"
+              step="0.01"
+              min="0.01"
+              placeholder="50.00"
+              value={rawAmount > 0 ? rawAmount : ''}
+              onChange={(e) => handleAmountInput(e.target.value)}
+              className="w-full rounded-md border border-input bg-background pl-7 pr-3 py-2 text-sm"
+            />
+          </div>
+          {hasBreakdown && (
+            <div className="mt-2 rounded border border-amber-200 dark:border-amber-800 bg-amber-100/50 dark:bg-amber-900/30 px-3 py-2 text-xs space-y-1">
+              <div className="flex justify-between tabular-nums">
+                <span className="text-muted-foreground">Base imponible</span>
+                <span className="font-medium">{signPrefix}{rawAmount.toFixed(2)} €</span>
+              </div>
+              {isReagyp && compensacionPercent && compensacionAmount !== 0 && (
+                <div className="flex justify-between tabular-nums">
+                  <span className="text-muted-foreground">Compensación REAGYP {compensacionPercent}%</span>
+                  <span className={cn('font-medium', signClass)}>
+                    {signPrefix}{compensacionAmount.toFixed(2)} €
+                  </span>
+                </div>
+              )}
+              {!isReagyp && taxRate > 0 && ivaAmount !== 0 && (
+                <div className="flex justify-between tabular-nums">
+                  <span className="text-muted-foreground">IVA {taxRate}%</span>
+                  <span className="font-medium">{signPrefix}{ivaAmount.toFixed(2)} €</span>
+                </div>
+              )}
+              <div className="flex justify-between tabular-nums border-t border-amber-300 dark:border-amber-700 pt-1 mt-1">
+                <span className="font-semibold">
+                  {direction === 'refund' ? 'Total a devolver' : 'Total a cobrar'}
+                </span>
+                <span className={cn('font-semibold tabular-nums', signClass)}>
+                  {signPrefix}{total.toFixed(2)} €
+                </span>
+              </div>
+            </div>
+          )}
+          <p className="text-[11px] text-muted-foreground mt-1">
+            {direction === 'refund'
+              ? 'Este importe se restará de lo que el cliente te debe'
+              : 'Este importe se sumará a lo que el cliente te debe'}
+          </p>
         </div>
-        <div>
-          <label htmlFor="rectify-tax" className="text-xs font-medium">
-            IVA %
-          </label>
-          <select
-            id="rectify-tax"
-            value={taxRate}
-            onChange={(e) => onTaxRateChange(Number(e.target.value))}
-            className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            <option value={0}>0%</option>
-            <option value={4}>4%</option>
-            <option value={10}>10%</option>
-            <option value={21}>21%</option>
-          </select>
-        </div>
+        {!isReagyp && (
+          <div>
+            <label htmlFor="rectify-tax" className="text-xs font-medium">
+              IVA %
+            </label>
+            <select
+              id="rectify-tax"
+              value={taxRate}
+              onChange={(e) => onTaxRateChange(Number(e.target.value))}
+              className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value={0}>0%</option>
+              <option value={4}>4%</option>
+              <option value={10}>10%</option>
+              <option value={21}>21%</option>
+            </select>
+          </div>
+        )}
       </div>
       <p className="text-[11px] text-amber-700 dark:text-amber-400">
-        Consejo: usa esta opción si solo necesitas devolver parte del importe o aplicar un descuento
-        parcial.
+        <span className="font-medium">Consejo:</span> usa abono cuando solo necesites ajustar el importe
+        de la factura original sin cambiar sus líneas.
       </p>
     </div>
   );
