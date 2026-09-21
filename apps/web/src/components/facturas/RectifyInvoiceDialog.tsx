@@ -85,7 +85,8 @@ export function RectifyInvoiceDialog({
   const canSubmit = reasonValid && amountValid && !isLoading;
 
   const handleConfirm = async () => {
-    if (isSentinel || isNaN(amountNum) || amountNum === 0) return;
+    if (isSentinel) return;
+    if (isAbono && (isNaN(amountNum) || amountNum === 0)) return;
 
     const lines = isAbono
       ? [

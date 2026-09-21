@@ -436,7 +436,6 @@ function InvoiceCardRow({
                     ? rawTypes
                     : []
                 : [];
-              const hasSubstitution = types.includes('SUBSTITUTION');
               const hasDifferences = types.includes('DIFFERENCES');
               return (
                 <>
