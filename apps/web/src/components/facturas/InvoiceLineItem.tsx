@@ -74,8 +74,15 @@ function CatalogPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
   const { data } = useProducts({ limit: 500 });
   const products = data?.data ?? [];
+
+  useEffect(() => {
+    if (open && listRef.current) {
+      listRef.current.scrollTop = 0;
+    }
+  }, [open]);
 
   const handleProductCreated = (product: Product) => {
     onSelect(product);
@@ -108,8 +115,20 @@ function CatalogPicker({
         </PopoverTrigger>
         <PopoverContent className="w-80 p-0" align="start" side="bottom">
           <Command>
-            <CommandInput placeholder="Buscar en catálogo..." className="h-9" />
-            <CommandList>
+            <CommandInput
+              placeholder="Buscar en catálogo..."
+              className="h-9"
+              onValueChange={() => {
+                requestAnimationFrame(() => {
+                  requestAnimationFrame(() => {
+                    if (listRef.current) {
+                      listRef.current.scrollTop = 0;
+                    }
+                  });
+                });
+              }}
+            />
+            <CommandList ref={listRef}>
               {products.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 py-6 px-4 text-center">
                   <Sparkles className="h-7 w-7 text-muted-foreground/30" />
