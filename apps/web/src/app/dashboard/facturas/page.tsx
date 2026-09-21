@@ -440,15 +440,6 @@ function InvoiceCardRow({
               const hasDifferences = types.includes('DIFFERENCES');
               return (
                 <>
-                  {hasSubstitution && (
-                    <span
-                      className="text-[10px] font-medium text-rectificativa-700 bg-rectificativa-100 dark:text-rectificativa-300 dark:bg-rectificativa-900/40 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5"
-                      title="Esta factura ha sido sustituida por una rectificativa"
-                    >
-                      <ArrowRightLeft className="h-2.5 w-2.5" />
-                      rectificada
-                    </span>
-                  )}
                   {hasDifferences && (
                     <span
                       className="text-[10px] font-medium text-overdue-700 bg-overdue-100 dark:text-overdue-300 dark:bg-overdue-900/40 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5"
@@ -1222,20 +1213,10 @@ export default function FacturasPage() {
                                           ? rawTypes
                                           : []
                                       : [];
-                                    const hasSubstitution = types.includes('SUBSTITUTION');
                                     const hasDifferences = types.includes('DIFFERENCES');
                                     return (
                                       <>
-{hasSubstitution && (
-                                           <span
-                                             className="text-[10px] font-medium text-rectificativa-700 bg-rectificativa-100 dark:text-rectificativa-300 dark:bg-rectificativa-900/40 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5"
-                                             title="Esta factura ha sido sustituida por una rectificativa"
-                                           >
-                                             <ArrowRightLeft className="h-2.5 w-2.5" />
-                                             rectificada
-                                           </span>
-                                         )}
-                                         {hasDifferences && (
+                                        {hasDifferences && (
                                            <span
                                              className="text-[10px] font-medium text-overdue-700 bg-overdue-100 dark:text-overdue-300 dark:bg-overdue-900/40 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5"
                                              title="Esta factura tiene un abono asociado"
