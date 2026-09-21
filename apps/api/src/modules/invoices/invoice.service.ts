@@ -792,6 +792,9 @@ export class InvoiceService {
           rectificationReason: true,
           rectificationType: true,
           rectifiedInvoice: { select: { id: true, number: true, issueDate: true } },
+          rectificativeInvoices: {
+            select: { id: true, rectificationType: true },
+          },
           payments: {
             select: { id: true, amount: true, paymentDate: true, paymentMethod: true, notes: true },
             orderBy: { paymentDate: 'desc' },
@@ -811,10 +814,17 @@ export class InvoiceService {
     );
     const agencyMap = await this.loadAgencyInfoMap(agencyUserIds);
 
-    const mappedData = data.map(({ createdByUserId, ...invoice }) => ({
-      ...invoice,
-      createdByAgency: createdByUserId ? (agencyMap.get(createdByUserId) ?? null) : null,
-    }));
+    const mappedData = data.map(({ createdByUserId, rectificativeInvoices, ...invoice }) => {
+      const rectificationTypes = rectificativeInvoices
+        ?.map((r) => r.rectificationType)
+        .filter((t): t is NonNullable<typeof t> => t !== null) ?? [];
+      return {
+        ...invoice,
+        rectificationTypes: [...new Set(rectificationTypes)],
+        hasRectificativa: rectificationTypes.length > 0,
+        createdByAgency: createdByUserId ? (agencyMap.get(createdByUserId) ?? null) : null,
+      };
+    });
 
     return {
       data: mappedData,
