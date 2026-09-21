@@ -681,7 +681,7 @@ export default function FacturasPage() {
   };
 
   const handleRectifyClick = (id: string, type: RectificationType, amountPaid: number, number: string) => {
-    if (amountPaid !== 0) {
+    if (amountPaid !== 0 && type === RectificationType.SUBSTITUTION) {
       setRectifyPaidWarning({ id, type, amountPaid, number });
     } else {
       setRectifyTarget({ id, type });

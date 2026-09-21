@@ -224,7 +224,7 @@ export default function FacturaDetailPage() {
   const isProforma = invoice.invoiceType === 'proforma';
 
   const handleRectifyClick = (action: 'substitution' | 'abono') => {
-    if (isPaid) {
+    if (isPaid && action === 'substitution') {
       setPendingRectifyAction(action);
       setShowRectifyPaidWarning(true);
     } else {
