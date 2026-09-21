@@ -51,6 +51,10 @@ export interface RectificativePreviewInfo {
   rectificationReason: string | null;
   rectifiedInvoiceId: string | null;
   rectifiedInvoice?: { id: string; number: string | null } | null;
+  /** Pre-calculated surcharge total from the stored invoice (for rectificative drafts). */
+  storedSurchargeTotal?: number | null;
+  /** Per-line surcharge amounts from the stored invoice (for rectificative drafts). */
+  storedLinesSurcharge?: Array<{ surchargeRate: number; surchargeAmount: number }>;
 }
 
 // ==================== buildPreviewInvoice ====================
@@ -121,13 +125,13 @@ export function buildPreviewInvoice(
           const lineDiscount = l.discountPercent ?? 0;
           const lineNet =
             lineDiscount > 0 ? grossSubtotal * (1 - lineDiscount / 100) : grossSubtotal;
-          // RE rate is always looked up from the LIVA map using the line's taxRate.
-          // No user override — the rate is fixed by law.
           const rate = equivalenceSurchargeRates?.[l.taxRate ?? 0] ?? 0;
           return acc + lineNet * discFactor * (rate / 100);
         }, 0),
       )
     : 0;
+  // For rectificative drafts, use the stored surcharge total to preserve the correct sign
+  const effectiveSurchargeTotal = rectificativeInfo?.storedSurchargeTotal ?? surchargeTotal;
 
   const previewCompensacionAmount = isReagyp
     ? round2(subtotalAfterDiscount * (compensacionPercent / 100))
@@ -161,12 +165,12 @@ export function buildPreviewInvoice(
     const lineDiscount = l.discountPercent ?? 0;
     const lineSubtotal =
       lineDiscount > 0 ? grossSubtotal * (1 - lineDiscount / 100) : grossSubtotal;
-    const lineSurchargeRate = isSurchargeActive
-      ? (equivalenceSurchargeRates?.[l.taxRate ?? 0] ?? 0)
-      : 0;
-    const lineSurchargeAmount = isSurchargeActive
-      ? round2(lineSubtotal * discFactor * (lineSurchargeRate / 100))
-      : 0;
+    // For rectificative drafts, use stored surcharge values to preserve correct sign
+    const storedLineSurcharge = rectificativeInfo?.storedLinesSurcharge?.[i];
+    const lineSurchargeRate = storedLineSurcharge?.surchargeRate
+      ?? (isSurchargeActive ? (equivalenceSurchargeRates?.[l.taxRate ?? 0] ?? 0) : 0);
+    const lineSurchargeAmount = storedLineSurcharge?.surchargeAmount
+      ?? (isSurchargeActive ? round2(lineSubtotal * discFactor * (lineSurchargeRate / 100)) : 0);
     return {
       id: `preview-${i}`,
       tenantId: '',
@@ -179,8 +183,8 @@ export function buildPreviewInvoice(
       discountPercent: lineDiscount > 0 ? lineDiscount : null,
       taxRate: l.taxRate ?? 0,
       taxAmount: round2(lineSubtotal * ((l.taxRate ?? 0) / 100)),
-      surchargeRate: lineSurchargeRate > 0 ? lineSurchargeRate : null,
-      surchargeAmount: lineSurchargeAmount > 0 ? lineSurchargeAmount : null,
+      surchargeRate: lineSurchargeRate !== 0 ? lineSurchargeRate : null,
+      surchargeAmount: lineSurchargeAmount !== 0 ? lineSurchargeAmount : null,
       lineTotal: round2(lineSubtotal),
       hideQty,
       sortOrder: i,
@@ -205,7 +209,7 @@ export function buildPreviewInvoice(
     discountPercent: data.discountPercent ?? null,
     discountAmount,
     taxTotal,
-    surchargeTotal: surchargeTotal > 0 ? surchargeTotal : null,
+    surchargeTotal: effectiveSurchargeTotal !== 0 ? effectiveSurchargeTotal : null,
     irpfPercent: data.irpfPercent ?? null,
     irpfTotal,
     compensacionPercent: isReagyp ? compensacionPercent : null,

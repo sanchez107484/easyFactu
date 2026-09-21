@@ -964,6 +964,11 @@ export default function NuevaFacturaPage() {
                 number: sourceInvoice.rectifiedInvoice.number,
               }
             : null,
+          storedSurchargeTotal: sourceInvoice.surchargeTotal,
+          storedLinesSurcharge: (sourceInvoice.lines ?? []).map((l) => ({
+            surchargeRate: l.surchargeRate ?? 0,
+            surchargeAmount: l.surchargeAmount ?? 0,
+          })),
         }
       : undefined;
 

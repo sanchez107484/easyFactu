@@ -196,11 +196,7 @@ export function AbonoBody({ amount, onAmountChange, taxRate, onTaxRateChange, is
   };
 
   return (
-    <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 space-y-3">
-      <p className="text-xs text-amber-700 dark:text-amber-300">
-        Ajusta el importe de la factura original. Puede ser a tu favor (cobras más) o a favor del cliente (devolución).
-      </p>
-
+    <div className="space-y-3">
       {/* Direction toggle */}
       <div className="grid grid-cols-2 gap-2">
         <button
@@ -210,18 +206,13 @@ export function AbonoBody({ amount, onAmountChange, taxRate, onTaxRateChange, is
             onAmountChange(absVal > 0 ? String(-absVal) : '-');
           }}
           className={cn(
-            'rounded-lg border px-3 py-2 text-left transition-all',
+            'rounded-md border px-3 py-2 text-left transition-all text-sm',
             direction === 'refund'
-              ? 'border-destructive bg-destructive/5 ring-1 ring-destructive/30'
+              ? 'border-destructive bg-destructive/5 ring-1 ring-destructive/30 text-destructive'
               : 'border-border hover:border-muted-foreground/40',
           )}
         >
-          <div>
-            <p className={cn('text-sm font-medium', direction === 'refund' ? 'text-destructive' : 'text-foreground')}>
-              Devolver al cliente
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">Ej: producto defectuoso, descuento no aplicado</p>
-          </div>
+          Devolver al cliente
         </button>
         <button
           type="button"
@@ -230,43 +221,27 @@ export function AbonoBody({ amount, onAmountChange, taxRate, onTaxRateChange, is
             onAmountChange(absVal > 0 ? String(absVal) : '+');
           }}
           className={cn(
-            'rounded-lg border px-3 py-2 text-left transition-all',
+            'rounded-md border px-3 py-2 text-left transition-all text-sm',
             direction === 'charge'
-              ? 'border-blue-500 bg-blue-500/5 ring-1 ring-blue-500/30'
+              ? 'border-blue-500 bg-blue-500/5 ring-1 ring-blue-500/30 text-blue-600 dark:text-blue-400'
               : 'border-border hover:border-muted-foreground/40',
           )}
         >
-          <div>
-            <p className={cn('text-sm font-medium', direction === 'charge' ? 'text-blue-600 dark:text-blue-400' : 'text-foreground')}>
-              Cobrar adicional al cliente
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">Ej: error en precio de venta, importe olvidado</p>
-          </div>
+          Cobrar adicional
         </button>
       </div>
 
       {isReagyp && (
-        <div className="rounded-md border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/30 px-3 py-2.5">
-          <div className="flex items-start gap-2">
-            <div className="mt-0.5 h-5 w-5 rounded-md bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center shrink-0">
-              <span className="text-[10px] font-bold text-purple-700 dark:text-purple-400">RE</span>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-purple-800 dark:text-purple-300">
-                Cliente en régimen REAGYP
-              </p>
-              <p className="text-xs text-purple-700 dark:text-purple-400 mt-0.5">
-                Este abono llevará la compensación del {compensacionPercent}% en vez de IVA, como la factura original.
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 text-xs text-purple-700 dark:text-purple-400">
+          <span className="inline-flex items-center justify-center h-5 w-5 rounded bg-purple-100 dark:bg-purple-900 text-[10px] font-bold">RE</span>
+          <span>Compensación {compensacionPercent}% (REAGYP)</span>
         </div>
       )}
 
-      <div className={cn('gap-2', isReagyp ? 'grid grid-cols-1' : 'grid grid-cols-3')}>
-        <div className={isReagyp ? '' : 'col-span-2'}>
+      <div className="flex gap-2">
+        <div className="flex-1">
           <label htmlFor="rectify-amount" className="text-xs font-medium">
-            Importe base (€)
+            Importe (€)
           </label>
           <div className="relative mt-1">
             <span className={cn(
@@ -286,14 +261,9 @@ export function AbonoBody({ amount, onAmountChange, taxRate, onTaxRateChange, is
               className="w-full rounded-md border border-input bg-background pl-7 pr-3 py-2 text-sm"
             />
           </div>
-          <p className="text-[11px] text-muted-foreground mt-1">
-            {direction === 'refund'
-              ? 'Este importe se restará de lo que el cliente te debe'
-              : 'Este importe se sumará a lo que el cliente te debe'}
-          </p>
         </div>
         {!isReagyp && (
-          <div>
+          <div className="w-20">
             <label htmlFor="rectify-tax" className="text-xs font-medium">
               IVA %
             </label>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   RectificationType,
   type Invoice,
@@ -145,7 +146,7 @@ export function RectifyInvoiceDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className={isRedirecting ? 'pointer-events-none' : ''}>
+      <AlertDialogContent className={cn('max-h-[90vh] flex flex-col', isRedirecting ? 'pointer-events-none' : '')}>
         {isRedirecting && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-lg bg-background/95 backdrop-blur-sm">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -176,7 +177,7 @@ export function RectifyInvoiceDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="flex-1 overflow-y-auto space-y-4 py-2">
           <InvoiceSummary invoice={invoice} />
           {typeSelectable && (
             <RectifyTypeSelector value={selectedType} onChange={setSelectedType} />
