@@ -66,10 +66,10 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
       <div className="w-52">
         <TotalsRow label="Base imponible total" value={formatCurrency(invoice.subtotal)} />
 
-        {(invoice.discountAmount ?? 0) > 0 && (
+        {(invoice.discountAmount ?? 0) !== 0 && (
           <TotalsRow
             label={`Descuento (${invoice.discountPercent ?? 0}%)`}
-            value={`-${formatCurrency(invoice.discountAmount ?? 0)}`}
+            value={`${(invoice.discountAmount ?? 0) > 0 ? '-' : ''}${formatCurrency(invoice.discountAmount ?? 0)}`}
           />
         )}
 
@@ -99,14 +99,14 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
               Number(invoice.irpfPercent) > 0 && (
                 <TotalsRow
                   label={`IRPF (${invoice.irpfPercent}% s/base + comp.)`}
-                  value={`-${formatCurrency(invoice.irpfTotal ?? 0)}`}
+                  value={`${(invoice.irpfTotal ?? 0) >= 0 ? '-' : ''}${formatCurrency(invoice.irpfTotal ?? 0)}`}
                 />
               )
             : // In GENERAL: show IRPF whenever a rate has been configured (mirrors invoice-lines-card)
               Number(invoice.irpfPercent) > 0 && (
                 <TotalsRow
                   label={`IRPF (${invoice.irpfPercent ?? 0}%)`}
-                  value={`-${formatCurrency(invoice.irpfTotal ?? 0)}`}
+                  value={`${(invoice.irpfTotal ?? 0) >= 0 ? '-' : ''}${formatCurrency(invoice.irpfTotal ?? 0)}`}
                 />
               ))}
 

@@ -778,13 +778,13 @@ function InvoiceForm({
                   {showCompensacion ? (
                     <DiscountsSectionReagyp
                       discountPercentProps={form.register('discountPercent', {
-                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                        setValueAs: (v) => (v === '' ? undefined : isNaN(Number(v)) ? undefined : Math.max(0, Number(v))),
                       })}
                       compensacionPercentProps={form.register('compensacionPercent', {
-                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                        setValueAs: (v) => (v === '' ? undefined : isNaN(Number(v)) ? undefined : Math.max(0, Number(v))),
                       })}
                       irpfPercentProps={form.register('irpfPercent', {
-                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                        setValueAs: (v) => (v === '' ? undefined : isNaN(Number(v)) ? undefined : Math.max(0, Number(v))),
                       })}
                       isCustomerReagyp={selectedCustomer?.isReagyp ?? false}
                       onFocus={() => setActiveSection('discountPercent')}
@@ -792,10 +792,10 @@ function InvoiceForm({
                   ) : (
                     <DiscountsSectionGeneral
                       discountPercentProps={form.register('discountPercent', {
-                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                        setValueAs: (v) => (v === '' ? undefined : isNaN(Number(v)) ? undefined : Math.max(0, Number(v))),
                       })}
                       irpfPercentProps={form.register('irpfPercent', {
-                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                        setValueAs: (v) => (v === '' ? undefined : isNaN(Number(v)) ? undefined : Math.max(0, Number(v))),
                       })}
                       showEquivalenceSurchargeInfo={equivalenceSurchargeRates != null}
                       onFocus={() => setActiveSection('discountPercent')}
