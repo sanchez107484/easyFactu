@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -67,6 +67,14 @@ export function RectifyInvoiceDialog({
   const activeType = typeSelectable ? selectedType : defaultType;
   const isAbono = activeType === RectificationType.DIFFERENCES;
   const isReagypInvoice = invoice.compensacionPercent != null;
+  const hasCustomerRE = invoice.customer?.hasEquivalenceSurcharge === true;
+  const showReagypUI = isReagypInvoice || hasCustomerRE;
+
+  useEffect(() => {
+    return () => {
+      toast.dismiss('rectify-creating');
+    };
+  }, []);
 
   const reasonValid = reason.trim().length >= 5;
   const amountNum = amount ? parseFloat(amount) : 0;
@@ -106,6 +114,7 @@ export function RectifyInvoiceDialog({
         id: invoice.id,
         data: { rectificationReason: reason, rectificationType: activeType, lines },
       });
+      toast.dismiss('rectify-creating');
       setIsRedirecting(true);
       router.push(`/dashboard/facturas/nueva?edit=${rect.id}`);
     } catch (e: unknown) {
@@ -178,7 +187,7 @@ export function RectifyInvoiceDialog({
               onAmountChange={setAmount}
               taxRate={taxRate}
               onTaxRateChange={setTaxRate}
-              isReagyp={isReagypInvoice}
+              isReagyp={showReagypUI}
               compensacionPercent={isReagypInvoice ? invoice.compensacionPercent ?? undefined : undefined}
             />
           ) : (

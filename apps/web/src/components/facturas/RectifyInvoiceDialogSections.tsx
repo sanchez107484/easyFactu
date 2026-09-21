@@ -173,23 +173,10 @@ type AbonoDirection = 'refund' | 'charge';
  * El signo se gestiona internamente.
  */
 export function AbonoBody({ amount, onAmountChange, taxRate, onTaxRateChange, isReagyp, compensacionPercent }: AbonoBodyProps) {
-  // Determine direction from the sign of stored amount
   const direction: AbonoDirection = amount === '+' || (amount && parseFloat(amount) > 0)
     ? 'charge'
     : 'refund';
-  // Store the absolute value for the input
   const rawAmount = amount && amount !== '+' && amount !== '-' ? Math.abs(parseFloat(amount) || 0) : 0;
-
-  const compensacionAmount = isReagyp && compensacionPercent && rawAmount !== 0
-    ? Math.round(rawAmount * (compensacionPercent / 100) * 100) / 100
-    : 0;
-  const ivaAmount = !isReagyp && rawAmount !== 0
-    ? Math.round(rawAmount * (taxRate / 100) * 100) / 100
-    : 0;
-  const total = isReagyp
-    ? Math.round((rawAmount + compensacionAmount) * 100) / 100
-    : Math.round((rawAmount + ivaAmount) * 100) / 100;
-  const hasBreakdown = rawAmount !== 0 && (isReagyp || taxRate > 0);
 
   const signPrefix = direction === 'refund' ? '−' : '+';
   const signClass = direction === 'refund' ? 'text-destructive' : 'text-secondary-600 dark:text-secondary-400';
@@ -211,8 +198,7 @@ export function AbonoBody({ amount, onAmountChange, taxRate, onTaxRateChange, is
   return (
     <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 space-y-3">
       <p className="text-xs text-amber-700 dark:text-amber-300">
-        <span className="font-medium">Qué es un abono:</span> es un ajuste económico sobre la factura
-        original. Puede ser a tu favor (cobras más) o a favor del cliente (le devuelves).
+        Ajusta el importe de la factura original. Puede ser a tu favor (cobras más) o a favor del cliente (devolución).
       </p>
 
       {/* Direction toggle */}
@@ -300,36 +286,6 @@ export function AbonoBody({ amount, onAmountChange, taxRate, onTaxRateChange, is
               className="w-full rounded-md border border-input bg-background pl-7 pr-3 py-2 text-sm"
             />
           </div>
-          {hasBreakdown && (
-            <div className="mt-2 rounded border border-amber-200 dark:border-amber-800 bg-amber-100/50 dark:bg-amber-900/30 px-3 py-2 text-xs space-y-1">
-              <div className="flex justify-between tabular-nums">
-                <span className="text-muted-foreground">Base imponible</span>
-                <span className="font-medium">{signPrefix}{rawAmount.toFixed(2)} €</span>
-              </div>
-              {isReagyp && compensacionPercent && compensacionAmount !== 0 && (
-                <div className="flex justify-between tabular-nums">
-                  <span className="text-muted-foreground">Compensación REAGYP {compensacionPercent}%</span>
-                  <span className={cn('font-medium', signClass)}>
-                    {signPrefix}{compensacionAmount.toFixed(2)} €
-                  </span>
-                </div>
-              )}
-              {!isReagyp && taxRate > 0 && ivaAmount !== 0 && (
-                <div className="flex justify-between tabular-nums">
-                  <span className="text-muted-foreground">IVA {taxRate}%</span>
-                  <span className="font-medium">{signPrefix}{ivaAmount.toFixed(2)} €</span>
-                </div>
-              )}
-              <div className="flex justify-between tabular-nums border-t border-amber-300 dark:border-amber-700 pt-1 mt-1">
-                <span className="font-semibold">
-                  {direction === 'refund' ? 'Total a devolver' : 'Total a cobrar'}
-                </span>
-                <span className={cn('font-semibold tabular-nums', signClass)}>
-                  {signPrefix}{total.toFixed(2)} €
-                </span>
-              </div>
-            </div>
-          )}
           <p className="text-[11px] text-muted-foreground mt-1">
             {direction === 'refund'
               ? 'Este importe se restará de lo que el cliente te debe'
@@ -355,10 +311,6 @@ export function AbonoBody({ amount, onAmountChange, taxRate, onTaxRateChange, is
           </div>
         )}
       </div>
-      <p className="text-[11px] text-amber-700 dark:text-amber-400">
-        <span className="font-medium">Consejo:</span> usa abono cuando solo necesites ajustar el importe
-        de la factura original sin cambiar sus líneas.
-      </p>
     </div>
   );
 }

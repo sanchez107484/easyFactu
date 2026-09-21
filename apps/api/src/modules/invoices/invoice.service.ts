@@ -1371,6 +1371,8 @@ export class InvoiceService {
               country: true,
               type: true,
               notes: true,
+              isReagyp: true,
+              hasEquivalenceSurcharge: true,
             },
           },
           series: {

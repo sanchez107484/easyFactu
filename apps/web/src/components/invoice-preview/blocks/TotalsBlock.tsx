@@ -40,7 +40,8 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
   const taxRates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
   const ivaLabel = taxRates.length === 1 ? `IVA (${taxRates[0]}%)` : 'IVA';
   const isReagyp = invoice.compensacionPercent != null;
-  const hasSurcharge = invoice.surchargeTotal != null && Number(invoice.surchargeTotal) > 0;
+  const hasSurcharge = invoice.surchargeTotal != null && Number(invoice.surchargeTotal) > 0
+    || (invoice.lines ?? []).some((l) => (l.surchargeAmount ?? 0) !== 0 || (l.surchargeRate ?? 0) !== 0);
   // Resolve the effective RE rate for each line from the tax-rate-based default map (Art. 161 LIVA),
   // falling back to the stored per-line value. This guarantees the label always reflects the
   // rate that was actually applied to the totals, even if a line's taxRate was just changed.
