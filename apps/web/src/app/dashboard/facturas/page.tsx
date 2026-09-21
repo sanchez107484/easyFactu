@@ -423,6 +423,34 @@ function InvoiceCardRow({
                 asesoría
               </span>
             )}
+            {(() => {
+              const inv = invoice as Invoice & {
+                hasRectificativa?: boolean;
+                rectificationTypes?: string[] | null;
+              };
+              const rawTypes = inv.rectificationTypes as string[] | string | null | undefined;
+              const types: string[] = rawTypes
+                ? typeof rawTypes === 'string'
+                  ? rawTypes.replace(/[{}"]/g, '').split(',').filter(Boolean)
+                  : Array.isArray(rawTypes)
+                    ? rawTypes
+                    : []
+                : [];
+              const hasDifferences = types.includes('DIFFERENCES');
+              return (
+                <>
+                  {hasDifferences && (
+                    <span
+                      className="text-[10px] font-medium text-overdue-700 bg-overdue-100 dark:text-overdue-300 dark:bg-overdue-900/40 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5"
+                      title="Esta factura tiene un abono asociado"
+                    >
+                      <Banknote className="h-2.5 w-2.5" />
+                      tiene abono
+                    </span>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
         <DropdownMenu>
@@ -499,7 +527,7 @@ function InvoiceCardRow({
                   }
                 >
                   <ArrowRightLeft className="mr-2 h-4 w-4" />
-                  Crear rectificativa
+                  Rectificativa por sustitución
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
@@ -507,7 +535,7 @@ function InvoiceCardRow({
                   }
                 >
                   <Banknote className="mr-2 h-4 w-4" />
-                  Abono / Devolución
+                  Abono (devolver o cobrar de más)
                 </DropdownMenuItem>
               </>
             )}
@@ -585,6 +613,7 @@ export default function FacturasPage() {
   const [confirmTarget, setConfirmTarget] = useState<ActionTarget | null>(null);
   const [paidTarget, setPaidTarget] = useState<PaymentTarget | null>(null);
   const [rectifyTarget, setRectifyTarget] = useState<{ id: string; type: RectificationType } | null>(null);
+  const [rectifyPaidWarning, setRectifyPaidWarning] = useState<{ id: string; type: RectificationType; amountPaid: number; number: string } | null>(null);
 
   const { sortKey, sortDir, handleSort } = useSortTable('issueDate', 'desc');
 
@@ -649,6 +678,14 @@ export default function FacturasPage() {
     if (!convertId) return;
     await convertMutation.mutateAsync(convertId);
     setConvertId(null);
+  };
+
+  const handleRectifyClick = (id: string, type: RectificationType, amountPaid: number, number: string) => {
+    if (amountPaid !== 0 && type === RectificationType.SUBSTITUTION) {
+      setRectifyPaidWarning({ id, type, amountPaid, number });
+    } else {
+      setRectifyTarget({ id, type });
+    }
   };
 
   const invoices = (data?.data ?? []) as Invoice[];
@@ -1029,10 +1066,10 @@ export default function FacturasPage() {
                             onUnmarkSent={() => unmarkSentMutation.mutate(invoice.id)}
                             onUnmarkPaid={() => unmarkPaidMutation.mutate(invoice.id)}
                             onRectifySubstitution={(id) =>
-                              setRectifyTarget({ id, type: RectificationType.SUBSTITUTION })
+                              handleRectifyClick(id, RectificationType.SUBSTITUTION, Number(invoice.amountPaid ?? 0), invoice.number ?? '')
                             }
                             onRectifyAbono={(id) =>
-                              setRectifyTarget({ id, type: RectificationType.DIFFERENCES })
+                              handleRectifyClick(id, RectificationType.DIFFERENCES, Number(invoice.amountPaid ?? 0), invoice.number ?? '')
                             }
                           />
                         </div>
@@ -1162,6 +1199,34 @@ export default function FacturasPage() {
                                       asesoría
                                     </span>
                                   )}
+                                  {(() => {
+                                    const inv = invoice as Invoice & {
+                                      hasRectificativa?: boolean;
+                                      rectificationTypes?: string[] | null;
+                                    };
+                                    const rawTypes = inv.rectificationTypes as string[] | string | null | undefined;
+                                    const types: string[] = rawTypes
+                                      ? typeof rawTypes === 'string'
+                                        ? rawTypes.replace(/[{}"]/g, '').split(',').filter(Boolean)
+                                        : Array.isArray(rawTypes)
+                                          ? rawTypes
+                                          : []
+                                      : [];
+                                    const hasDifferences = types.includes('DIFFERENCES');
+                                    return (
+                                      <>
+                                        {hasDifferences && (
+                                           <span
+                                             className="text-[10px] font-medium text-overdue-700 bg-overdue-100 dark:text-overdue-300 dark:bg-overdue-900/40 rounded px-1.5 py-0.5 inline-flex items-center gap-0.5"
+                                             title="Esta factura tiene un abono asociado"
+                                           >
+                                             <Banknote className="h-2.5 w-2.5" />
+                                             tiene abono
+                                           </span>
+                                         )}
+                                      </>
+                                    );
+                                  })()}
                                 </div>
                               </td>
                               <td className="px-4 py-3">
@@ -1350,10 +1415,12 @@ export default function FacturasPage() {
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem
                                           onClick={() =>
-                                            setRectifyTarget({
-                                              id: invoice.id,
-                                              type: RectificationType.SUBSTITUTION,
-                                            })
+                                            handleRectifyClick(
+                                              invoice.id,
+                                              RectificationType.SUBSTITUTION,
+                                              Number(invoice.amountPaid ?? 0),
+                                              invoice.number ?? '',
+                                            )
                                           }
                                         >
                                           <ArrowRightLeft className="mr-2 h-4 w-4" />
@@ -1361,10 +1428,12 @@ export default function FacturasPage() {
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
                                           onClick={() =>
-                                            setRectifyTarget({
-                                              id: invoice.id,
-                                              type: RectificationType.DIFFERENCES,
-                                            })
+                                            handleRectifyClick(
+                                              invoice.id,
+                                              RectificationType.DIFFERENCES,
+                                              Number(invoice.amountPaid ?? 0),
+                                              invoice.number ?? '',
+                                            )
                                           }
                                         >
                                           <Banknote className="mr-2 h-4 w-4" />
@@ -1479,6 +1548,43 @@ export default function FacturasPage() {
           customerName={paidTarget.customerName}
         />
       )}
+
+      {/* ── Rectify PAID Warning ── */}
+      <AlertDialog
+        open={Boolean(rectifyPaidWarning)}
+        onOpenChange={(open) => !open && setRectifyPaidWarning(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              Esta factura tiene un cobro registrado
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              La factura <span className="font-semibold text-foreground">{rectifyPaidWarning?.number}</span>
+              {' '}tiene un cobro de <span className="font-semibold text-foreground">{formatCurrency(Math.abs(rectifyPaidWarning?.amountPaid ?? 0))}</span>.
+              {' '}Al crear una rectificativa, la factura original perderá su estado de pagada pero el registro
+              de cobro seguirá existiendo. Deberás gestionar la devolución o el ajuste contable por tu cuenta.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setRectifyPaidWarning(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+              onClick={() => {
+                if (rectifyPaidWarning) {
+                  setRectifyTarget({ id: rectifyPaidWarning.id, type: rectifyPaidWarning.type });
+                  setRectifyPaidWarning(null);
+                }
+              }}
+            >
+              Continuar de todos modos
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ── Delete Dialog ── */}
       <AlertDialog open={Boolean(deleteId)} onOpenChange={(open) => !open && setDeleteId(null)}>

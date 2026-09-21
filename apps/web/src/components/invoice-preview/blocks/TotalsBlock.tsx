@@ -40,14 +40,21 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
   const taxRates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
   const ivaLabel = taxRates.length === 1 ? `IVA (${taxRates[0]}%)` : 'IVA';
   const isReagyp = invoice.compensacionPercent != null;
-  const hasSurcharge = invoice.surchargeTotal != null && Number(invoice.surchargeTotal) > 0;
+  const hasSurcharge =
+    (invoice.surchargeTotal != null && Number(invoice.surchargeTotal) !== 0) ||
+    (invoice.lines ?? []).some(
+      (l) => (l.surchargeAmount ?? 0) !== 0 || (l.surchargeRate ?? 0) !== 0,
+    );
   // Resolve the effective RE rate for each line from the tax-rate-based default map (Art. 161 LIVA),
   // falling back to the stored per-line value. This guarantees the label always reflects the
   // rate that was actually applied to the totals, even if a line's taxRate was just changed.
   const surchargeRates = [
     ...new Set(
       (invoice.lines ?? [])
-        .map((l) => EQUIVALENCE_SURCHARGE_RATES[Number(l.taxRate ?? 0)] ?? Number(l.surchargeRate ?? 0))
+        .map(
+          (l) =>
+            EQUIVALENCE_SURCHARGE_RATES[Number(l.taxRate ?? 0)] ?? Number(l.surchargeRate ?? 0),
+        )
         .filter((r) => r > 0),
     ),
   ];
@@ -59,10 +66,10 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
       <div className="w-52">
         <TotalsRow label="Base imponible total" value={formatCurrency(invoice.subtotal)} />
 
-        {(invoice.discountAmount ?? 0) > 0 && (
+        {(invoice.discountAmount ?? 0) !== 0 && (
           <TotalsRow
             label={`Descuento (${invoice.discountPercent ?? 0}%)`}
-            value={`-${formatCurrency(invoice.discountAmount ?? 0)}`}
+            value={`${(invoice.discountAmount ?? 0) > 0 ? '-' : ''}${formatCurrency(invoice.discountAmount ?? 0)}`}
           />
         )}
 
@@ -82,7 +89,7 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
         {hasSurcharge && !isReagyp && (
           <TotalsRow
             label={surchargeLabel}
-            value={`+${formatCurrency(invoice.surchargeTotal ?? 0)}`}
+            value={`${(invoice.surchargeTotal ?? 0) < 0 ? '' : '+'}${formatCurrency(invoice.surchargeTotal ?? 0)}`}
           />
         )}
 
@@ -92,14 +99,14 @@ export function TotalsBlock({ layout, invoice }: TotalsBlockProps) {
               Number(invoice.irpfPercent) > 0 && (
                 <TotalsRow
                   label={`IRPF (${invoice.irpfPercent}% s/base + comp.)`}
-                  value={`-${formatCurrency(invoice.irpfTotal ?? 0)}`}
+                  value={`${(invoice.irpfTotal ?? 0) >= 0 ? '-' : ''}${formatCurrency(invoice.irpfTotal ?? 0)}`}
                 />
               )
             : // In GENERAL: show IRPF whenever a rate has been configured (mirrors invoice-lines-card)
               Number(invoice.irpfPercent) > 0 && (
                 <TotalsRow
                   label={`IRPF (${invoice.irpfPercent ?? 0}%)`}
-                  value={`-${formatCurrency(invoice.irpfTotal ?? 0)}`}
+                  value={`${(invoice.irpfTotal ?? 0) >= 0 ? '-' : ''}${formatCurrency(invoice.irpfTotal ?? 0)}`}
                 />
               ))}
 

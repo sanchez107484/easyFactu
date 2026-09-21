@@ -629,9 +629,10 @@ export class InvoiceService {
           taxTotal: totals.taxTotal,
           irpfPercent: dto.irpfPercent ?? null,
           irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
-          compensacionPercent: compensacionPercent ?? null,
-          compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
-          surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
+        compensacionPercent: compensacionPercent ?? null,
+        compensacionAmount:
+          Math.abs(totals.compensacionAmount) > 0 ? totals.compensacionAmount : null,
+        surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
           total: totals.total,
           paymentMethod: (dto.paymentMethod ?? null) as any,
           notes: dto.notes ?? null,
@@ -791,6 +792,9 @@ export class InvoiceService {
           rectificationReason: true,
           rectificationType: true,
           rectifiedInvoice: { select: { id: true, number: true, issueDate: true } },
+          rectificativeInvoices: {
+            select: { id: true, rectificationType: true },
+          },
           payments: {
             select: { id: true, amount: true, paymentDate: true, paymentMethod: true, notes: true },
             orderBy: { paymentDate: 'desc' },
@@ -810,10 +814,17 @@ export class InvoiceService {
     );
     const agencyMap = await this.loadAgencyInfoMap(agencyUserIds);
 
-    const mappedData = data.map(({ createdByUserId, ...invoice }) => ({
-      ...invoice,
-      createdByAgency: createdByUserId ? (agencyMap.get(createdByUserId) ?? null) : null,
-    }));
+    const mappedData = data.map(({ createdByUserId, rectificativeInvoices, ...invoice }) => {
+      const rectificationTypes = rectificativeInvoices
+        ?.map((r) => r.rectificationType)
+        .filter((t): t is NonNullable<typeof t> => t !== null) ?? [];
+      return {
+        ...invoice,
+        rectificationTypes: [...new Set(rectificationTypes)],
+        hasRectificativa: rectificationTypes.length > 0,
+        createdByAgency: createdByUserId ? (agencyMap.get(createdByUserId) ?? null) : null,
+      };
+    });
 
     return {
       data: mappedData,
@@ -1017,7 +1028,10 @@ export class InvoiceService {
           i.customer_snapshot_name AS "customerSnapshotName",
           i.customer_snapshot_nif AS "customerSnapshotNif",
           json_build_object('id', c.id, 'name', c.name, 'nif', c.nif) AS customer,
-          json_build_object('id', s.id, 'name', s.name, 'prefix', s.prefix) AS series
+          json_build_object('id', s.id, 'name', s.name, 'prefix', s.prefix) AS series,
+          EXISTS (SELECT 1 FROM invoices ri WHERE ri.rectified_invoice_id = i.id) AS "hasRectificativa",
+          (SELECT array_agg(DISTINCT ri.rectification_type) FROM invoices ri
+           WHERE ri.rectified_invoice_id = i.id AND ri.rectification_type IS NOT NULL) AS "rectificationTypes"
         FROM invoices i
         JOIN customers c ON c.id = i.customer_id
         LEFT JOIN invoice_series s ON s.id = i.series_id
@@ -1367,6 +1381,8 @@ export class InvoiceService {
               country: true,
               type: true,
               notes: true,
+              isReagyp: true,
+              hasEquivalenceSurcharge: true,
             },
           },
           series: {
@@ -1704,7 +1720,8 @@ export class InvoiceService {
             taxTotal: totals.taxTotal,
             irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
             compensacionPercent: storedCompensacion ?? null,
-            compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
+            compensacionAmount:
+              Math.abs(totals.compensacionAmount) > 0 ? totals.compensacionAmount : null,
             surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
             total: totals.total,
             ...customerSnapshot,
@@ -1725,15 +1742,14 @@ export class InvoiceService {
         // For DIFFERENCES (abono/credit note), the original invoice keeps its status
         // so payments can still be registered on the remaining balance.
         if (invoice.isRectificative && invoice.rectifiedInvoiceId) {
-          await tx.invoice.update({
-            where: { id: invoice.rectifiedInvoiceId },
-            data: {
-              status:
-                invoice.rectificationType === RectificationType.SUBSTITUTION
-                  ? PrismaInvoiceStatus.RECTIFIED
-                  : invoice.status,
-            },
-          });
+          if (invoice.rectificationType === RectificationType.SUBSTITUTION) {
+            await tx.invoice.update({
+              where: { id: invoice.rectifiedInvoiceId },
+              data: { status: PrismaInvoiceStatus.RECTIFIED },
+            });
+          }
+          // DIFFERENCES: do NOT touch the original invoice's status — it stays
+          // CONFIRMED/SENT/PAID so that further payments or abonos can be registered.
         }
 
         return updatedInvoice;
@@ -1913,7 +1929,8 @@ export class InvoiceService {
         irpfPercent: original.irpfPercent,
         irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
         compensacionPercent: compensacionPercent ?? null,
-        compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
+        compensacionAmount:
+          Math.abs(totals.compensacionAmount) > 0 ? totals.compensacionAmount : null,
         surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
         total: totals.total,
         paymentMethod: original.paymentMethod as any,
@@ -1982,19 +1999,51 @@ export class InvoiceService {
 
     await this.validateProductIds(tenantId, dto.lines);
 
-    const compensacionPercent = await this.resolveCompensacionPercent(
-      tenantId,
-      original.customerId
-    );
+    // ── Régimen fiscal de la rectificativa ──
+    // Hereda siempre el compensacionPercent de la factura original para mantener
+    // coherencia fiscal. La rectificativa corrige la original y debe reflejar
+    // el mismo régimen (GENERAL o REAGYP) en el momento de la emisión.
+    const compensacionPercent = original.compensacionPercent
+      ? Number(original.compensacionPercent)
+      : undefined;
+
+    const isReagypForSurcharge = compensacionPercent != null && compensacionPercent > 0;
     const equivalenceSurchargeRates = await this.resolveEquivalenceSurchargeRates(
       tenantId,
       original.customerId,
-      compensacionPercent != null && compensacionPercent > 0
+      isReagypForSurcharge
     );
     const totals = this.calculationService.calculateTotals(dto.lines, {
       compensacionPercent,
       equivalenceSurchargeRates,
     });
+
+    // ── Normalización de totales ──
+    // La rectificativa debe tener el mismo signo que las líneas entrantes.
+    // El usuario elige en el frontend si el abono es negativo (devolver) o positivo (cobrar).
+    // SUBSTITUTION: las líneas se copian de la original (positivas) → se invierte el signo.
+    // DIFFERENCES (abono): el signo ya lo decide el usuario → se respeta tal cual.
+    const isDifferences = dto.rectificationType === 'DIFFERENCES';
+    const shouldNegate = !isDifferences;
+    const sign = shouldNegate ? -1 : 1;
+
+    const finalTotals = {
+      subtotal: totals.subtotal * sign,
+      taxTotal: totals.taxTotal * sign,
+      surchargeTotal: totals.surchargeTotal * sign,
+      compensacionAmount:
+        Math.abs(totals.compensacionAmount) > 0
+          ? totals.compensacionAmount * sign
+          : null,
+      total: totals.total * sign,
+      lines: totals.lines.map((l) => ({
+        ...l,
+        subtotal: l.subtotal * sign,
+        taxAmount: l.taxAmount * sign,
+        surchargeAmount: l.surchargeAmount * sign,
+        lineTotal: l.lineTotal * sign,
+      })),
+    };
 
     const paymentDetails = original.paymentDetails;
 
@@ -2017,16 +2066,21 @@ export class InvoiceService {
             rectifiedInvoiceId: id,
             rectificationReason: dto.rectificationReason,
             rectificationType: dto.rectificationType,
-            subtotal: totals.subtotal,
-            taxTotal: totals.taxTotal,
+            subtotal: finalTotals.subtotal,
+            taxTotal: finalTotals.taxTotal,
             compensacionPercent: compensacionPercent ?? null,
-            compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
-            surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
-            total: totals.total,
+            compensacionAmount: finalTotals.compensacionAmount,
+            surchargeTotal:
+              Math.abs(finalTotals.surchargeTotal) > 0 ? finalTotals.surchargeTotal : null,
+            // Preserve discount and IRPF from the original so that confirm() can
+            // recalculate totals with the correct rates when the rectificativa is confirmed.
+            discountPercent: original.discountPercent ?? null,
+            irpfPercent: original.irpfPercent ?? null,
+            total: finalTotals.total,
             paymentMethod: original.paymentMethod as any,
             ...(paymentDetails != null ? { paymentDetails } : {}),
             lines: {
-              create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
+              create: this.buildLineCreateData(tenantId, dto.lines, finalTotals.lines),
             },
           },
           include: {

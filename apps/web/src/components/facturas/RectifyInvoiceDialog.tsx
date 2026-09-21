@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   RectificationType,
   type Invoice,
@@ -61,22 +63,38 @@ export function RectifyInvoiceDialog({
   const [reason, setReason] = useState('');
   const [amount, setAmount] = useState('');
   const [taxRate, setTaxRate] = useState(21);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const activeType = typeSelectable ? selectedType : defaultType;
   const isAbono = activeType === RectificationType.DIFFERENCES;
+  const isReagypInvoice = invoice.compensacionPercent != null;
+  const hasCustomerRE = invoice.customer?.hasEquivalenceSurcharge === true;
+  const showReagypUI = isReagypInvoice || hasCustomerRE;
+
+  useEffect(() => {
+    return () => {
+      toast.dismiss('rectify-creating');
+    };
+  }, []);
 
   const reasonValid = reason.trim().length >= 5;
-  const amountValid = !isAbono || (amount.trim() !== '' && parseFloat(amount) !== 0);
-  const canSubmit = reasonValid && amountValid && !rectifyMutation.isPending;
+  const amountNum = amount ? parseFloat(amount) : 0;
+  const isSentinel = amount === '+' || amount === '-';
+  const amountValid = !isAbono || (!isSentinel && amount.trim() !== '' && !isNaN(amountNum) && amountNum !== 0);
+  const isLoading = rectifyMutation.isPending || isRedirecting;
+  const canSubmit = reasonValid && amountValid && !isLoading;
 
   const handleConfirm = async () => {
+    if (isSentinel) return;
+    if (isAbono && (isNaN(amountNum) || amountNum === 0)) return;
+
     const lines = isAbono
       ? [
           {
             description: 'Ajuste rectificativo - Abonos',
             quantity: 1,
-            unitPrice: parseFloat(amount),
-            taxRate,
+            unitPrice: amountNum,
+            taxRate: isReagypInvoice ? 0 : taxRate,
           },
         ]
       : (invoice.lines ?? []).map((l: InvoiceLine) => ({
@@ -86,18 +104,27 @@ export function RectifyInvoiceDialog({
           taxRate: l.taxRate,
         }));
 
+    toast.loading('Creando factura rectificativa...', {
+      description: isAbono
+        ? 'Generando abono por diferencia'
+        : 'Generando rectificativa por sustitución',
+      id: 'rectify-creating',
+    });
+
     try {
       const rect = await rectifyMutation.mutateAsync({
         id: invoice.id,
         data: { rectificationReason: reason, rectificationType: activeType, lines },
       });
-      onOpenChange(false);
+      toast.dismiss('rectify-creating');
+      setIsRedirecting(true);
       router.push(`/dashboard/facturas/nueva?edit=${rect.id}`);
     } catch (e: unknown) {
       const existingId = (
         e as { response?: { data?: { existingDraftId?: string } } }
       )?.response?.data?.existingDraftId;
       if (existingId) {
+        setIsRedirecting(false);
         onOpenChange(false);
         toast.error('Ya existe un borrador de rectificativa', {
           description: 'Esta factura ya tiene un borrador de factura rectificativa en curso.',
@@ -115,17 +142,25 @@ export function RectifyInvoiceDialog({
     setReason('');
     setAmount('');
     setSelectedType(defaultType);
+    setIsRedirecting(false);
   };
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className={cn('max-h-[90vh] flex flex-col', isRedirecting ? 'pointer-events-none' : '')}>
+        {isRedirecting && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-lg bg-background/95 backdrop-blur-sm">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="mt-3 text-sm font-medium">Creando borrador...</p>
+            <p className="text-xs text-muted-foreground mt-1">Redirigiendo al editor</p>
+          </div>
+        )}
         <AlertDialogHeader>
           <AlertDialogTitle>
             {typeSelectable
               ? 'Emitir factura rectificativa'
               : isAbono
-                ? 'Crear Abono / Devolución'
+                ? 'Crear Abono'
                 : 'Crear Rectificativa por Sustitución'}
           </AlertDialogTitle>
           <AlertDialogDescription>
@@ -136,14 +171,14 @@ export function RectifyInvoiceDialog({
             </strong>
             .{' '}
             {typeSelectable
-              ? 'Elige el tipo de rectificación. Sustitución anula la original; abono deja la original vigente.'
+              ? 'Elige el tipo de rectificación: sustitución anula la original y crea una nueva; abono ajusta el importe (devolver o cobrar de más) sin cambiar las líneas.'
               : isAbono
-                ? 'Se generará un abono por la diferencia que indiques a continuación.'
+                ? 'Se generará un abono por la diferencia que indiques. La factura original se mantiene vigente.'
                 : 'Se generará una factura que anula y reemplaza por completo a la original.'}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="flex-1 overflow-y-auto space-y-4 py-2">
           <InvoiceSummary invoice={invoice} />
           {typeSelectable && (
             <RectifyTypeSelector value={selectedType} onChange={setSelectedType} />
@@ -154,6 +189,8 @@ export function RectifyInvoiceDialog({
               onAmountChange={setAmount}
               taxRate={taxRate}
               onTaxRateChange={setTaxRate}
+              isReagyp={showReagypUI}
+              compensacionPercent={isReagypInvoice ? invoice.compensacionPercent ?? undefined : undefined}
             />
           ) : (
             <SubstitutionBody invoice={invoice} />

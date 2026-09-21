@@ -131,6 +131,8 @@ interface InvoiceFormProps {
   showTypeModalOnMount?: boolean;
   /** Metadatos de rectificativa, solo presentes cuando se edita un borrador rectificativo */
   rectificativeInfo?: RectificativePreviewInfo;
+  /** Cliente de la factura origen (disponible inmediatamente al editar un borrador) */
+  sourceCustomer?: Customer;
 }
 
 function InvoiceForm({
@@ -143,6 +145,7 @@ function InvoiceForm({
   initialShowQr,
   showTypeModalOnMount = false,
   rectificativeInfo,
+  sourceCustomer,
 }: InvoiceFormProps) {
   const router = useRouter();
   const currentTenant = useAuthStore((s) => s.currentTenant);
@@ -254,7 +257,9 @@ function InvoiceForm({
   // El seriesId efectivo: lo que haya seleccionado el usuario, o el por defecto
   const effectiveSeriesId = watchedValues.seriesId || defaultSeriesId;
   const selectedSeries = availableSeries.find((s) => s.id === effectiveSeriesId) ?? null;
-  const selectedCustomer = customers.find((c) => c.id === watchedValues.customerId);
+  const selectedCustomer =
+    customers.find((c) => c.id === watchedValues.customerId) ??
+    (editDraftId ? sourceCustomer ?? undefined : undefined);
 
   // Auto-populate compensacionPercent when the customer or tenant changes.
   // This sets the sensible default but leaves the user free to override it.
@@ -773,13 +778,13 @@ function InvoiceForm({
                   {showCompensacion ? (
                     <DiscountsSectionReagyp
                       discountPercentProps={form.register('discountPercent', {
-                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                        setValueAs: (v) => (v === '' ? undefined : isNaN(Number(v)) ? undefined : Math.max(0, Number(v))),
                       })}
                       compensacionPercentProps={form.register('compensacionPercent', {
-                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                        setValueAs: (v) => (v === '' ? undefined : isNaN(Number(v)) ? undefined : Math.max(0, Number(v))),
                       })}
                       irpfPercentProps={form.register('irpfPercent', {
-                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                        setValueAs: (v) => (v === '' ? undefined : isNaN(Number(v)) ? undefined : Math.max(0, Number(v))),
                       })}
                       isCustomerReagyp={selectedCustomer?.isReagyp ?? false}
                       onFocus={() => setActiveSection('discountPercent')}
@@ -787,10 +792,10 @@ function InvoiceForm({
                   ) : (
                     <DiscountsSectionGeneral
                       discountPercentProps={form.register('discountPercent', {
-                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                        setValueAs: (v) => (v === '' ? undefined : isNaN(Number(v)) ? undefined : Math.max(0, Number(v))),
                       })}
                       irpfPercentProps={form.register('irpfPercent', {
-                        setValueAs: (v) => (v === '' ? undefined : Number(v)),
+                        setValueAs: (v) => (v === '' ? undefined : isNaN(Number(v)) ? undefined : Math.max(0, Number(v))),
                       })}
                       showEquivalenceSurchargeInfo={equivalenceSurchargeRates != null}
                       onFocus={() => setActiveSection('discountPercent')}
@@ -959,6 +964,11 @@ export default function NuevaFacturaPage() {
                 number: sourceInvoice.rectifiedInvoice.number,
               }
             : null,
+          storedSurchargeTotal: sourceInvoice.surchargeTotal,
+          storedLinesSurcharge: (sourceInvoice.lines ?? []).map((l) => ({
+            surchargeRate: l.surchargeRate ?? 0,
+            surchargeAmount: l.surchargeAmount ?? 0,
+          })),
         }
       : undefined;
 
@@ -977,6 +987,7 @@ export default function NuevaFacturaPage() {
       initialShowQr={sourceInvoice?.layoutOverride?.footer?.showVerifactuQr ?? undefined}
       showTypeModalOnMount={showTypeModalOnMount}
       rectificativeInfo={rectificativeInfo}
+      sourceCustomer={sourceInvoice?.customer}
     />
   );
 }

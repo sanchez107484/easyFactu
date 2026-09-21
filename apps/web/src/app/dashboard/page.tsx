@@ -621,13 +621,13 @@ export default function DashboardPage() {
         </Link>
 
         <Link href="/dashboard/facturas/rectificar?tipo=abono">
-          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-orange-400/50 hover:bg-orange-50 transition-all h-full">
-            <div className="h-9 w-9 rounded-lg bg-orange-100 flex items-center justify-center">
-              <Banknote className="h-4 w-4 text-orange-600" />
+          <div className="group flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:border-amber-400/50 hover:bg-amber-50 transition-all h-full">
+            <div className="h-9 w-9 rounded-lg bg-amber-100 flex items-center justify-center">
+              <Banknote className="h-4 w-4 text-amber-600" />
             </div>
             <div>
-              <p className="text-sm font-medium leading-tight">Crear Abono / Devolución</p>
-              <p className="text-xs text-muted-foreground">Por ajuste</p>
+              <p className="text-sm font-medium leading-tight">Crear Abono</p>
+              <p className="text-xs text-muted-foreground">Devolver o cobrar de más</p>
             </div>
           </div>
         </Link>

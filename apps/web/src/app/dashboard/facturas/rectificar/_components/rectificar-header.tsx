@@ -32,11 +32,12 @@ export function RectificarHeader({ isAbono }: RectificarHeaderProps) {
       <div className="flex-1 min-w-0">
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           {isAbono ? <Receipt className="h-5 w-5" /> : <RotateCcw className="h-5 w-5" />}
-          {isAbono ? 'Crear Abono / Devolución' : 'Crear Rectificativa'}
+          {isAbono ? 'Crear Abono' : 'Crear Rectificativa'}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Selecciona la factura que quieres rectificar. Solo se muestran facturas en estado
-          Confirmada, Enviada o Cobrada.
+          {isAbono
+            ? 'Selecciona la factura para ajustar su importe. Puedes devolver dinero al cliente o cobrar un adicional.'
+            : 'Selecciona la factura que quieres rectificar. Solo se muestran facturas en estado Confirmada, Enviada o Cobrada.'}
         </p>
       </div>
       <div className="hidden sm:flex items-center gap-1 p-1 bg-muted rounded-lg shrink-0">

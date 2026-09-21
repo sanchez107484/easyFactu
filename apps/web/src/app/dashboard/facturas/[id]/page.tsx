@@ -71,7 +71,7 @@ import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge'
 import { useInvoiceTemplate, useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useAuthStore } from '@/store/auth-store';
 import { useTenant } from '@/hooks/use-tenant';
-import { resolveUrl, parseNum } from '@/lib/utils';
+import { resolveUrl, parseNum, formatCurrency } from '@/lib/utils';
 import { VerifactuQrImage } from '@/components/invoice/VerifactuQrImage';
 
 // ==================== CONSTANTS ====================
@@ -87,6 +87,8 @@ export default function FacturaDetailPage() {
 
   const [showRectifyDialog, setShowRectifyDialog] = useState(false);
   const [showRectifyAbonoDialog, setShowRectifyAbonoDialog] = useState(false);
+  const [showRectifyPaidWarning, setShowRectifyPaidWarning] = useState(false);
+  const [pendingRectifyAction, setPendingRectifyAction] = useState<'substitution' | 'abono' | null>(null);
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [showConvertToProformaModal, setShowConvertToProformaModal] = useState(false);
   const [showConvertToRecurringModal, setShowConvertToRecurringModal] = useState(false);
@@ -220,6 +222,19 @@ export default function FacturaDetailPage() {
   const isPaid = invoice.status === InvoiceStatus.PAID;
   const canRectify = isConfirmed || isSent || isPaid;
   const isProforma = invoice.invoiceType === 'proforma';
+
+  const handleRectifyClick = (action: 'substitution' | 'abono') => {
+    if (isPaid && action === 'substitution') {
+      setPendingRectifyAction(action);
+      setShowRectifyPaidWarning(true);
+    } else {
+      if (action === 'substitution') {
+        setShowRectifyDialog(true);
+      } else {
+        setShowRectifyAbonoDialog(true);
+      }
+    }
+  };
 
   const pdfFileName = [invoice.number, invoice.customer?.name].filter(Boolean).join(' - ');
 
@@ -355,13 +370,13 @@ export default function FacturaDetailPage() {
               )}
               {canRectify && (
                 <>
-                  <DropdownMenuItem onClick={() => setShowRectifyDialog(true)}>
+                  <DropdownMenuItem onClick={() => handleRectifyClick('substitution')}>
                     <RotateCcw className="mr-2 h-4 w-4" />
-                    Crear rectificativa
+                    Rectificativa por sustitución
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowRectifyAbonoDialog(true)}>
+                  <DropdownMenuItem onClick={() => handleRectifyClick('abono')}>
                     <Banknote className="mr-2 h-4 w-4" />
-                    Abono / Devolución
+                    Abono (devolver o cobrar de más)
                   </DropdownMenuItem>
                 </>
               )}
@@ -746,6 +761,43 @@ export default function FacturaDetailPage() {
         defaultType={RectificationType.DIFFERENCES}
         typeSelectable={false}
       />
+
+      {/* Warning: rectifying a PAID invoice */}
+      <AlertDialog open={showRectifyPaidWarning} onOpenChange={setShowRectifyPaidWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              Esta factura tiene un cobro registrado
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              La factura <span className="font-semibold text-foreground">{invoice.number}</span>
+              {' '}tiene un cobro de <span className="font-semibold text-foreground">{formatCurrency(Math.abs(Number(invoice.amountPaid)))}</span>.
+              {' '}Al crear una rectificativa, la factura original perderá su estado de pagada pero el registro
+              de cobro seguirá existiendo. Deberás gestionar la devolución o el ajuste contable por tu cuenta.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingRectifyAction(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+              onClick={() => {
+                if (pendingRectifyAction === 'substitution') {
+                  setShowRectifyDialog(true);
+                } else {
+                  setShowRectifyAbonoDialog(true);
+                }
+                setShowRectifyPaidWarning(false);
+                setPendingRectifyAction(null);
+              }}
+            >
+              Continuar de todos modos
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <RegisterPaymentDialog
         open={showPaymentDialog}
