@@ -555,6 +555,8 @@ export interface Invoice {
   }> | null;
   /** True when this invoice has at least one child rectificativa (any status). */
   hasRectificativa?: boolean;
+  /** True when this RECTIFIED invoice has a confirmed SUBSTITUTION child (it's been fully replaced). */
+  isSupersededBySubstitution?: boolean;
   /** ID of the recurring invoice that generated this invoice (or from which this was converted) */
   recurringInvoiceId?: string | null;
   /**
@@ -771,6 +773,8 @@ export interface RectificationInvoiceSummary {
   hasPendingDraft: boolean;
   /** ID de la hija en DRAFT (para CTA 'Ver borrador'). Null si no hay. */
   pendingDraftId: string | null;
+  /** True si alguna hija confirmada es de tipo SUBSTITUTION (la original queda superseded). */
+  hasConfirmedSubstitution: boolean;
 }
 
 /**

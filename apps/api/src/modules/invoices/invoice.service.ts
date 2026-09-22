@@ -42,22 +42,30 @@ const EDITABLE_STATUSES = [InvoiceStatus.DRAFT, InvoiceStatus.PROFORMA, InvoiceS
  * estado es CONFIRMED, SENT, PAID o RECTIFIED (cualquier estado no-DRAFT).
  */
 function buildRectificationSummary(
-  children: Array<{ id: string; status: PrismaInvoiceStatus }>,
+  children: Array<{ id: string; status: PrismaInvoiceStatus; rectificationType?: PrismaRectificationType | null }>,
 ): {
   totalCount: number;
   hasConfirmed: boolean;
   hasPendingDraft: boolean;
   pendingDraftId: string | null;
+  /** True if any confirmed child is a SUBSTITUTION (the original is superseded) */
+  hasConfirmedSubstitution: boolean;
 } {
   let hasConfirmed = false;
   let pendingDraftId: string | null = null;
+  let hasConfirmedSubstitution = false;
   for (const child of children) {
     const isNonDraft =
       child.status === PrismaInvoiceStatus.CONFIRMED ||
       child.status === PrismaInvoiceStatus.SENT ||
       child.status === PrismaInvoiceStatus.PAID ||
       child.status === PrismaInvoiceStatus.RECTIFIED;
-    if (isNonDraft) hasConfirmed = true;
+    if (isNonDraft) {
+      hasConfirmed = true;
+      if (child.rectificationType === PrismaRectificationType.SUBSTITUTION) {
+        hasConfirmedSubstitution = true;
+      }
+    }
     if (child.status === PrismaInvoiceStatus.DRAFT && pendingDraftId === null) {
       pendingDraftId = child.id;
     }
@@ -67,6 +75,7 @@ function buildRectificationSummary(
     hasConfirmed,
     hasPendingDraft: pendingDraftId !== null,
     pendingDraftId,
+    hasConfirmedSubstitution,
   };
 }
 
@@ -186,7 +195,8 @@ export class InvoiceService {
       // Recargo de Equivalencia per-line — server-computed (Art. 161 LIVA) and persisted
       // for fiscal traceability. Never trust the client's `surchargeRate`: the backend
       // recomputes it from the tax-rate map and stamps the result on the line.
-      ...(calculatedLines[index]!.surchargeAmount > 0
+      // Use Math.abs() to handle negative values in rectificative invoices.
+      ...(Math.abs(calculatedLines[index]!.surchargeAmount) > 0
         ? {
             surchargeRate: calculatedLines[index]!.surchargeRate,
             surchargeAmount: calculatedLines[index]!.surchargeAmount,
@@ -272,11 +282,11 @@ export class InvoiceService {
                   : null,
               irpfRate: line.irpfRate ?? null,
               surchargeRate:
-                calculatedLines[index]!.surchargeAmount > 0
+                Math.abs(calculatedLines[index]!.surchargeAmount) > 0
                   ? calculatedLines[index]!.surchargeRate
                   : null,
               surchargeAmount:
-                calculatedLines[index]!.surchargeAmount > 0
+                Math.abs(calculatedLines[index]!.surchargeAmount) > 0
                   ? calculatedLines[index]!.surchargeAmount
                   : null,
               hideQty: line.hideQty ?? false,
@@ -307,7 +317,7 @@ export class InvoiceService {
             ...(line.discountPercent != null && Number(line.discountPercent) > 0
               ? { discountPercent: line.discountPercent }
               : {}),
-            ...(calc.surchargeAmount > 0
+            ...(Math.abs(calc.surchargeAmount) > 0
               ? { surchargeRate: calc.surchargeRate, surchargeAmount: calc.surchargeAmount }
               : {}),
             hideQty: line.hideQty ?? false,
@@ -625,14 +635,14 @@ export class InvoiceService {
           quoteAcceptanceStatus: isQuote ? PrismaQuoteAcceptanceStatus.PENDING : null,
           subtotal: totals.subtotal,
           discountPercent: dto.discountPercent ?? null,
-          discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
+          discountAmount: Math.abs(totals.discountAmount) > 0 ? totals.discountAmount : null,
           taxTotal: totals.taxTotal,
           irpfPercent: dto.irpfPercent ?? null,
-          irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+          irpfTotal: Math.abs(totals.irpfTotal) > 0 ? totals.irpfTotal : null,
         compensacionPercent: compensacionPercent ?? null,
         compensacionAmount:
           Math.abs(totals.compensacionAmount) > 0 ? totals.compensacionAmount : null,
-        surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
+        surchargeTotal: Math.abs(totals.surchargeTotal) > 0 ? totals.surchargeTotal : null,
           total: totals.total,
           paymentMethod: (dto.paymentMethod ?? null) as any,
           notes: dto.notes ?? null,
@@ -793,7 +803,7 @@ export class InvoiceService {
           rectificationType: true,
           rectifiedInvoice: { select: { id: true, number: true, issueDate: true } },
           rectificativeInvoices: {
-            select: { id: true, rectificationType: true },
+            select: { id: true, status: true, rectificationType: true },
           },
           payments: {
             select: { id: true, amount: true, paymentDate: true, paymentMethod: true, notes: true },
@@ -818,11 +828,21 @@ export class InvoiceService {
       const rectificationTypes = rectificativeInvoices
         ?.map((r) => r.rectificationType)
         .filter((t): t is NonNullable<typeof t> => t !== null) ?? [];
+      const hasConfirmedSubstitution = rectificativeInvoices?.some(
+        (r) =>
+          r.rectificationType === PrismaRectificationType.SUBSTITUTION &&
+          (r.status === PrismaInvoiceStatus.CONFIRMED ||
+            r.status === PrismaInvoiceStatus.SENT ||
+            r.status === PrismaInvoiceStatus.PAID)
+      ) ?? false;
       return {
         ...invoice,
         rectificationTypes: [...new Set(rectificationTypes)],
         hasRectificativa: rectificationTypes.length > 0,
+        isSupersededBySubstitution: hasConfirmedSubstitution,
         createdByAgency: createdByUserId ? (agencyMap.get(createdByUserId) ?? null) : null,
+        // Include rectificativeInvoices so frontend can compute active status
+        rectificativeInvoices,
       };
     });
 
@@ -921,9 +941,9 @@ export class InvoiceService {
           customer: { select: { id: true, name: true, nif: true } },
           series: { select: { id: true, name: true, prefix: true } },
           isRectificative: true,
-          // Solo necesitamos id + status para calcular el resumen de hijas.
+          // Solo necesitamos id + status + rectificationType para calcular el resumen de hijas.
           rectificativeInvoices: {
-            select: { id: true, status: true },
+            select: { id: true, status: true, rectificationType: true },
           },
         },
       }),
@@ -1564,12 +1584,12 @@ export class InvoiceService {
               : Prisma.DbNull
             : undefined,
         discountPercent: dto.discountPercent !== undefined ? dto.discountPercent : undefined,
-        discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
+        discountAmount: Math.abs(totals.discountAmount) > 0 ? totals.discountAmount : null,
         irpfPercent: dto.irpfPercent !== undefined ? dto.irpfPercent : undefined,
-        irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+        irpfTotal: Math.abs(totals.irpfTotal) > 0 ? totals.irpfTotal : null,
         compensacionPercent: compensacionPercent ?? null,
-        compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
-        surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
+        compensacionAmount: Math.abs(totals.compensacionAmount) > 0 ? totals.compensacionAmount : null,
+        surchargeTotal: Math.abs(totals.surchargeTotal) > 0 ? totals.surchargeTotal : null,
         paymentMethod: (dto.paymentMethod !== undefined ? dto.paymentMethod : null) as any,
         notes: dto.notes !== undefined ? dto.notes : undefined,
         ...(dto.paymentDetails !== undefined ? { paymentDetails: { ...dto.paymentDetails } } : {}),
@@ -1716,13 +1736,13 @@ export class InvoiceService {
             number: invoiceNumber,
             status: PrismaInvoiceStatus.CONFIRMED,
             subtotal: totals.subtotal,
-            discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
+            discountAmount: Math.abs(totals.discountAmount) > 0 ? totals.discountAmount : null,
             taxTotal: totals.taxTotal,
-            irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+            irpfTotal: Math.abs(totals.irpfTotal) > 0 ? totals.irpfTotal : null,
             compensacionPercent: storedCompensacion ?? null,
             compensacionAmount:
               Math.abs(totals.compensacionAmount) > 0 ? totals.compensacionAmount : null,
-            surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
+            surchargeTotal: Math.abs(totals.surchargeTotal) > 0 ? totals.surchargeTotal : null,
             total: totals.total,
             ...customerSnapshot,
             ...issuerSnapshot,
@@ -1743,8 +1763,20 @@ export class InvoiceService {
         // so payments can still be registered on the remaining balance.
         if (invoice.isRectificative && invoice.rectifiedInvoiceId) {
           if (invoice.rectificationType === RectificationType.SUBSTITUTION) {
+            const originalId = invoice.rectifiedInvoiceId;
             await tx.invoice.update({
-              where: { id: invoice.rectifiedInvoiceId },
+              where: { id: originalId },
+              data: { status: PrismaInvoiceStatus.RECTIFIED },
+            });
+            // Any rectificatives of the original (e.g. abonos) also lose their base
+            // and must be marked RECTIFIED since the original they reference no longer exists.
+            // Exclude the current invoice (id) since it IS the substitution and should stay CONFIRMED.
+            await tx.invoice.updateMany({
+              where: {
+                id: { not: id },
+                rectifiedInvoiceId: originalId,
+                status: { not: PrismaInvoiceStatus.RECTIFIED },
+              },
               data: { status: PrismaInvoiceStatus.RECTIFIED },
             });
           }
@@ -1924,14 +1956,14 @@ export class InvoiceService {
         ...(original.layoutOverride != null ? { layoutOverride: original.layoutOverride } : {}),
         subtotal: totals.subtotal,
         discountPercent: original.discountPercent,
-        discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
+        discountAmount: Math.abs(totals.discountAmount) > 0 ? totals.discountAmount : null,
         taxTotal: totals.taxTotal,
         irpfPercent: original.irpfPercent,
-        irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+        irpfTotal: Math.abs(totals.irpfTotal) > 0 ? totals.irpfTotal : null,
         compensacionPercent: compensacionPercent ?? null,
         compensacionAmount:
           Math.abs(totals.compensacionAmount) > 0 ? totals.compensacionAmount : null,
-        surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
+        surchargeTotal: Math.abs(totals.surchargeTotal) > 0 ? totals.surchargeTotal : null,
         total: totals.total,
         paymentMethod: original.paymentMethod as any,
         ...(paymentDetails != null ? { paymentDetails } : {}),
@@ -2186,13 +2218,13 @@ export class InvoiceService {
             ...(invoice.layoutOverride != null ? { layoutOverride: invoice.layoutOverride } : {}),
             subtotal: totals.subtotal,
             discountPercent: invoice.discountPercent,
-            discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
+            discountAmount: Math.abs(totals.discountAmount) > 0 ? totals.discountAmount : null,
             taxTotal: totals.taxTotal,
             irpfPercent: invoice.irpfPercent,
-            irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+            irpfTotal: Math.abs(totals.irpfTotal) > 0 ? totals.irpfTotal : null,
             compensacionPercent: compensacionPercent ?? null,
-            compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
-            surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
+            compensacionAmount: Math.abs(totals.compensacionAmount) > 0 ? totals.compensacionAmount : null,
+            surchargeTotal: Math.abs(totals.surchargeTotal) > 0 ? totals.surchargeTotal : null,
             total: totals.total,
             paymentMethod: invoice.paymentMethod as any,
             ...(paymentDetails != null ? { paymentDetails } : {}),
@@ -2335,13 +2367,13 @@ export class InvoiceService {
             ...(invoice.layoutOverride != null ? { layoutOverride: invoice.layoutOverride } : {}),
             subtotal: totals.subtotal,
             discountPercent: invoice.discountPercent,
-            discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
+            discountAmount: Math.abs(totals.discountAmount) > 0 ? totals.discountAmount : null,
             taxTotal: totals.taxTotal,
             irpfPercent: invoice.irpfPercent,
-            irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+            irpfTotal: Math.abs(totals.irpfTotal) > 0 ? totals.irpfTotal : null,
             compensacionPercent: compensacionPercent ?? null,
-            compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
-            surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
+            compensacionAmount: Math.abs(totals.compensacionAmount) > 0 ? totals.compensacionAmount : null,
+            surchargeTotal: Math.abs(totals.surchargeTotal) > 0 ? totals.surchargeTotal : null,
             total: totals.total,
             paymentMethod: invoice.paymentMethod as any,
             ...(paymentDetails != null ? { paymentDetails } : {}),
@@ -2426,13 +2458,13 @@ export class InvoiceService {
             ...(invoice.layoutOverride != null ? { layoutOverride: invoice.layoutOverride } : {}),
             subtotal: totals.subtotal,
             discountPercent: invoice.discountPercent,
-            discountAmount: totals.discountAmount > 0 ? totals.discountAmount : null,
+            discountAmount: Math.abs(totals.discountAmount) > 0 ? totals.discountAmount : null,
             taxTotal: totals.taxTotal,
             irpfPercent: invoice.irpfPercent,
-            irpfTotal: totals.irpfTotal > 0 ? totals.irpfTotal : null,
+            irpfTotal: Math.abs(totals.irpfTotal) > 0 ? totals.irpfTotal : null,
             compensacionPercent: compensacionPercent ?? null,
-            compensacionAmount: totals.compensacionAmount > 0 ? totals.compensacionAmount : null,
-            surchargeTotal: totals.surchargeTotal > 0 ? totals.surchargeTotal : null,
+            compensacionAmount: Math.abs(totals.compensacionAmount) > 0 ? totals.compensacionAmount : null,
+            surchargeTotal: Math.abs(totals.surchargeTotal) > 0 ? totals.surchargeTotal : null,
             total: totals.total,
             paymentMethod: invoice.paymentMethod as any,
             ...(paymentDetails != null ? { paymentDetails } : {}),

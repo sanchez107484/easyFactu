@@ -140,7 +140,7 @@ export class AgencyExportDiamaconService {
           /* c23 % RE              */ '0',
           /* c24 Cuota RE          */ '0',
           /* c25 % Retención       */ irpfPct > 0 ? this.formatPct(irpfPct) : '0',
-          /* c26 Cuota Retención   */ irpfAmt > 0 ? this.formatAmount(irpfAmt) : '0',
+          /* c26 Cuota Retención   */ irpfAmt !== 0 ? this.formatAmount(irpfAmt) : '0',
           /* c27 Cliente NIF       */ isFirst ? (inv.customer?.nif ?? '') : '',
           /* c28 Cliente Nombre    */ isFirst
             ? (inv.customer?.legalName ?? inv.customer?.name ?? '')
