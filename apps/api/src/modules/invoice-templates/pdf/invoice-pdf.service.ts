@@ -351,8 +351,9 @@ export class InvoicePdfService {
     } else {
       doc.text(`IVA: ${formatCurrency(invoice.taxTotal)}`);
     }
-    if (invoice.surchargeTotal && Number(invoice.surchargeTotal) > 0) {
-      doc.text(`RE: ${formatCurrency(invoice.surchargeTotal)}`);
+    if (invoice.surchargeTotal && Number(invoice.surchargeTotal) !== 0) {
+      const re = Number(invoice.surchargeTotal);
+      doc.text(`RE: ${re < 0 ? '' : '+'}${formatCurrency(re)}`);
     }
     if (invoice.irpfTotal) doc.text(`IRPF: ${formatCurrency(invoice.irpfTotal)}`);
     if (invoice.discountAmount) doc.text(`Descuento: ${formatCurrency(invoice.discountAmount)}`);

@@ -9,7 +9,7 @@ import { validatePostalCode } from '@easyfactura/shared-validators';
 @ValidatorConstraint({ name: 'isValidSpanishPostalCode', async: false })
 export class IsValidSpanishPostalCodeConstraint implements ValidatorConstraintInterface {
   validate(value: string) {
-    if (!value) return false;
+    if (!value) return true;
     const result = validatePostalCode(value);
     return result.isValid;
   }
