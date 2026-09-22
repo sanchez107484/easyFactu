@@ -50,7 +50,7 @@ import { useSortTable, sortData } from '@/hooks/use-sort-table';
 import { SortableHeader } from '@/components/common/sortable-header';
 import { InvoiceStatusBadge } from '@/components/common/invoice-status-badge';
 import { InvoiceStatusFilterPills } from '@/components/common/invoice-status-filter-pills';
-import { CustomerType, InvoiceStatus, Customer, Invoice } from '@easyfactura/shared-types';
+import { CustomerType, InvoiceStatus, RectificationType, Customer, Invoice } from '@easyfactura/shared-types';
 import { useCustomer, useDeleteCustomer } from '@/hooks/use-customers';
 import { useInvoices } from '@/hooks/use-invoices';
 import { cn, formatCurrency } from '@/lib/utils';
@@ -228,8 +228,25 @@ export default function ClienteDetailPage() {
   );
 
   // ── Stats ──────────────────────────────────────────────
+  // Exclude DRAFTs.
+  // Exclude RECTIFIED invoices that have been superseded by a SUBSTITUTION (they're replaced).
+  // RECTIFIED invoices with DIFFERENCES are included (they already reflect the adjustment).
+  const isActiveForStats = (inv: Invoice) => {
+    if (inv.status === InvoiceStatus.DRAFT) return false;
+    if (inv.status === InvoiceStatus.RECTIFIED) {
+      const hasSubstitutionChild =
+        inv.rectificativeInvoices?.some(
+          (r) =>
+            r.rectificationType === RectificationType.SUBSTITUTION &&
+            r.status !== InvoiceStatus.DRAFT
+        ) ?? false;
+      return !hasSubstitutionChild;
+    }
+    return true;
+  };
+
   const totalInvoiced = invoices
-    .filter((inv) => inv.status !== InvoiceStatus.DRAFT)
+    .filter(isActiveForStats)
     .reduce((sum, inv) => sum + Number(inv.total), 0);
 
   const paidInvoiced = invoices

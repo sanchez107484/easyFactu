@@ -950,7 +950,10 @@ export default function NuevaFacturaPage() {
         lines: [{ ...EMPTY_LINE }] as ExtendedLineData[],
       };
 
-  // Solo aplica cuando editamos un borrador que YA es rectificativo (no al duplicar)
+  // Solo aplica cuando editamos un borrador que YA es rectificativo (no al duplicar).
+  // RE depends on the customer's hasEquivalenceSurcharge flag, not on the invoice type.
+  // Never inherit storedLinesSurcharge — always recalculate based on the customer's
+  // current RE status so that changes to the customer's RE flag are reflected.
   const rectificativeInfo: RectificativePreviewInfo | undefined =
     editId && sourceInvoice?.isRectificative
       ? {
@@ -964,11 +967,6 @@ export default function NuevaFacturaPage() {
                 number: sourceInvoice.rectifiedInvoice.number,
               }
             : null,
-          storedSurchargeTotal: sourceInvoice.surchargeTotal,
-          storedLinesSurcharge: (sourceInvoice.lines ?? []).map((l) => ({
-            surchargeRate: l.surchargeRate ?? 0,
-            surchargeAmount: l.surchargeAmount ?? 0,
-          })),
         }
       : undefined;
 

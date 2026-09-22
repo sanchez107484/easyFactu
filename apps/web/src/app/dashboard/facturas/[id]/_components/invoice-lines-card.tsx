@@ -26,7 +26,27 @@ export function InvoiceLinesCard({ invoice, template, highlightLineId }: Invoice
   const taxRates = [...new Set((invoice.lines ?? []).map((l) => l.taxRate))];
   const taxLabel = taxRates.length === 1 ? `IVA (${taxRates[0]}%)` : 'IVA';
   const isReagyp = invoice.compensacionPercent != null;
-  const hasSurcharge = invoice.surchargeTotal != null && Number(invoice.surchargeTotal) > 0;
+  const hasCustomerRE = (invoice.customer as { hasEquivalenceSurcharge?: boolean } | null)?.hasEquivalenceSurcharge === true;
+  // When surchargeTotal is stored (not null), use it directly.
+  // When it's null but the customer has RE and the invoice is not REAGYP, recalculate from lines.
+  // This handles invoices created before the Math.abs() fix was deployed.
+  const storedSurchargeTotal = invoice.surchargeTotal != null ? Number(invoice.surchargeTotal) : null;
+  const hasSurcharge = storedSurchargeTotal !== null && storedSurchargeTotal !== 0
+    || (hasCustomerRE && !isReagyp && (invoice.lines ?? []).some((l) => {
+      const rate = EQUIVALENCE_SURCHARGE_RATES[Number(l.taxRate ?? 0)];
+      return rate != null && rate > 0;
+    }));
+  // Recalculate RE from stored line subtotals when not persisted.
+  // Uses the same formula as invoice-calculation.service.ts (Art. 161 LIVA).
+  const effectiveSurchargeTotal = storedSurchargeTotal !== null && storedSurchargeTotal !== 0
+    ? storedSurchargeTotal
+    : (invoice.lines ?? []).reduce((sum, l) => {
+        const rate = EQUIVALENCE_SURCHARGE_RATES[Number(l.taxRate ?? 0)] ?? Number(l.surchargeRate ?? 0);
+        if (rate <= 0 || isReagyp) return sum;
+        // Use stored subtotal (after line discount, before tax) to compute RE
+        const lineSubtotal = parseNum(l.subtotal);
+        return sum + lineSubtotal * (rate / 100);
+      }, 0);
   // Resolve the effective RE rate for each line from the tax-rate-based default map (Art. 161 LIVA),
   // falling back to the stored per-line value. Saved invoices only persist the per-line rate when
   // it differs from the LIVA default (the backend applies the map and never stores a per-line value).
@@ -34,7 +54,7 @@ export function InvoiceLinesCard({ invoice, template, highlightLineId }: Invoice
     ...new Set(
       (invoice.lines ?? [])
         .map((l) => EQUIVALENCE_SURCHARGE_RATES[Number(l.taxRate ?? 0)] ?? Number(l.surchargeRate ?? 0))
-        .filter((r) => r > 0),
+        .filter((r) => r !== 0),
     ),
   ];
   const surchargeLabel = surchargeRates.length === 1 ? `RE (${surchargeRates[0]}%)` : 'Recargo de Equivalencia';
@@ -154,7 +174,7 @@ export function InvoiceLinesCard({ invoice, template, highlightLineId }: Invoice
           <div className="flex justify-between items-baseline py-1">
             <span className="text-sm">{surchargeLabel}</span>
             <span className="text-sm tabular-nums">
-              +{formatCurrency(invoice.surchargeTotal ?? 0)}
+              {effectiveSurchargeTotal < 0 ? '' : '+'}{formatCurrency(effectiveSurchargeTotal)}
             </span>
           </div>
         )}
