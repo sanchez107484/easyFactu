@@ -2023,8 +2023,9 @@ export class InvoiceService {
     // El usuario elige en el frontend si el abono es negativo (devolver) o positivo (cobrar).
     // SUBSTITUTION: las líneas se copian de la original (positivas) → se invierte el signo.
     // DIFFERENCES (abono): el signo ya lo decide el usuario → se respeta tal cual.
+    // SUBSTITUTION de un ABONO: las líneas ya están en la original con su signo real, no se invierte.
     const isDifferences = dto.rectificationType === 'DIFFERENCES';
-    const shouldNegate = !isDifferences;
+    const shouldNegate = !isDifferences && !original.isRectificative;
     const sign = shouldNegate ? -1 : 1;
 
     const finalTotals = {
