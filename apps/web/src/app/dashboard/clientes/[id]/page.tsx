@@ -228,20 +228,14 @@ export default function ClienteDetailPage() {
   );
 
   // ── Stats ──────────────────────────────────────────────
-  // Exclude DRAFTs.
-  // Exclude RECTIFIED invoices that have been superseded by a SUBSTITUTION (they're replaced).
-  // RECTIFIED invoices with DIFFERENCES are included (they already reflect the adjustment).
+  // An invoice is active if it contributes to the customer's real outstanding total.
+  // Rules:
+  //   - DRAFT: never count (not issued)
+  //   - RECTIFIED: superseded by a SUBSTITUTION → don't count
+  //   - CONFIRMED/SENT/PAID: count
   const isActiveForStats = (inv: Invoice) => {
     if (inv.status === InvoiceStatus.DRAFT) return false;
-    if (inv.status === InvoiceStatus.RECTIFIED) {
-      const hasSubstitutionChild =
-        inv.rectificativeInvoices?.some(
-          (r) =>
-            r.rectificationType === RectificationType.SUBSTITUTION &&
-            r.status !== InvoiceStatus.DRAFT
-        ) ?? false;
-      return !hasSubstitutionChild;
-    }
+    if (inv.status === InvoiceStatus.RECTIFIED) return false;
     return true;
   };
 

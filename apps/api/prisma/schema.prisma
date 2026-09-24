@@ -352,6 +352,7 @@ model Invoice {
   rectifiedInvoiceId  String?        @map("rectified_invoice_id")
   rectificationReason String?        @map("rectification_reason") @db.Text
   rectificationType   RectificationType? @map("rectification_type")
+  supersededBySubstitutionId String?    @map("superseded_by_substitution_id")
   amountPaid          Decimal        @default(0) @map("amount_paid") @db.Decimal(12, 2)
   paymentStatus       PaymentStatus  @default(UNPAID) @map("payment_status")
   createdByUserId     String?        @map("created_by_user_id")
@@ -394,6 +395,8 @@ model Invoice {
   createdByUser       User?          @relation("InvoiceCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
   rectifiedInvoice    Invoice?       @relation("RectifiedInvoice", fields: [rectifiedInvoiceId], references: [id])
   rectificativeInvoices Invoice[]    @relation("RectifiedInvoice")
+  supersededBySubstitution Invoice?   @relation("SupersededBy", fields: [supersededBySubstitutionId], references: [id])
+  supersededInvoices    Invoice[]     @relation("SupersededBy")
   lines               InvoiceLine[]
   payments            Payment[]
   verifactuLogs       VerifactuLog[]
