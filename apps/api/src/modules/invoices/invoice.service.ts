@@ -122,6 +122,36 @@ export class InvoiceService {
   }
 
   /**
+   * Recursively marks all descendants of a voided invoice as RECTIFIED.
+   * Called when a SUBSTITUTION is confirmed — the entire rectification chain is voided.
+   * @param tx - Prisma transaction client
+   * @param parentId - The invoice whose children should be marked RECTIFIED
+   * @param currentSubstitutionId - The substitution that stays CONFIRMED (excluded from cascade)
+   */
+  private async cascadeRectificationChain(
+    tx: Prisma.TransactionClient,
+    parentId: string,
+    currentSubstitutionId: string
+  ): Promise<void> {
+    const children = await tx.invoice.findMany({
+      where: { rectifiedInvoiceId: parentId },
+      select: { id: true },
+    });
+
+    for (const child of children) {
+      if (child.id === currentSubstitutionId) continue;
+      await tx.invoice.update({
+        where: { id: child.id },
+        data: {
+          status: PrismaInvoiceStatus.RECTIFIED,
+          supersededBySubstitutionId: currentSubstitutionId,
+        },
+      });
+      await this.cascadeRectificationChain(tx, child.id, currentSubstitutionId);
+    }
+  }
+
+  /**
    * Builds agency info from a createdByUser relation.
    * createdByUserId is only stored when the creator is NOT the tenant owner,
    * so if the relation exists it is always an agency user.
@@ -802,6 +832,7 @@ export class InvoiceService {
           rectificationReason: true,
           rectificationType: true,
           rectifiedInvoice: { select: { id: true, number: true, issueDate: true } },
+          supersededBySubstitutionId: true,
           rectificativeInvoices: {
             select: { id: true, status: true, rectificationType: true },
           },
@@ -824,7 +855,7 @@ export class InvoiceService {
     );
     const agencyMap = await this.loadAgencyInfoMap(agencyUserIds);
 
-    const mappedData = data.map(({ createdByUserId, rectificativeInvoices, ...invoice }) => {
+    const mappedData = data.map(({ createdByUserId, rectificativeInvoices, supersededBySubstitutionId, ...invoice }) => {
       const rectificationTypes = rectificativeInvoices
         ?.map((r) => r.rectificationType)
         .filter((t): t is NonNullable<typeof t> => t !== null) ?? [];
@@ -839,9 +870,8 @@ export class InvoiceService {
         ...invoice,
         rectificationTypes: [...new Set(rectificationTypes)],
         hasRectificativa: rectificationTypes.length > 0,
-        isSupersededBySubstitution: hasConfirmedSubstitution,
+        isSupersededBySubstitution: !!supersededBySubstitutionId || hasConfirmedSubstitution,
         createdByAgency: createdByUserId ? (agencyMap.get(createdByUserId) ?? null) : null,
-        // Include rectificativeInvoices so frontend can compute active status
         rectificativeInvoices,
       };
     });
@@ -1768,17 +1798,10 @@ export class InvoiceService {
               where: { id: originalId },
               data: { status: PrismaInvoiceStatus.RECTIFIED },
             });
-            // Any rectificatives of the original (e.g. abonos) also lose their base
-            // and must be marked RECTIFIED since the original they reference no longer exists.
+            // A SUBSTITUTION voids the entire chain: the original and all its rectificatives.
+            // Recursively mark all descendants (children, grandchildren, etc.) as RECTIFIED.
             // Exclude the current invoice (id) since it IS the substitution and should stay CONFIRMED.
-            await tx.invoice.updateMany({
-              where: {
-                id: { not: id },
-                rectifiedInvoiceId: originalId,
-                status: { not: PrismaInvoiceStatus.RECTIFIED },
-              },
-              data: { status: PrismaInvoiceStatus.RECTIFIED },
-            });
+            await this.cascadeRectificationChain(tx, originalId, id);
           }
           // DIFFERENCES: do NOT touch the original invoice's status — it stays
           // CONFIRMED/SENT/PAID so that further payments or abonos can be registered.
@@ -2510,9 +2533,13 @@ export class InvoiceService {
     const prefix = alias ? `${alias}.` : '';
     return Prisma.sql`
       (
+        -- Normal invoices: count them
         ${Prisma.raw(`${prefix}status`)} IN ('CONFIRMED', 'SENT', 'PAID')
         OR (
+          -- RECTIFIED invoices: only count if they have a confirmed DIFFERENCES
+          -- and were NOT superseded by a SUBSTITUTION (indicated by superseded_by_substitution_id)
           ${Prisma.raw(`${prefix}status`)} = 'RECTIFIED'
+          AND ${Prisma.raw(`${prefix}superseded_by_substitution_id`)} IS NULL
           AND EXISTS (
             SELECT 1 FROM invoices r
             WHERE r.rectified_invoice_id = ${Prisma.raw(`${prefix}id`)}
