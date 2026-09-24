@@ -137,6 +137,9 @@ async function bootstrap() {
     .addTag('customers', 'Gestión de clientes')
     .addTag('products', 'Gestión de productos y servicios')
     .addTag('invoices', 'Gestión de facturas')
+    .addTag('expenses', 'Gestión de gastos')
+    .addTag('suppliers', 'Gestión de proveedores')
+    .addTag('expense-categories', 'Categorías de gasto')
     .addTag('verifactu', 'VeriFactu - Envío a AEAT')
     .addTag('reports', 'Informes y estadísticas')
     .build();

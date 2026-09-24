@@ -18,6 +18,12 @@ import { EmailModule } from './common/email/email.module';
 import { RecurringInvoiceModule } from './modules/recurring-invoices/recurring-invoice.module';
 import { PaymentModule } from './modules/payments/payment.module';
 import { PartnerModule } from './modules/partner/partner.module';
+import { ExpenseCategoriesModule } from './modules/expense-categories/expense-categories.module';
+import { SuppliersModule } from './modules/suppliers/suppliers.module';
+import { ExpensesModule } from './modules/expenses/expenses.module';
+import { ExpenseAttachmentsModule } from './modules/expense-attachments/expense-attachments.module';
+import { RecurringExpensesModule } from './modules/recurring-expenses/recurring-expenses.module';
+import { ActivitySummaryModule } from './modules/activity-summary/activity-summary.module';
 
 @Module({
   imports: [
@@ -56,6 +62,12 @@ import { PartnerModule } from './modules/partner/partner.module';
     RecurringInvoiceModule,
     PaymentModule,
     PartnerModule,
+    ExpenseCategoriesModule,
+    SuppliersModule,
+    ExpensesModule,
+    ExpenseAttachmentsModule,
+    RecurringExpensesModule,
+    ActivitySummaryModule,
   ],
   controllers: [],
   providers: [

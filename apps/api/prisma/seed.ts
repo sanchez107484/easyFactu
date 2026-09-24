@@ -1,10 +1,16 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { seedExpenseCategories } from './seeds/expense-categories.seed';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Seeding database...\n');
+
+  // Seed global expense categories (idempotent)
+  console.log('Seeding expense categories...');
+  await seedExpenseCategories(prisma);
+  console.log('✓ Expense categories seeded');
 
   // Clean existing data
   console.log('Cleaning existing data...');
@@ -45,14 +51,22 @@ async function main() {
 
   const user = await prisma.user.create({
     data: {
-      tenantId: tenant.id,
       email: 'admin@testcompany.com',
       passwordHash,
       firstName: 'Admin',
       lastName: 'Test',
-      role: 'ADMIN',
       emailVerified: true,
       isActive: true,
+    },
+  });
+
+  // Link user to tenant
+  await prisma.tenantUser.create({
+    data: {
+      tenantId: tenant.id,
+      userId: user.id,
+      role: 'ADMIN',
+      isOwner: true,
     },
   });
 

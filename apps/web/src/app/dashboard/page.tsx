@@ -48,6 +48,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { useInvoices, useInvoiceStats } from '@/hooks/use-invoices';
+import { useExpenseSummary } from '@/hooks/use-expenses';
 import { InvoiceStatus } from '@easyfactura/shared-types';
 import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge';
 import { cn, formatCurrency } from '@/lib/utils';
@@ -494,6 +495,7 @@ export default function DashboardPage() {
   const now = new Date();
 
   const { data: stats, isLoading: loadingInvoices } = useInvoiceStats();
+  const { data: expenseSummary, isLoading: loadingExpenseSummary } = useExpenseSummary();
 
   // Últimas 6 facturas para la lista reciente (query independiente, rápida)
   const { data: recentData, isLoading: loadingRecent } = useInvoices({
