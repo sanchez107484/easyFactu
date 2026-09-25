@@ -62,13 +62,28 @@ type NavEntry = NavItem | NavSeparator;
 
 const defaultNavItems: NavEntry[] = [
   { title: 'Inicio', href: '/dashboard', icon: LayoutDashboard },
-  { title: 'Mi actividad', href: '/dashboard/mi-actividad', icon: Activity, requiredPlan: Plan.PROFESSIONAL },
+  {
+    title: 'Mi actividad',
+    href: '/dashboard/mi-actividad',
+    icon: Activity,
+    requiredPlan: Plan.PROFESSIONAL,
+  },
   { title: 'Facturas', href: '/dashboard/facturas', icon: FileText },
   { title: 'Clientes', href: '/dashboard/clientes', icon: Users },
   { title: 'Productos', href: '/dashboard/productos', icon: Package },
   { title: 'Presupuestos', href: '/dashboard/presupuestos', icon: ClipboardList },
-  { title: 'Gastos', href: '/dashboard/gastos', icon: Receipt, readOnlyBelowPlan: Plan.PROFESSIONAL },
-  { title: 'Proveedores', href: '/dashboard/proveedores', icon: Truck, requiredPlan: Plan.PROFESSIONAL },
+  {
+    title: 'Gastos',
+    href: '/dashboard/gastos',
+    icon: Receipt,
+    readOnlyBelowPlan: Plan.PROFESSIONAL,
+  },
+  {
+    title: 'Proveedores',
+    href: '/dashboard/proveedores',
+    icon: Truck,
+    requiredPlan: Plan.PROFESSIONAL,
+  },
   { title: 'Recurrentes', href: '/dashboard/recurrentes', icon: RefreshCw },
   {
     title: 'Importar',
@@ -86,7 +101,12 @@ const actingAsNavItems: NavEntry[] = defaultNavItems;
 const agencyNavItems: NavEntry[] = [
   // ── Facturación propia de la asesoría ─────────────────────────────────────
   { title: 'Inicio', href: '/dashboard', icon: LayoutDashboard },
-  { title: 'Mi actividad', href: '/dashboard/mi-actividad', icon: Activity, requiredPlan: Plan.PROFESSIONAL },
+  {
+    title: 'Mi actividad',
+    href: '/dashboard/mi-actividad',
+    icon: Activity,
+    requiredPlan: Plan.PROFESSIONAL,
+  },
   { title: 'Facturas', href: '/dashboard/facturas', icon: FileText },
   {
     title: 'Clientes para facturar',
@@ -96,8 +116,18 @@ const agencyNavItems: NavEntry[] = [
   },
   { title: 'Productos', href: '/dashboard/productos', icon: Package },
   { title: 'Presupuestos', href: '/dashboard/presupuestos', icon: ClipboardList },
-  { title: 'Gastos', href: '/dashboard/gastos', icon: Receipt, readOnlyBelowPlan: Plan.PROFESSIONAL },
-  { title: 'Proveedores', href: '/dashboard/proveedores', icon: Truck, requiredPlan: Plan.PROFESSIONAL },
+  {
+    title: 'Gastos',
+    href: '/dashboard/gastos',
+    icon: Receipt,
+    readOnlyBelowPlan: Plan.PROFESSIONAL,
+  },
+  {
+    title: 'Proveedores',
+    href: '/dashboard/proveedores',
+    icon: Truck,
+    requiredPlan: Plan.PROFESSIONAL,
+  },
   { title: 'Recurrentes', href: '/dashboard/recurrentes', icon: RefreshCw },
   {
     title: 'Importar',
@@ -318,7 +348,7 @@ export function DashboardSidebar() {
                           variant="outline"
                           className="h-4 px-1 text-[9px] font-medium border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400"
                         >
-                          Solo lectura
+                          Plan PRO requerido
                         </Badge>
                       )}
                     </div>

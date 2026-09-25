@@ -23,9 +23,9 @@ import { AccountType, Plan } from '@easyfactura/shared-types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const PLAN_LABELS: Record<Plan, string> = {
-  [Plan.FREE]: 'Gratuito',
-  [Plan.BASIC]: 'Básico',
-  [Plan.PROFESSIONAL]: 'Profesional',
+  [Plan.FREE]: 'Starter',
+  [Plan.BASIC]: 'Starter',
+  [Plan.PROFESSIONAL]: 'PRO',
 };
 
 const BASE_SETTINGS_SECTIONS = [
@@ -144,17 +144,20 @@ export default function AjustesPage() {
             </div>
 
             {/* Plan */}
-            <div className="rounded-lg border p-3">
+            <Link href="/dashboard/ajustes/plan" className="rounded-lg border border-primary p-3 hover:bg-muted/50 transition-colors block">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Plan
               </p>
               <div className="mt-1 flex items-center gap-2">
                 <p className="font-semibold">{PLAN_LABELS[plan]}</p>
-                <Badge variant="secondary" className="text-xs">
-                  {plan}
-                </Badge>
+                {plan === Plan.FREE && (
+                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 hover:bg-green-100">
+                    Gratis hasta 2027
+                  </Badge>
+                )}
               </div>
-            </div>
+              <p className="text-xs text-primary mt-1">Gestionar plan →</p>
+            </Link>
 
             {/* Certificado digital */}
             <div className="rounded-lg border p-3">

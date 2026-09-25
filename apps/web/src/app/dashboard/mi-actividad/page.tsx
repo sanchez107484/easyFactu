@@ -1,39 +1,18 @@
 'use client';
 
-/**
- * Pantalla "Mi actividad" — sección nueva e independiente (Plan PRO).
- *
- * Basada en los mismos componentes y patrones visuales que la pantalla de
- * Inicio (Card, StatCard, chart con toggle de vistas, skeletons, empty
- * states) para que se sienta como una parte nativa de NaFactura.
- *
- * ⚠️ SUPUESTOS SOBRE DATOS — ajustar a tu API real:
- * Este componente asume un hook `useActivitySummary()` que devuelve, para
- * la empresa actual:
- *
- *   {
- *     incomeThisMonth: number;      // facturado este mes
- *     incomeLastMonth: number;
- *     incomeThisYear: number;
- *     expenseThisMonth: number;     // gastos este mes
- *     expenseLastMonth: number;
- *     expenseThisYear: number;
- *     monthlyChart: Array<{ month: string; ingresos: number; gastos: number }>;
- *     topExpenseCategories: Array<{ categoryId: string; name: string; amount: number }>;
- *   }
- *
- * Si tus hooks actuales (`useInvoiceStats`, `useExpenseSummary`) ya cubren
- * parte de esto por separado, la forma más sencilla es crear un hook
- * `useActivitySummary` en el backend/BFF que combine ambos orígenes en una
- * sola llamada (evita дos loading states descoordinados y in-consistencias
- * de fecha/zona horaria entre ingresos y gastos — ver HU-12).
- */
-
 import { useState } from 'react';
 import { useAuthStore } from '@/store/auth-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Euro,
   Receipt,
@@ -43,6 +22,12 @@ import {
   ArrowRight,
   Wallet,
   PieChart as PieChartIcon,
+  Target,
+  Sparkles,
+  CalendarDays,
+  PiggyBank,
+  Scale,
+  Percent,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -56,28 +41,37 @@ import {
   PieChart,
   Pie,
   Cell,
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  ComposedChart,
 } from 'recharts';
-import { useActivitySummary } from '@/hooks/use-activity-summary'; // ver nota arriba
+import { useActivitySummary } from '@/hooks/use-activity-summary';
 import { cn, formatCurrency } from '@/lib/utils';
+import { PRICING } from '@easyfactura/brand-config';
 
 // ==================== HELPERS ====================
+
+const MONTHS_ES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
 const Y_TICK_FORMATTER = (v: number) =>
   v === 0 ? '0' : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v);
 
 const TOOLTIP_STYLE = {
-  borderRadius: '8px',
+  borderRadius: '10px',
   fontSize: '12px',
   border: '1px solid hsl(var(--border))',
   backgroundColor: 'hsl(var(--background))',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
 };
 
 const CATEGORY_COLORS = [
   'hsl(var(--primary))',
-  'hsl(var(--primary) / 0.75)',
-  'hsl(var(--primary) / 0.55)',
-  'hsl(var(--primary) / 0.4)',
-  'hsl(var(--muted-foreground) / 0.4)',
+  'hsl(var(--primary) / 0.7)',
+  'hsl(var(--primary) / 0.5)',
+  'hsl(var(--primary) / 0.35)',
+  'hsl(var(--primary) / 0.2)',
 ];
 
 function pctChange(current: number, previous: number): number | null {
@@ -85,88 +79,80 @@ function pctChange(current: number, previous: number): number | null {
   return Math.round(((current - previous) / previous) * 100);
 }
 
-// ==================== ACTIVITY STAT CARD ====================
-// Igual que el StatCard de Inicio, pero con soporte para "resultado"
-// (permite colorear en función del signo, no solo de la tendencia).
-
-interface ActivityStatCardProps {
-  title: string;
-  value: number;
-  description?: string;
-  icon: React.ElementType;
-  isLoading: boolean;
-  href?: string;
-  trend?: number | null;
-  trendLabel?: string;
-  trendGoodWhenUp?: boolean;
-  emphasis?: 'neutral' | 'positive' | 'negative';
+function getProfitMargin(income: number, expense: number): number | null {
+  if (income <= 0) return null;
+  return Math.round(((income - expense) / income) * 100);
 }
 
-function ActivityStatCard({
+// ==================== KPI CARD ====================
+
+interface KpiCardProps {
+  title: string;
+  value: number;
+  subtitle?: string;
+  trend?: number | null;
+  trendGoodWhenUp?: boolean;
+  trendLabel?: string;
+  icon: React.ElementType;
+  iconClassName?: string;
+  valueClassName?: string;
+  isLoading: boolean;
+  href?: string;
+}
+
+function KpiCard({
   title,
   value,
-  description,
+  subtitle,
+  trend,
+  trendGoodWhenUp = true,
+  trendLabel,
   icon: Icon,
+  iconClassName = 'bg-primary/10 text-primary',
+  valueClassName = '',
   isLoading,
   href,
-  trend,
-  trendLabel,
-  trendGoodWhenUp = true,
-  emphasis = 'neutral',
-}: ActivityStatCardProps) {
+}: KpiCardProps) {
   const trendPositive = trend !== null && trend !== undefined && trend >= 0;
   const trendIsGood = trendPositive === trendGoodWhenUp;
 
-  const valueColor =
-    emphasis === 'positive'
-      ? 'text-emerald-600 dark:text-emerald-400'
-      : emphasis === 'negative'
-        ? 'text-red-600 dark:text-red-400'
-        : 'text-foreground';
-
   const content = (
-    <Card className={cn('transition-all', href && 'hover:shadow-md cursor-pointer')}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 px-5 pt-5 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-primary/10">
-          <Icon className="h-4 w-4 text-primary" />
-        </div>
-      </CardHeader>
-      <CardContent className="px-5 pb-5">
+    <Card className={cn('relative overflow-hidden transition-all hover:shadow-md h-full', href && 'cursor-pointer')}>
+      <CardContent className="p-5">
         {isLoading ? (
-          <>
-            <Skeleton className="h-7 w-28 mb-1" />
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-9 w-32" />
             <Skeleton className="h-3 w-20" />
-          </>
+          </div>
         ) : (
           <>
-            <div className={cn('text-2xl font-bold tracking-tight tabular-nums', valueColor)}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className={cn('h-9 w-9 rounded-lg flex items-center justify-center shrink-0', iconClassName)}>
+                <Icon className="h-4 w-4" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">{title}</span>
+            </div>
+            <div className={cn('text-3xl font-bold tracking-tight tabular-nums mb-1', valueClassName)}>
               {formatCurrency(value)}
             </div>
-            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-              {description && <p className="text-xs text-muted-foreground">{description}</p>}
-              {trend !== null && trend !== undefined && (
+            {subtitle && <p className="text-xs text-muted-foreground mb-2">{subtitle}</p>}
+            {trend !== null && trend !== undefined && (
+              <div className="flex items-center gap-1.5">
                 <span
                   className={cn(
-                    'inline-flex items-center gap-0.5 text-[10px] font-semibold rounded-md px-1.5 py-0.5',
+                    'inline-flex items-center gap-1 text-xs font-semibold rounded-full px-2 py-0.5',
                     trendIsGood
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                      : 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400',
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+                      : 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400',
                   )}
                 >
-                  {trendPositive ? (
-                    <TrendingUp className="h-3 w-3" />
-                  ) : (
-                    <TrendingDown className="h-3 w-3" />
-                  )}
-                  {trendPositive ? '+' : ''}
-                  {trend}%
+                  {trendPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                  {trendPositive ? '+' : ''}{trend}%
                 </span>
-              )}
-              {trendLabel && trend !== null && trend !== undefined && (
-                <span className="text-[10px] text-muted-foreground">{trendLabel}</span>
-              )}
-            </div>
+                {trendLabel && <span className="text-xs text-muted-foreground">{trendLabel}</span>}
+              </div>
+            )}
           </>
         )}
       </CardContent>
@@ -177,56 +163,145 @@ function ActivityStatCard({
   return content;
 }
 
-// ==================== INGRESOS VS GASTOS CHART ====================
+// ==================== MAIN CHART CARD ====================
 
-interface ActivityChartCardProps {
+type ChartView = 'mensual' | 'resultado';
+
+const CHART_VIEWS: { value: ChartView; label: string }[] = [
+  { value: 'mensual', label: 'Ingresos vs Gastos' },
+  { value: 'resultado', label: 'Resultado' },
+];
+
+interface MainChartCardProps {
   year: number;
   chartData: Array<{ month: string; ingresos: number; gastos: number }>;
   isLoading: boolean;
 }
 
-function ActivityChartCard({ year, chartData, isLoading }: ActivityChartCardProps) {
-  // Si TODOS los meses están a 0 en ambas series, se considera "sin datos"
-  // reales (no confundir con un mes puntual a 0, que sí debe mostrarse).
+function MainChartCard({ year, chartData, isLoading }: MainChartCardProps) {
+  const [view, setView] = useState<ChartView>('mensual');
   const hasAnyData = chartData.some((d) => d.ingresos > 0 || d.gastos > 0);
+
+  const resultData = chartData.map((d) => ({
+    month: d.month,
+    valor: d.ingresos - d.gastos,
+  }));
+
+  const totalIncome = chartData.reduce((s, d) => s + d.ingresos, 0);
+  const totalExpense = chartData.reduce((s, d) => s + d.gastos, 0);
 
   return (
     <Card className="lg:col-span-3 flex flex-col">
       <CardHeader className="px-5 pt-5 pb-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <CardTitle className="text-base">Ingresos y gastos {year}</CardTitle>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-primary" /> Ingresos
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-muted-foreground/50" /> Gastos
-            </span>
+          <div className="flex items-center gap-3">
+            <CardTitle className="text-lg">Resumen {year}</CardTitle>
+            {!isLoading && hasAnyData && (
+              <div className="hidden sm:flex items-center gap-4 text-xs">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+                  <span className="text-muted-foreground">Ingresos: <span className="font-semibold text-foreground">{formatCurrency(totalIncome)}</span></span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/40" />
+                  <span className="text-muted-foreground">Gastos: <span className="font-semibold text-foreground">{formatCurrency(totalExpense)}</span></span>
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
+            {CHART_VIEWS.map((v) => (
+              <button
+                key={v.value}
+                type="button"
+                onClick={() => setView(v.value)}
+                className={cn(
+                  'px-3 py-1 text-xs font-medium rounded-md transition-all',
+                  view === v.value
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {v.label}
+              </button>
+            ))}
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-5 pb-4 pt-4 flex-1 min-h-0">
+      <CardContent className="px-5 pb-5 pt-2 flex-1 min-h-0">
         {isLoading ? (
-          <div className="flex items-end gap-1 h-full pb-2">
+          <div className="flex items-end gap-1.5 h-64">
             {Array.from({ length: 12 }).map((_, i) => (
               <Skeleton
                 key={i}
-                className="flex-1 rounded-sm"
+                className="flex-1 rounded-md"
                 style={{ height: `${30 + Math.random() * 60}%` }}
               />
             ))}
           </div>
         ) : !hasAnyData ? (
-          <div className="flex flex-col items-center justify-center h-full text-center gap-2">
-            <Wallet className="h-8 w-8 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">Aún no hay actividad este año</p>
-            <p className="text-xs text-muted-foreground/60">
-              Registra facturas y gastos para ver aquí tu evolución mes a mes
-            </p>
+          <div className="flex flex-col items-center justify-center h-64 text-center gap-3">
+            <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center">
+              <CalendarDays className="h-7 w-7 text-muted-foreground/50" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">Sin datos todavía</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Registra facturas y gastos para ver tu evolución
+              </p>
+            </div>
+          </div>
+        ) : view === 'resultado' ? (
+          <div className="relative">
+            <ResponsiveContainer width="100%" height={260}>
+              <ComposedChart data={resultData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="resultGradientPos" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(142 76% 40%)" stopOpacity={1} />
+                    <stop offset="100%" stopColor="hsl(142 76% 40%)" stopOpacity={0.6} />
+                  </linearGradient>
+                  <linearGradient id="resultGradientNeg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(0 84% 60%)" stopOpacity={1} />
+                    <stop offset="100%" stopColor="hsl(0 84% 60%)" stopOpacity={0.6} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                <YAxis
+                  tick={{ fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={Y_TICK_FORMATTER}
+                />
+                <Tooltip
+                  formatter={(value: number) => [formatCurrency(value), 'Resultado']}
+                  contentStyle={TOOLTIP_STYLE}
+                  cursor={{ fill: 'hsl(var(--muted))', opacity: 0.5 }}
+                />
+                <Bar dataKey="valor" radius={[4, 4, 0, 0]} maxBarSize={32}>
+                  {resultData.map((entry, index) => (
+                    <Cell
+                      key={index}
+                      fill={entry.valor >= 0 ? 'url(#resultGradientPos)' : 'url(#resultGradientNeg)'}
+                    />
+                  ))}
+                </Bar>
+              </ComposedChart>
+            </ResponsiveContainer>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+          <ResponsiveContainer width="100%" height={260}>
+            <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="incomeGradMain" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={1} />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.7} />
+                </linearGradient>
+                <linearGradient id="expenseGradMain" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.6} />
+                  <stop offset="100%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.3} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
               <XAxis dataKey="month" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
               <YAxis
@@ -241,21 +316,21 @@ function ActivityChartCard({ year, chartData, isLoading }: ActivityChartCardProp
                   name === 'ingresos' ? 'Ingresos' : 'Gastos',
                 ]}
                 contentStyle={TOOLTIP_STYLE}
-                cursor={{ fill: 'hsl(var(--muted))' }}
-              />
-              <Bar
-                dataKey="ingresos"
-                fill="hsl(var(--primary))"
-                radius={[4, 4, 0, 0]}
-                maxBarSize={18}
+                cursor={{ fill: 'hsl(var(--muted))', opacity: 0.5 }}
               />
               <Bar
                 dataKey="gastos"
-                fill="hsl(var(--muted-foreground) / 0.5)"
+                fill="url(#expenseGradMain)"
                 radius={[4, 4, 0, 0]}
-                maxBarSize={18}
+                maxBarSize={20}
               />
-            </BarChart>
+              <Bar
+                dataKey="ingresos"
+                fill="url(#incomeGradMain)"
+                radius={[4, 4, 0, 0]}
+                maxBarSize={20}
+              />
+            </ComposedChart>
           </ResponsiveContainer>
         )}
       </CardContent>
@@ -263,96 +338,367 @@ function ActivityChartCard({ year, chartData, isLoading }: ActivityChartCardProp
   );
 }
 
-// ==================== TOP CATEGORÍAS DE GASTO ====================
+// ==================== EXPENSE BREAKDOWN CARD ====================
 
-interface TopCategoriesCardProps {
-  categories: Array<{ categoryId: string; name: string; amount: number }>;
+const MONTHS_SHORT = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+type ViewMode = 'categories' | 'expenses';
+
+interface ExpenseBreakdownCardProps {
+  monthlyExpenseCategories: Array<{
+    month: string;
+    categories: Array<{ categoryId: string; name: string; amount: number }>;
+  }>;
+  monthlyExpenses: Array<{
+    month: string;
+    expenses: Array<{
+      id: string;
+      date: string;
+      description: string;
+      categoryId: string;
+      categoryName: string;
+      amount: number;
+    }>;
+  }>;
   isLoading: boolean;
+  year: number;
+  chartData: Array<{ month: string; ingresos: number; gastos: number }>;
 }
 
-function TopCategoriesCard({ categories, isLoading }: TopCategoriesCardProps) {
-  const total = categories.reduce((s, c) => s + c.amount, 0);
-  const top = [...categories].sort((a, b) => b.amount - a.amount).slice(0, 5);
+function ExpenseBreakdownCard({ monthlyExpenseCategories, monthlyExpenses, isLoading, year, chartData }: ExpenseBreakdownCardProps) {
+  const [period, setPeriod] = useState<string>('YTD');
+  const [viewMode, setViewMode] = useState<ViewMode>('categories');
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  const monthOptions = [
+    { value: 'YTD', label: `Acumulado ${currentYear}` },
+    ...chartData.map((d, i) => ({
+      value: d.month,
+      label: `${MONTHS_SHORT[i]} ${currentYear}`,
+    })),
+  ];
+
+  const selectedMonthIndex = period === 'YTD'
+    ? -1
+    : chartData.findIndex(d => d.month === period);
+
+  const displayCategories = selectedMonthIndex === -1
+    ? monthlyExpenseCategories.flatMap(m => m.categories)
+        .reduce((acc, cat) => {
+          const existing = acc.find(c => c.categoryId === cat.categoryId);
+          if (existing) {
+            existing.amount += cat.amount;
+          } else {
+            acc.push({ ...cat });
+          }
+          return acc;
+        }, [] as Array<{ categoryId: string; name: string; amount: number }>)
+        .sort((a, b) => b.amount - a.amount)
+        .slice(0, 6)
+    : (monthlyExpenseCategories[selectedMonthIndex]?.categories ?? []);
+
+  const displayExpenses = selectedMonthIndex === -1
+    ? monthlyExpenses.flatMap(m => m.expenses)
+    : (monthlyExpenses[selectedMonthIndex]?.expenses ?? []);
+
+  const displayTotal = displayCategories.reduce((s, c) => s + c.amount, 0);
+
+  const selectedPeriodLabel = period === 'YTD'
+    ? `Total ${currentYear}`
+    : monthOptions.find(m => m.value === period)?.label ?? period;
+
+  const isMonthSelected = selectedMonthIndex !== -1;
+
+  const pieData = displayCategories.map((c, i) => ({
+    ...c,
+    color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+    pct: displayTotal > 0 ? Math.round((c.amount / displayTotal) * 100) : 0,
+  }));
+
+  let cumulativeAngle = 0;
+  const pieSlices = pieData.map((slice) => {
+    const angle = (slice.pct / 100) * 360;
+    const startAngle = cumulativeAngle;
+    cumulativeAngle += angle;
+    return { ...slice, startAngle, endAngle: cumulativeAngle };
+  });
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr + 'T00:00:00');
+    return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+  };
 
   return (
     <Card className="lg:col-span-2">
       <CardHeader className="px-5 pt-5 pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Gastos por categoría</CardTitle>
-          <Link href="/dashboard/gastos">
-            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1">
-              Ver gastos
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </Button>
-          </Link>
+        <div className="flex items-center justify-between gap-3">
+          <CardTitle className="text-base">Desglose de gastos</CardTitle>
+          <div className="flex items-center gap-2">
+            {isMonthSelected && (
+              <div className="flex items-center bg-muted rounded-lg p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('categories')}
+                  className={cn(
+                    'px-2.5 py-1 text-xs font-medium rounded-md transition-all',
+                    viewMode === 'categories'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  Resumen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('expenses')}
+                  className={cn(
+                    'px-2.5 py-1 text-xs font-medium rounded-md transition-all',
+                    viewMode === 'expenses'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  Detalle
+                </button>
+              </div>
+            )}
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="w-40 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {monthOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pb-5 px-5">
         {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-8 w-full" />
-            ))}
+          <div className="flex gap-6">
+            <Skeleton className="h-36 w-36 rounded-full shrink-0" />
+            <div className="flex-1 space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-2 w-full" />
+                  </div>
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              ))}
+            </div>
           </div>
-        ) : top.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <PieChartIcon className="h-9 w-9 text-muted-foreground/30 mb-2" />
-            <p className="text-sm font-medium">Aún no has registrado gastos</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Añade tu primer gasto para ver el desglose por categoría
+        ) : displayCategories.length === 0 && displayExpenses.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-3">
+              <PieChartIcon className="h-7 w-7 text-muted-foreground/50" />
+            </div>
+            <p className="text-sm font-medium">Sin gastos registrados</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-4">
+              Añade gastos para ver el desglose
             </p>
-            <Link href="/dashboard/gastos/nuevo" className="mt-3">
+            <Link href="/dashboard/gastos/nuevo">
               <Button size="sm" variant="outline">
                 Añadir gasto
               </Button>
             </Link>
           </div>
-        ) : (
-          <div className="flex items-center gap-5">
-            <div className="h-[130px] w-[130px] shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={top}
-                    dataKey="amount"
-                    nameKey="name"
-                    innerRadius={38}
-                    outerRadius={60}
-                    paddingAngle={2}
-                  >
-                    {top.map((_, i) => (
-                      <Cell key={i} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: number) => formatCurrency(value)}
-                    contentStyle={TOOLTIP_STYLE}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+        ) : viewMode === 'expenses' && isMonthSelected ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-muted-foreground">
+                {displayExpenses.length} gasto{displayExpenses.length !== 1 ? 's' : ''}
+              </span>
+              <span className="text-sm font-semibold">{formatCurrency(displayTotal)}</span>
             </div>
-            <div className="flex-1 space-y-2 min-w-0">
-              {top.map((c, i) => {
-                const pct = total > 0 ? Math.round((c.amount / total) * 100) : 0;
-                return (
-                  <div key={c.categoryId} className="flex items-center gap-2">
-                    <span
-                      className="h-2 w-2 rounded-full shrink-0"
-                      style={{ backgroundColor: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }}
-                    />
-                    <span className="text-xs truncate flex-1">{c.name}</span>
-                    <span className="text-xs font-medium tabular-nums">
-                      {formatCurrency(c.amount)}
+            <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
+              {displayExpenses.map((expense) => (
+                <div
+                  key={expense.id}
+                  className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-sm font-medium truncate">{expense.description}</span>
+                      <Badge variant="outline" className="text-xs shrink-0">
+                        {expense.categoryName}
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDate(expense.date)}
                     </span>
-                    <span className="text-[10px] text-muted-foreground w-8 text-right">{pct}%</span>
+                  </div>
+                  <span className="text-sm font-semibold tabular-nums shrink-0">
+                    {formatCurrency(expense.amount)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-6">
+            <div className="relative shrink-0">
+              <svg viewBox="0 0 100 100" className="h-36 w-36 -rotate-90">
+                {pieSlices.length > 0 ? pieSlices.map((slice) => {
+                  const isHovered = hoveredCategory === slice.categoryId;
+                  const radius = isHovered ? 44 : 42;
+                  const innerRadius = isHovered ? 26 : 24;
+                  const startRad = (slice.startAngle * Math.PI) / 180;
+                  const endRad = (slice.endAngle * Math.PI) / 180;
+                  const x1 = 50 + radius * Math.cos(startRad);
+                  const y1 = 50 + radius * Math.sin(startRad);
+                  const x2 = 50 + radius * Math.cos(endRad);
+                  const y2 = 50 + radius * Math.sin(endRad);
+                  const x3 = 50 + innerRadius * Math.cos(endRad);
+                  const y3 = 50 + innerRadius * Math.sin(endRad);
+                  const x4 = 50 + innerRadius * Math.cos(startRad);
+                  const y4 = 50 + innerRadius * Math.sin(startRad);
+                  const largeArc = slice.endAngle - slice.startAngle > 180 ? 1 : 0;
+                  const d = [
+                    `M ${x1} ${y1}`,
+                    `A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`,
+                    `L ${x3} ${y3}`,
+                    `A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x4} ${y4}`,
+                    'Z',
+                  ].join(' ');
+                  return (
+                    <path
+                      key={slice.categoryId}
+                      d={d}
+                      fill={slice.color}
+                      className="transition-all duration-200 cursor-pointer"
+                      style={{ opacity: hoveredCategory && !isHovered ? 0.4 : 1 }}
+                      onMouseEnter={() => setHoveredCategory(slice.categoryId)}
+                      onMouseLeave={() => setHoveredCategory(null)}
+                    />
+                  );
+                }) : (
+                  <circle cx="50" cy="50" r="40" fill="hsl(var(--muted))" />
+                )}
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xs text-muted-foreground text-center px-1">{selectedPeriodLabel}</span>
+                <span className="text-lg font-bold tabular-nums">{formatCurrency(displayTotal)}</span>
+              </div>
+            </div>
+            <div className="flex-1 min-w-0 space-y-1.5">
+              {pieSlices.map((slice) => {
+                const isHovered = hoveredCategory === slice.categoryId;
+                return (
+                  <div
+                    key={slice.categoryId}
+                    className={cn(
+                      'flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-all cursor-pointer',
+                      isHovered && 'bg-muted/70'
+                    )}
+                    onMouseEnter={() => setHoveredCategory(slice.categoryId)}
+                    onMouseLeave={() => setHoveredCategory(null)}
+                  >
+                    <span
+                      className="h-3 w-3 rounded-full shrink-0"
+                      style={{ backgroundColor: slice.color }}
+                    />
+                    <span className="text-sm font-medium truncate flex-1">{slice.name}</span>
+                    <span className="text-sm font-semibold tabular-nums shrink-0">
+                      {formatCurrency(slice.amount)}
+                    </span>
+                    <span className="text-xs text-muted-foreground w-10 text-right shrink-0">
+                      {slice.pct}%
+                    </span>
                   </div>
                 );
               })}
+              {isMonthSelected && displayExpenses.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setViewMode('expenses')}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Receipt className="h-3.5 w-3.5" />
+                  Ver los {displayExpenses.length} gastos de {period}
+                </button>
+              )}
             </div>
           </div>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// ==================== EMPTY STATE ====================
+
+function EmptyState() {
+  return (
+    <div className="space-y-8 py-8">
+      <Card className="border-dashed">
+        <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
+            <Sparkles className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="text-xl font-semibold mb-2">Tu actividad te espera</h3>
+          <p className="text-sm text-muted-foreground max-w-sm mb-6">
+            Empieza a registrar tus facturas y gastos para tener una visión clara de cómo va tu negocio.
+          </p>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Link href="/dashboard/facturas/nueva?tipo=standard">
+              <Button>
+                <Euro className="mr-2 h-4 w-4" />
+                Crear primera factura
+              </Button>
+            </Link>
+            <Link href="/dashboard/gastos/nuevo">
+              <Button variant="outline">
+                <Receipt className="mr-2 h-4 w-4" />
+                Añadir gasto
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="bg-gradient-to-br from-primary/5 to-transparent">
+          <CardContent className="p-5">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Target className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-sm mb-1">Registra cada ingreso</h4>
+                <p className="text-xs text-muted-foreground">
+                  Crea facturas para tus clientes y lleva un control de lo que facturas cada mes.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-emerald-50/50 to-transparent dark:from-emerald-950/10">
+          <CardContent className="p-5">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center shrink-0">
+                <PiggyBank className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-sm mb-1">Controla tus gastos</h4>
+                <p className="text-xs text-muted-foreground">
+                  Añade tus gastos deducibles para saber cuánto pagas realmente.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
 
@@ -380,124 +726,105 @@ export default function MiActividadPage() {
   const incomeTrend = pctChange(incomeThisMonth, incomeLastMonth);
   const expenseTrend = pctChange(expenseThisMonth, expenseLastMonth);
   const resultTrend = pctChange(resultThisMonth, resultLastMonth);
+  const profitMargin = getProfitMargin(incomeThisMonth, expenseThisMonth);
 
   const hasAnyActivity = incomeThisYear > 0 || expenseThisYear > 0;
 
+  const prevMonthName = MONTHS_ES[now.getMonth() === 0 ? 11 : now.getMonth() - 1];
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Mi actividad</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
-            {tenant?.businessName} &middot; Visión sencilla de tus ingresos y gastos
+            {tenant?.businessName} &middot; {now.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
           </p>
+        </div>
+        <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+          <CalendarDays className="h-3.5 w-3.5" />
+          {MONTHS_ES[now.getMonth()]} {now.getFullYear()}
         </div>
       </div>
 
-      {/* Empty state general — sin ingresos ni gastos en todo el año */}
       {!isLoading && !hasAnyActivity ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-14 text-center">
-            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-              <Wallet className="h-7 w-7 text-primary" />
-            </div>
-            <h3 className="text-lg font-semibold mb-1">Aún no hay actividad que mostrar</h3>
-            <p className="text-sm text-muted-foreground max-w-xs">
-              En cuanto emitas facturas o registres gastos, aquí verás la evolución de tu negocio
-              mes a mes.
-            </p>
-            <div className="flex flex-wrap gap-2 justify-center mt-5">
-              <Link href="/dashboard/gastos/nuevo">
-                <Button variant="outline" size="sm">
-                  Añadir gasto
-                </Button>
-              </Link>
-              <Link href="/dashboard/facturas/nueva?tipo=standard">
-                <Button size="sm">Crear factura</Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+        <EmptyState />
       ) : (
         <>
-          {/* KPIs */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <ActivityStatCard
-              title="Ingresos este mes"
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+            <KpiCard
+              title="Ingresos"
               value={incomeThisMonth}
-              description="Facturado"
+              subtitle="Este mes"
+              trend={incomeTrend}
+              trendGoodWhenUp={true}
+              trendLabel={`vs ${prevMonthName}`}
               icon={Euro}
+              iconClassName="bg-primary/10 text-primary"
+              valueClassName="text-foreground"
               isLoading={isLoading}
               href="/dashboard/facturas"
-              trend={incomeTrend}
-              trendLabel="vs mes anterior"
             />
-            <ActivityStatCard
-              title="Gastos este mes"
+            <KpiCard
+              title="Gastos"
               value={expenseThisMonth}
-              description="Registrados"
+              subtitle="Este mes"
+              trend={expenseTrend}
+              trendGoodWhenUp={false}
+              trendLabel={`vs ${prevMonthName}`}
               icon={Receipt}
+              iconClassName="bg-muted text-muted-foreground"
+              valueClassName="text-foreground"
               isLoading={isLoading}
               href="/dashboard/gastos"
-              trend={expenseTrend}
-              trendLabel="vs mes anterior"
-              trendGoodWhenUp={false}
             />
-            <ActivityStatCard
-              title="Resultado este mes"
+            <KpiCard
+              title="Resultado"
               value={resultThisMonth}
-              description="Ingresos − gastos"
-              icon={resultThisMonth >= 0 ? TrendingUp : TrendingDown}
-              isLoading={isLoading}
+              subtitle="Este mes"
               trend={resultTrend}
-              trendLabel="vs mes anterior"
-              emphasis={resultThisMonth >= 0 ? 'positive' : 'negative'}
+              trendGoodWhenUp={true}
+              trendLabel={`vs ${prevMonthName}`}
+              icon={resultThisMonth >= 0 ? TrendingUp : TrendingDown}
+              iconClassName={resultThisMonth >= 0 ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400'}
+              valueClassName={resultThisMonth >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}
+              isLoading={isLoading}
+            />
+            <KpiCard
+              title="Acumulado"
+              value={resultThisYear}
+              subtitle={`${now.getFullYear()}`}
+              icon={Scale}
+              iconClassName={resultThisYear >= 0 ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400'}
+              valueClassName={resultThisYear >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}
+              isLoading={isLoading}
             />
           </div>
 
-          {/* Acumulado anual — fila secundaria, más discreta */}
-          <div className="grid gap-4 sm:grid-cols-3 text-sm">
-            <div className="flex items-center justify-between rounded-lg border px-4 py-3">
-              <span className="text-muted-foreground">Ingresos {now.getFullYear()}</span>
-              <span className="font-semibold tabular-nums">{formatCurrency(incomeThisYear)}</span>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border px-4 py-3">
-              <span className="text-muted-foreground">Gastos {now.getFullYear()}</span>
-              <span className="font-semibold tabular-nums">{formatCurrency(expenseThisYear)}</span>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border px-4 py-3">
-              <span className="text-muted-foreground">Resultado {now.getFullYear()}</span>
-              <span
-                className={cn(
-                  'font-semibold tabular-nums',
-                  resultThisYear >= 0
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-red-600 dark:text-red-400',
-                )}
-              >
-                {formatCurrency(resultThisYear)}
-              </span>
-            </div>
-          </div>
-
-          {/* Gráfico mensual + top categorías */}
           <div className="grid gap-6 lg:grid-cols-5">
-            <ActivityChartCard
+            <MainChartCard
               year={now.getFullYear()}
               chartData={chartData}
               isLoading={isLoading}
             />
-            <TopCategoriesCard categories={topExpenseCategories} isLoading={isLoading} />
+            <ExpenseBreakdownCard
+              monthlyExpenseCategories={data?.monthlyExpenseCategories ?? []}
+              monthlyExpenses={data?.monthlyExpenses ?? []}
+              isLoading={isLoading}
+              year={now.getFullYear()}
+              chartData={chartData}
+            />
           </div>
 
-          {/* Aviso de terminología — evita que "Resultado" se lea como un dato contable/fiscal */}
-          <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
-            Esta es una visión orientativa de tu actividad, no un informe contable ni fiscal.
-            <Link href="/dashboard/gastos" className="inline-flex items-center gap-0.5 underline">
-              Ver todos los gastos <ArrowRight className="h-3 w-3" />
-            </Link>
-          </p>
+          <Card className="bg-muted/30">
+            <CardContent className="p-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <Target className="h-3.5 w-3.5" />
+              Visión orientativa de tu actividad. No sustituye a un informe contable o fiscal.
+              <Link href="/dashboard/gastos" className="underline ml-1">
+                Ver gastos
+              </Link>
+            </CardContent>
+          </Card>
         </>
       )}
     </div>

@@ -173,9 +173,9 @@ export default function RecurrentesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Gastos recurrentes</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <div className="text-sm text-muted-foreground mt-1">
             {isLoading ? <Skeleton className="h-4 w-32" /> : `${total} recurrente${total !== 1 ? 's' : ''}`}
-          </p>
+          </div>
         </div>
         {canWrite && (
           <Link href="/dashboard/gastos/recurrentes/nuevo">

@@ -36,7 +36,13 @@ interface SupplierFormProps {
   readOnly?: boolean;
 }
 
-export function SupplierForm({ supplier, onSubmit, isPending, mode, readOnly = false }: SupplierFormProps) {
+export function SupplierForm({
+  supplier,
+  onSubmit,
+  isPending,
+  mode,
+  readOnly = false,
+}: SupplierFormProps) {
   const form = useForm<SupplierFormData>({
     resolver: zodResolver(supplierSchema),
     defaultValues: {
@@ -120,7 +126,9 @@ export function SupplierForm({ supplier, onSubmit, isPending, mode, readOnly = f
                       autoFocus
                     />
                     {form.formState.errors.name && (
-                      <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>
+                      <p className="text-xs text-destructive">
+                        {form.formState.errors.name.message}
+                      </p>
                     )}
                   </div>
 
@@ -140,7 +148,10 @@ export function SupplierForm({ supplier, onSubmit, isPending, mode, readOnly = f
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="legalName" className="text-sm font-medium flex items-center gap-2">
+                  <Label
+                    htmlFor="legalName"
+                    className="text-sm font-medium flex items-center gap-2"
+                  >
                     Razón social{' '}
                     <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
                   </Label>
@@ -169,7 +180,9 @@ export function SupplierForm({ supplier, onSubmit, isPending, mode, readOnly = f
                       className="h-11"
                     />
                     {form.formState.errors.email && (
-                      <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
+                      <p className="text-xs text-destructive">
+                        {form.formState.errors.email.message}
+                      </p>
                     )}
                   </div>
 
@@ -271,7 +284,9 @@ export function SupplierForm({ supplier, onSubmit, isPending, mode, readOnly = f
                 {readOnly ? (
                   <>
                     <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm dark:border-amber-900 dark:bg-amber-950/20">
-                      <p className="font-medium text-amber-800 dark:text-amber-300">Solo lectura</p>
+                      <p className="font-medium text-amber-800 dark:text-amber-300">
+                        Plan PRO requerido
+                      </p>
                       <p className="text-amber-700/80 dark:text-amber-400/80 text-xs mt-0.5">
                         Tu plan actual no permite editar proveedores.
                       </p>
@@ -321,7 +336,9 @@ export function SupplierForm({ supplier, onSubmit, isPending, mode, readOnly = f
             </div>
 
             <div className="rounded-xl border border-dashed bg-muted/30 px-4 py-4 text-xs leading-relaxed">
-              <p className="font-semibold text-foreground mb-1.5">¿Para qué sirven los proveedores?</p>
+              <p className="font-semibold text-foreground mb-1.5">
+                ¿Para qué sirven los proveedores?
+              </p>
               <p className="text-muted-foreground">
                 Puedes asociar un proveedor a cada gasto para tener más contexto y facilitar futuros
                 filtros e informes.

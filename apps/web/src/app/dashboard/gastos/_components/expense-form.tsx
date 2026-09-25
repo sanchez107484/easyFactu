@@ -50,7 +50,9 @@ const expenseSchema = z.object({
   categoryId: z.string().uuid('Selecciona una categoría'),
   supplierId: z.string().uuid().optional().or(z.literal('')),
   clientId: z.string().uuid().optional().or(z.literal('')),
-  baseAmount: z.number({ invalid_type_error: 'Introduce un importe válido' }).min(0.01, 'La base imponible debe ser mayor que 0'),
+  baseAmount: z
+    .number({ invalid_type_error: 'Introduce un importe válido' })
+    .min(0.01, 'La base imponible debe ser mayor que 0'),
   vatRate: z.number().min(0).max(100),
   notes: z.string().max(2000).optional(),
   attachmentId: z.string().uuid().optional().or(z.literal('')),
@@ -83,7 +85,12 @@ interface AttachmentsSectionProps {
   onAttachmentChange: (id: string | null) => void;
 }
 
-function AttachmentsSection({ expenseId, attachment, readOnly, onAttachmentChange }: AttachmentsSectionProps) {
+function AttachmentsSection({
+  expenseId,
+  attachment,
+  readOnly,
+  onAttachmentChange,
+}: AttachmentsSectionProps) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadMutation = useUploadExpenseAttachment();
@@ -171,7 +178,10 @@ function AttachmentsSection({ expenseId, attachment, readOnly, onAttachmentChang
         <div
           onClick={() => fileInputRef.current?.click()}
           onDrop={handleDrop}
-          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
           onDragLeave={() => setIsDragging(false)}
           className={
             'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-6 transition-colors ' +
@@ -199,7 +209,13 @@ function AttachmentsSection({ expenseId, attachment, readOnly, onAttachmentChang
   );
 }
 
-export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = false }: ExpenseFormProps) {
+export function ExpenseForm({
+  expense,
+  onSubmit,
+  isPending,
+  mode,
+  readOnly = false,
+}: ExpenseFormProps) {
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
@@ -346,12 +362,17 @@ export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = fal
                       className="h-11"
                     />
                     {form.formState.errors.date && (
-                      <p className="text-xs text-destructive">{form.formState.errors.date.message}</p>
+                      <p className="text-xs text-destructive">
+                        {form.formState.errors.date.message}
+                      </p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="categoryId" className="text-sm font-medium flex items-center gap-2">
+                    <Label
+                      htmlFor="categoryId"
+                      className="text-sm font-medium flex items-center gap-2"
+                    >
                       <Receipt className="h-3.5 w-3.5 text-muted-foreground" />
                       Categoría <span className="text-destructive">*</span>
                     </Label>
@@ -380,7 +401,10 @@ export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = fal
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-sm font-medium flex items-center gap-2">
+                  <Label
+                    htmlFor="description"
+                    className="text-sm font-medium flex items-center gap-2"
+                  >
                     <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                     Concepto <span className="text-destructive">*</span>
                   </Label>
@@ -401,12 +425,20 @@ export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = fal
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="supplierId" className="text-sm font-medium flex items-center gap-2">
-                        Proveedor <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
+                      <Label
+                        htmlFor="supplierId"
+                        className="text-sm font-medium flex items-center gap-2"
+                      >
+                        Proveedor{' '}
+                        <span className="text-xs text-muted-foreground font-normal">
+                          (opcional)
+                        </span>
                       </Label>
                       {!readOnly && (
                         <CreateSupplierDialog
-                          onCreated={(id) => form.setValue('supplierId', id, { shouldValidate: true })}
+                          onCreated={(id) =>
+                            form.setValue('supplierId', id, { shouldValidate: true })
+                          }
                         />
                       )}
                     </div>
@@ -430,9 +462,13 @@ export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = fal
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="clientId" className="text-sm font-medium flex items-center gap-2">
+                    <Label
+                      htmlFor="clientId"
+                      className="text-sm font-medium flex items-center gap-2"
+                    >
                       <User className="h-3.5 w-3.5 text-muted-foreground" />
-                      Cliente <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
+                      Cliente{' '}
+                      <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
                     </Label>
                     <Select
                       value={form.watch('clientId') || 'none'}
@@ -456,7 +492,8 @@ export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = fal
 
                 <div className="space-y-2">
                   <Label htmlFor="notes" className="text-sm font-medium flex items-center gap-2">
-                    Notas <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
+                    Notas{' '}
+                    <span className="text-xs text-muted-foreground font-normal">(opcional)</span>
                   </Label>
                   <Textarea
                     id="notes"
@@ -472,7 +509,9 @@ export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = fal
                   expenseId={expense?.id}
                   attachment={expense?.attachment}
                   readOnly={readOnly}
-                  onAttachmentChange={(id) => form.setValue('attachmentId', id ?? '', { shouldValidate: true })}
+                  onAttachmentChange={(id) =>
+                    form.setValue('attachmentId', id ?? '', { shouldValidate: true })
+                  }
                 />
               </div>
             </div>
@@ -488,7 +527,10 @@ export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = fal
               <div className="p-6">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="baseAmount" className="text-sm font-medium flex items-center gap-2">
+                    <Label
+                      htmlFor="baseAmount"
+                      className="text-sm font-medium flex items-center gap-2"
+                    >
                       <Euro className="h-3.5 w-3.5 text-muted-foreground" />
                       Base imponible <span className="text-destructive">*</span>
                     </Label>
@@ -535,7 +577,10 @@ export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = fal
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="vatRate" className="text-sm font-medium flex items-center gap-2">
+                    <Label
+                      htmlFor="vatRate"
+                      className="text-sm font-medium flex items-center gap-2"
+                    >
                       <Percent className="h-3.5 w-3.5 text-muted-foreground" />
                       Tipo de IVA <span className="text-destructive">*</span>
                     </Label>
@@ -558,7 +603,10 @@ export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = fal
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="totalAmount" className="text-sm font-medium flex items-center gap-2">
+                    <Label
+                      htmlFor="totalAmount"
+                      className="text-sm font-medium flex items-center gap-2"
+                    >
                       <Euro className="h-3.5 w-3.5 text-muted-foreground" />
                       Total
                     </Label>
@@ -601,7 +649,9 @@ export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = fal
                         EUR
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground">Se autocalcula, pero puedes editarlo.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Se autocalcula, pero puedes editarlo.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -639,7 +689,7 @@ export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = fal
                   <>
                     <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm dark:border-amber-900 dark:bg-amber-950/20">
                       <p className="font-medium text-amber-800 dark:text-amber-300">
-                        Solo lectura
+                        Plan PRO requerido
                       </p>
                       <p className="text-amber-700/80 dark:text-amber-400/80 text-xs mt-0.5">
                         Tu plan actual no permite editar gastos.
@@ -690,7 +740,9 @@ export function ExpenseForm({ expense, onSubmit, isPending, mode, readOnly = fal
             </div>
 
             <div className="rounded-xl border border-dashed bg-muted/30 px-4 py-4 text-xs leading-relaxed">
-              <p className="font-semibold text-foreground mb-1.5">¿Necesitas adjuntar un documento?</p>
+              <p className="font-semibold text-foreground mb-1.5">
+                ¿Necesitas adjuntar un documento?
+              </p>
               <p className="text-muted-foreground">
                 En la siguiente fase podrás subir tickets, facturas o justificantes a cada gasto.
               </p>

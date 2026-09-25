@@ -1401,6 +1401,15 @@ export interface InvoiceReportData {
 
 
 
+export interface ExpenseItem {
+  id: string;
+  date: string;
+  description: string;
+  categoryId: string;
+  categoryName: string;
+  amount: number;
+}
+
 export interface ActivitySummary {
   incomeThisMonth: number;
   incomeLastMonth: number;
@@ -1410,6 +1419,14 @@ export interface ActivitySummary {
   expenseThisYear: number;
   monthlyChart: Array<{ month: string; ingresos: number; gastos: number }>;
   topExpenseCategories: Array<{ categoryId: string; name: string; amount: number }>;
+  monthlyExpenseCategories: Array<{
+    month: string;
+    categories: Array<{ categoryId: string; name: string; amount: number }>;
+  }>;
+  monthlyExpenses: Array<{
+    month: string;
+    expenses: ExpenseItem[];
+  }>;
 }
 
 export interface AgencyClientRelation {

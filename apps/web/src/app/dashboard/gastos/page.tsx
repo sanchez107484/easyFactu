@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +45,12 @@ import {
   Calendar,
   User,
   Repeat,
+  Check,
+  Zap,
+  ArrowRight,
+  ReceiptText,
+  PiggyBank,
+  TrendingUp,
 } from 'lucide-react';
 import { Expense, ExpenseCategory, Supplier, Customer, QueryExpensesInput } from '@easyfactura/shared-types';
 import {
@@ -59,6 +66,7 @@ import { useSortTable } from '@/hooks/use-sort-table';
 import { useHasProfessionalPlan } from '@/hooks/use-current-plan';
 import { SortableHeader } from '@/components/common/sortable-header';
 import { EmptyState } from '@/components/common/empty-state';
+import { PRICING } from '@easyfactura/brand-config';
 
 // ==================== HELPERS ====================
 
@@ -117,9 +125,9 @@ function SummaryCards({ monthTotal, yearTotal, isLoading }: { monthTotal: number
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Este mes</p>
-            <p className="text-2xl font-bold tabular-nums">
+            <div className="text-2xl font-bold tabular-nums">
               {isLoading ? <Skeleton className="h-8 w-28" /> : formatCurrency(monthTotal)}
-            </p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -130,12 +138,84 @@ function SummaryCards({ monthTotal, yearTotal, isLoading }: { monthTotal: number
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Este año</p>
-            <p className="text-2xl font-bold tabular-nums">
+            <div className="text-2xl font-bold tabular-nums">
               {isLoading ? <Skeleton className="h-8 w-28" /> : formatCurrency(yearTotal)}
-            </p>
+            </div>
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function UpgradeBanner({ isEmpty }: { isEmpty: boolean }) {
+  const proPrice = PRICING.pro.monthly;
+  const proAnnualPrice = PRICING.pro.annualMonthly;
+  const annualSaving = PRICING.pro.annualSaving;
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-primary/10 shadow-sm">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,var(--primary)/5,transparent_50%)]" />
+      <div className="relative p-6 md:p-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-3">
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 gap-1">
+                <Zap className="h-3 w-3" />
+                Plan PRO
+              </Badge>
+              <span className="text-xs text-muted-foreground">Solo {proPrice}€/mes</span>
+            </div>
+            <h3 className="text-xl font-semibold mb-2">
+              {isEmpty
+                ? 'Empieza a controlar tus gastos'
+                : 'Desbloquea toda la potencia de Gestión de Gastos'}
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4 max-w-lg">
+              {isEmpty
+                ? 'Registra cada gasto deducible y optimiza tu IRPF. Todo preparado para tu declaración trimestral.'
+                : 'Con el plan PRO puedes añadir, editar y eliminar gastos. Sin límites.'}
+            </p>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
+              {[
+                { icon: ReceiptText, text: 'Gastos deducibles de IRPF' },
+                { icon: PiggyBank, text: 'Control total de tu fiscalité' },
+                { icon: TrendingUp, text: 'Análisis de rentabilidad' },
+                { icon: Check, text: 'Sin límite de registros' },
+              ].map(({ icon: Icon, text }) => (
+                <li key={text} className="flex items-center gap-2 text-sm">
+                  <Icon className="h-4 w-4 text-primary shrink-0" />
+                  <span>{text}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link href="/dashboard/ajustes/plan">
+                <Button>
+                  Pasar a PRO
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+              <span className="text-sm text-muted-foreground">
+                <span className="font-semibold text-foreground">{proAnnualPrice}€/mes</span>{' '}
+                facturado anualmente · Ahorra {annualSaving}€
+              </span>
+            </div>
+          </div>
+          <div className="flex-shrink-0 flex flex-col items-center justify-center p-6 bg-background/80 rounded-xl border border-primary/10 shadow-sm">
+            <p className="text-xs text-muted-foreground mb-1">Precio PRO</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-4xl font-bold">{proPrice}</span>
+              <span className="text-muted-foreground">€</span>
+            </div>
+            <p className="text-sm text-muted-foreground">/mes</p>
+            <div className="mt-2 text-xs text-center">
+              <span className="text-green-600 font-medium">Ahorra {annualSaving}€/año</span>
+              <p className="text-muted-foreground">con facturación anual</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -275,23 +355,7 @@ export default function GastosPage() {
         />
 
         {!canWrite ? (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-14 text-center">
-              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
-                <Receipt className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <p className="text-sm font-medium">No hay gastos registrados</p>
-              <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-                El registro de gastos está disponible en el plan PRO. Actualiza tu suscripción para
-                empezar.
-              </p>
-              <Link href="/dashboard/ajustes/plan">
-                <Button className="mt-4">
-                  Ver planes
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+          <UpgradeBanner isEmpty={true} />
         ) : (
           <EmptyState
             icon={Receipt}
@@ -355,18 +419,7 @@ export default function GastosPage() {
 
         {/* Read-only banner */}
         {!canWrite && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3 text-sm dark:border-amber-900 dark:bg-amber-950/20">
-            <p className="font-medium text-amber-800 dark:text-amber-300">
-              Modo solo lectura
-            </p>
-            <p className="text-amber-700/80 dark:text-amber-400/80">
-              Tu plan actual no permite crear, editar ni eliminar gastos.{' '}
-              <Link href="/dashboard/ajustes/plan" className="underline font-medium">
-                Actualiza a PRO
-              </Link>{' '}
-              para recuperar el control.
-            </p>
-          </div>
+          <UpgradeBanner isEmpty={false} />
         )}
 
         {/* Summary */}

@@ -11,6 +11,7 @@ import {
   SlidersHorizontal,
   Settings,
   UserCircle,
+  CreditCard,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth-store';
 import { AccountType } from '@easyfactura/shared-types';
@@ -45,6 +46,11 @@ const BASE_SECTIONS = [
     title: 'Plantilla PDF',
     href: '/dashboard/ajustes/plantilla',
     icon: LayoutTemplate,
+  },
+  {
+    title: 'Plan',
+    href: '/dashboard/ajustes/plan',
+    icon: CreditCard,
   },
 ];
 

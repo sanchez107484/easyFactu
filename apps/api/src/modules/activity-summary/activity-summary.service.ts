@@ -35,6 +35,22 @@ interface CategoryRow {
   amount: string | null;
 }
 
+interface MonthlyCategoryRow {
+  month: number;
+  categoryId: string;
+  name: string;
+  amount: string | null;
+}
+
+interface ExpenseDetailRow {
+  id: string;
+  date: Date;
+  description: string;
+  categoryId: string;
+  categoryName: string;
+  amount: string | null;
+}
+
 interface KpiRow {
   this_month: string | null;
   last_month: string | null;
@@ -65,6 +81,8 @@ export class ActivitySummaryService {
       expenseKpiRows,
       expenseMonthlyRows,
       categoryRows,
+      monthlyCategoryRows,
+      expenseDetailRows,
     ] = await Promise.all([
       this.prisma.$queryRaw<KpiRow[]>`
         SELECT
@@ -118,6 +136,35 @@ export class ActivitySummaryService {
         ORDER BY SUM(e.total_amount) DESC NULLS LAST
         LIMIT 5
       `,
+      this.prisma.$queryRaw<MonthlyCategoryRow[]>`
+        SELECT
+          EXTRACT(MONTH FROM e.date)::int AS month,
+          e.category_id AS "categoryId",
+          COALESCE(ec.name, 'Sin categoría') AS name,
+          SUM(e.total_amount)::text AS amount
+        FROM expenses e
+        LEFT JOIN expense_categories ec ON ec.id = e.category_id
+        WHERE e.tenant_id = ${tenantId}
+          AND e.date >= ${yearStart}
+          AND e.date < ${yearEnd}
+        GROUP BY EXTRACT(MONTH FROM e.date), e.category_id, ec.name
+        ORDER BY month, SUM(e.total_amount) DESC NULLS LAST
+      `,
+      this.prisma.$queryRaw<ExpenseDetailRow[]>`
+        SELECT
+          e.id,
+          e.date,
+          e.description,
+          e.category_id AS "categoryId",
+          COALESCE(ec.name, 'Sin categoría') AS "categoryName",
+          e.total_amount::text AS amount
+        FROM expenses e
+        LEFT JOIN expense_categories ec ON ec.id = e.category_id
+        WHERE e.tenant_id = ${tenantId}
+          AND e.date >= ${yearStart}
+          AND e.date < ${yearEnd}
+        ORDER BY e.date DESC
+      `,
     ]);
 
     const incomeKpi = incomeKpiRows[0];
@@ -145,6 +192,58 @@ export class ActivitySummaryService {
       amount: Math.round(Number(row.amount ?? 0) * 100) / 100,
     }));
 
+    const monthlyExpenseCategoriesMap = new Map<number, Map<string, { categoryId: string; name: string; amount: number }>>();
+    for (const row of monthlyCategoryRows) {
+      const monthIndex = row.month - 1;
+      if (!monthlyExpenseCategoriesMap.has(monthIndex)) {
+        monthlyExpenseCategoriesMap.set(monthIndex, new Map());
+      }
+      const categoryMap = monthlyExpenseCategoriesMap.get(monthIndex)!;
+      const existing = categoryMap.get(row.categoryId);
+      const amount = Math.round(Number(row.amount ?? 0) * 100) / 100;
+      if (existing) {
+        existing.amount += amount;
+      } else {
+        categoryMap.set(row.categoryId, {
+          categoryId: row.categoryId,
+          name: row.name,
+          amount,
+        });
+      }
+    }
+
+    const monthlyExpenseCategories = Array.from({ length: 12 }, (_, i) => {
+      const categoryMap = monthlyExpenseCategoriesMap.get(i);
+      const categories = categoryMap
+        ? Array.from(categoryMap.values()).sort((a, b) => b.amount - a.amount).slice(0, 6)
+        : [];
+      return {
+        month: MONTH_NAMES[i]!,
+        categories,
+      };
+    });
+
+    const monthlyExpensesMap = new Map<number, Array<{ id: string; date: string; description: string; categoryId: string; categoryName: string; amount: number }>>();
+    for (const row of expenseDetailRows) {
+      const monthIndex = row.date.getMonth();
+      if (!monthlyExpensesMap.has(monthIndex)) {
+        monthlyExpensesMap.set(monthIndex, []);
+      }
+      monthlyExpensesMap.get(monthIndex)!.push({
+        id: row.id,
+        date: row.date.toISOString().split('T')[0]!,
+        description: row.description,
+        categoryId: row.categoryId,
+        categoryName: row.categoryName,
+        amount: Math.round(Number(row.amount ?? 0) * 100) / 100,
+      });
+    }
+
+    const monthlyExpenses = Array.from({ length: 12 }, (_, i) => ({
+      month: MONTH_NAMES[i]!,
+      expenses: monthlyExpensesMap.get(i) ?? [],
+    }));
+
     return {
       incomeThisMonth: Math.round(Number(incomeKpi?.this_month ?? 0) * 100) / 100,
       incomeLastMonth: Math.round(Number(incomeKpi?.last_month ?? 0) * 100) / 100,
@@ -154,6 +253,8 @@ export class ActivitySummaryService {
       expenseThisYear: Math.round(Number(expenseKpi?.this_year ?? 0) * 100) / 100,
       monthlyChart,
       topExpenseCategories,
+      monthlyExpenseCategories,
+      monthlyExpenses,
     };
   }
 }
