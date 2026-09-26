@@ -497,27 +497,6 @@ export function ExpenseForm({
 
   const isLoading = isCategoriesLoading;
 
-  if (isLoading) {
-    return (
-      <div className="pb-10">
-        <div className="flex items-center gap-3 mb-8">
-          <Skeleton className="h-9 w-9 rounded-lg" />
-          <div className="space-y-1.5">
-            <Skeleton className="h-7 w-56" />
-            <Skeleton className="h-4 w-80" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Skeleton className="h-64 w-full rounded-xl" />
-            <Skeleton className="h-48 w-full rounded-xl" />
-          </div>
-          <Skeleton className="h-80 w-full rounded-xl" />
-        </div>
-      </div>
-    );
-  }
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isPending || readOnly) return;
@@ -546,6 +525,27 @@ export function ExpenseForm({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [form, isPending, readOnly, isRecurring, mode]);
+
+  if (isLoading) {
+    return (
+      <div className="pb-10">
+        <div className="flex items-center gap-3 mb-8">
+          <Skeleton className="h-9 w-9 rounded-lg" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-7 w-56" />
+            <Skeleton className="h-4 w-80" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-64 w-full rounded-xl" />
+            <Skeleton className="h-48 w-full rounded-xl" />
+          </div>
+          <Skeleton className="h-80 w-full rounded-xl" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-10">
