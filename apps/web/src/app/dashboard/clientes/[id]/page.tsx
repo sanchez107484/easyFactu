@@ -234,6 +234,8 @@ export default function ClienteDetailPage() {
     .filter(isActiveForStats)
     .reduce((sum, inv) => sum + Number(inv.total), 0);
 
+  const issuedInvoicesCount = invoices.filter(isActiveForStats).length;
+
   const paidInvoiced = invoices
     .filter((inv) => inv.status === InvoiceStatus.PAID)
     .reduce((sum, inv) => sum + Number(inv.total), 0);
@@ -366,7 +368,7 @@ export default function ClienteDetailPage() {
           icon={TrendingUp}
           label="Total facturado"
           value={formatCurrency(totalInvoiced)}
-          sub={`${invoices.filter((i) => i.status !== InvoiceStatus.DRAFT).length} facturas emitidas`}
+          sub={`${issuedInvoicesCount} factura${issuedInvoicesCount !== 1 ? 's' : ''} emitida${issuedInvoicesCount !== 1 ? 's' : ''}`}
           color="bg-customer-50 text-customer-600 dark:bg-customer-950/50 dark:text-customer-400"
         />
         <StatCard
