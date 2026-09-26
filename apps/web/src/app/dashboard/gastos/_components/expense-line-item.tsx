@@ -10,11 +10,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Receipt, Euro, Percent, Calculator } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { round2 } from '@/lib/math';
 import { ExpenseCategory } from '@easyfactura/shared-types';
 import { TAX_RATE_SELECT_OPTIONS } from '@easyfactura/shared-constants';
-import { round2 } from '@/lib/math';
-import { cn } from '@/lib/utils';
 import type { ExpenseFormData } from './expense-form';
 
 interface ExpenseLineItemProps {
@@ -22,12 +21,10 @@ interface ExpenseLineItemProps {
   categories: ExpenseCategory[];
   baseAmountRaw: string;
   totalRaw: string;
-  isTotalMode: boolean;
   onBaseAmountRawChange: (value: string) => void;
   onBaseAmountBlur: () => void;
   onTotalRawChange: (value: string) => void;
   onTotalBlur: () => void;
-  onIsTotalModeChange: (value: boolean) => void;
   onCategoryChange?: (categoryId: string) => void;
   isPending?: boolean;
   readOnly?: boolean;
@@ -38,24 +35,23 @@ export function ExpenseLineItem({
   categories,
   baseAmountRaw,
   totalRaw,
-  isTotalMode,
   onBaseAmountRawChange,
   onBaseAmountBlur,
   onTotalRawChange,
   onTotalBlur,
-  onIsTotalModeChange,
   onCategoryChange,
   isPending = false,
   readOnly = false,
 }: ExpenseLineItemProps) {
+  const priceMode = form.watch('_priceMode') ?? 'total';
+  const isTotalMode = priceMode === 'total';
   const baseAmount = form.watch('baseAmount') || 0;
   const vatRate = form.watch('vatRate') || 0;
   const vatAmount = round2(baseAmount * (vatRate / 100));
   const totalAmount = round2(baseAmount + vatAmount);
 
-  const formatCurrency = (amount: number) => {
-    return amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
-  };
+  const formatCurrency = (amount: number) =>
+    amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
 
   return (
     <div className="rounded-lg border border-primary/10 bg-background/80 overflow-hidden">
@@ -83,40 +79,24 @@ export function ExpenseLineItem({
 
         {/* Labels row */}
         <div className="flex items-center gap-2">
-          <div className="w-[120px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+          <div className="flex-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
             Categoría
           </div>
-          <div className={cn("flex-1 text-[10px] font-medium uppercase tracking-wide", isTotalMode ? "text-muted-foreground/50" : "text-muted-foreground")}>
-            {isTotalMode ? "Base (calculada)" : "Base imponible"}
+          <div className="w-[100px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+            Base imponible
           </div>
-          <div className="w-[100px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide text-center">
+          <div className="w-[80px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide text-center">
             IVA
           </div>
-          <div className="w-[110px] flex items-center justify-end gap-1">
-            <button
-              type="button"
-              onClick={() => !readOnly && !isPending && onIsTotalModeChange(!isTotalMode)}
-              className={cn(
-                "text-[10px] font-medium uppercase tracking-wide text-right transition-colors",
-                isTotalMode ? "text-primary" : "text-muted-foreground/50",
-                !readOnly && !isPending && "hover:text-primary cursor-pointer"
-              )}
-              disabled={isPending || readOnly}
-            >
-              {isTotalMode ? "Total" : "Total (calc.)"}
-            </button>
-            {!readOnly && !isPending && (
-              <div className="h-3.5 w-5 rounded-full bg-primary/20 flex items-center justify-center ml-1">
-                <div className={cn("h-2 w-2 rounded-full transition-transform", isTotalMode ? "bg-primary translate-x-1" : "bg-primary/40 -translate-x-1")} />
-              </div>
-            )}
+          <div className="w-[110px] text-[10px] font-medium text-muted-foreground uppercase tracking-wide text-right">
+            Total
           </div>
         </div>
 
         {/* Numbers row */}
         <div className="flex items-center gap-2">
           {/* Category */}
-          <div className="w-[120px]">
+          <div className="flex-1">
             <Select
               value={form.watch('categoryId')}
               onValueChange={(v) => {
@@ -142,17 +122,25 @@ export function ExpenseLineItem({
           </div>
 
           {/* Base amount */}
-          <div className="flex-1 relative">
+          <div className="w-[100px] relative">
             <Input
               type="text"
               inputMode="decimal"
               placeholder="0,00"
-              value={isTotalMode ? formatCurrency(baseAmount) : baseAmountRaw}
-              className={cn("h-9 pr-8 text-sm", isTotalMode && "bg-muted/30 border-dashed cursor-default")}
-              disabled={isPending || readOnly || isTotalMode}
-              onChange={(e) => !isTotalMode && onBaseAmountRawChange(e.target.value)}
-              onBlur={() => !isTotalMode && onBaseAmountBlur()}
-              readOnly={isTotalMode}
+              value={baseAmountRaw}
+              className="h-9 pr-8 text-sm"
+              disabled={isPending || readOnly}
+              onChange={(e) => {
+                onBaseAmountRawChange(e.target.value);
+                const normalized = e.target.value.replace(',', '.');
+                const num = parseFloat(normalized);
+                if (!isNaN(num) && num >= 0) {
+                  form.setValue('baseAmount', num, { shouldValidate: false });
+                  const newTotal = round2(num * (1 + vatRate / 100));
+                  onTotalRawChange(newTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                }
+              }}
+              onBlur={() => onBaseAmountBlur()}
             />
             <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
               €
@@ -160,10 +148,15 @@ export function ExpenseLineItem({
           </div>
 
           {/* VAT */}
-          <div className="w-[100px]">
+          <div className="w-[80px]">
             <Select
               value={String(form.watch('vatRate') ?? 21)}
-              onValueChange={(v) => form.setValue('vatRate', parseFloat(v))}
+              onValueChange={(v) => {
+                const newVat = parseFloat(v);
+                form.setValue('vatRate', newVat);
+                const currentTotal = round2(baseAmount * (1 + newVat / 100));
+                onTotalRawChange(currentTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+              }}
               disabled={isPending || readOnly}
             >
               <SelectTrigger className="h-9 text-sm justify-center">
@@ -185,11 +178,21 @@ export function ExpenseLineItem({
               type="text"
               inputMode="decimal"
               placeholder="0,00"
-              value={isTotalMode ? totalRaw : formatCurrency(totalAmount)}
-              className={cn("h-9 pr-8 text-sm text-right font-semibold", !isTotalMode && "bg-transparent border-dashed cursor-default")}
-              disabled={isPending || readOnly || !isTotalMode}
-              onChange={(e) => isTotalMode && onTotalRawChange(e.target.value)}
-              onBlur={() => isTotalMode && onTotalBlur()}
+              value={totalRaw}
+              className="h-9 pr-8 text-sm text-right font-semibold"
+              disabled={isPending || readOnly}
+              onChange={(e) => {
+                onTotalRawChange(e.target.value);
+                const raw = e.target.value;
+                const normalized = raw.replace(',', '.');
+                const num = parseFloat(normalized);
+                if (!isNaN(num) && num >= 0) {
+                  const calculatedBase = round2(num / (1 + vatRate / 100));
+                  form.setValue('baseAmount', calculatedBase, { shouldValidate: true });
+                  onBaseAmountRawChange(calculatedBase.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                }
+              }}
+              onBlur={() => onTotalBlur()}
             />
             <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
               €

@@ -85,6 +85,7 @@ const expenseSchema = z.object({
   recurringDayOfMonth: z.coerce.number().min(1).max(28).optional(),
   recurringStartDate: z.string().optional(),
   recurringEndDate: z.string().optional().nullable(),
+  _priceMode: z.enum(['unit', 'total']).default('total'),
 });
 
 export type ExpenseFormData = z.infer<typeof expenseSchema>;
@@ -298,12 +299,12 @@ export function ExpenseForm({
       recurringDayOfMonth: 1,
       recurringStartDate: new Date().toISOString().split('T')[0],
       recurringEndDate: null,
+      _priceMode: 'total' as const,
     },
   });
 
   const [baseAmountRaw, setBaseAmountRaw] = useState<string>('');
   const [totalRaw, setTotalRaw] = useState<string>('');
-  const [isTotalMode, setIsTotalMode] = useState<boolean>(false);
   const [showQuickCustomer, setShowQuickCustomer] = useState(false);
   const [showQuickSupplier, setShowQuickSupplier] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -345,26 +346,12 @@ export function ExpenseForm({
         recurringDayOfMonth: 1,
         recurringStartDate: new Date().toISOString().split('T')[0],
         recurringEndDate: null,
+        _priceMode: 'total',
       });
       setBaseAmountRaw(base > 0 ? formatBaseAmount(base) : '');
       setTotalRaw(base > 0 ? formatTotal(round2(base * (1 + vat / 100))) : '');
     }
   }, [expense, form]);
-
-  useEffect(() => {
-    if (isTotalMode) {
-      const total = form.getValues('baseAmount') || 0;
-      if (total > 0) {
-        setBaseAmountRaw(formatBaseAmount(round2(total / (1 + vatRate / 100))));
-      }
-    } else {
-      const base = form.getValues('baseAmount') || 0;
-      if (base > 0) {
-        setTotalRaw(formatTotal(round2(base * (1 + vatRate / 100))));
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vatRate, isTotalMode]);
 
   useEffect(() => {
     if (mode !== 'create' || draftRestored) return;
@@ -389,13 +376,11 @@ export function ExpenseForm({
             recurringDayOfMonth: draft.recurringDayOfMonth || 1,
             recurringStartDate: draft.recurringStartDate || new Date().toISOString().split('T')[0],
             recurringEndDate: draft.recurringEndDate || null,
+            _priceMode: 'total',
           });
           if (draft.baseAmount) {
             setBaseAmountRaw(formatBaseAmount(draft.baseAmount));
             setTotalRaw(formatTotal(round2(draft.baseAmount * (1 + (draft.vatRate || 21) / 100))));
-          }
-          if (draft.isRecurring) {
-            setIsTotalMode(draft.isRecurring);
           }
           setDraftRestored(true);
         }
@@ -629,43 +614,6 @@ export function ExpenseForm({
           </div>
         )}
 
-        <div className="mb-6">
-          <div className="flex items-center justify-between gap-2">
-            {[
-              { label: 'Concepto', icon: Receipt },
-              { label: 'Proveedor', icon: User },
-              { label: 'Notas', icon: FileText },
-              { label: 'Listo', icon: Calculator },
-            ].map((step, i) => {
-              const isActive = i === 0;
-              const Icon = step.icon;
-              return (
-                <div key={i} className="flex items-center">
-                  <div className="flex items-center gap-2">
-                    <div className={cn(
-                      "flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium transition-all",
-                      isActive ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground"
-                    )}>
-                      {isActive ? <Icon className="h-3.5 w-3.5" /> : i + 1}
-                    </div>
-                    <span className={cn(
-                      "text-xs font-medium hidden sm:block",
-                      isActive ? "text-primary" : "text-muted-foreground"
-                    )}>
-                      {step.label}
-                    </span>
-                  </div>
-                  {i < 3 && (
-                    <div className={cn(
-                      "h-px w-8 sm:w-12 mx-2 bg-muted",
-                    )} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main form */}
           <div className="lg:col-span-2 space-y-6">
@@ -747,10 +695,8 @@ export function ExpenseForm({
                   categories={sortedCategories}
                   baseAmountRaw={baseAmountRaw}
                   totalRaw={totalRaw}
-                  isTotalMode={isTotalMode}
                   onBaseAmountRawChange={setBaseAmountRaw}
                   onTotalRawChange={setTotalRaw}
-                  onIsTotalModeChange={setIsTotalMode}
                   onCategoryChange={trackCategoryUsage}
                   onBaseAmountBlur={() => {
                     const num = parseFloat(baseAmountRaw.replace(',', '.'));
@@ -778,7 +724,6 @@ export function ExpenseForm({
                       form.setValue('baseAmount', 0, { shouldValidate: true });
                     } else {
                       const calculatedBase = round2(num / (1 + vatRate / 100));
-                      const calculatedVat = round2(num - calculatedBase);
                       setTotalRaw(new Intl.NumberFormat('es-ES', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
