@@ -2,9 +2,9 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ExpenseAttachmentStorageService } from './expense-attachment-storage.service';
 import type { Express } from 'express';
 import { randomUUID } from 'crypto';
 
@@ -19,7 +19,10 @@ const ALLOWED_MIME_TYPES = [
 
 @Injectable()
 export class ExpenseAttachmentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: ExpenseAttachmentStorageService
+  ) {}
 
   async upload(
     tenantId: string,
@@ -33,8 +36,10 @@ export class ExpenseAttachmentsService {
       await this.verifyExpenseOwnership(tenantId, dto.expenseId);
     }
 
-    const dataUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
-    const storageKey = `${tenantId}/${randomUUID()}-${this.sanitizeFileName(file.originalname)}`;
+    const attachmentId = randomUUID();
+    const storagePath = this.storage.buildPath(tenantId, attachmentId);
+
+    await this.storage.upload(tenantId, attachmentId, file.buffer, file.mimetype);
 
     const attachment = await this.prisma.expenseAttachment.create({
       data: {
@@ -43,8 +48,7 @@ export class ExpenseAttachmentsService {
         fileName: file.originalname,
         mimeType: file.mimetype,
         size: file.size,
-        storageKey,
-        content: dataUrl,
+        storageKey: storagePath,
       },
     });
 
@@ -70,7 +74,10 @@ export class ExpenseAttachmentsService {
     return this.toResponse(attachment);
   }
 
-  async download(tenantId: string, id: string): Promise<{ buffer: Buffer; mimeType: string; fileName: string }> {
+  async download(
+    tenantId: string,
+    id: string
+  ): Promise<{ buffer: Buffer; mimeType: string; fileName: string }> {
     const attachment = await this.prisma.expenseAttachment.findFirst({
       where: { id, tenantId },
     });
@@ -79,11 +86,12 @@ export class ExpenseAttachmentsService {
       throw new NotFoundException('Adjunto no encontrado');
     }
 
-    if (!attachment.content) {
+    const buffer = await this.storage.download(attachment.storageKey);
+
+    if (!buffer) {
       throw new NotFoundException('El contenido del adjunto no está disponible');
     }
 
-    const buffer = this.dataUrlToBuffer(attachment.content);
     return { buffer, mimeType: attachment.mimeType, fileName: attachment.fileName };
   }
 
@@ -96,7 +104,8 @@ export class ExpenseAttachmentsService {
       throw new NotFoundException('Adjunto no encontrado');
     }
 
-    // Unlink from any expense before deleting
+    await this.storage.delete(attachment.storageKey);
+
     await this.prisma.expense.updateMany({
       where: { attachmentId: id, tenantId },
       data: { attachmentId: null },
@@ -134,18 +143,6 @@ export class ExpenseAttachmentsService {
         'Formato no permitido. Usa JPG, PNG, WEBP, GIF o PDF'
       );
     }
-  }
-
-  private sanitizeFileName(name: string): string {
-    return name.replace(/[^a-zA-Z0-9.\-_]/g, '_').substring(0, 100);
-  }
-
-  private dataUrlToBuffer(dataUrl: string): Buffer {
-    const base64 = dataUrl.split(',')[1];
-    if (!base64) {
-      throw new BadRequestException('Contenido del adjunto inválido');
-    }
-    return Buffer.from(base64, 'base64');
   }
 
   private toResponse(attachment: {
