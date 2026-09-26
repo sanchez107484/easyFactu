@@ -227,17 +227,8 @@ export default function ClienteDetailPage() {
     getInvoiceSortValue,
   );
 
-  // ── Stats ──────────────────────────────────────────────
-  // An invoice is active if it contributes to the customer's real outstanding total.
-  // Rules:
-  //   - DRAFT: never count (not issued)
-  //   - RECTIFIED: superseded by a SUBSTITUTION → don't count
-  //   - CONFIRMED/SENT/PAID: count
-  const isActiveForStats = (inv: Invoice) => {
-    if (inv.status === InvoiceStatus.DRAFT) return false;
-    if (inv.status === InvoiceStatus.RECTIFIED) return false;
-    return true;
-  };
+  const isActiveForStats = (inv: Invoice) =>
+    [InvoiceStatus.CONFIRMED, InvoiceStatus.SENT, InvoiceStatus.PAID].includes(inv.status);
 
   const totalInvoiced = invoices
     .filter(isActiveForStats)
