@@ -604,7 +604,6 @@ export function ExpenseForm({
                 });
                 setBaseAmountRaw('');
                 setTotalRaw('');
-                setIsTotalMode(false);
                 setDraftRestored(false);
               }}
               className="text-xs text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300 underline bg-transparent border-0 cursor-pointer"

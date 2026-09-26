@@ -315,7 +315,7 @@ export default function ProveedoresPage() {
 
         {/* Stat cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setStatusFilter('ALL')}>
+          <Card>
             <CardContent className="p-4 flex items-center gap-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 shrink-0">
                 <TruckIcon className="h-5 w-5" />
@@ -326,7 +326,7 @@ export default function ProveedoresPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setStatusFilter('ACTIVE')}>
+          <Card>
             <CardContent className="p-4 flex items-center gap-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 shrink-0">
                 <CheckCircle className="h-5 w-5" />
@@ -337,7 +337,7 @@ export default function ProveedoresPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setStatusFilter('INACTIVE')}>
+          <Card>
             <CardContent className="p-4 flex items-center gap-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground shrink-0">
                 <TruckIcon className="h-5 w-5" />
