@@ -1128,6 +1128,8 @@ export interface Supplier {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  expenseCount?: number;
+  totalExpenses?: number;
 }
 
 export interface ExpenseAttachment {

@@ -71,6 +71,7 @@ import {
   Download,
   Trash,
   CheckCircle2,
+  Copy,
 } from 'lucide-react';
 import {
   BarChart,
@@ -379,13 +380,14 @@ interface ExpenseCardProps {
   expense: Expense;
   onDelete: (expense: Expense) => void;
   onView: (expense: Expense) => void;
+  onDuplicate: (expense: Expense) => void;
   canWrite: boolean;
   onPrefetch: (id: string) => void;
   isSelected?: boolean;
   onToggleSelect?: () => void;
 }
 
-function ExpenseCard({ expense, onDelete, onView, canWrite, onPrefetch, isSelected, onToggleSelect }: ExpenseCardProps) {
+function ExpenseCard({ expense, onDelete, onView, onDuplicate, canWrite, onPrefetch, isSelected, onToggleSelect }: ExpenseCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -451,6 +453,10 @@ function ExpenseCard({ expense, onDelete, onView, canWrite, onPrefetch, isSelect
                       <Edit className="mr-2 h-4 w-4" />
                       Editar
                     </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onDuplicate(expense)}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Duplicar
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -523,13 +529,14 @@ interface MonthGroupProps {
   expenses: Expense[];
   onDelete: (expense: Expense) => void;
   onView: (expense: Expense) => void;
+  onDuplicate: (expense: Expense) => void;
   canWrite: boolean;
   onPrefetch: (id: string) => void;
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
 }
 
-function MonthGroup({ month, year, expenses, onDelete, onView, canWrite, onPrefetch, selectedIds, onToggleSelect }: MonthGroupProps) {
+function MonthGroup({ month, year, expenses, onDelete, onView, onDuplicate, canWrite, onPrefetch, selectedIds, onToggleSelect }: MonthGroupProps) {
   const total = expenses.reduce((s, e) => s + e.totalAmount, 0);
 
   return (
@@ -550,6 +557,7 @@ function MonthGroup({ month, year, expenses, onDelete, onView, canWrite, onPrefe
             expense={expense}
             onDelete={onDelete}
             onView={onView}
+            onDuplicate={onDuplicate}
             canWrite={canWrite}
             onPrefetch={onPrefetch}
             isSelected={selectedIds.has(expense.id)}
@@ -1325,6 +1333,7 @@ export default function GastosPage() {
                     expenses={expenses}
                     onDelete={setExpenseToDelete}
                     onView={setSelectedExpense}
+                    onDuplicate={(expense) => router.push(`/dashboard/gastos/nuevo?duplicate=${expense.id}`)}
                     canWrite={canWrite}
                     onPrefetch={prefetchExpense}
                     selectedIds={selectedIds}
@@ -1396,6 +1405,10 @@ export default function GastosPage() {
                                         <Edit className="mr-2 h-4 w-4" />
                                         Editar
                                       </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/gastos/nuevo?duplicate=${expense.id}`)}>
+                                      <Copy className="mr-2 h-4 w-4" />
+                                      Duplicar
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem

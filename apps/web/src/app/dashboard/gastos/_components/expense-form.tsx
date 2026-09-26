@@ -332,8 +332,8 @@ export function ExpenseForm({
       const base = Number(expense.baseAmount) || 0;
       const vat = Number(expense.vatRate) || 21;
       form.reset({
-        date: expense.date.slice(0, 10),
-        description: expense.description,
+        date: new Date().toISOString().split('T')[0],
+        description: `Copia de ${expense.description}`,
         categoryId: expense.categoryId,
         supplierId: expense.supplierId ?? '',
         clientId: expense.clientId ?? '',

@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/use-debounce';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +36,9 @@ import {
   AlertCircle,
   Truck,
   X,
+  ChevronRight,
+  TruckIcon,
+  CheckCircle,
 } from 'lucide-react';
 import { Supplier, QuerySuppliersInput } from '@easyfactura/shared-types';
 import { useSuppliers, useDeleteSupplier, usePrefetchSupplier } from '@/hooks/use-suppliers';
@@ -41,6 +46,46 @@ import { useSortTable } from '@/hooks/use-sort-table';
 import { useHasProfessionalPlan } from '@/hooks/use-current-plan';
 import { SortableHeader } from '@/components/common/sortable-header';
 import { EmptyState } from '@/components/common/empty-state';
+import { cn, formatCurrency } from '@/lib/utils';
+
+function getInitials(name: string): string {
+  const words = name.trim().split(/\s+/);
+  if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+}
+
+const AVATAR_COLORS = [
+  'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+  'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
+  'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+  'bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300',
+  'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300',
+];
+
+function getAvatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function Avatar({ name, size = 'sm' }: { name: string; size?: 'sm' | 'md' }) {
+  const sizeClass = size === 'sm' ? 'h-8 w-8 text-xs' : 'h-10 w-10 text-sm';
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-center rounded-full font-semibold shrink-0 select-none',
+        sizeClass,
+        getAvatarColor(name),
+      )}
+      title={name}
+    >
+      {getInitials(name)}
+    </div>
+  );
+}
 
 // ==================== SUB-COMPONENTS ====================
 
@@ -112,29 +157,34 @@ function DeleteDialog({ supplier, onCancel, onConfirm, isPending }: DeleteDialog
 // ==================== PAGE ====================
 
 export default function ProveedoresPage() {
+  const router = useRouter();
   const [searchInput, setSearchInput] = useState('');
   const search = useDebounce(searchInput, 300);
-  const [page, setPage] = useState(1);
   const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const { sortKey, sortDir, handleSort } = useSortTable('name', 'asc');
-
-  useEffect(() => {
-    setPage(1);
-  }, [search, sortKey, sortDir]);
 
   const { data, isLoading, error, refetch } = useSuppliers({
     search: search || undefined,
     sortBy: sortKey as QuerySuppliersInput['sortBy'],
     sortOrder: sortDir,
-    page,
-    limit: 10,
+    limit: 100,
+    limit: 100,
   });
 
   const deleteMutation = useDeleteSupplier();
   const prefetchSupplier = usePrefetchSupplier();
 
-  const suppliers = data?.data ?? [];
-  const total = data?.meta?.total ?? 0;
+  const allSuppliers = data?.data ?? [];
+  const filteredSuppliers = statusFilter === 'ALL'
+    ? allSuppliers
+    : statusFilter === 'ACTIVE'
+    ? allSuppliers.filter(s => s.isActive)
+    : allSuppliers.filter(s => !s.isActive);
+
+  const suppliers = filteredSuppliers;
+  const total = filteredSuppliers.length;
+  const activeCount = allSuppliers.filter(s => s.isActive).length;
   const canWrite = useHasProfessionalPlan();
 
   const handleDeleteConfirm = async () => {
@@ -230,7 +280,12 @@ export default function ProveedoresPage() {
               {isLoading ? (
                 <Skeleton className="h-4 w-32" />
               ) : (
-                `${total} proveedor${total !== 1 ? 'es' : ''} registrado${total !== 1 ? 's' : ''}`
+                <>
+                  {statusFilter !== 'ALL' || searchInput
+                    ? `${total} de ${allSuppliers.length} proveedor${allSuppliers.length !== 1 ? 'es' : ''}`
+                    : `${total} proveedor${total !== 1 ? 'es' : ''} registrado${total !== 1 ? 's' : ''}`
+                  }
+                </>
               )}
             </div>
           </div>
@@ -258,10 +313,48 @@ export default function ProveedoresPage() {
           </div>
         )}
 
+        {/* Stat cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card className="cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setStatusFilter('ALL')}>
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 shrink-0">
+                <TruckIcon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{allSuppliers.length}</p>
+                <p className="text-xs text-muted-foreground">Proveedores</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setStatusFilter('ACTIVE')}>
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 shrink-0">
+                <CheckCircle className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{activeCount}</p>
+                <p className="text-xs text-muted-foreground">Activos</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setStatusFilter('INACTIVE')}>
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground shrink-0">
+                <TruckIcon className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{allSuppliers.length - activeCount}</p>
+                <p className="text-xs text-muted-foreground">Inactivos</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Filters */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex gap-3 flex-wrap">
+            <div className="flex gap-3 flex-wrap items-center">
+              {/* Search */}
               <div className="relative flex-1 min-w-48">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 <Input
@@ -270,7 +363,7 @@ export default function ProveedoresPage() {
                   onChange={(e) => setSearchInput(e.target.value)}
                   className="pl-9"
                 />
-                {search && (
+                {searchInput && (
                   <button
                     onClick={() => setSearchInput('')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
@@ -279,12 +372,25 @@ export default function ProveedoresPage() {
                   </button>
                 )}
               </div>
+
+              {/* Status filter pills */}
+              <div className="flex gap-1.5">
+                {(['ALL', 'ACTIVE', 'INACTIVE'] as const).map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setStatusFilter(status)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-full text-xs font-medium transition-colors',
+                      statusFilter === status
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                    )}
+                  >
+                    {status === 'ALL' ? 'Todos' : status === 'ACTIVE' ? 'Activos' : 'Inactivos'}
+                  </button>
+                ))}
+              </div>
             </div>
-            {search && !isLoading && (
-              <p className="text-xs text-muted-foreground mt-2">
-                {total} proveedor{total !== 1 ? 'es' : ''} encontrado{total !== 1 ? 's' : ''}
-              </p>
-            )}
           </CardContent>
         </Card>
 
@@ -339,6 +445,9 @@ export default function ProveedoresPage() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground hidden lg:table-cell">
                         Teléfono
                       </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground hidden xl:table-cell">
+                        Gastos
+                      </th>
                       <th className="px-4 py-3" />
                     </tr>
                   </thead>
@@ -346,60 +455,97 @@ export default function ProveedoresPage() {
                     {suppliers.map((supplier) => (
                       <tr
                         key={supplier.id}
-                        className="hover:bg-muted/30 transition-colors"
+                        className="hover:bg-muted/30 transition-colors cursor-pointer group"
+                        onClick={() => router.push(`/dashboard/proveedores/${supplier.id}`)}
                         onMouseEnter={() => prefetchSupplier(supplier.id)}
                         onFocus={() => prefetchSupplier(supplier.id)}
                       >
                         <td className="px-4 py-3">
-                          <span className="font-medium">{supplier.name}</span>
-                          {supplier.legalName && supplier.legalName !== supplier.name && (
-                            <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-48">
-                              {supplier.legalName}
-                            </p>
-                          )}
+                          <div className="flex items-center gap-3">
+                            <Avatar name={supplier.name} />
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium truncate max-w-[180px]">{supplier.name}</span>
+                                {!supplier.isActive && (
+                                  <Badge variant="secondary" className="text-[10px] shrink-0">Inactivo</Badge>
+                                )}
+                              </div>
+                              {supplier.legalName && supplier.legalName !== supplier.name && (
+                                <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                                  {supplier.legalName}
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-sm font-mono text-muted-foreground">
-                          {supplier.taxId ?? <span className="italic opacity-50">—</span>}
+                          <span title={supplier.taxId ?? undefined}>
+                            {supplier.taxId ?? <span className="italic opacity-50">—</span>}
+                          </span>
                         </td>
                         <td className="px-4 py-3 text-sm text-muted-foreground hidden md:table-cell">
-                          {supplier.email ?? <span className="italic opacity-50">—</span>}
+                          <span className="truncate block max-w-[160px]" title={supplier.email ?? undefined}>
+                            {supplier.email ?? <span className="italic opacity-50">—</span>}
+                          </span>
                         </td>
-                        <td className="px-4 py-3 text-sm hidden lg:table-cell">
-                          {supplier.phone ?? <span className="italic text-muted-foreground opacity-50">—</span>}
+                        <td className="px-4 py-3 text-sm text-muted-foreground hidden lg:table-cell">
+                          {supplier.phone ?? <span className="italic opacity-50">—</span>}
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          {canWrite ? (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild>
-                                  <Link
-                                    href={`/dashboard/proveedores/${supplier.id}`}
-                                    className="flex items-center"
-                                  >
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Editar
-                                  </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive"
-                                  onClick={() => setSupplierToDelete(supplier)}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Eliminar
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                        <td className="px-4 py-3 text-right hidden xl:table-cell">
+                          {supplier.expenseCount != null && supplier.expenseCount > 0 ? (
+                            <div className="flex flex-col items-end">
+                              <span className="text-sm font-semibold tabular-nums">
+                                {formatCurrency(supplier.totalExpenses ?? 0)}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {supplier.expenseCount} gasto{supplier.expenseCount !== 1 ? 's' : ''}
+                              </span>
+                            </div>
                           ) : (
-                            <Button variant="ghost" size="sm" className="h-8 px-2" asChild>
-                              <Link href={`/dashboard/proveedores/${supplier.id}`}>Ver</Link>
-                            </Button>
+                            <span className="text-xs text-muted-foreground italic opacity-50">—</span>
                           )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-2">
+                            <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                            {canWrite ? (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem asChild>
+                                    <Link
+                                      href={`/dashboard/proveedores/${supplier.id}/editar`}
+                                      className="flex items-center"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <Edit className="mr-2 h-4 w-4" />
+                                      Editar
+                                    </Link>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSupplierToDelete(supplier);
+                                    }}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Eliminar
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            ) : null}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -410,32 +556,12 @@ export default function ProveedoresPage() {
           </Card>
         )}
 
-        {/* Pagination */}
-        {!error && !isLoading && data && data.meta.totalPages > 1 && (
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>
-              Página {page} de {data.meta.totalPages} &middot; {total} proveedor
-              {total !== 1 ? 'es' : ''} en total
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => p - 1)}
-                disabled={page === 1}
-              >
-                Anterior
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= data.meta.totalPages}
-              >
-                Siguiente
-              </Button>
-            </div>
-          </div>
+        {/* Count footer */}
+        {!error && !isLoading && total > 0 && (
+          <p className="text-xs text-muted-foreground text-center">
+            Mostrando {total} proveedor{total !== 1 ? 'es' : ''}
+            {statusFilter !== 'ALL' || searchInput ? ' de los ' + allSuppliers.length + ' totales' : ''}
+          </p>
         )}
       </div>
     </>

@@ -56,12 +56,32 @@ export class SuppliersService {
         skip,
         take: limit,
         orderBy,
+        include: {
+          _count: { select: { expenses: true } },
+        },
       }),
       this.prisma.supplier.count({ where }),
     ]);
 
+    const supplierIds = data.map((s) => s.id);
+    const expenseStats = supplierIds.length
+      ? await this.prisma.expense.groupBy({
+          by: ['supplierId'],
+          where: { supplierId: { in: supplierIds }, tenantId },
+          _sum: { totalAmount: true },
+        })
+      : [];
+
+    const statsMap = new Map(expenseStats.map((s) => [s.supplierId, s._sum.totalAmount ?? 0]));
+
+    const dataWithStats = data.map((supplier) => ({
+      ...supplier,
+      expenseCount: supplier._count.expenses,
+      totalExpenses: statsMap.get(supplier.id) ?? 0,
+    }));
+
     return {
-      data,
+      data: dataWithStats,
       meta: {
         total,
         page,
