@@ -45,14 +45,19 @@ import {
   Receipt,
   Clock,
   Percent,
+  Euro,
+  Tag,
+  HelpCircle,
 } from 'lucide-react';
 import { useSortTable, sortData } from '@/hooks/use-sort-table';
 import { SortableHeader } from '@/components/common/sortable-header';
 import { InvoiceStatusBadge } from '@/components/common/invoice-status-badge';
 import { InvoiceStatusFilterPills } from '@/components/common/invoice-status-filter-pills';
-import { CustomerType, InvoiceStatus, RectificationType, Customer, Invoice } from '@easyfactura/shared-types';
+import { CustomerType, InvoiceStatus, RectificationType, Customer, Invoice, Expense } from '@easyfactura/shared-types';
 import { useCustomer, useDeleteCustomer } from '@/hooks/use-customers';
 import { useInvoices } from '@/hooks/use-invoices';
+import { useExpenses } from '@/hooks/use-expenses';
+import { useHasProfessionalPlan } from '@/hooks/use-current-plan';
 import { cn, formatCurrency } from '@/lib/utils';
 
 // ==================== CONSTANTS ====================
@@ -154,15 +159,23 @@ function StatCard({
   value,
   sub,
   color,
+  onClick,
 }: {
   icon: React.ElementType;
   label: string;
   value: string;
   sub?: string;
   color: string;
+  onClick?: () => void;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-xl border bg-card px-5 py-4">
+    <div
+      className={cn(
+        'flex items-center gap-4 rounded-xl border bg-card px-5 py-4',
+        onClick && 'cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-colors'
+      )}
+      onClick={onClick}
+    >
       <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-lg', color)}>
         <Icon className="h-5 w-5" />
       </div>
@@ -207,16 +220,24 @@ export default function ClienteDetailPage() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState<string>('ALL');
-  const { sortKey, sortDir, handleSort } = useSortTable('issueDate', 'desc');
+  const [activeTab, setActiveTab] = useState<'facturas' | 'gastos'>('facturas');
+  const { sortKey, sortDir, handleSort } = useSortTable('date', 'desc');
 
   const { data: customer, isLoading: loadingCustomer, isError } = useCustomer(id);
   const { data: invoicesData, isLoading: loadingInvoices } = useInvoices({
     customerId: id,
     limit: 100,
   });
+  const isProfessional = useHasProfessionalPlan();
+  const { data: expensesData, isLoading: loadingExpenses } = useExpenses({
+    clientId: id,
+    limit: 100,
+  });
   const deleteMutation = useDeleteCustomer();
 
   const invoices: Invoice[] = invoicesData?.data ?? [];
+  const expenses: Expense[] = expensesData?.data ?? [];
+  const hasExpenses = isProfessional && expenses.length > 0;
 
   const filteredInvoices = sortData(
     invoiceStatusFilter === 'ALL'
@@ -250,6 +271,9 @@ export default function ClienteDetailPage() {
   const lastInvoice = invoices
     .slice()
     .sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime())[0];
+
+  const totalExpensesAmount = expenses.reduce((sum, e) => sum + Number(e.totalAmount), 0);
+  const netoAmount = totalInvoiced - totalExpensesAmount;
 
   // ── Handlers ───────────────────────────────────────────
   const handleDelete = async () => {
@@ -370,7 +394,10 @@ export default function ClienteDetailPage() {
       </div>
 
       {/* ── Stats ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className={cn(
+        'grid gap-4',
+        hasExpenses ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'
+      )}>
         <StatCard
           icon={TrendingUp}
           label="Total facturado"
@@ -392,7 +419,37 @@ export default function ClienteDetailPage() {
           sub={lastInvoice ? (lastInvoice.number ?? undefined) : 'Sin facturas aún'}
           color="bg-customer-50 text-customer-600 dark:bg-customer-950/50 dark:text-customer-400"
         />
+        {hasExpenses && (
+          <StatCard
+            icon={Receipt}
+            label="Total gastos"
+            value={formatCurrency(totalExpensesAmount)}
+            sub={`${expenses.length} gasto${expenses.length !== 1 ? 's' : ''}`}
+            color="bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400"
+            onClick={() => setActiveTab('gastos')}
+          />
+        )}
       </div>
+
+      {/* ── neto insight ── */}
+      {hasExpenses && (
+        <div className="flex items-center justify-center gap-4 py-3 px-4 rounded-lg bg-muted/50 border text-sm">
+          <span className="text-muted-foreground">
+            Facturado: <span className="font-semibold text-foreground">{formatCurrency(totalInvoiced)}</span>
+          </span>
+          <span className="text-muted-foreground">—</span>
+          <span className="text-muted-foreground">
+            Gastos: <span className="font-semibold text-amber-600 dark:text-amber-400">{formatCurrency(totalExpensesAmount)}</span>
+          </span>
+          <span className="text-muted-foreground">=</span>
+          <span className="font-semibold text-foreground flex items-center gap-1">
+            Neto: {formatCurrency(netoAmount)}
+            <span title="Facturado menos gastos asociados a este cliente. Solo incluye facturas confirmadas/enviadas/pagadas.">
+              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+            </span>
+          </span>
+        </div>
+      )}
 
       {/* ── Main grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -458,8 +515,42 @@ export default function ClienteDetailPage() {
           </Card>
         </div>
 
-        {/* ── Right: Invoices ── */}
-        <div className="lg:col-span-2">
+        {/* ── Right: Invoices / Gastos ── */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Tab switcher */}
+          <div className="flex items-center gap-1 p-1 bg-muted rounded-lg w-fit">
+            <button
+              onClick={() => setActiveTab('facturas')}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
+                activeTab === 'facturas'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <FileText className="h-4 w-4" />
+              Facturas
+            </button>
+            <button
+              onClick={() => setActiveTab('gastos')}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all',
+                activeTab === 'gastos'
+                  ? 'bg-background text-amber-600 dark:text-amber-400 shadow-sm'
+                  : 'text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400'
+              )}
+            >
+              <Receipt className="h-4 w-4" />
+              Gastos
+              {hasExpenses && (
+                <span className="bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
+                  {expenses.length}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {activeTab === 'facturas' && (
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -601,6 +692,95 @@ export default function ClienteDetailPage() {
               )}
             </CardContent>
           </Card>
+          )}
+
+          {activeTab === 'gastos' && (
+            <Card className="border-amber-200 dark:border-amber-800">
+              <CardHeader className="pb-3 bg-amber-50/50 dark:bg-amber-950/20 rounded-t-lg">
+                <CardTitle className="text-base flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Receipt className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <span>Gastos</span>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-400">
+                    PRO
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {loadingExpenses ? (
+                  <div className="divide-y">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex items-center justify-between px-6 py-4 gap-4">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-4 w-20 hidden sm:block" />
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-20" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="border-b bg-muted/40">
+                        <tr className="text-xs">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground">Descripción</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground hidden sm:table-cell">Fecha</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Categoría</th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">Total</th>
+                          <th className="px-4 py-3" />
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {expenses.map((expense) => (
+                          <tr
+                            key={expense.id}
+                            className="hover:bg-muted/30 transition-colors group"
+                          >
+                            <td className="px-6 py-3">
+                              <Link
+                                href={`/dashboard/gastos/${expense.id}`}
+                                className="text-sm font-medium hover:text-primary transition-colors"
+                              >
+                                {expense.description}
+                              </Link>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground hidden sm:table-cell">
+                              {formatDate(expense.date)}
+                            </td>
+                            <td className="px-4 py-3">
+                              {expense.category ? (
+                                <Badge variant="secondary" className="text-xs gap-1">
+                                  <Tag className="h-3 w-3" />
+                                  {expense.category.name}
+                                </Badge>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-right text-sm font-semibold tabular-nums">
+                              {formatCurrency(expense.totalAmount)}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <Link href={`/dashboard/gastos/${expense.id}`}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                                >
+                                  Ver
+                                </Button>
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 

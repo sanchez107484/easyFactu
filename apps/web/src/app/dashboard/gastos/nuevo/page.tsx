@@ -13,6 +13,7 @@ function DuplicateExpenseForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const duplicateId = searchParams.get('duplicate');
+  const isDuplicating = !!duplicateId;
   const { data: expenseToDuplicate, isLoading } = useExpense(duplicateId ?? '');
   const createMutation = useCreateExpense();
   const createRecurringMutation = useCreateRecurringExpense();
@@ -52,7 +53,11 @@ function DuplicateExpenseForm() {
         endDate: data.recurringEndDate || null,
         notes: data.notes || null,
       });
-      toast.success('Gasto recurrente duplicado correctamente');
+      if (isDuplicating) {
+        toast.success('Gasto recurrente duplicado correctamente');
+      } else {
+        toast.success('Gasto recurrente creado correctamente');
+      }
       router.push('/dashboard/gastos');
     } else {
       const newExpense = await createMutation.mutateAsync({
@@ -66,9 +71,15 @@ function DuplicateExpenseForm() {
         notes: data.notes || null,
         attachmentId: attachmentId,
       });
-      toast.success('Gasto duplicado correctamente');
-      router.push(`/dashboard/gastos/${newExpense.id}`);
+      if (isDuplicating) {
+        toast.success('Gasto duplicado correctamente');
+        router.push(`/dashboard/gastos/${newExpense.id}`);
+      } else {
+        toast.success('Gasto creado correctamente');
+        router.push('/dashboard/gastos');
+      }
     }
+  };
 
   const isPending = createMutation.isPending || createRecurringMutation.isPending;
 
