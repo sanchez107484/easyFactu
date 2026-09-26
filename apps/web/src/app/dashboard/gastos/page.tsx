@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useDebounce } from '@/hooks/use-debounce';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -716,6 +717,7 @@ function UpgradeBanner({ isEmpty }: { isEmpty: boolean }) {
 }
 
 export default function GastosPage() {
+  const router = useRouter();
   const [searchInput, setSearchInput] = useState('');
   const search = useDebounce(searchInput, 300);
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
