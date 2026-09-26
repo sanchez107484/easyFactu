@@ -142,7 +142,7 @@ export default function ProveedorDetailPage() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sortKey, setSortKey] = useState<string>('date');
-  const [sortDir, setSortDir] = useState<string>('desc');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   const { data: supplier, isLoading: loadingSupplier, isError } = useSupplier(id);
   const { data: expensesData, isLoading: loadingExpenses } = useExpenses({

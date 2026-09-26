@@ -169,7 +169,6 @@ export default function ProveedoresPage() {
     sortBy: sortKey as QuerySuppliersInput['sortBy'],
     sortOrder: sortDir,
     limit: 100,
-    limit: 100,
   });
 
   const deleteMutation = useDeleteSupplier();
