@@ -538,7 +538,7 @@ interface MonthGroupProps {
 }
 
 function MonthGroup({ month, year, expenses, onDelete, onView, onDuplicate, canWrite, onPrefetch, selectedIds, onToggleSelect }: MonthGroupProps) {
-  const total = expenses.reduce((s, e) => s + e.totalAmount, 0);
+  const total = expenses.reduce((s, e) => s + Number(e.totalAmount), 0);
 
   return (
     <div className="space-y-3">
@@ -730,12 +730,20 @@ export default function GastosPage() {
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [statsExpanded, setStatsExpanded] = useState(true);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const { sortKey, sortDir, handleSort } = useSortTable('date', 'desc');
 
   useEffect(() => {
     setPage(1);
     setSelectedIds(new Set());
   }, [search, categoryFilter, supplierFilter, clientFilter, fromDate, toDate, sortKey, sortDir]);
+
+  useEffect(() => {
+    if (!filtersExpanded) return;
+    const hasFilters = search || categoryFilter !== 'ALL' || supplierFilter !== 'ALL' || clientFilter !== 'ALL' || fromDate || toDate;
+    if (!hasFilters) setFiltersExpanded(false);
+  }, [search, categoryFilter, supplierFilter, clientFilter, fromDate, toDate]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -832,7 +840,7 @@ export default function GastosPage() {
       const monthName = MONTHS_ES[date.getMonth()];
       const year = date.getFullYear();
       const key = `${monthName} ${year}`;
-      monthlyMap.set(key, (monthlyMap.get(key) ?? 0) + expense.totalAmount);
+      monthlyMap.set(key, (monthlyMap.get(key) ?? 0) + Number(expense.totalAmount));
     });
     return Array.from(monthlyMap.entries())
       .map(([month, amount]) => ({ month, amount }))
@@ -844,7 +852,7 @@ export default function GastosPage() {
     const categoryMap = new Map<string, number>();
     expenses.forEach((expense) => {
       const catName = expense.category?.name ?? 'Sin categoría';
-      categoryMap.set(catName, (categoryMap.get(catName) ?? 0) + expense.totalAmount);
+      categoryMap.set(catName, (categoryMap.get(catName) ?? 0) + Number(expense.totalAmount));
     });
     const sorted = Array.from(categoryMap.entries())
       .sort((a, b) => b[1] - a[1])
@@ -900,24 +908,53 @@ export default function GastosPage() {
   if (!isLoading && !error && total === 0 && !isFiltered) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Gastos</h1>
-            <p className="text-sm text-muted-foreground">Registra los gastos de tu actividad</p>
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Gastos</h1>
+              <p className="text-sm text-muted-foreground mt-1">Registra los gastos de tu actividad</p>
+            </div>
+            {canWrite && (
+              <Link href="/dashboard/gastos/nuevo">
+                <Button size="lg">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nuevo gasto
+                </Button>
+              </Link>
+            )}
           </div>
-          {canWrite && (
-            <Link href="/dashboard/gastos/nuevo">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Nuevo gasto
-              </Button>
-            </Link>
-          )}
-        </div>
 
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          <KpiCard title="Este mes" value={summaryData?.monthTotal ?? 0} icon={Calendar} isLoading={isSummaryLoading} />
-          <KpiCard title="Este año" value={summaryData?.yearTotal ?? 0} icon={Euro} isLoading={isSummaryLoading} />
+          <div className="flex items-center gap-6 px-5 py-4 rounded-2xl bg-gradient-to-r from-primary/5 via-primary/10 to-transparent border border-primary/10">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                <Calendar className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-[11px] text-primary/60 font-semibold uppercase tracking-wider">Este mes</p>
+                {isSummaryLoading ? (
+                  <Skeleton className="h-5 w-24 mt-0.5" />
+                ) : (
+                  <p className="text-xl font-bold tabular-nums">{formatCurrency(summaryData?.monthTotal ?? 0)}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="h-8 w-px bg-border" />
+
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/30">
+                <Euro className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <p className="text-[11px] text-amber-600/60 dark:text-amber-400/60 font-semibold uppercase tracking-wider">Este año</p>
+                {isSummaryLoading ? (
+                  <Skeleton className="h-5 w-24 mt-0.5" />
+                ) : (
+                  <p className="text-xl font-bold tabular-nums">{formatCurrency(summaryData?.yearTotal ?? 0)}</p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {!canWrite ? (
@@ -959,275 +996,284 @@ export default function GastosPage() {
         }}
       />
 
-      <div className="space-y-6 pb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Gastos</h1>
-            <div className="text-sm text-muted-foreground mt-1">
-              {isLoading ? (
-                <Skeleton className="h-4 w-32" />
-              ) : (
-                `${total} gasto${total !== 1 ? 's' : ''} registrado${total !== 1 ? 's' : ''}`
+      <div className="space-y-4 pb-6">
+        {!canWrite && <UpgradeBanner isEmpty={false} />}
+
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Gastos</h1>
+              <div className="flex items-center gap-4 mt-1">
+                <span className="text-sm text-muted-foreground">
+                  {isLoading ? <Skeleton className="h-4 w-24" /> : `${total} gasto${total !== 1 ? 's' : ''}`}
+                </span>
+                <div className="flex items-center gap-4 px-4 py-1.5 rounded-xl bg-gradient-to-r from-primary/5 via-primary/10 to-transparent border border-primary/10">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-[11px] text-primary/60 font-medium">MES</span>
+                    {isSummaryLoading ? (
+                      <Skeleton className="h-4 w-16" />
+                    ) : (
+                      <span className="text-sm font-bold tabular-nums">{formatCurrency(summaryData?.monthTotal ?? 0)}</span>
+                    )}
+                  </div>
+                  <div className="h-4 w-px bg-border" />
+                  <div className="flex items-center gap-1.5">
+                    <Euro className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    <span className="text-[11px] text-amber-600/60 dark:text-amber-400/60 font-medium">AÑO</span>
+                    {isSummaryLoading ? (
+                      <Skeleton className="h-4 w-16" />
+                    ) : (
+                      <span className="text-sm font-bold tabular-nums">{formatCurrency(summaryData?.yearTotal ?? 0)}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {canWrite && (
+                <Link href="/dashboard/gastos/nuevo">
+                  <Button size="lg">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nuevo gasto
+                  </Button>
+                </Link>
+              )}
+              {canWrite && (
+                <Link href="/dashboard/gastos/recurrentes">
+                  <Button variant="outline" size="icon" title="Gastos recurrentes">
+                    <Repeat className="h-4 w-4" />
+                  </Button>
+                </Link>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {expenses.length > 0 && (
-              <Button variant="outline" onClick={exportToCSV}>
-                <Download className="mr-2 h-4 w-4" />
-                Exportar CSV
-              </Button>
-            )}
-            {canWrite && (
-              <Link href="/dashboard/gastos/recurrentes">
-                <Button variant="outline">
-                  <Repeat className="mr-2 h-4 w-4" />
-                  Recurrentes
-                </Button>
-              </Link>
-            )}
-            {canWrite && (
-              <Link href="/dashboard/gastos/nuevo">
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nuevo gasto
-                </Button>
-              </Link>
-            )}
-          </div>
         </div>
 
-        {!canWrite && <UpgradeBanner isEmpty={false} />}
+        {expenses.length > 0 && (
+          <div>
+            <button
+              onClick={() => setStatsExpanded(!statsExpanded)}
+              className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors mb-2"
+            >
+              <BarChart3 className="h-3.5 w-3.5" />
+              {statsExpanded ? 'Ocultar' : 'Ver'} estadísticas
+              {statsExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </button>
 
-        <div className="flex flex-col lg:flex-row gap-4">
-          <Card className="flex-1">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                    <Calendar className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">Este mes</p>
-                    {isSummaryLoading ? (
-                      <Skeleton className="h-8 w-28 mt-1" />
-                    ) : (
-                      <p className="text-2xl font-bold tabular-nums">{formatCurrency(summaryData?.monthTotal ?? 0)}</p>
-                    )}
-                  </div>
+            {statsExpanded && monthlyChartData.length > 1 && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2">
+                  <SpendingChart monthlyData={monthlyChartData} isLoading={isLoading} />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          <Card className="flex-1">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                    <Euro className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">Este año</p>
-                    {isSummaryLoading ? (
-                      <Skeleton className="h-8 w-28 mt-1" />
-                    ) : (
-                      <p className="text-2xl font-bold tabular-nums">{formatCurrency(summaryData?.yearTotal ?? 0)}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex-1">
-            <SpendingChart monthlyData={monthlyChartData} isLoading={isLoading} />
-          </div>
-
-          <Card className="flex-1">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <PieChartIcon className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground font-medium">Por categoría</span>
-              </div>
-              {isLoading ? (
-                <div className="space-y-2">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-4 w-full" />
-                  ))}
-                </div>
-              ) : categoryBreakdown.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Sin datos</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {categoryBreakdown.slice(0, 3).map((cat, i) => (
-                    <div key={cat.name} className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-                      <span className="text-xs truncate flex-1">{cat.name}</span>
-                      <span className="text-xs font-medium tabular-nums">{formatCurrency(cat.amount)}</span>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <PieChartIcon className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground font-medium">Por categoría</span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                    {isLoading ? (
+                      <div className="space-y-2">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                          <Skeleton key={i} className="h-4 w-full" />
+                        ))}
+                      </div>
+                    ) : categoryBreakdown.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Sin datos</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {categoryBreakdown.slice(0, 3).map((cat, i) => (
+                          <div key={cat.name} className="flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                            <span className="text-xs truncate flex-1">{cat.name}</span>
+                            <span className="text-xs font-medium tabular-nums">{formatCurrency(cat.amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+        )}
 
         <Card>
           <CardContent className="p-4">
             <div className="space-y-3">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex-1 min-w-0">
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                    <Search className="h-3.5 w-3.5 inline-block mr-1" />
-                    Buscar
-                  </label>
-                  <div className="relative">
-                    <Input
-                      placeholder="Concepto o proveedor..."
-                      value={searchInput}
-                      onChange={(e) => setSearchInput(e.target.value)}
-                      className="w-full"
-                    />
-                    {search && (
-                      <button
-                        onClick={() => setSearchInput('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap sm:flex-nowrap gap-2">
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Categoría</label>
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="w-36">
-                        <SelectValue placeholder="Todas" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ALL">Todas</SelectItem>
-                        {categories.map((category: ExpenseCategory) => (
-                          <SelectItem key={category.id} value={category.id}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Proveedor</label>
-                    <Select value={supplierFilter} onValueChange={setSupplierFilter}>
-                      <SelectTrigger className="w-36">
-                        <SelectValue placeholder="Todos" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ALL">Todos</SelectItem>
-                        {suppliers.map((supplier: Supplier) => (
-                          <SelectItem key={supplier.id} value={supplier.id}>
-                            {supplier.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Cliente</label>
-                    <Select value={clientFilter} onValueChange={setClientFilter}>
-                      <SelectTrigger className="w-36">
-                        <SelectValue placeholder="Todos" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ALL">Todos</SelectItem>
-                        {customers.map((customer: Customer) => (
-                          <SelectItem key={customer.id} value={customer.id}>
-                            {customer.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                    <Calendar className="h-3.5 w-3.5 inline-block mr-1" />
-                    Rango de fechas
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="date"
-                      value={fromDate}
-                      onChange={(e) => setFromDate(e.target.value)}
-                      className="w-36"
-                    />
-                    <span className="text-muted-foreground">—</span>
-                    <Input
-                      type="date"
-                      value={toDate}
-                      onChange={(e) => setToDate(e.target.value)}
-                      className="w-36"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Mes</label>
-                  <div className="flex gap-1">
-                    {[
-                      { label: 'Ene', month: 0 },
-                      { label: 'Feb', month: 1 },
-                      { label: 'Mar', month: 2 },
-                      { label: 'Abr', month: 3 },
-                      { label: 'May', month: 4 },
-                      { label: 'Jun', month: 5 },
-                      { label: 'Jul', month: 6 },
-                      { label: 'Ago', month: 7 },
-                      { label: 'Sep', month: 8 },
-                      { label: 'Oct', month: 9 },
-                      { label: 'Nov', month: 10 },
-                      { label: 'Dic', month: 11 },
-                    ].map(({ label, month }) => {
-                      const now = new Date();
-                      const currentYear = now.getFullYear();
-                      const firstDay = new Date(currentYear, month, 1);
-                      const lastDay = new Date(currentYear, month + 1, 0);
-                      const isActive = fromDate === firstDay.toISOString().split('T')[0] &&
-                                     toDate === lastDay.toISOString().split('T')[0];
-
-                      return (
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-start">
+                <div className="flex flex-col sm:flex-row sm:items-end gap-3 flex-1">
+                  <div className="flex-1 min-w-0">
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      <Search className="h-3.5 w-3.5 inline-block mr-1" />
+                      Buscar
+                    </label>
+                    <div className="relative h-9">
+                      <Input
+                        placeholder="Concepto o proveedor..."
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                        className="w-full h-9"
+                      />
+                      {search && (
                         <button
-                          key={month}
-                          type="button"
-                          onClick={() => {
-                            if (isActive) {
-                              setFromDate('');
-                              setToDate('');
-                            } else {
-                              setFromDate(firstDay.toISOString().split('T')[0]);
-                              setToDate(lastDay.toISOString().split('T')[0]);
-                            }
-                          }}
-                          className={cn(
-                            'h-8 px-2 text-xs font-medium rounded transition-colors',
-                            isActive
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
-                          )}
+                          onClick={() => setSearchInput('')}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         >
-                          {label}
+                          <X className="h-4 w-4" />
                         </button>
-                      );
-                    })}
+                      )}
+                    </div>
                   </div>
+
+                  <button
+                    onClick={() => setFiltersExpanded(!filtersExpanded)}
+                    className={cn(
+                      'flex items-center gap-1.5 h-9 px-3 text-sm font-medium rounded-lg border transition-colors self-end shrink-0',
+                      filtersExpanded
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background text-muted-foreground border-input hover:bg-muted hover:text-foreground'
+                    )}
+                  >
+                    <Filter className="h-3.5 w-3.5" />
+                    Filtros
+                    {filtersExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                  </button>
                 </div>
               </div>
+
+              {filtersExpanded && (
+                <>
+                  <div className="flex flex-wrap sm:flex-nowrap gap-2">
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Categoría</label>
+                      <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                        <SelectTrigger className="w-36">
+                          <SelectValue placeholder="Todas" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">Todas</SelectItem>
+                          {categories.map((category: ExpenseCategory) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Proveedor</label>
+                      <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+                        <SelectTrigger className="w-36">
+                          <SelectValue placeholder="Todos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">Todos</SelectItem>
+                          {suppliers.map((supplier: Supplier) => (
+                            <SelectItem key={supplier.id} value={supplier.id}>
+                              {supplier.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Cliente</label>
+                      <Select value={clientFilter} onValueChange={setClientFilter}>
+                        <SelectTrigger className="w-36">
+                          <SelectValue placeholder="Todos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">Todos</SelectItem>
+                          {customers.map((customer: Customer) => (
+                            <SelectItem key={customer.id} value={customer.id}>
+                              {customer.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                        <Calendar className="h-3.5 w-3.5 inline-block mr-1" />
+                        Rango de fechas
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="date"
+                          value={fromDate}
+                          onChange={(e) => setFromDate(e.target.value)}
+                          className="w-36"
+                        />
+                        <span className="text-muted-foreground">—</span>
+                        <Input
+                          type="date"
+                          value={toDate}
+                          onChange={(e) => setToDate(e.target.value)}
+                          className="w-36"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Mes</label>
+                      <div className="flex gap-1">
+                        {[
+                          { label: 'Ene', month: 0 },
+                          { label: 'Feb', month: 1 },
+                          { label: 'Mar', month: 2 },
+                          { label: 'Abr', month: 3 },
+                          { label: 'May', month: 4 },
+                          { label: 'Jun', month: 5 },
+                          { label: 'Jul', month: 6 },
+                          { label: 'Ago', month: 7 },
+                          { label: 'Sep', month: 8 },
+                          { label: 'Oct', month: 9 },
+                          { label: 'Nov', month: 10 },
+                          { label: 'Dic', month: 11 },
+                        ].map(({ label, month }) => {
+                          const now = new Date();
+                          const currentYear = now.getFullYear();
+                          const firstDay = new Date(currentYear, month, 1);
+                          const lastDay = new Date(currentYear, month + 1, 0);
+                          const isActive = fromDate === firstDay.toISOString().split('T')[0] &&
+                                         toDate === lastDay.toISOString().split('T')[0];
+
+                          return (
+                            <button
+                              key={month}
+                              type="button"
+                              onClick={() => {
+                                if (isActive) {
+                                  setFromDate('');
+                                  setToDate('');
+                                } else {
+                                  setFromDate(firstDay.toISOString().split('T')[0]);
+                                  setToDate(lastDay.toISOString().split('T')[0]);
+                                }
+                              }}
+                              className={cn(
+                                'h-8 px-2 text-xs font-medium rounded transition-colors',
+                                isActive
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
+                              )}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
 
               <FilterChips
                 search={searchInput}
@@ -1441,7 +1487,7 @@ export default function GastosPage() {
                             Total ({expenses.length} gasto{expenses.length !== 1 ? 's' : ''})
                           </td>
                           <td className="px-4 py-3 text-right text-sm">
-                            {formatCurrency(expenses.reduce((s, e) => s + e.totalAmount, 0))}
+                            {formatCurrency(expenses.reduce((s, e) => s + Number(e.totalAmount), 0))}
                           </td>
                           <td />
                         </tr>
