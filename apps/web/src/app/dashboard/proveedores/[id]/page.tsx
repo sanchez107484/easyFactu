@@ -40,7 +40,7 @@ import {
   Receipt,
   Clock,
 } from 'lucide-react';
-import { useSortTable, sortData } from '@/hooks/use-sort-table';
+import { useSortTable, sortData, SortDir } from '@/hooks/use-sort-table';
 import { SortableHeader } from '@/components/common/sortable-header';
 import { useSupplier, useDeleteSupplier } from '@/hooks/use-suppliers';
 import { useExpenses } from '@/hooks/use-expenses';
@@ -153,7 +153,7 @@ export default function ProveedorDetailPage() {
 
   const expenses = expensesData?.data ?? [];
 
-  const sortDataLocal = (data: typeof expenses, key: string, dir: string) => {
+  const sortDataLocal = (data: typeof expenses, key: string, dir: SortDir) => {
     return sortData(data, key, dir, (expense: typeof expenses[0], k: string) => {
       switch (k) {
         case 'date':
