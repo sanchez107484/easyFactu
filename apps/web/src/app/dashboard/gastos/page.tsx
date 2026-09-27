@@ -48,6 +48,7 @@ import {
   Trash2,
   Receipt,
   AlertCircle,
+  AlertTriangle,
   X,
   Euro,
   Calendar,
@@ -97,7 +98,7 @@ import { useSortTable } from '@/hooks/use-sort-table';
 import { useHasProfessionalPlan } from '@/hooks/use-current-plan';
 import { EmptyState } from '@/components/common/empty-state';
 import { PRICING } from '@easyfactura/brand-config';
-import { cn, formatCurrency, getBadgeColor } from '@/lib/utils';
+import { cn, formatCurrency, getBadgeColor, getCategoryColorFromName } from '@/lib/utils';
 
 const CATEGORY_COLORS = [
   'hsl(var(--primary))',
@@ -274,14 +275,56 @@ interface DeleteDialogProps {
   isPending: boolean;
 }
 
-function DeleteDialog({ expense, onCancel, onConfirm, isPending }: DeleteDialogProps) {
+function DeleteExpenseDialog({
+  expenses,
+  open,
+  onCancel,
+  onConfirm,
+  isPending,
+}: {
+  expenses: Expense[];
+  open: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  isPending: boolean;
+}) {
+  const count = expenses.length;
+  const total = expenses.reduce((s, e) => s + Number(e.totalAmount), 0);
+  const preview = expenses.slice(0, 3);
+
   return (
-    <AlertDialog open={!!expense}>
+    <AlertDialog open={open}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Eliminar gasto</AlertDialogTitle>
-          <AlertDialogDescription>
-            Se eliminará el gasto <strong>{expense?.description}</strong> permanentemente. Esta acción no se puede deshacer.
+          <AlertDialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
+            Eliminar {count} gasto{count !== 1 ? 's' : ''}
+          </AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div className="space-y-3">
+              <p>
+                Se eliminarán <strong>{count} gasto{count !== 1 ? 's' : ''}</strong> de un total de <strong className="text-foreground">{formatCurrency(total)}</strong>.
+              </p>
+              {preview.length > 0 && (
+                <div className="rounded-lg border bg-muted/50 p-3 space-y-1.5">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Gastos a eliminar:</p>
+                  {preview.map(e => (
+                    <div key={e.id} className="flex items-center justify-between gap-4">
+                      <span className="text-sm truncate flex-1">{e.description}</span>
+                      <span className="text-sm font-medium tabular-nums shrink-0">{formatCurrency(e.totalAmount)}</span>
+                    </div>
+                  ))}
+                  {count > 3 && (
+                    <p className="text-[11px] text-muted-foreground pt-1">
+                      y {count - 3} gasto{count - 3 !== 1 ? 's' : ''} más...
+                    </p>
+                  )}
+                </div>
+              )}
+              <p className="font-semibold text-amber-600 dark:text-amber-400 text-sm">
+                Esta acción no se puede deshacer.
+              </p>
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -293,7 +336,7 @@ function DeleteDialog({ expense, onCancel, onConfirm, isPending }: DeleteDialogP
             disabled={isPending}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isPending ? 'Eliminando...' : 'Eliminar gasto'}
+            {isPending ? 'Eliminando...' : 'Eliminar'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -391,91 +434,109 @@ interface ExpenseCardProps {
 function ExpenseCard({ expense, onDelete, onView, onDuplicate, canWrite, onPrefetch, isSelected, onToggleSelect }: ExpenseCardProps) {
   const [expanded, setExpanded] = useState(false);
 
+  const catColor = expense.category ? getCategoryColorFromName(expense.category.name) : null;
+  const hasDetails = expense.baseAmount !== undefined || expense.client || expense.notes;
+
+  const shortDate = (() => {
+    const d = new Date(expense.date);
+    return `${d.getDate()} ${MONTHS_ES[d.getMonth()]}`;
+  })();
+
   return (
     <div
       className={cn(
-        'group border rounded-lg p-4 hover:border-primary/30 hover:shadow-sm transition-all bg-card',
-        isSelected && 'border-primary bg-primary/5'
+        'group relative flex items-center gap-0 border-b last:border-b-0 px-0 py-0 hover:bg-muted/30 transition-all bg-card',
+        isSelected && 'bg-primary/5'
       )}
       onMouseEnter={() => onPrefetch(expense.id)}
     >
-      <div className="flex items-start gap-3">
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={onToggleSelect}
-          className="mt-1 shrink-0"
+      {catColor && (
+        <div
+          className="w-1 self-stretch shrink-0 rounded-full mx-0"
+          style={{ backgroundColor: catColor.text.includes('emerald') ? '#059669' : catColor.text.includes('amber') ? '#d97706' : catColor.text.includes('blue') ? '#2563eb' : catColor.text.includes('purple') ? '#7c3aed' : catColor.text.includes('rose') ? '#e11d48' : catColor.text.includes('cyan') ? '#0891b2' : 'hsl(var(--primary))' }}
         />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <h3 className="font-medium truncate">{expense.description}</h3>
-            <span className="text-lg font-bold tabular-nums text-primary shrink-0">
-              {formatCurrency(expense.totalAmount)}
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              {formatDate(expense.date)}
-            </span>
-            {expense.category && (
-              <Badge variant="secondary" className="text-xs gap-1">
-                <Tag className="h-3 w-3" />
-                {expense.category.name}
-              </Badge>
-            )}
-            {expense.supplier && (
-              <span className="flex items-center gap-1">
-                <Building2 className="h-3 w-3" />
-                {expense.supplier.name}
-              </span>
+      )}
+
+      <Checkbox
+        checked={isSelected}
+        onCheckedChange={onToggleSelect}
+        className="ml-3 mr-2 shrink-0"
+      />
+
+      <div className="flex-1 min-w-0 py-2.5 pr-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <h3 className="text-sm font-medium truncate">{expense.description}</h3>
+            {hasDetails && (
+              <span className="h-1.5 w-1.5 rounded-full bg-primary/40 shrink-0" title="Tiene detalles" />
             )}
           </div>
+          <span className="text-sm font-semibold tabular-nums text-foreground shrink-0 ml-2">
+            {formatCurrency(expense.totalAmount)}
+          </span>
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => onView(expense)}>
-            <FileText className="h-4 w-4" />
-          </Button>
-          {canWrite && (
-            <>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" asChild>
-                <Link href={`/dashboard/gastos/${expense.id}`}>
-                  <ExternalLink className="h-4 w-4" />
-                </Link>
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link href={`/dashboard/gastos/${expense.id}`} className="flex items-center">
-                      <Edit className="mr-2 h-4 w-4" />
-                      Editar
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onDuplicate(expense)}>
-                    <Copy className="mr-2 h-4 w-4" />
-                    Duplicar
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => onDelete(expense)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Eliminar
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
+
+        <div className="flex items-center gap-x-3 gap-y-0.5 mt-0.5 flex-wrap">
+          <span className="text-[11px] text-muted-foreground">
+            {shortDate}
+          </span>
+          {expense.category && (
+            <span className="text-[11px] text-muted-foreground">
+              {expense.category.name}
+            </span>
+          )}
+          {expense.supplier && (
+            <span className="text-[11px] text-muted-foreground truncate max-w-[120px]">
+              {expense.supplier.name}
+            </span>
           )}
         </div>
       </div>
 
+      <div className="flex items-center gap-0.5 mr-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onView(expense)} title="Ver detalle">
+          <FileText className="h-3.5 w-3.5" />
+        </Button>
+        {canWrite && (
+          <>
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" asChild title="Editar">
+              <Link href={`/dashboard/gastos/${expense.id}`}>
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href={`/dashboard/gastos/${expense.id}`} className="flex items-center">
+                    <Edit className="mr-2 h-4 w-4" />
+                    Editar
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDuplicate(expense)}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Duplicar
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => onDelete(expense)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Eliminar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        )}
+      </div>
+
       {expanded && (
-        <div className="mt-3 pt-3 border-t space-y-2 text-sm">
+        <div className="absolute left-0 right-0 top-full z-10 bg-card border rounded-lg shadow-lg p-4 mt-1 mx-0">
           {expense.baseAmount !== undefined && (
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -502,24 +563,6 @@ function ExpenseCard({ expense, onDelete, onView, onDuplicate, canWrite, onPrefe
           )}
         </div>
       )}
-
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="w-full mt-2 pt-2 border-t flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        {expanded ? (
-          <>
-            Menos detalles
-            <ChevronUp className="h-3 w-3" />
-          </>
-        ) : (
-          <>
-            Más detalles
-            <ChevronDown className="h-3 w-3" />
-          </>
-        )}
-      </button>
     </div>
   );
 }
@@ -544,10 +587,12 @@ function MonthGroup({ month, year, expenses, onDelete, onView, onDuplicate, canW
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold">{month} {year}</h2>
-          <Badge variant="secondary">{expenses.length} gasto{expenses.length !== 1 ? 's' : ''}</Badge>
+          <h2 className="text-base font-semibold">{month} {year}</h2>
+          <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full font-medium bg-primary/10 border border-primary/20 text-primary">
+            {expenses.length} Gasto{expenses.length !== 1 ? 's' : ''}
+          </span>
         </div>
-        <span className="text-sm font-medium text-muted-foreground">
+        <span className="text-sm font-semibold tabular-nums text-foreground">
           {formatCurrency(total)}
         </span>
       </div>
@@ -570,18 +615,14 @@ function MonthGroup({ month, year, expenses, onDelete, onView, onDuplicate, canW
   );
 }
 
-function BulkActionsBar({ selectedCount, onDelete, onExport }: { selectedCount: number; onDelete: () => void; onExport: () => void }) {
+function BulkActionsBar({ selectedCount, onDeleteClick }: { selectedCount: number; onDeleteClick: () => void }) {
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-background border rounded-full px-4 py-3 shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-200">
       <div className="flex items-center gap-2 pr-3 border-r">
         <CheckCircle2 className="h-4 w-4 text-primary" />
         <span className="text-sm font-medium">{selectedCount} seleccionado{selectedCount !== 1 ? 's' : ''}</span>
       </div>
-      <Button variant="outline" size="sm" onClick={onExport} className="gap-2">
-        <Download className="h-4 w-4" />
-        Exportar
-      </Button>
-      <Button variant="destructive" size="sm" onClick={onDelete} className="gap-2">
+      <Button variant="destructive" size="sm" onClick={onDeleteClick} className="gap-2">
         <Trash className="h-4 w-4" />
         Eliminar
       </Button>
@@ -726,12 +767,13 @@ export default function GastosPage() {
   const [fromDate, setFromDate] = useState<string>('');
   const [toDate, setToDate] = useState<string>('');
   const [page, setPage] = useState(1);
-  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [statsExpanded, setStatsExpanded] = useState(true);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [expensesToDelete, setExpensesToDelete] = useState<Expense[]>([]);
   const { sortKey, sortDir, handleSort } = useSortTable('date', 'desc');
 
   useEffect(() => {
@@ -760,13 +802,6 @@ export default function GastosPage() {
     } else {
       setSelectedIds(new Set(expenses.map(e => e.id)));
     }
-  };
-
-  const handleBulkDelete = async () => {
-    for (const id of selectedIds) {
-      await deleteMutation.mutateAsync(id);
-    }
-    setSelectedIds(new Set());
   };
 
   const exportToCSV = () => {
@@ -883,9 +918,11 @@ export default function GastosPage() {
   }, [expenses]);
 
   const handleDeleteConfirm = async () => {
-    if (!expenseToDelete) return;
-    await deleteMutation.mutateAsync(expenseToDelete.id);
-    setExpenseToDelete(null);
+    for (const exp of expensesToDelete) {
+      await deleteMutation.mutateAsync(exp.id);
+    }
+    setExpensesToDelete([]);
+    setSelectedIds(new Set());
   };
 
   if (error) {
@@ -980,9 +1017,10 @@ export default function GastosPage() {
 
   return (
     <>
-      <DeleteDialog
-        expense={expenseToDelete}
-        onCancel={() => setExpenseToDelete(null)}
+      <DeleteExpenseDialog
+        expenses={expensesToDelete}
+        open={deleteDialogOpen}
+        onCancel={() => { setDeleteDialogOpen(false); setExpensesToDelete([]); }}
         onConfirm={handleDeleteConfirm}
         isPending={deleteMutation.isPending}
       />
@@ -1379,7 +1417,7 @@ export default function GastosPage() {
                     month={month}
                     year={year}
                     expenses={expenses}
-                    onDelete={setExpenseToDelete}
+                    onDelete={(exp) => { setExpensesToDelete([exp]); setDeleteDialogOpen(true); }}
                     onView={setSelectedExpense}
                     onDuplicate={(expense) => router.push(`/dashboard/gastos/nuevo?duplicate=${expense.id}`)}
                     canWrite={canWrite}
@@ -1461,7 +1499,7 @@ export default function GastosPage() {
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                       className="text-destructive focus:text-destructive"
-                                      onClick={() => setExpenseToDelete(expense)}
+                                      onClick={() => { setExpensesToDelete([expense]); setDeleteDialogOpen(true); }}
                                     >
                                       <Trash2 className="mr-2 h-4 w-4" />
                                       Eliminar
@@ -1530,8 +1568,7 @@ export default function GastosPage() {
         {selectedIds.size > 0 && (
           <BulkActionsBar
             selectedCount={selectedIds.size}
-            onDelete={handleBulkDelete}
-            onExport={exportToCSV}
+            onDeleteClick={() => { setExpensesToDelete(expenses.filter(e => selectedIds.has(e.id))); setDeleteDialogOpen(true); }}
           />
         )}
       </div>
