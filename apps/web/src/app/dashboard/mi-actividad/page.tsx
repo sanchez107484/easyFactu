@@ -578,8 +578,8 @@ function ExpenseBreakdownCard({ monthlyExpenseCategories, monthlyExpenses, isLoa
                 )}
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xs text-muted-foreground text-center px-1">{selectedPeriodLabel}</span>
-                <span className="text-lg font-bold tabular-nums">{formatCurrency(displayTotal)}</span>
+                <span className="text-[10px] text-muted-foreground text-center leading-tight px-1">{selectedPeriodLabel}</span>
+                <span className="text-sm font-bold tabular-nums leading-tight">{formatCurrency(displayTotal)}</span>
               </div>
             </div>
             <div className="flex-1 min-w-0 space-y-1.5">
