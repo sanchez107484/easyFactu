@@ -3,6 +3,7 @@
 import { useRouter, useParams } from 'next/navigation';
 import { useExpense, useUpdateExpense } from '@/hooks/use-expenses';
 import { useHasProfessionalPlan } from '@/hooks/use-current-plan';
+import { useCreateRecurringExpense, useDeleteRecurringExpense, useUpdateRecurringExpense } from '@/hooks/use-recurring-expenses';
 import { ExpenseForm, ExpenseFormData } from '../_components/expense-form';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,9 +17,56 @@ export default function EditarGastoPage() {
 
   const { data: expense, isLoading, error } = useExpense(id);
   const updateMutation = useUpdateExpense();
+  const createRecurringMutation = useCreateRecurringExpense();
+  const deleteRecurringMutation = useDeleteRecurringExpense();
+  const updateRecurringMutation = useUpdateRecurringExpense();
   const canWrite = useHasProfessionalPlan();
 
-  const onSubmit = async (data: ExpenseFormData) => {
+  const onSubmit = async (data: ExpenseFormData, _pendingFile: File | null) => {
+    const originalIsRecurring = !!expense?.recurringExpense?.id;
+    const nowIsRecurring = data.isRecurring ?? false;
+
+    if (!originalIsRecurring && nowIsRecurring) {
+      const base = Number(data.baseAmount) || 0;
+      const vat = Number(data.vatRate) || 0;
+      await createRecurringMutation.mutateAsync({
+        description: data.description,
+        categoryId: data.categoryId,
+        supplierId: data.supplierId || null,
+        clientId: data.clientId || null,
+        baseAmount: base,
+        vatRate: vat,
+        frequency: data.recurringFrequency!,
+        startDate: data.recurringStartDate || new Date().toISOString().split('T')[0],
+        endDate: data.recurringEndDate || null,
+        notes: data.notes || null,
+      });
+    } else if (originalIsRecurring && nowIsRecurring) {
+      const recurringId = expense?.recurringExpense?.id;
+      if (recurringId) {
+        await updateRecurringMutation.mutateAsync({
+          id: recurringId,
+          data: {
+            description: data.description,
+            categoryId: data.categoryId,
+            supplierId: data.supplierId || null,
+            clientId: data.clientId || null,
+            baseAmount: Number(data.baseAmount) || 0,
+            vatRate: Number(data.vatRate) || 0,
+            frequency: data.recurringFrequency,
+            startDate: data.recurringStartDate || undefined,
+            endDate: data.recurringEndDate || null,
+            notes: data.notes || null,
+          },
+        });
+      }
+    } else if (originalIsRecurring && !nowIsRecurring) {
+      const recurringId = expense?.recurringExpense?.id;
+      if (recurringId) {
+        await deleteRecurringMutation.mutateAsync(recurringId);
+      }
+    }
+
     await updateMutation.mutateAsync({
       id,
       data: {

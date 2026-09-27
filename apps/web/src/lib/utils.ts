@@ -88,3 +88,22 @@ export function getCategoryColorFromName(name: string): BadgeColor {
   }
   return getBadgeColor(Math.abs(hash));
 }
+
+const CATEGORY_HSL_COLORS = [
+  'hsl(var(--primary))',
+  'hsl(142 76% 40%)',
+  'hsl(38 92% 50%)',
+  'hsl(200 98% 40%)',
+  'hsl(280 65% 60%)',
+  'hsl(0 84% 60%)',
+  'hsl(180 100% 35%)',
+  'hsl(24 95% 53%)',
+];
+
+export function getCategoryColorHsl(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return CATEGORY_HSL_COLORS[Math.abs(hash) % CATEGORY_HSL_COLORS.length];
+}

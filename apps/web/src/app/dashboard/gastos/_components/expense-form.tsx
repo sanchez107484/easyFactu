@@ -284,7 +284,27 @@ export function ExpenseForm({
 }: ExpenseFormProps) {
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
-    defaultValues: {
+    defaultValues: mode === 'edit' && expense ? {
+      date: expense.date ? new Date(expense.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      description: expense.description,
+      categoryId: expense.categoryId,
+      supplierId: expense.supplierId ?? '',
+      clientId: expense.clientId ?? '',
+      baseAmount: Number(expense.baseAmount) || 0,
+      vatRate: Number(expense.vatRate) || 21,
+      notes: expense.notes ?? '',
+      attachmentId: expense.attachmentId ?? '',
+      isRecurring: !!expense.recurringExpense?.id,
+      recurringFrequency: expense.recurringExpense?.frequency ?? RecurringExpenseFrequency.MONTHLY,
+      recurringDayOfMonth: 1,
+      recurringStartDate: expense.recurringExpense?.startDate
+        ? new Date(expense.recurringExpense.startDate).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0],
+      recurringEndDate: expense.recurringExpense?.endDate
+        ? new Date(expense.recurringExpense.endDate).toISOString().split('T')[0]
+        : null,
+      _priceMode: 'total' as const,
+    } : {
       date: new Date().toISOString().split('T')[0],
       description: '',
       categoryId: '',
@@ -328,30 +348,39 @@ export function ExpenseForm({
   const totalAmount = round2(baseAmount + vatAmount);
 
   useEffect(() => {
-    if (expense) {
+    if (expense && mode === 'create') {
       const base = Number(expense.baseAmount) || 0;
       const vat = Number(expense.vatRate) || 21;
-      form.reset({
-        date: new Date().toISOString().split('T')[0],
-        description: `Copia de ${expense.description}`,
-        categoryId: expense.categoryId,
-        supplierId: expense.supplierId ?? '',
-        clientId: expense.clientId ?? '',
-        baseAmount: base,
-        vatRate: vat,
-        notes: expense.notes ?? '',
-        attachmentId: expense.attachmentId ?? '',
-        isRecurring: false,
-        recurringFrequency: RecurringExpenseFrequency.MONTHLY,
-        recurringDayOfMonth: 1,
-        recurringStartDate: new Date().toISOString().split('T')[0],
-        recurringEndDate: null,
-        _priceMode: 'total',
-      });
+      form.setValue('date', new Date().toISOString().split('T')[0]);
+      form.setValue('description', `Copia de ${expense.description}`);
+      form.setValue('categoryId', expense.categoryId);
+      form.setValue('supplierId', expense.supplierId ?? '');
+      form.setValue('clientId', expense.clientId ?? '');
+      form.setValue('baseAmount', base);
+      form.setValue('vatRate', vat);
+      form.setValue('notes', expense.notes ?? '');
+      form.setValue('attachmentId', expense.attachmentId ?? '');
+      form.setValue('isRecurring', !!expense.recurringExpense?.id);
+      form.setValue('recurringFrequency', expense.recurringExpense?.frequency ?? RecurringExpenseFrequency.MONTHLY);
+      form.setValue('recurringDayOfMonth', 1);
+      form.setValue('recurringStartDate', expense.recurringExpense?.startDate
+        ? new Date(expense.recurringExpense.startDate).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0]);
+      form.setValue('recurringEndDate', expense.recurringExpense?.endDate
+        ? new Date(expense.recurringExpense.endDate).toISOString().split('T')[0]
+        : null);
       setBaseAmountRaw(base > 0 ? formatBaseAmount(base) : '');
       setTotalRaw(base > 0 ? formatTotal(round2(base * (1 + vat / 100))) : '');
     }
-  }, [expense, form]);
+  }, [expense, form, mode]);
+
+  useEffect(() => {
+    if (mode === 'edit' && expense) {
+      const base = Number(expense.baseAmount) || 0;
+      setBaseAmountRaw(base > 0 ? formatBaseAmount(base) : '');
+      setTotalRaw(base > 0 ? formatTotal(round2(base * (1 + (Number(expense.vatRate) || 21) / 100))) : '');
+    }
+  }, [expense, mode]);
 
   useEffect(() => {
     if (mode !== 'create' || draftRestored) return;
@@ -739,8 +768,7 @@ export function ExpenseForm({
                 />
 
                 {/* Recurring option - inside the concept card */}
-                {mode === 'create' && (
-                  <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Repeat className="h-4 w-4 text-primary" />
@@ -851,7 +879,6 @@ export function ExpenseForm({
                     )}
                     </div>
                   </div>
-                )}
               </div>
             </div>
 

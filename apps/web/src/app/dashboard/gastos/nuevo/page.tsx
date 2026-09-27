@@ -40,7 +40,11 @@ function DuplicateExpenseForm() {
       attachmentId = uploaded.id;
     }
 
-    if (data.isRecurring && data.recurringFrequency) {
+    if (data.isRecurring) {
+      if (!data.recurringFrequency) {
+        toast.error('Selecciona una frecuencia para el gasto recurrente');
+        return;
+      }
       await createRecurringMutation.mutateAsync({
         description: data.description,
         categoryId: data.categoryId,

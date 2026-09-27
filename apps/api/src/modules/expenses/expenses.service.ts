@@ -130,6 +130,7 @@ export class ExpensesService {
           supplier: { select: { id: true, name: true, taxId: true } },
           client: { select: { id: true, name: true, nif: true } },
           attachment: { select: { id: true, fileName: true, mimeType: true, size: true } },
+          recurringExpense: { select: { id: true } },
         },
       }),
       this.prisma.expense.count({ where }),
@@ -154,6 +155,7 @@ export class ExpensesService {
         supplier: true,
         client: { select: { id: true, name: true, nif: true } },
         attachment: { select: { id: true, fileName: true, mimeType: true, size: true, storageKey: true, createdAt: true } },
+        recurringExpense: true,
       },
     });
 
@@ -203,7 +205,7 @@ export class ExpensesService {
       vatRate: dto.vatRate ?? undefined,
       vatAmount,
       totalAmount,
-      notes: dto.notes === undefined ? undefined : dto.notes.trim() || null,
+      notes: dto.notes == null ? undefined : dto.notes.trim() || null,
       attachment:
         dto.attachmentId === undefined
           ? undefined

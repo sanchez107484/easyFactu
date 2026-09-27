@@ -1157,6 +1157,7 @@ export interface Expense {
   totalAmount: number;
   notes: string | null;
   attachmentId: string | null;
+  recurringExpense?: RecurringExpense | null;
   createdByUserId: string | null;
   createdAt: string;
   updatedAt: string;

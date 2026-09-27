@@ -98,16 +98,7 @@ import { useSortTable } from '@/hooks/use-sort-table';
 import { useHasProfessionalPlan } from '@/hooks/use-current-plan';
 import { EmptyState } from '@/components/common/empty-state';
 import { PRICING } from '@easyfactura/brand-config';
-import { cn, formatCurrency, getBadgeColor, getCategoryColorFromName } from '@/lib/utils';
-
-const CATEGORY_COLORS = [
-  'hsl(var(--primary))',
-  'hsl(142 76% 40%)',
-  'hsl(38 92% 50%)',
-  'hsl(280 65% 60%)',
-  'hsl(200 98% 40%)',
-  'hsl(0 84% 60%)',
-];
+import { cn, formatCurrency, getCategoryColorFromName, getCategoryColorHsl } from '@/lib/utils';
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString('es-ES', {
@@ -356,9 +347,14 @@ function ExpenseDetailDialog({ expense, onClose, onEdit }: ExpenseDetailDialogPr
   return (
     <Dialog open={!!expense} onOpenChange={() => onClose()}>
       <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="text-lg">{expense.description}</DialogTitle>
-        </DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="text-lg flex items-center gap-2">
+              {expense.description}
+              {expense.recurringExpense?.id && (
+                <Repeat className="h-4 w-4 text-primary shrink-0" />
+              )}
+            </DialogTitle>
+          </DialogHeader>
         <div className="space-y-4 mt-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -465,8 +461,11 @@ function ExpenseCard({ expense, onDelete, onView, onDuplicate, canWrite, onPrefe
 
       <div className="flex-1 min-w-0 py-2.5 pr-3">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
             <h3 className="text-sm font-medium truncate">{expense.description}</h3>
+            {expense.recurringExpense?.id && (
+              <Repeat className="h-3.5 w-3.5 text-primary shrink-0" />
+            )}
             {hasDetails && (
               <span className="h-1.5 w-1.5 rounded-full bg-primary/40 shrink-0" title="Tiene detalles" />
             )}
@@ -895,7 +894,7 @@ export default function GastosPage() {
     return sorted.map(([name, amount], i) => ({
       name,
       amount,
-      color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+      color: getCategoryColorHsl(name),
     }));
   }, [expenses]);
 
@@ -1467,6 +1466,9 @@ export default function GastosPage() {
                               >
                                 {expense.description}
                               </Link>
+                              {expense.recurringExpense?.id && (
+                                <Repeat className="inline ml-1.5 h-3.5 w-3.5 text-primary align-middle" />
+                              )}
                             </td>
                             <td className="px-4 py-3 text-sm">
                               {expense.category?.name ?? '—'}

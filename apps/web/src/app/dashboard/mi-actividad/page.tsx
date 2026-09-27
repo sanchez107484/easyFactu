@@ -48,7 +48,7 @@ import {
   ComposedChart,
 } from 'recharts';
 import { useActivitySummary } from '@/hooks/use-activity-summary';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency, getCategoryColorHsl } from '@/lib/utils';
 import { PRICING } from '@easyfactura/brand-config';
 
 // ==================== HELPERS ====================
@@ -65,14 +65,6 @@ const TOOLTIP_STYLE = {
   backgroundColor: 'hsl(var(--background))',
   boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
 };
-
-const CATEGORY_COLORS = [
-  'hsl(var(--primary))',
-  'hsl(var(--primary) / 0.7)',
-  'hsl(var(--primary) / 0.5)',
-  'hsl(var(--primary) / 0.35)',
-  'hsl(var(--primary) / 0.2)',
-];
 
 function pctChange(current: number, previous: number): number | null {
   if (previous <= 0) return null;
@@ -412,9 +404,9 @@ function ExpenseBreakdownCard({ monthlyExpenseCategories, monthlyExpenses, isLoa
 
   const isMonthSelected = selectedMonthIndex !== -1;
 
-  const pieData = displayCategories.map((c, i) => ({
+  const pieData = displayCategories.map((c) => ({
     ...c,
-    color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+    color: getCategoryColorHsl(c.name),
     pct: displayTotal > 0 ? Math.round((c.amount / displayTotal) * 100) : 0,
   }));
 
