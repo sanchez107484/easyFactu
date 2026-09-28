@@ -453,11 +453,15 @@ function ExpenseCard({ expense, onDelete, onView, onDuplicate, canWrite, onPrefe
         />
       )}
 
-      <Checkbox
-        checked={isSelected}
-        onCheckedChange={onToggleSelect}
-        className="ml-3 mr-2 shrink-0"
-      />
+      {canWrite ? (
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={onToggleSelect}
+          className="ml-3 mr-2 shrink-0"
+        />
+      ) : (
+        <div className="ml-3 mr-2 shrink-0 w-4" />
+      )}
 
       <div className="flex-1 min-w-0 py-2.5 pr-3">
         <div className="flex items-center justify-between gap-2">
@@ -1434,10 +1438,12 @@ export default function GastosPage() {
                       <thead className="border-b bg-muted/40">
                         <tr>
                           <th className="px-4 py-3 w-10">
-                            <Checkbox
-                              checked={selectedIds.size === expenses.length && expenses.length > 0}
-                              onCheckedChange={toggleSelectAll}
-                            />
+                            {canWrite && (
+                              <Checkbox
+                                checked={selectedIds.size === expenses.length && expenses.length > 0}
+                                onCheckedChange={toggleSelectAll}
+                              />
+                            )}
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Fecha</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Concepto</th>
@@ -1451,10 +1457,12 @@ export default function GastosPage() {
                         {expenses.map((expense) => (
                           <tr key={expense.id} className={cn('hover:bg-muted/30 transition-colors', selectedIds.has(expense.id) && 'bg-primary/5')}>
                             <td className="px-4 py-3">
-                              <Checkbox
-                                checked={selectedIds.has(expense.id)}
-                                onCheckedChange={() => toggleSelect(expense.id)}
-                              />
+                              {canWrite && (
+                                <Checkbox
+                                  checked={selectedIds.has(expense.id)}
+                                  onCheckedChange={() => toggleSelect(expense.id)}
+                                />
+                              )}
                             </td>
                             <td className="px-4 py-3 text-sm tabular-nums text-muted-foreground">
                               {formatDateShort(expense.date)}

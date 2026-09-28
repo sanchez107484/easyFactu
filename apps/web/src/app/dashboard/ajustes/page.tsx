@@ -148,7 +148,7 @@ export default function AjustesPage() {
                 Plan
               </p>
               <div className="mt-1 flex items-center gap-2">
-                <p className="font-semibold">{PLAN_LABELS[plan]}</p>
+                <p className="font-semibold">{currentTenant?.subscription?.plan?.name ?? PLAN_LABELS[plan]}</p>
               </div>
               <p className="text-xs text-primary mt-1">Gestionar plan →</p>
             </Link>

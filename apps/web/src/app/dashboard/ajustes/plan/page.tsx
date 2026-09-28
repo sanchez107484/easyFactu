@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Check, Zap, ArrowUpCircle, ArrowDownCircle, Info, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -35,7 +36,7 @@ const TIER_LABELS: Record<PlanTier, string> = {
   [PlanTier.PROFESSIONAL]: 'PRO',
 };
 
-function getPrice(cycle: PlanCycle, tier: PlanTier): { monthly: string; note?: string } {
+function getPrice(cycle: PlanCycle, tier: PlanTier): { monthly: string; note?: string; annualTotal?: string; monthlyEquivalent?: string } {
   if (cycle === PlanCycle.FREE) {
     return { monthly: 'Gratis' };
   }
@@ -45,7 +46,9 @@ function getPrice(cycle: PlanCycle, tier: PlanTier): { monthly: string; note?: s
   const price = isYearly ? data.annualMonthly : data.monthly;
   return {
     monthly: `${price.toFixed(2).replace('.', ',')}€`,
-    note: isYearly ? `/mes (anual)` : '/mes',
+    note: isYearly ? `/mes` : '/mes',
+    annualTotal: isYearly ? `${data.annualTotal.toFixed(2).replace('.', ',')}€` : undefined,
+    monthlyEquivalent: isYearly ? `${data.annualMonthly.toFixed(2).replace('.', ',')}€/mes` : undefined,
   };
 }
 
@@ -69,13 +72,21 @@ function PlanCard({ plan, isCurrent, isUpgrade, usage, onSelect, loading }: Plan
     <Card className={cn(
       'relative flex flex-col',
       isCurrent && 'ring-2 ring-primary',
-      exceedsLimit && 'opacity-75'
+      exceedsLimit && 'opacity-75',
+      isFree && 'border-green-300 bg-green-50/30'
     )}>
       {isCurrent && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
           <Badge className="gap-1 bg-primary text-primary-foreground hover:bg-primary text-xs shadow-sm">
             <Check className="h-3 w-3" />
             Tu plan
+          </Badge>
+        </div>
+      )}
+      {isFree && (
+        <div className="absolute -top-3 right-4">
+          <Badge className="gap-1 bg-green-600 text-white hover:bg-green-600 text-xs shadow-sm animate-pulse">
+            ¡Gratis hasta 2027!
           </Badge>
         </div>
       )}
@@ -94,18 +105,27 @@ function PlanCard({ plan, isCurrent, isUpgrade, usage, onSelect, loading }: Plan
         </div>
 
         <div className="mt-3">
-          <div className="flex items-baseline gap-1.5">
-            <span className={cn("text-2xl font-bold", isFree ? 'text-green-600' : 'text-foreground')}>
-              {price.monthly}
-            </span>
-            {!isFree && price.note && (
-              <span className="text-xs text-muted-foreground">{price.note}</span>
-            )}
-          </div>
-          {plan.cycle === PlanCycle.YEARLY && !isFree && (
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              {(plan.tier === PlanTier.PROFESSIONAL ? PRO : STARTER).annualTotal.toFixed(2).replace('.', ',')}€/año
-            </p>
+          {plan.cycle === PlanCycle.YEARLY && !isFree ? (
+            <div className="space-y-0.5">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-bold text-foreground">
+                  {price.annualTotal}
+                </span>
+                <span className="text-xs text-muted-foreground">/año</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {price.monthlyEquivalent} · <span className="font-medium">Un solo pago anual</span>
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-baseline gap-1.5">
+              <span className={cn("text-2xl font-bold", isFree ? 'text-green-600' : 'text-foreground')}>
+                {price.monthly}
+              </span>
+              {!isFree && price.note && (
+                <span className="text-xs text-muted-foreground">{price.note}</span>
+              )}
+            </div>
           )}
         </div>
       </CardHeader>
@@ -126,9 +146,13 @@ function PlanCard({ plan, isCurrent, isUpgrade, usage, onSelect, loading }: Plan
                 <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                 <span>PDFs y presupuestos</span>
               </li>
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2 text-sm text-destructive">
                 <X className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>Gestión de gastos</span>
+              </li>
+              <li className="flex items-start gap-2 text-sm text-destructive">
+                <X className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>Soporte personalizado</span>
               </li>
             </>
           ) : (
@@ -147,6 +171,10 @@ function PlanCard({ plan, isCurrent, isUpgrade, usage, onSelect, loading }: Plan
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <span>Soporte personalizado</span>
+              </li>
+              <li className="flex items-start gap-2 text-sm">
+                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                 <span>Todo lo del plan Básico</span>
               </li>
             </>
@@ -155,7 +183,7 @@ function PlanCard({ plan, isCurrent, isUpgrade, usage, onSelect, loading }: Plan
 
         <div className="mt-4 pt-3">
           {isCurrent ? (
-            <Button variant="outline" className="w-full" disabled>
+            <Button variant="outline" className="w-full border-primary text-primary disabled:opacity-100" disabled>
               Plan actual
             </Button>
           ) : exceedsLimit ? (
@@ -378,6 +406,14 @@ export default function AjustesPlanPage() {
         </Card>
       )}
 
+      {/* Oferta gratuita hasta 2027 */}
+      <Alert className="bg-green-50 border-green-200">
+        <Info className="h-4 w-4 text-green-600" />
+        <AlertDescription className="text-green-800 text-sm">
+          <span className="font-medium">¡Oferta especial!</span> Ambos planes gratuitos son gratis hasta 2027. ¡Aprovéchala!
+        </AlertDescription>
+      </Alert>
+
       {/* Comparativa de planes */}
       {isLoading ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -386,18 +422,18 @@ export default function AjustesPlanPage() {
           ))}
         </div>
       ) : (
-        <div className="space-y-8">
-          {/* BASIC */}
-          {groupedPlans?.[PlanTier.BASIC] && (
+        <div className="space-y-8 pb-8">
+          {/* PROFESSIONAL */}
+          {groupedPlans?.[PlanTier.PROFESSIONAL] && (
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-base font-semibold">Planes Básico</h2>
+                <h2 className="text-base font-semibold">Planes PRO</h2>
                 <Badge variant="secondary" className="text-xs">
-                  Hasta 60 facturas/año
+                  Facturación ilimitada + Gastos
                 </Badge>
               </div>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {groupedPlans[PlanTier.BASIC].map((plan) => {
+                {groupedPlans[PlanTier.PROFESSIONAL].map((plan) => {
                   const isCurrent = plan.slug === currentPlan?.slug;
                   const isUpgrade = currentPlan?.tier === PlanTier.BASIC;
                   return (
@@ -418,17 +454,17 @@ export default function AjustesPlanPage() {
 
           <Separator />
 
-          {/* PROFESSIONAL */}
-          {groupedPlans?.[PlanTier.PROFESSIONAL] && (
+          {/* BASIC */}
+          {groupedPlans?.[PlanTier.BASIC] && (
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-base font-semibold">Planes PRO</h2>
+                <h2 className="text-base font-semibold">Planes Básico</h2>
                 <Badge variant="secondary" className="text-xs">
-                  Facturación ilimitada + Gastos
+                  Hasta 60 facturas/año
                 </Badge>
               </div>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {groupedPlans[PlanTier.PROFESSIONAL].map((plan) => {
+                {groupedPlans[PlanTier.BASIC].map((plan) => {
                   const isCurrent = plan.slug === currentPlan?.slug;
                   const isUpgrade = currentPlan?.tier === PlanTier.BASIC;
                   return (
