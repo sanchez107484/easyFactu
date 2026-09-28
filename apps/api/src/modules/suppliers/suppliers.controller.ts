@@ -28,7 +28,7 @@ import { PlanGuard } from '../../common/guards/plan.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RequirePlan } from '../../common/decorators/require-plan.decorator';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
-import { TenantUserRole, Plan } from '@easyfactura/shared-types';
+import { TenantUserRole, PlanTier } from '@easyfactura/shared-types';
 
 @ApiTags('suppliers')
 @Controller('suppliers')
@@ -38,7 +38,7 @@ export class SuppliersController {
   constructor(private readonly suppliersService: SuppliersService) {}
 
   @Post()
-  @RequirePlan(Plan.PROFESSIONAL)
+  @RequirePlan(PlanTier.PROFESSIONAL)
   @Roles(TenantUserRole.OWNER, TenantUserRole.ADMIN, TenantUserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Crear proveedor' })
   @ApiCreatedResponse({ description: 'Proveedor creado correctamente' })
@@ -61,7 +61,7 @@ export class SuppliersController {
   }
 
   @Put(':id')
-  @RequirePlan(Plan.PROFESSIONAL)
+  @RequirePlan(PlanTier.PROFESSIONAL)
   @Roles(TenantUserRole.OWNER, TenantUserRole.ADMIN, TenantUserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Actualizar proveedor' })
   @ApiOkResponse({ description: 'Proveedor actualizado correctamente' })
@@ -75,7 +75,7 @@ export class SuppliersController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @RequirePlan(Plan.PROFESSIONAL)
+  @RequirePlan(PlanTier.PROFESSIONAL)
   @Roles(TenantUserRole.OWNER, TenantUserRole.ADMIN, TenantUserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Eliminar proveedor' })
   @ApiNoContentResponse({ description: 'Proveedor eliminado correctamente' })

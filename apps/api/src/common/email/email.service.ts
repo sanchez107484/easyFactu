@@ -203,6 +203,59 @@ export class EmailService {
     });
   }
 
+  async sendPlanChangeNotification(opts: {
+    to: string | string[];
+    firstName: string;
+    fromPlanName: string;
+    toPlanName: string;
+    changeDate: string;
+  }): Promise<void> {
+    const formattedDate = new Date(opts.changeDate).toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const isUpgrade =
+      opts.toPlanName.toLowerCase().includes('pro') &&
+      !opts.fromPlanName.toLowerCase().includes('pro');
+
+    const html = this.buildBaseLayout(`
+      <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;">
+        ${isUpgrade ? '¡Bienvenido a ' + opts.toPlanName + '!' : 'Tu plan ha cambiado'}
+      </h1>
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
+        Hola <strong>${opts.firstName}</strong>,
+      </p>
+      ${
+        isUpgrade
+          ? `<p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
+              Has actualizado tu plan a <strong>${opts.toPlanName}</strong>.
+              Ahora tienes acceso a todas las funcionalidades PRO.
+            </p>`
+          : `<p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
+              Tu plan ha cambiado de <strong>${opts.fromPlanName}</strong> a <strong>${opts.toPlanName}</strong>.
+            </p>
+            <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
+              Si crees que esto es un error, ponte en contacto con nuestro equipo de soporte.
+            </p>`
+      }
+      <p style="color:#9ca3af;font-size:13px;line-height:1.6;margin:24px 0 0;">
+        Fecha del cambio: ${formattedDate}
+      </p>
+    `);
+
+    await this.send({
+      to: opts.to,
+      subject: isUpgrade
+        ? `Bienvenido a ${opts.toPlanName} - NovaFactura`
+        : `Tu plan ha cambiado a ${opts.toPlanName} - NovaFactura`,
+      html,
+    });
+  }
+
   // ─── Private send ──────────────────────────────────────────────────────────
 
   private async send(opts: SendEmailOptions): Promise<void> {

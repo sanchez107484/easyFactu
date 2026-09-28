@@ -218,7 +218,6 @@ export default function PlantillaPage() {
     certificateExpiry: null,
     setupCompleted: true,
     accountType: currentTenant?.accountType ?? ('INDIVIDUAL' as never),
-    plan: currentTenant?.plan ?? ('FREE' as never),
     isActive: true,
     createdAt: currentTenant?.createdAt ?? new Date().toISOString(),
     updatedAt: currentTenant?.updatedAt ?? new Date().toISOString(),

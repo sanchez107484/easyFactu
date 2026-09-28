@@ -1,23 +1,22 @@
 import { useAuthStore } from '@/store/auth-store';
-import { Plan } from '@easyfactura/shared-types';
+import { PlanTier } from '@easyfactura/shared-types';
 
-export function useCurrentPlan(): Plan | null {
-  return useAuthStore((state) => state.currentTenant?.plan ?? null);
+export function useCurrentPlanTier(): PlanTier | null {
+  return useAuthStore((state) => state.currentTenant?.subscription?.plan?.tier ?? null);
 }
 
-export function useIsPlanAtLeast(requiredPlan: Plan): boolean {
-  const currentPlan = useCurrentPlan();
-  if (!currentPlan) return false;
+export function useIsPlanAtLeast(requiredTier: PlanTier): boolean {
+  const currentTier = useCurrentPlanTier();
+  if (!currentTier) return false;
 
-  const order: Record<Plan, number> = {
-    [Plan.FREE]: 0,
-    [Plan.BASIC]: 1,
-    [Plan.PROFESSIONAL]: 2,
+  const order: Record<PlanTier, number> = {
+    [PlanTier.BASIC]: 1,
+    [PlanTier.PROFESSIONAL]: 2,
   };
 
-  return order[currentPlan] >= order[requiredPlan];
+  return order[currentTier] >= order[requiredTier];
 }
 
 export function useHasProfessionalPlan(): boolean {
-  return useIsPlanAtLeast(Plan.PROFESSIONAL);
+  return useIsPlanAtLeast(PlanTier.PROFESSIONAL);
 }

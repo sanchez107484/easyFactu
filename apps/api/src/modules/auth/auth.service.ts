@@ -105,6 +105,22 @@ export class AuthService {
       // orphan tenant without series.
       await this.invoiceSeriesService.createDefaultSeries(tenant.id, tx);
 
+      // Create subscription with BASIC_FREE plan for new tenants
+      const basicFreePlan = await tx.plan.findUnique({
+        where: { slug: 'BASIC_FREE' },
+      });
+      if (!basicFreePlan) {
+        throw new Error('Plan BASIC_FREE no encontrado en el seed');
+      }
+      await tx.subscription.create({
+        data: {
+          tenantId: tenant.id,
+          planId: basicFreePlan.id,
+          status: 'ACTIVE',
+          billingCycle: 'FREE',
+        },
+      });
+
       return { user, tenant, tenantUser };
     });
 
@@ -124,6 +140,11 @@ export class AuthService {
       data: { refreshToken: tokens.refreshToken },
     });
 
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { tenantId: result.tenant.id },
+      include: { plan: true },
+    });
+
     return {
       user: {
         id: result.user.id,
@@ -141,6 +162,7 @@ export class AuthService {
             nif: result.tenant.nif,
             setupCompleted: result.tenant.setupCompleted,
             accountType: result.tenant.accountType,
+            subscription,
           },
           role: result.tenantUser.role,
           isOwner: result.tenantUser.isOwner,
@@ -152,6 +174,7 @@ export class AuthService {
         nif: result.tenant.nif,
         setupCompleted: result.tenant.setupCompleted,
         accountType: result.tenant.accountType,
+        subscription,
       },
       ...tokens,
     };
@@ -163,7 +186,15 @@ export class AuthService {
       include: {
         tenantUsers: {
           include: {
-            tenant: true,
+            tenant: {
+              include: {
+                subscription: {
+                  include: {
+                    plan: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -269,8 +300,8 @@ export class AuthService {
           businessName: tu.tenant.businessName,
           nif: tu.tenant.nif,
           setupCompleted: tu.tenant.setupCompleted,
-          plan: tu.tenant.plan,
           accountType: tu.tenant.accountType,
+          subscription: tu.tenant.subscription,
         },
         role: tu.role,
         isOwner: tu.isOwner,
@@ -280,8 +311,8 @@ export class AuthService {
         businessName: activeTenantUser.tenant.businessName,
         nif: activeTenantUser.tenant.nif,
         setupCompleted: activeTenantUser.tenant.setupCompleted,
-        plan: activeTenantUser.tenant.plan,
         accountType: activeTenantUser.tenant.accountType,
+        subscription: activeTenantUser.tenant.subscription,
       },
       ...tokens,
     };
@@ -307,7 +338,15 @@ export class AuthService {
         tenantUsers: {
           where: { tenantId: dto.tenantId },
           include: {
-            tenant: true,
+            tenant: {
+              include: {
+                subscription: {
+                  include: {
+                    plan: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -327,8 +366,10 @@ export class AuthService {
     // so the next request resolves the new role/tenant immediately.
     this.jwtCache.invalidateUser(userId);
 
+    const tenantUsers = (user as any).tenantUsers as Array<{ tenantId: string; role: string; isOwner: boolean; tenant: { id: string; businessName: string; nif: string; setupCompleted: boolean; accountType: string; isActive: boolean; subscription: any } }>;
+
     // Primary path: user has a direct TenantUser record for the target tenant
-    if (user.tenantUsers.length > 0) {
+    if (tenantUsers.length > 0) {
       const tenantUser = user.tenantUsers[0]!;
 
       if (!tenantUser.tenant.isActive) {
@@ -389,8 +430,8 @@ export class AuthService {
             businessName: tenantUser.tenant.businessName,
             nif: tenantUser.tenant.nif,
             setupCompleted: tenantUser.tenant.setupCompleted,
-            plan: tenantUser.tenant.plan,
             accountType: tenantUser.tenant.accountType,
+            subscription: tenantUser.tenant.subscription,
           },
           ...tokens,
         };
@@ -410,8 +451,8 @@ export class AuthService {
           businessName: tenantUser.tenant.businessName,
           nif: tenantUser.tenant.nif,
           setupCompleted: tenantUser.tenant.setupCompleted,
-          plan: tenantUser.tenant.plan,
           accountType: tenantUser.tenant.accountType,
+          subscription: tenantUser.tenant.subscription,
         },
         ...tokens,
       };
@@ -428,7 +469,17 @@ export class AuthService {
           tenantUsers: { some: { userId } },
         },
       },
-      include: { clientTenant: true },
+      include: {
+        clientTenant: {
+          include: {
+            subscription: {
+              include: {
+                plan: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!agencyRelation) {
@@ -479,8 +530,8 @@ export class AuthService {
         businessName: agencyRelation.clientTenant.businessName,
         nif: agencyRelation.clientTenant.nif,
         setupCompleted: agencyRelation.clientTenant.setupCompleted,
-        plan: agencyRelation.clientTenant.plan,
         accountType: agencyRelation.clientTenant.accountType,
+        subscription: agencyRelation.clientTenant.subscription,
       },
       ...tokens,
     };
@@ -676,7 +727,13 @@ export class AuthService {
                 businessName: true,
                 nif: true,
                 setupCompleted: true,
-                plan: true,
+                subscription: {
+                  select: {
+                    plan: {
+                      select: { tier: true, name: true, slug: true },
+                    },
+                  },
+                },
                 logoUrl: true,
                 accountType: true,
               },
@@ -690,7 +747,7 @@ export class AuthService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    const tenants = user.tenantUsers.map((tu: any) => ({
+    const tenants = (user as any).tenantUsers.map((tu: any) => ({
       tenant: tu.tenant,
       role: tu.role,
       isOwner: tu.isOwner,
@@ -708,7 +765,13 @@ export class AuthService {
           businessName: true,
           nif: true,
           setupCompleted: true,
-          plan: true,
+          subscription: {
+            select: {
+              plan: {
+                select: { tier: true, name: true, slug: true },
+              },
+            },
+          },
           logoUrl: true,
           accountType: true,
         },
@@ -856,8 +919,12 @@ export class AuthService {
                 businessName: true,
                 nif: true,
                 setupCompleted: true,
-                plan: true,
                 accountType: true,
+                subscription: {
+                  include: {
+                    plan: true,
+                  },
+                },
               },
             },
           },
@@ -869,7 +936,8 @@ export class AuthService {
       throw new BadRequestException('El enlace de activación no es válido o ha expirado');
     }
 
-    const activeTenantId = user.lastActiveTenantId ?? user.tenantUsers[0]?.tenantId;
+    const tenantUsers = (user as any).tenantUsers as Array<{ tenantId: string; role: string; isOwner: boolean; tenant: { id: string; businessName: string; nif: string; setupCompleted: boolean; accountType: string; subscription: any } }>;
+    const activeTenantId = user.lastActiveTenantId ?? tenantUsers[0]?.tenantId;
     if (!activeTenantId) {
       throw new BadRequestException('No se encontró empresa asociada a esta cuenta');
     }
@@ -893,7 +961,7 @@ export class AuthService {
       },
     });
 
-    const activeTenantUser = user.tenantUsers.find((tu) => tu.tenantId === activeTenantId);
+    const activeTenantUser = tenantUsers.find((tu) => tu.tenantId === activeTenantId);
 
     // Notify agency owners (fire-and-forget) if this account was created by an agency
     this.notifyAgencyOnClientActivation(
@@ -911,7 +979,7 @@ export class AuthService {
         emailVerified: true,
         lastActiveTenantId: activeTenantId,
       },
-      tenants: user.tenantUsers.map((tu) => ({
+      tenants: tenantUsers.map((tu) => ({
         tenant: tu.tenant,
         role: tu.role,
         isOwner: tu.isOwner,
@@ -921,8 +989,8 @@ export class AuthService {
         businessName: activeTenantUser?.tenant.businessName ?? '',
         nif: activeTenantUser?.tenant.nif ?? '',
         setupCompleted: activeTenantUser?.tenant.setupCompleted ?? false,
-        plan: activeTenantUser?.tenant.plan ?? 'FREE',
         accountType: activeTenantUser?.tenant.accountType ?? 'INDIVIDUAL',
+        subscription: activeTenantUser?.tenant.subscription ?? null,
       },
       ...tokens,
     };

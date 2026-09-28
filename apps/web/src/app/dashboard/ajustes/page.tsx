@@ -19,13 +19,12 @@ import {
 } from 'lucide-react';
 import { useTenant } from '@/hooks/use-tenant';
 import { useAuthStore } from '@/store/auth-store';
-import { AccountType, Plan } from '@easyfactura/shared-types';
+import { AccountType, PlanTier } from '@easyfactura/shared-types';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const PLAN_LABELS: Record<Plan, string> = {
-  [Plan.FREE]: 'Starter',
-  [Plan.BASIC]: 'Starter',
-  [Plan.PROFESSIONAL]: 'PRO',
+const PLAN_LABELS: Record<PlanTier, string> = {
+  [PlanTier.BASIC]: 'Básico',
+  [PlanTier.PROFESSIONAL]: 'PRO',
 };
 
 const BASE_SETTINGS_SECTIONS = [
@@ -107,7 +106,7 @@ export default function AjustesPage() {
       : []),
   ];
 
-  const plan = currentTenant?.plan ?? Plan.FREE;
+  const plan = currentTenant?.subscription?.plan?.tier ?? PlanTier.BASIC;
   const hasCertificate = Boolean(tenant?.certificateUrl);
   const certificateExpiry = tenant?.certificateExpiry ? new Date(tenant.certificateExpiry) : null;
   const isCertificateExpired = certificateExpiry ? certificateExpiry < new Date() : false;
@@ -150,11 +149,6 @@ export default function AjustesPage() {
               </p>
               <div className="mt-1 flex items-center gap-2">
                 <p className="font-semibold">{PLAN_LABELS[plan]}</p>
-                {plan === Plan.FREE && (
-                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 hover:bg-green-100">
-                    Gratis hasta 2027
-                  </Badge>
-                )}
               </div>
               <p className="text-xs text-primary mt-1">Gestionar plan →</p>
             </Link>

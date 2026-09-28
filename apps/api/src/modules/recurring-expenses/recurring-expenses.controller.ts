@@ -30,7 +30,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RequirePlan } from '../../common/decorators/require-plan.decorator';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { TenantUserRole, Plan } from '@easyfactura/shared-types';
+import { TenantUserRole, PlanTier } from '@easyfactura/shared-types';
 
 @ApiTags('recurring-expenses')
 @Controller('recurring-expenses')
@@ -40,7 +40,7 @@ export class RecurringExpensesController {
   constructor(private readonly recurringExpensesService: RecurringExpensesService) {}
 
   @Post()
-  @RequirePlan(Plan.PROFESSIONAL)
+  @RequirePlan(PlanTier.PROFESSIONAL)
   @Roles(TenantUserRole.OWNER, TenantUserRole.ADMIN, TenantUserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Crear gasto recurrente' })
   @ApiCreatedResponse({ description: 'Gasto recurrente creado correctamente' })
@@ -67,7 +67,7 @@ export class RecurringExpensesController {
   }
 
   @Put(':id')
-  @RequirePlan(Plan.PROFESSIONAL)
+  @RequirePlan(PlanTier.PROFESSIONAL)
   @Roles(TenantUserRole.OWNER, TenantUserRole.ADMIN, TenantUserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Actualizar gasto recurrente' })
   @ApiOkResponse({ description: 'Gasto recurrente actualizado correctamente' })
@@ -81,7 +81,7 @@ export class RecurringExpensesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @RequirePlan(Plan.PROFESSIONAL)
+  @RequirePlan(PlanTier.PROFESSIONAL)
   @Roles(TenantUserRole.OWNER, TenantUserRole.ADMIN, TenantUserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Eliminar gasto recurrente' })
   @ApiNoContentResponse({ description: 'Gasto recurrente eliminado correctamente' })
@@ -90,7 +90,7 @@ export class RecurringExpensesController {
   }
 
   @Post(':id/generate')
-  @RequirePlan(Plan.PROFESSIONAL)
+  @RequirePlan(PlanTier.PROFESSIONAL)
   @Roles(TenantUserRole.OWNER, TenantUserRole.ADMIN, TenantUserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Generar gastos a partir de una suscripción recurrente' })
   @ApiOkResponse({ description: 'Gastos generados correctamente' })

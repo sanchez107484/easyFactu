@@ -2,12 +2,11 @@ import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { REQUIRED_PLAN_KEY } from '../decorators/require-plan.decorator';
-import { Plan } from '@easyfactura/shared-types';
+import { PlanTier } from '@easyfactura/shared-types';
 
-const PLAN_HIERARCHY: Record<Plan, number> = {
-  [Plan.FREE]: 1,
-  [Plan.BASIC]: 2,
-  [Plan.PROFESSIONAL]: 3,
+const TIER_HIERARCHY: Record<PlanTier, number> = {
+  [PlanTier.BASIC]: 1,
+  [PlanTier.PROFESSIONAL]: 2,
 };
 
 @Injectable()
@@ -18,12 +17,12 @@ export class PlanGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredPlan = this.reflector.getAllAndOverride<Plan>(REQUIRED_PLAN_KEY, [
+    const requiredTier = this.reflector.getAllAndOverride<PlanTier>(REQUIRED_PLAN_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
 
-    if (!requiredPlan) {
+    if (!requiredTier) {
       return true;
     }
 
@@ -34,17 +33,18 @@ export class PlanGuard implements CanActivate {
       throw new ForbiddenException('No se pudo determinar la empresa activa');
     }
 
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { id: tenantId },
-      select: { plan: true },
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { tenantId },
+      include: { plan: { select: { tier: true } } },
     });
 
-    if (!tenant) {
+    if (!subscription) {
       throw new ForbiddenException('Empresa no encontrada');
     }
 
-    const currentLevel = PLAN_HIERARCHY[tenant.plan as Plan] ?? 0;
-    const requiredLevel = PLAN_HIERARCHY[requiredPlan] ?? 0;
+    const currentTier = subscription.plan.tier;
+    const currentLevel = TIER_HIERARCHY[currentTier] ?? 0;
+    const requiredLevel = TIER_HIERARCHY[requiredTier] ?? 0;
 
     if (currentLevel < requiredLevel) {
       throw new ForbiddenException(

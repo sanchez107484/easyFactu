@@ -8,7 +8,7 @@ import { brandConfig } from '@easyfactura/brand-config';
 import { useUIStore } from '@/store/ui-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useAgencyContext } from '@/hooks/use-agency-context';
-import { AccountType, Plan } from '@easyfactura/shared-types';
+import { AccountType, PlanTier } from '@easyfactura/shared-types';
 import {
   LayoutDashboard,
   FileText,
@@ -44,9 +44,9 @@ interface NavItem {
   /** When true, applies agency (violet) color scheme to this nav item */
   isAgency?: boolean;
   /** Minimum plan required to see this item. Undefined = visible to all. */
-  requiredPlan?: Plan;
+  requiredPlan?: PlanTier;
   /** When set, the item is visible to lower plans but shown as read-only. */
-  readOnlyBelowPlan?: Plan;
+  readOnlyBelowPlan?: PlanTier;
 }
 
 interface NavSeparator {
@@ -66,7 +66,7 @@ const defaultNavItems: NavEntry[] = [
     title: 'Mi actividad',
     href: '/dashboard/mi-actividad',
     icon: Activity,
-    requiredPlan: Plan.PROFESSIONAL,
+    requiredPlan: PlanTier.PROFESSIONAL,
   },
   { title: 'Facturas', href: '/dashboard/facturas', icon: FileText },
   { title: 'Clientes', href: '/dashboard/clientes', icon: Users },
@@ -76,13 +76,13 @@ const defaultNavItems: NavEntry[] = [
     title: 'Gastos',
     href: '/dashboard/gastos',
     icon: Receipt,
-    readOnlyBelowPlan: Plan.PROFESSIONAL,
+    readOnlyBelowPlan: PlanTier.PROFESSIONAL,
   },
   {
     title: 'Proveedores',
     href: '/dashboard/proveedores',
     icon: Truck,
-    requiredPlan: Plan.PROFESSIONAL,
+    requiredPlan: PlanTier.PROFESSIONAL,
   },
   { title: 'Recurrentes', href: '/dashboard/recurrentes', icon: RefreshCw },
   {
@@ -105,7 +105,7 @@ const agencyNavItems: NavEntry[] = [
     title: 'Mi actividad',
     href: '/dashboard/mi-actividad',
     icon: Activity,
-    requiredPlan: Plan.PROFESSIONAL,
+    requiredPlan: PlanTier.PROFESSIONAL,
   },
   { title: 'Facturas', href: '/dashboard/facturas', icon: FileText },
   {
@@ -120,13 +120,13 @@ const agencyNavItems: NavEntry[] = [
     title: 'Gastos',
     href: '/dashboard/gastos',
     icon: Receipt,
-    readOnlyBelowPlan: Plan.PROFESSIONAL,
+    readOnlyBelowPlan: PlanTier.PROFESSIONAL,
   },
   {
     title: 'Proveedores',
     href: '/dashboard/proveedores',
     icon: Truck,
-    requiredPlan: Plan.PROFESSIONAL,
+    requiredPlan: PlanTier.PROFESSIONAL,
   },
   { title: 'Recurrentes', href: '/dashboard/recurrentes', icon: RefreshCw },
   {
@@ -172,13 +172,12 @@ const agencyNavItems: NavEntry[] = [
   },
 ];
 
-const PLAN_HIERARCHY: Record<Plan, number> = {
-  [Plan.FREE]: 1,
-  [Plan.BASIC]: 2,
-  [Plan.PROFESSIONAL]: 3,
+const PLAN_HIERARCHY: Record<PlanTier, number> = {
+  [PlanTier.BASIC]: 1,
+  [PlanTier.PROFESSIONAL]: 3,
 };
 
-function hasRequiredPlan(currentPlan: Plan | undefined, requiredPlan: Plan | undefined): boolean {
+function hasRequiredPlan(currentPlan: PlanTier | undefined, requiredPlan: PlanTier | undefined): boolean {
   if (!requiredPlan) return true;
   const currentLevel = currentPlan ? PLAN_HIERARCHY[currentPlan] : 0;
   return currentLevel >= PLAN_HIERARCHY[requiredPlan];
@@ -199,7 +198,7 @@ export function DashboardSidebar() {
 
   const navItems = rawNavItems.filter((entry) => {
     if ('type' in entry) return true;
-    return hasRequiredPlan(currentTenant?.plan, (entry as NavItem).requiredPlan);
+    return hasRequiredPlan(currentTenant?.subscription?.plan?.tier, (entry as NavItem).requiredPlan);
   });
 
   return (
@@ -322,7 +321,7 @@ export function DashboardSidebar() {
                 : pathname === item.href || pathname.startsWith(`${item.href}/`);
             const isReadOnly =
               item.readOnlyBelowPlan &&
-              !hasRequiredPlan(currentTenant?.plan, item.readOnlyBelowPlan);
+              !hasRequiredPlan(currentTenant?.subscription?.plan?.tier, item.readOnlyBelowPlan);
 
             return (
               <Link

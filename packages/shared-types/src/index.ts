@@ -1,9 +1,20 @@
 // ==================== ENUMS ====================
 
-export enum Plan {
+export enum PlanCycle {
+  MONTHLY = 'MONTHLY',
+  YEARLY = 'YEARLY',
   FREE = 'FREE',
+}
+
+export enum PlanTier {
   BASIC = 'BASIC',
   PROFESSIONAL = 'PROFESSIONAL',
+}
+
+export enum SubscriptionStatus {
+  ACTIVE = 'ACTIVE',
+  CANCELLED = 'CANCELLED',
+  PENDING = 'PENDING',
 }
 
 export enum AccountType {
@@ -110,6 +121,48 @@ export enum RelationTerminator {
   CLIENT = 'CLIENT',
 }
 
+// ==================== PLANS ====================
+
+export interface PlanLimits {
+  maxInvoicesPerYear: number | null;
+  allowExpenses: boolean;
+}
+
+export interface Plan {
+  id: string;
+  slug: string;
+  name: string;
+  cycle: PlanCycle;
+  tier: PlanTier;
+  limits: PlanLimits;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Subscription {
+  id: string;
+  tenantId: string;
+  planId: string;
+  status: SubscriptionStatus;
+  billingCycle: PlanCycle;
+  startedAt: string;
+  changedAt: string;
+  plan?: Plan;
+}
+
+export interface PlanChangeLog {
+  id: string;
+  tenantId: string;
+  fromPlanId: string | null;
+  toPlanId: string;
+  changedBy: string;
+  reason: string | null;
+  createdAt: string;
+  fromPlan?: Plan | null;
+  toPlan?: Plan;
+}
+
 // ==================== BASE TYPES ====================
 
 export interface PaginatedResponse<T> {
@@ -154,8 +207,8 @@ export interface Tenant {
   taxRegime: TaxRegime;
   /** Tasa de compensación agraria (%). Solo cuando taxRegime = REAGYP. */
   reaypRate: number | null;
-  plan: Plan;
   isActive: boolean;
+  subscription?: Subscription | null;
   createdAt: string;
   updatedAt: string;
 }

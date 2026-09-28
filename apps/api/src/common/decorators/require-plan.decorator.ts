@@ -1,6 +1,6 @@
 import { SetMetadata } from '@nestjs/common';
-import { Plan } from '@easyfactura/shared-types';
+import { PlanTier } from '@easyfactura/shared-types';
 
 export const REQUIRED_PLAN_KEY = 'requiredPlan';
 
-export const RequirePlan = (plan: Plan) => SetMetadata(REQUIRED_PLAN_KEY, plan);
+export const RequirePlan = (tier: PlanTier) => SetMetadata(REQUIRED_PLAN_KEY, tier);

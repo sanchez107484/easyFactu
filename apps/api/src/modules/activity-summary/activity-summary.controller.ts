@@ -5,13 +5,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PlanGuard } from '../../common/guards/plan.guard';
 import { RequirePlan } from '../../common/decorators/require-plan.decorator';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
-import { Plan } from '@easyfactura/shared-types';
+import { PlanTier } from '@easyfactura/shared-types';
 
 @ApiTags('activity-summary')
 @Controller('activity-summary')
 @UseGuards(JwtAuthGuard, PlanGuard)
 @ApiBearerAuth()
-@RequirePlan(Plan.PROFESSIONAL)
+@RequirePlan(PlanTier.PROFESSIONAL)
 export class ActivitySummaryController {
   constructor(private readonly activitySummaryService: ActivitySummaryService) {}
 

@@ -32,7 +32,6 @@ model Tenant {
   certificateExpiry DateTime?  @map("certificate_expiry")
   setupCompleted   Boolean     @default(false) @map("setup_completed")
   accountType      AccountType @default(INDIVIDUAL) @map("account_type")
-  plan             Plan        @default(FREE)
   isActive         Boolean     @default(true) @map("is_active")
   // Régimen fiscal. GENERAL = IVA estándar. REAGYP = Régimen Especial de la Agricultura,
   // Ganadería y Pesca (Arts. 124-134 LIVA). En REAGYP se aplica compensación agraria en
@@ -45,6 +44,7 @@ model Tenant {
   updatedAt        DateTime    @updatedAt @map("updated_at")
 
   tenantUsers        TenantUser[]
+  subscription       Subscription?
   customers          Customer[]
   products           Product[]
   invoices           Invoice[]
@@ -91,10 +91,78 @@ enum TaxRegime {
   REAGYP    // Régimen Especial de la Agricultura, Ganadería y Pesca (Arts. 124-134 LIVA)
 }
 
-enum Plan {
-  FREE
+// ==================== PLANS ====================
+
+enum PlanCycle {
+  MONTHLY   // Pago mensual
+  YEARLY    // Pago anual
+  FREE      // Gratuito/promocional
+}
+
+enum PlanTier {
   BASIC
   PROFESSIONAL
+}
+
+enum SubscriptionStatus {
+  ACTIVE     // Suscripción activa
+  CANCELLED  // Cancelada (fin de ciclo)
+  PENDING    // Pendiente de pago (futuro)
+}
+
+model Plan {
+  id          String      @id @default(uuid())
+  slug        String      @unique  // "BASIC_MONTHLY", "PROFESSIONAL_FREE", etc.
+  name        String                 // "Básico Mensual", "PRO Gratuito", etc.
+  cycle       PlanCycle
+  tier        PlanTier
+  // Límites en JSON para flexibilidad futura:
+  // BASIC:  { maxInvoicesPerYear: 60, allowExpenses: false }
+  // PROFESSIONAL: { maxInvoicesPerYear: null, allowExpenses: true }
+  limits      Json
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  subscriptions Subscription[]
+  changeLogsFrom PlanChangeLog[] @relation("PlanChangeFrom")
+  changeLogsTo   PlanChangeLog[] @relation("PlanChangeTo")
+
+  @@map("plans")
+}
+
+model Subscription {
+  id              String             @id @default(uuid())
+  tenantId        String             @unique @map("tenant_id")
+  planId          String             @map("plan_id")
+  status          SubscriptionStatus @default(ACTIVE)
+  billingCycle    PlanCycle
+  startedAt       DateTime          @default(now()) @map("started_at")
+  changedAt       DateTime          @updatedAt @map("changed_at")
+  // Los campos renewalAt, cancelledAt, effectiveAt se añaden cuando haya pagos
+  // El diseño está preparado para eso sin cambiar el esquema
+
+  tenant         Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan           Plan               @relation(fields: [planId], references: [id])
+
+  @@index([planId])
+  @@map("subscriptions")
+}
+
+model PlanChangeLog {
+  id           String    @id @default(uuid())
+  tenantId     String    @map("tenant_id")
+  fromPlanId   String?   @map("from_plan_id")
+  toPlanId     String    @map("to_plan_id")
+  changedBy    String    @map("changed_by")  // userId
+  reason       String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  fromPlan     Plan?     @relation("PlanChangeFrom", fields: [fromPlanId], references: [id])
+  toPlan       Plan      @relation("PlanChangeTo", fields: [toPlanId], references: [id])
+
+  @@index([tenantId])
+  @@map("plan_change_logs")
 }
 
 enum RecurringExpenseFrequency {
