@@ -2,28 +2,43 @@
 
 import { useState } from 'react';
 import { useAuthStore } from '@/store/auth-store';
-import { useCurrentSubscription, useAvailablePlans, useSubscriptionUsage, useChangePlan } from '@/hooks/use-subscription';
+import {
+  useCurrentSubscription,
+  useAvailablePlans,
+  useSubscriptionUsage,
+  useChangePlan,
+} from '@/hooks/use-subscription';
 import { PlanTier, PlanCycle, Plan } from '@easyfactura/shared-types';
 import { PRICING } from '@easyfactura/brand-config';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Check, Zap, ArrowUpCircle, ArrowDownCircle, Info, X } from 'lucide-react';
+import FaqSection from '@/components/FaqSection';
+import {
+  Check,
+  Zap,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  Info,
+  X,
+  Sparkles,
+  Gift,
+  Users,
+  CheckCircle2,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { BillingCycleToggle, BillingCycle } from '@/components/ui/billing-cycle-toggle';
 
 const STARTER = PRICING.starter;
 const PRO = PRICING.pro;
-const CURRENT_YEAR = new Date().getFullYear();
 
 const CYCLE_LABELS: Record<PlanCycle, string> = {
   [PlanCycle.MONTHLY]: 'Mensual',
@@ -36,186 +51,153 @@ const TIER_LABELS: Record<PlanTier, string> = {
   [PlanTier.PROFESSIONAL]: 'PRO',
 };
 
-function getPrice(cycle: PlanCycle, tier: PlanTier): { monthly: string; note?: string; annualTotal?: string; monthlyEquivalent?: string } {
-  if (cycle === PlanCycle.FREE) {
-    return { monthly: 'Gratis' };
-  }
-  const isYearly = cycle === PlanCycle.YEARLY;
-  const isPro = tier === PlanTier.PROFESSIONAL;
-  const data = isPro ? PRO : STARTER;
-  const price = isYearly ? data.annualMonthly : data.monthly;
-  return {
-    monthly: `${price.toFixed(2).replace('.', ',')}€`,
-    note: isYearly ? `/mes` : '/mes',
-    annualTotal: isYearly ? `${data.annualTotal.toFixed(2).replace('.', ',')}€` : undefined,
-    monthlyEquivalent: isYearly ? `${data.annualMonthly.toFixed(2).replace('.', ',')}€/mes` : undefined,
-  };
-}
+const ALL_FEATURES = [
+  'VeriFactu',
+  'Facturas ilimitadas',
+  'Facturación recurrente',
+  'Clientes y productos ilimitados',
+  'Presupuestos y proformas',
+  'Rectificativas y abonos',
+  'Plantillas personalizadas',
+  'Gestión completa de gastos',
+  'Lectura inteligente de gastos (cuando esté disponible)',
+  'Proveedores',
+  'Automatizaciones con IA (cuando esté disponible)',
+  'Soporte prioritario',
+];
 
-interface PlanCardProps {
-  plan: Plan;
+const BASIC_FEATURES = ALL_FEATURES.slice(0, 7);
+const PRO_FEATURES = ALL_FEATURES.slice(7);
+
+interface PlanDisplayProps {
+  name: string;
+  description?: string;
+  highlighted?: boolean;
+  cycle: BillingCycle;
+  monthlyPrice: string;
+  annualMonthlyPrice: string;
+  annualTotal: string;
+  annualSavings: string;
   isCurrent: boolean;
-  isUpgrade: boolean;
-  usage: { invoicesThisYear: number; maxInvoicesBasic: number | null } | undefined;
-  onSelect: (plan: Plan) => void;
+  currentCycle?: PlanCycle;
+  onSelectMonthly: () => void;
+  onSelectAnnual: () => void;
   loading: boolean;
 }
 
-function PlanCard({ plan, isCurrent, isUpgrade, usage, onSelect, loading }: PlanCardProps) {
-  const price = getPrice(plan.cycle, plan.tier);
-  const isFree = plan.cycle === PlanCycle.FREE;
-  const exceedsLimit = plan.tier === PlanTier.BASIC && usage && plan.cycle !== PlanCycle.FREE
-    ? usage.invoicesThisYear > (plan.limits.maxInvoicesPerYear ?? 0)
-    : false;
+function PlanDisplay({
+  name,
+  description,
+  highlighted,
+  cycle,
+  monthlyPrice,
+  annualMonthlyPrice,
+  annualTotal,
+  annualSavings,
+  isCurrent,
+  currentCycle,
+  onSelectMonthly,
+  onSelectAnnual,
+  loading,
+}: PlanDisplayProps) {
+  const isPro = name === 'PRO';
+  const features = isPro ? ALL_FEATURES : BASIC_FEATURES;
+  const excludedFeatures = isPro ? [] : PRO_FEATURES;
+
+  const isCurrentMonthly = isCurrent && currentCycle === PlanCycle.MONTHLY;
+  const isCurrentAnnual = isCurrent && currentCycle === PlanCycle.YEARLY;
+
+  const displayPrice = cycle === 'monthly' ? monthlyPrice : annualTotal;
+  const displaySublabel =
+    cycle === 'monthly'
+      ? '/mes'
+      : `/año · ${annualMonthlyPrice}/mes · Ahorra ${annualSavings}`;
 
   return (
-    <Card className={cn(
-      'relative flex flex-col',
-      isCurrent && 'ring-2 ring-primary',
-      exceedsLimit && 'opacity-75',
-      isFree && 'border-green-300 bg-green-50/30'
-    )}>
+    <Card
+      className={cn(
+        'relative flex flex-col',
+        isCurrent && 'ring-2 ring-primary',
+        highlighted && !isCurrent && 'border-primary/50'
+      )}
+    >
       {isCurrent && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
           <Badge className="gap-1 bg-primary text-primary-foreground hover:bg-primary text-xs shadow-sm">
             <Check className="h-3 w-3" />
             Tu plan
           </Badge>
         </div>
       )}
-      {isFree && (
-        <div className="absolute -top-3 right-4">
-          <Badge className="gap-1 bg-green-600 text-white hover:bg-green-600 text-xs shadow-sm animate-pulse">
-            ¡Gratis hasta 2027!
-          </Badge>
-        </div>
-      )}
 
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-base">{plan.name}</CardTitle>
-            <CardDescription className="text-xs mt-0.5">
-              {TIER_LABELS[plan.tier]} · {CYCLE_LABELS[plan.cycle]}
-            </CardDescription>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-xl flex items-center gap-2">
+              {name}
+              {isPro && <Zap className="h-5 w-5 text-primary" />}
+            </CardTitle>
           </div>
-          {plan.tier === PlanTier.PROFESSIONAL && (
-            <Zap className="h-4 w-4 text-primary mt-1" />
+          {highlighted && (
+            <Badge className="gap-1 bg-primary text-white hover:bg-primary text-xs">
+              <Users className="h-3 w-3" />
+              El más elegido
+            </Badge>
           )}
         </div>
 
-        <div className="mt-3">
-          {plan.cycle === PlanCycle.YEARLY && !isFree ? (
-            <div className="space-y-0.5">
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-bold text-foreground">
-                  {price.annualTotal}
-                </span>
-                <span className="text-xs text-muted-foreground">/año</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {price.monthlyEquivalent} · <span className="font-medium">Un solo pago anual</span>
+        {description && (
+          <p className="text-sm text-muted-foreground">{description}</p>
+        )}
+
+        <div className="mt-4 p-4 bg-muted/30 rounded-lg">
+          <div className="text-center mb-3">
+            <span className="text-3xl font-bold">{displayPrice}</span>
+            <span className="text-sm text-muted-foreground ml-1">
+              {cycle === 'monthly' ? '/mes' : '/año'}
+            </span>
+          </div>
+
+          {cycle === 'annual' && (
+            <div className="bg-green-100 text-green-700 text-center py-2 px-3 rounded-md mb-3 animate-in fade-in slide-in-from-top-2 duration-300">
+              <p className="text-sm font-medium">
+                <CheckCircle2 className="h-4 w-4 inline mr-1" />
+                Ahorras {annualSavings} al año
               </p>
-            </div>
-          ) : (
-            <div className="flex items-baseline gap-1.5">
-              <span className={cn("text-2xl font-bold", isFree ? 'text-green-600' : 'text-foreground')}>
-                {price.monthly}
-              </span>
-              {!isFree && price.note && (
-                <span className="text-xs text-muted-foreground">{price.note}</span>
-              )}
+              <p className="text-xs">Equivale a {annualMonthlyPrice}/mes</p>
             </div>
           )}
+
+          <Button
+            className="w-full"
+            onClick={cycle === 'monthly' ? onSelectMonthly : onSelectAnnual}
+            disabled={loading || (isCurrent && (cycle === 'monthly' ? isCurrentMonthly : isCurrentAnnual))}
+            variant={isCurrent && (cycle === 'monthly' ? isCurrentMonthly : isCurrentAnnual) ? 'outline' : 'default'}
+          >
+            {isCurrent && (cycle === 'monthly' ? isCurrentMonthly : isCurrentAnnual)
+              ? 'Plan actual'
+              : cycle === 'monthly'
+              ? 'Elegir mensual'
+              : 'Elegir anual'}
+          </Button>
         </div>
       </CardHeader>
 
-      <CardContent className="flex flex-col flex-1 pt-0">
-        <ul className="space-y-1.5 flex-1">
-          {plan.tier === PlanTier.BASIC ? (
-            <>
-              <li className="flex items-start gap-2 text-sm">
-                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <span>Hasta {plan.limits.maxInvoicesPerYear} facturas/año</span>
-              </li>
-              <li className="flex items-start gap-2 text-sm">
-                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <span>Clientes y productos ilimitados</span>
-              </li>
-              <li className="flex items-start gap-2 text-sm">
-                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <span>PDFs y presupuestos</span>
-              </li>
-              <li className="flex items-start gap-2 text-sm text-destructive">
-                <X className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>Gestión de gastos</span>
-              </li>
-              <li className="flex items-start gap-2 text-sm text-destructive">
-                <X className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>Soporte personalizado</span>
-              </li>
-              <li className="flex items-start gap-2 text-sm text-destructive">
-                <X className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>Soporte 24h</span>
-              </li>
-              <li className="flex items-start gap-2 text-sm text-destructive">
-                <X className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>Integrado con IA</span>
-              </li>
-            </>
-          ) : (
-            <>
-              <li className="flex items-start gap-2 text-sm">
-                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <span>Facturas ilimitadas</span>
-              </li>
-              <li className="flex items-start gap-2 text-sm">
-                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <span>Gestión de gastos completa</span>
-              </li>
-              <li className="flex items-start gap-2 text-sm">
-                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <span>Proveedores y recurrentes</span>
-              </li>
-              <li className="flex items-start gap-2 text-sm">
-                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <span>Soporte personalizado</span>
-              </li>
-              <li className="flex items-start gap-2 text-sm">
-                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <span>Soporte 24h</span>
-              </li>
-              <li className="flex items-start gap-2 text-sm">
-                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <span>Integrado con IA</span>
-              </li>
-              <li className="flex items-start gap-2 text-sm">
-                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <span>Todo lo del plan Básico</span>
-              </li>
-            </>
-          )}
+      <CardContent className="pt-0">
+        <ul className="space-y-1.5">
+          {features.map((feature, i) => (
+            <li key={i} className="flex items-start gap-2 text-sm">
+              <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <span>{feature}</span>
+            </li>
+          ))}
+          {excludedFeatures.map((feature, i) => (
+            <li key={i} className="flex items-start gap-2 text-sm text-destructive">
+              <X className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{feature}</span>
+            </li>
+          ))}
         </ul>
-
-        <div className="mt-4 pt-3">
-          {isCurrent ? (
-            <Button variant="outline" className="w-full border-primary text-primary disabled:opacity-100" disabled>
-              Plan actual
-            </Button>
-          ) : exceedsLimit ? (
-            <Button variant="secondary" className="w-full" disabled title={`Superas el límite de ${plan.limits.maxInvoicesPerYear} facturas anuales`}>
-              No disponible
-            </Button>
-          ) : isUpgrade ? (
-            <Button className="w-full" onClick={() => onSelect(plan)} disabled={loading}>
-              Cambiar a {plan.name}
-            </Button>
-          ) : (
-            <Button variant="outline" className="w-full" onClick={() => onSelect(plan)} disabled={loading}>
-              Cambiar a {plan.name}
-            </Button>
-          )}
-        </div>
       </CardContent>
     </Card>
   );
@@ -250,8 +232,10 @@ function ChangePlanModal({
     usage &&
     usage.invoicesThisYear > (plan.limits.maxInvoicesPerYear ?? 0);
 
-  const isFreeToPaid = currentPlan?.cycle === PlanCycle.FREE && plan.cycle !== PlanCycle.FREE;
-  const isPaidToSameTier = currentPlan?.cycle !== PlanCycle.FREE &&
+  const isFreeToPaid =
+    currentPlan?.cycle === PlanCycle.FREE && plan.cycle !== PlanCycle.FREE;
+  const isPaidToSameTier =
+    currentPlan?.cycle !== PlanCycle.FREE &&
     plan.cycle !== PlanCycle.FREE &&
     currentPlan?.tier === plan.tier;
 
@@ -281,8 +265,8 @@ function ChangePlanModal({
 
         <div className="space-y-3 text-sm text-muted-foreground">
           <p>
-            Vas a cambiar a{' '}
-            <strong className="text-foreground">{plan.name}</strong>. {getTimingMessage()}
+            Vas a cambiar a <strong className="text-foreground">{plan.name}</strong>.{' '}
+            {getTimingMessage()}
           </p>
 
           {isUpgrade ? (
@@ -291,15 +275,15 @@ function ChangePlanModal({
               <ul className="space-y-1">
                 <li className="flex items-center gap-2 text-sm text-green-700">
                   <Check className="h-3.5 w-3.5 shrink-0" />
-                  Facturas ilimitadas
+                  Gestión completa de gastos
                 </li>
                 <li className="flex items-center gap-2 text-sm text-green-700">
                   <Check className="h-3.5 w-3.5 shrink-0" />
-                  Gestión de gastos
+                  Proveedores y facturación recurrente
                 </li>
                 <li className="flex items-center gap-2 text-sm text-green-700">
                   <Check className="h-3.5 w-3.5 shrink-0" />
-                  Proveedores y gastos recurrentes
+                  Funciones de IA
                 </li>
               </ul>
             </div>
@@ -309,15 +293,15 @@ function ChangePlanModal({
               <ul className="space-y-1">
                 <li className="flex items-center gap-2 text-sm text-amber-700">
                   <X className="h-3.5 w-3.5 shrink-0" />
-                  Gestión de gastos
+                  Gestión completa de gastos
                 </li>
                 <li className="flex items-center gap-2 text-sm text-amber-700">
                   <X className="h-3.5 w-3.5 shrink-0" />
-                  Proveedores y gastos recurrentes
+                  Proveedores y facturación recurrente
                 </li>
                 <li className="flex items-center gap-2 text-sm text-amber-700">
                   <X className="h-3.5 w-3.5 shrink-0" />
-                  Máximo {plan.limits.maxInvoicesPerYear} facturas/año
+                  Funciones de IA
                 </li>
               </ul>
             </div>
@@ -328,13 +312,7 @@ function ChangePlanModal({
               <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
               <p className="text-sm text-muted-foreground">
                 Llevas <strong className="text-foreground">{usage.invoicesThisYear}</strong>{' '}
-                facturas en {CURRENT_YEAR}.
-                {wouldExceedLimit && (
-                  <span className="block mt-1 text-amber-600 font-medium">
-                    Superas el límite de {plan.limits.maxInvoicesPerYear} facturas anuales.
-                    No puedes cambiar a este plan.
-                  </span>
-                )}
+                facturas emitidas.
               </p>
             </div>
           )}
@@ -366,19 +344,28 @@ export default function AjustesPlanPage() {
 
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [cycle, setCycle] = useState<BillingCycle>('annual');
 
   const currentPlan = subscription?.plan;
   const isLoading = subLoading || plansLoading;
 
-  const groupedPlans = plans?.reduce(
-    (acc, plan) => {
-      const key = plan.tier;
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(plan);
-      return acc;
-    },
-    {} as Record<PlanTier, Plan[]>
-  );
+  const basicPlans = plans?.filter((p) => p.tier === PlanTier.BASIC);
+  const proPlans = plans?.filter((p) => p.tier === PlanTier.PROFESSIONAL);
+
+  const basicMonthly = basicPlans?.find((p) => p.cycle === PlanCycle.MONTHLY);
+  const basicAnnual = basicPlans?.find((p) => p.cycle === PlanCycle.YEARLY);
+  const proMonthly = proPlans?.find((p) => p.cycle === PlanCycle.MONTHLY);
+  const proAnnual = proPlans?.find((p) => p.cycle === PlanCycle.YEARLY);
+
+  const BASIC_MONTHLY_PRICE = STARTER.monthly.toFixed(2).replace('.', ',') + '€';
+  const BASIC_ANNUAL_PRICE = STARTER.annualMonthly.toFixed(2).replace('.', ',') + '€';
+  const BASIC_ANNUAL_TOTAL = STARTER.annualTotal.toFixed(2).replace('.', ',') + '€';
+  const BASIC_ANNUAL_SAVINGS = STARTER.annualSaving.toFixed(2).replace('.', ',') + '€';
+
+  const PRO_MONTHLY_PRICE = PRO.monthly.toFixed(2).replace('.', ',') + '€';
+  const PRO_ANNUAL_PRICE = PRO.annualMonthly.toFixed(2).replace('.', ',') + '€';
+  const PRO_ANNUAL_TOTAL = PRO.annualTotal.toFixed(2).replace('.', ',') + '€';
+  const PRO_ANNUAL_SAVINGS = PRO.annualSaving.toFixed(2).replace('.', ',') + '€';
 
   const handleSelectPlan = (plan: Plan) => {
     setSelectedPlan(plan);
@@ -405,12 +392,15 @@ export default function AjustesPlanPage() {
     ? currentPlan?.tier === PlanTier.BASIC && selectedPlan.tier === PlanTier.PROFESSIONAL
     : false;
 
+  const basicIsCurrent = currentPlan?.tier === PlanTier.BASIC;
+  const proIsCurrent = currentPlan?.tier === PlanTier.PROFESSIONAL;
+
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Planes</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Compara los planes y cambia cuando lo necesites.
+          Elige el plan que mejor se adapte a tu negocio.
         </p>
       </div>
 
@@ -436,84 +426,98 @@ export default function AjustesPlanPage() {
         </Card>
       )}
 
-      {/* Oferta gratuita hasta 2027 */}
-      <Alert className="bg-green-50 border-green-200">
-        <Info className="h-4 w-4 text-green-600" />
-        <AlertDescription className="text-green-800 text-sm">
-          <span className="font-medium">¡Oferta especial!</span> Ambos planes gratuitos son gratis hasta 2027. ¡Aprovéchala!
+      {/* Promoción de lanzamiento */}
+      <Alert className="bg-green-50 border-green-200 py-4">
+        <Gift className="h-5 w-5 text-green-600 shrink-0" />
+        <AlertDescription className="text-green-800">
+          <span className="font-semibold text-base">¡Promoción de lanzamiento!</span>
+          <span className="block text-sm mt-0.5">
+            Disfruta de NovaFactura PRO gratis hasta 2027. Después, tu plan costará según la
+            tabla inferior.
+          </span>
         </AlertDescription>
       </Alert>
 
+      {/* Toggle de ciclo de facturación */}
+      <div className="flex justify-center">
+        <BillingCycleToggle
+          value={cycle}
+          onChange={setCycle}
+          annualBadge="Ahorra hasta 60€"
+        />
+      </div>
+
       {/* Comparativa de planes */}
       {isLoading ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="h-64 animate-pulse" />
-          ))}
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card className="h-[500px] animate-pulse" />
+          <Card className="h-[500px] animate-pulse" />
         </div>
       ) : (
-        <div className="space-y-8 pb-8">
-          {/* PROFESSIONAL */}
-          {groupedPlans?.[PlanTier.PROFESSIONAL] && (
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-base font-semibold">Planes PRO</h2>
-                <Badge variant="secondary" className="text-xs">
-                  Facturación ilimitada + Gastos
-                </Badge>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 auto-fit" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
-                {groupedPlans[PlanTier.PROFESSIONAL].map((plan) => {
-                  const isCurrent = plan.slug === currentPlan?.slug;
-                  const isUpgrade = currentPlan?.tier === PlanTier.BASIC;
-                  return (
-                    <PlanCard
-                      key={plan.id}
-                      plan={plan}
-                      isCurrent={isCurrent}
-                      isUpgrade={isUpgrade}
-                      usage={usage}
-                      onSelect={handleSelectPlan}
-                      loading={changePlan.isPending}
-                    />
-                  );
-                })}
-              </div>
-            </div>
+        <div className="grid md:grid-cols-2 gap-6 pb-8">
+          {/* BÁSICO */}
+          {basicMonthly && basicAnnual && (
+            <PlanDisplay
+              name="Básico"
+              description="Para empezar a facturar sin complicaciones."
+              cycle={cycle}
+              monthlyPrice={BASIC_MONTHLY_PRICE}
+              annualMonthlyPrice={BASIC_ANNUAL_PRICE}
+              annualTotal={BASIC_ANNUAL_TOTAL}
+              annualSavings={BASIC_ANNUAL_SAVINGS}
+              isCurrent={basicIsCurrent ?? false}
+              currentCycle={
+                currentPlan?.tier === PlanTier.BASIC ? currentPlan.cycle : undefined
+              }
+              onSelectMonthly={() => handleSelectPlan(basicMonthly)}
+              onSelectAnnual={() => handleSelectPlan(basicAnnual)}
+              loading={changePlan.isPending}
+            />
           )}
 
-          <Separator />
-
-          {/* BASIC */}
-          {groupedPlans?.[PlanTier.BASIC] && (
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-base font-semibold">Planes Básico</h2>
-                <Badge variant="secondary" className="text-xs">
-                  Hasta 60 facturas/año
-                </Badge>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 auto-fit" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
-                {groupedPlans[PlanTier.BASIC].map((plan) => {
-                  const isCurrent = plan.slug === currentPlan?.slug;
-                  const isUpgrade = currentPlan?.tier === PlanTier.BASIC;
-                  return (
-                    <PlanCard
-                      key={plan.id}
-                      plan={plan}
-                      isCurrent={isCurrent}
-                      isUpgrade={isUpgrade}
-                      usage={usage}
-                      onSelect={handleSelectPlan}
-                      loading={changePlan.isPending}
-                    />
-                  );
-                })}
-              </div>
-            </div>
+          {/* PRO */}
+          {proMonthly && proAnnual && (
+            <PlanDisplay
+              name="PRO"
+              highlighted
+              cycle={cycle}
+              monthlyPrice={PRO_MONTHLY_PRICE}
+              annualMonthlyPrice={PRO_ANNUAL_PRICE}
+              annualTotal={PRO_ANNUAL_TOTAL}
+              annualSavings={PRO_ANNUAL_SAVINGS}
+              isCurrent={proIsCurrent ?? false}
+              currentCycle={
+                currentPlan?.tier === PlanTier.PROFESSIONAL ? currentPlan.cycle : undefined
+              }
+              onSelectMonthly={() => handleSelectPlan(proMonthly)}
+              onSelectAnnual={() => handleSelectPlan(proAnnual)}
+              loading={changePlan.isPending}
+            />
           )}
         </div>
       )}
+
+      <FaqSection
+        faqs={[
+          {
+            q: '¿Puedo cancelar cuando quiera?',
+            a: 'Sí, puedes cancelar tu suscripción en cualquier momento desde los ajustes de tu cuenta. Seguirás teniendo acceso a tu plan hasta final del período contratado.',
+          },
+          {
+            q: '¿Cuándo se me cobra?',
+            a: 'El cobro se realiza al inicio de cada período de facturación (mensual o anual, dependiendo del plan que elijas). Si eliges el plan anual, el pago es único.',
+          },
+          {
+            q: '¿Qué pasa con mis datos si cancelo?',
+            a: 'Todos tus datos (facturas, clientes, productos) permanecen seguros y accesibles. Aunque canceles tu suscripción, podrás exportar toda tu información en cualquier momento.',
+          },
+          {
+            q: '¿Puedo cambiar de plan más adelante?',
+            a: 'Sí, puedes cambiar de plan en cualquier momento. Si cambias de un plan mensual a uno anual, el cambio se aplicará al final del mes actual para que no pierdas ningún día.',
+          },
+        ]}
+        title="Preguntas frecuentes sobre los planes"
+      />
 
       <ChangePlanModal
         plan={selectedPlan}
