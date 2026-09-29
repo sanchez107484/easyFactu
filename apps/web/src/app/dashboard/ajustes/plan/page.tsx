@@ -154,6 +154,14 @@ function PlanCard({ plan, isCurrent, isUpgrade, usage, onSelect, loading }: Plan
                 <X className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>Soporte personalizado</span>
               </li>
+              <li className="flex items-start gap-2 text-sm text-destructive">
+                <X className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>Soporte 24h</span>
+              </li>
+              <li className="flex items-start gap-2 text-sm text-destructive">
+                <X className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>Integrado con IA</span>
+              </li>
             </>
           ) : (
             <>
@@ -172,6 +180,14 @@ function PlanCard({ plan, isCurrent, isUpgrade, usage, onSelect, loading }: Plan
               <li className="flex items-start gap-2 text-sm">
                 <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                 <span>Soporte personalizado</span>
+              </li>
+              <li className="flex items-start gap-2 text-sm">
+                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <span>Soporte 24h</span>
+              </li>
+              <li className="flex items-start gap-2 text-sm">
+                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <span>Integrado con IA</span>
               </li>
               <li className="flex items-start gap-2 text-sm">
                 <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
@@ -213,6 +229,7 @@ interface ChangePlanModalProps {
   isPending: boolean;
   isUpgrade: boolean;
   usage: { invoicesThisYear: number; maxInvoicesBasic: number | null } | undefined;
+  currentPlan: Plan | undefined;
 }
 
 function ChangePlanModal({
@@ -223,6 +240,7 @@ function ChangePlanModal({
   isPending,
   isUpgrade,
   usage,
+  currentPlan,
 }: ChangePlanModalProps) {
   if (!plan) return null;
 
@@ -231,6 +249,21 @@ function ChangePlanModal({
     plan.tier === PlanTier.BASIC &&
     usage &&
     usage.invoicesThisYear > (plan.limits.maxInvoicesPerYear ?? 0);
+
+  const isFreeToPaid = currentPlan?.cycle === PlanCycle.FREE && plan.cycle !== PlanCycle.FREE;
+  const isPaidToSameTier = currentPlan?.cycle !== PlanCycle.FREE &&
+    plan.cycle !== PlanCycle.FREE &&
+    currentPlan?.tier === plan.tier;
+
+  const getTimingMessage = () => {
+    if (isFreeToPaid) {
+      return 'El cambio es inmediato y gratuito.';
+    }
+    if (isPaidToSameTier) {
+      return 'El cambio se aplicará al final del mes actual.';
+    }
+    return 'Este cambio se aplicará al final del mes actual.';
+  };
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
@@ -249,10 +282,7 @@ function ChangePlanModal({
         <div className="space-y-3 text-sm text-muted-foreground">
           <p>
             Vas a cambiar a{' '}
-            <strong className="text-foreground">{plan.name}</strong>.
-            {isUpgrade
-              ? ' El cambio es inmediato y gratuito.'
-              : ' Este cambio es inmediato.'}
+            <strong className="text-foreground">{plan.name}</strong>. {getTimingMessage()}
           </p>
 
           {isUpgrade ? (
@@ -432,7 +462,7 @@ export default function AjustesPlanPage() {
                   Facturación ilimitada + Gastos
                 </Badge>
               </div>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 auto-fit" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
                 {groupedPlans[PlanTier.PROFESSIONAL].map((plan) => {
                   const isCurrent = plan.slug === currentPlan?.slug;
                   const isUpgrade = currentPlan?.tier === PlanTier.BASIC;
@@ -463,7 +493,7 @@ export default function AjustesPlanPage() {
                   Hasta 60 facturas/año
                 </Badge>
               </div>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 auto-fit" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
                 {groupedPlans[PlanTier.BASIC].map((plan) => {
                   const isCurrent = plan.slug === currentPlan?.slug;
                   const isUpgrade = currentPlan?.tier === PlanTier.BASIC;
@@ -493,6 +523,7 @@ export default function AjustesPlanPage() {
         isPending={changePlan.isPending}
         isUpgrade={isUpgrade}
         usage={usage}
+        currentPlan={currentPlan}
       />
     </div>
   );
