@@ -58,7 +58,7 @@ pnpm format
 # Type-check (web only — api uses tsc via nest build)
 cd apps/web && pnpm type-check
 
-# Test (no unit tests exist yet — zero .spec.ts files found)
+# Test (backend security tests configured in apps/api/test)
 pnpm test
 
 # Build (all units)
@@ -707,11 +707,11 @@ Antes de dar cualquier tarea por terminada — verificar punto a punto:
 ## 15) Open Questions / TODO
 
 1. **Redis/BullMQ**: `REDIS_URL` is in `.env.example` but no `bullmq` package in `apps/api/package.json`. Confirmed: queue is **planned but not implemented**. VeriFactu operations (XML, sign, send) run synchronously — critical bottleneck for production scale.
-2. **Testing**: Only 1 spec file found (`packages/shared-validators/src/nif-validator.spec.ts`). Zero tests for `InvoiceCalculationService`, `VerifactuHashService`, `InvoiceNumberService` — all have direct fiscal/legal impact.
+2. **Testing**: Backend security tests configured for expenses module (40 tests). Still zero tests for `InvoiceCalculationService`, `VerifactuHashService`, `InvoiceNumberService` — all have direct fiscal/legal impact.
 3. **Refresh token storage**: Both tokens in `localStorage` (confirmed in `api-client.ts`). XSS risk. Known trade-off or pending improvement?
 4. **Frontend middleware**: `middleware.ts` is permissive — auth validated client-side in dashboard layout (confirmed). Server-side validation at middleware level would improve security posture.
 5. **Certificate exposure**: `uploads/certificates/` served by NestJS static assets at `/api/v1/uploads/`. Confirm route prefix does NOT publicly expose certificate files.
-6. **Plan enforcement**: `Plan` enum (FREE/BASIC/PROFESSIONAL) in Prisma schema — no plan-gating logic found in controllers/services. Implemented or pending?
+6. **Plan enforcement**: `PlanGuard` + `@RequirePlan()` implemented for expenses, suppliers, attachments and recurring expenses. Pending review for other modules.
 7. **Email verification**: `emailVerified` on User model. Is verification enforced (blocks login until verified)?
 8. **CI pipeline**: Only `lighthouse-ci.yml` (daily audit). No build/lint/test CI on PRs — a broken build could go undetected.
 9. **Sanity revalidation**: Sanity CMS configured for blog. Is ISR revalidation webhook active in production?

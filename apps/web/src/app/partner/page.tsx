@@ -73,7 +73,7 @@ interface PartnerStats {
     id: string;
     businessName: string;
     email: string;
-    plan: string;
+    planTier: string;
     accountType: string;
     setupCompleted: boolean;
     createdAt: string;
@@ -801,10 +801,9 @@ function Dashboard({
       const q = filter.search.toLowerCase();
       if (q && !t.businessName.toLowerCase().includes(q) && !t.email.toLowerCase().includes(q))
         return false;
-      if (filter.plan !== 'ALL' && t.plan !== filter.plan) return false;
+      if (filter.plan !== 'ALL' && t.planTier !== filter.plan) return false;
       if (filter.type !== 'ALL' && t.accountType !== filter.type) return false;
       if (filter.quick.has('sinSetup') && t.setupCompleted) return false;
-      if (filter.quick.has('soloPago') && t.plan === 'FREE') return false;
       return true;
     });
 
@@ -814,7 +813,7 @@ function Dashboard({
       let cmp = 0;
       if (col === 'businessName') cmp = a.businessName.localeCompare(b.businessName, 'es');
       else if (col === 'email') cmp = a.email.localeCompare(b.email, 'es');
-      else if (col === 'plan') cmp = (PLAN_ORDER[a.plan] ?? 0) - (PLAN_ORDER[b.plan] ?? 0);
+      else if (col === 'plan') cmp = (PLAN_ORDER[a.planTier] ?? 0) - (PLAN_ORDER[b.planTier] ?? 0);
       else if (col === 'accountType') cmp = a.accountType.localeCompare(b.accountType, 'es');
       else if (col === 'invoiceCount') cmp = a.invoiceCount - b.invoiceCount;
       else if (col === 'recurringInvoiceCount')
@@ -1127,13 +1126,6 @@ function Dashboard({
             </div>
             <div className="space-y-4">
               <PlanBar
-                label="FREE"
-                value={stats.tenants.byPlan.FREE}
-                max={totalTenants}
-                colorClass="bg-gray-500"
-                badgeClass="bg-gray-700 text-gray-300"
-              />
-              <PlanBar
                 label="BASIC"
                 value={stats.tenants.byPlan.BASIC}
                 max={totalTenants}
@@ -1295,14 +1287,14 @@ function Dashboard({
                         <td className="px-4 py-3 text-center">
                           <span
                             className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
-                              t.plan === 'PROFESSIONAL'
+                              t.planTier === 'PROFESSIONAL'
                                 ? 'bg-purple-900/50 text-purple-300'
-                                : t.plan === 'BASIC'
+                                : t.planTier === 'BASIC'
                                   ? 'bg-blue-900/50 text-blue-300'
                                   : 'bg-gray-700 text-gray-400'
                             }`}
                           >
-                            {t.plan}
+                            {t.planTier === 'PROFESSIONAL' ? 'PRO' : t.planTier}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center text-xs text-gray-400">

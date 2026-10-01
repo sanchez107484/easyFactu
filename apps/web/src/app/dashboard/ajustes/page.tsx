@@ -16,16 +16,16 @@ import {
   AlertCircle,
   SlidersHorizontal,
   UserCircle,
+  CreditCard,
 } from 'lucide-react';
 import { useTenant } from '@/hooks/use-tenant';
 import { useAuthStore } from '@/store/auth-store';
-import { AccountType, Plan } from '@easyfactura/shared-types';
+import { AccountType, PlanTier } from '@easyfactura/shared-types';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const PLAN_LABELS: Record<Plan, string> = {
-  [Plan.FREE]: 'Gratuito',
-  [Plan.BASIC]: 'Básico',
-  [Plan.PROFESSIONAL]: 'Profesional',
+const PLAN_LABELS: Record<PlanTier, string> = {
+  [PlanTier.BASIC]: 'Básico',
+  [PlanTier.PROFESSIONAL]: 'PRO',
 };
 
 const BASE_SETTINGS_SECTIONS = [
@@ -59,7 +59,12 @@ const BASE_SETTINGS_SECTIONS = [
     title: 'Plantilla PDF',
     description: 'Diseño y apariencia de tus facturas PDF',
   },
-
+  {
+    href: '/dashboard/ajustes/plan',
+    icon: CreditCard,
+    title: 'Plan',
+    description: 'Tu suscripción actual',
+  },
   /*{
     href: '/dashboard/ajustes/seguridad',
     icon: Shield,
@@ -73,13 +78,7 @@ const BASE_SETTINGS_SECTIONS = [
     title: 'Usuarios',
     description: 'Tu cuenta y gestión de accesos',
   },
-  {
-    href: '/dashboard/ajustes/plan',
-    icon: Crown,
-    title: 'Plan',
-    description: 'Tu suscripción actual',
-  }, */
-  /* {
+ {
     href: '/dashboard/ajustes/notificaciones',
     icon: Bell,
     title: 'Notificaciones',
@@ -107,7 +106,7 @@ export default function AjustesPage() {
       : []),
   ];
 
-  const plan = currentTenant?.plan ?? Plan.FREE;
+  const plan = currentTenant?.subscription?.plan?.tier ?? PlanTier.BASIC;
   const hasCertificate = Boolean(tenant?.certificateUrl);
   const certificateExpiry = tenant?.certificateExpiry ? new Date(tenant.certificateExpiry) : null;
   const isCertificateExpired = certificateExpiry ? certificateExpiry < new Date() : false;
@@ -144,17 +143,20 @@ export default function AjustesPage() {
             </div>
 
             {/* Plan */}
-            <div className="rounded-lg border p-3">
+            <Link
+              href="/dashboard/ajustes/plan"
+              className="rounded-lg border border-primary p-3 hover:bg-muted/50 transition-colors block"
+            >
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Plan
               </p>
               <div className="mt-1 flex items-center gap-2">
-                <p className="font-semibold">{PLAN_LABELS[plan]}</p>
-                <Badge variant="secondary" className="text-xs">
-                  {plan}
-                </Badge>
+                <p className="font-semibold">
+                  {currentTenant?.subscription?.plan?.name ?? PLAN_LABELS[plan]}
+                </p>
               </div>
-            </div>
+              <p className="text-xs text-primary mt-1">Gestionar plan →</p>
+            </Link>
 
             {/* Certificado digital */}
             <div className="rounded-lg border p-3">

@@ -22,6 +22,7 @@ import {
   X,
   TrendingUp,
   AlertTriangle,
+  Receipt,
 } from 'lucide-react';
 import { brandConfig, PRICING, PLAZAS_CONFIG } from '@easyfactura/brand-config';
 import SiteHeader from '@/components/site-header';
@@ -163,6 +164,7 @@ const comparisonRows = [
   { label: 'VeriFactu automático', starter: true, pro: true, excel: false, otros: false },
   { label: 'Hash encadenado + QR', starter: true, pro: true, excel: false, otros: '€€ extra' },
   { label: 'Envío AEAT integrado', starter: true, pro: true, excel: false, otros: '€€ extra' },
+  { label: 'Gestión de gastos (PRO)', starter: false, pro: true, excel: false, otros: false },
   { label: 'Gratis hasta 2027', starter: true, pro: true, excel: false, otros: false },
   { label: 'Sin tarjeta al registrarte', starter: true, pro: true, excel: true, otros: false },
   { label: 'Soporte en español', starter: true, pro: true, excel: false, otros: '€€ extra' },
@@ -612,6 +614,10 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                           <span className="text-sm text-slate-700">{text}</span>
                         </div>
                       ))}
+                      <div className="flex items-center gap-2.5 py-0.5 pt-2 border-t border-red-100 mt-2">
+                        <Receipt className="h-4 w-4 shrink-0 text-red-500" />
+                        <span className="text-sm font-semibold text-red-700">Gestión de gastos</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -728,6 +734,7 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                     {[
                       'Todo lo del plan Starter incluido',
                       'Facturas ilimitadas al año',
+                      'Gestión de gastos',
                       'Sin tope — crece sin restricciones',
                       'Ideal para alta facturación',
                     ].map((t, i) => (

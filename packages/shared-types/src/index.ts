@@ -1,9 +1,20 @@
 // ==================== ENUMS ====================
 
-export enum Plan {
+export enum PlanCycle {
+  MONTHLY = 'MONTHLY',
+  YEARLY = 'YEARLY',
   FREE = 'FREE',
+}
+
+export enum PlanTier {
   BASIC = 'BASIC',
   PROFESSIONAL = 'PROFESSIONAL',
+}
+
+export enum SubscriptionStatus {
+  ACTIVE = 'ACTIVE',
+  CANCELLED = 'CANCELLED',
+  PENDING = 'PENDING',
 }
 
 export enum AccountType {
@@ -110,6 +121,49 @@ export enum RelationTerminator {
   CLIENT = 'CLIENT',
 }
 
+// ==================== PLANS ====================
+
+export interface PlanLimits {
+  maxInvoicesPerYear: number | null;
+  allowExpenses: boolean;
+}
+
+export interface Plan {
+  id: string;
+  slug: string;
+  name: string;
+  cycle: PlanCycle;
+  tier: PlanTier;
+  limits: PlanLimits;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Subscription {
+  id: string;
+  tenantId: string;
+  planId: string;
+  status: SubscriptionStatus;
+  billingCycle: PlanCycle;
+  startedAt: string;
+  changedAt: string;
+  preferredPlanSlug?: string | null;
+  plan?: Plan;
+}
+
+export interface PlanChangeLog {
+  id: string;
+  tenantId: string;
+  fromPlanId: string | null;
+  toPlanId: string;
+  changedBy: string;
+  reason: string | null;
+  createdAt: string;
+  fromPlan?: Plan | null;
+  toPlan?: Plan;
+}
+
 // ==================== BASE TYPES ====================
 
 export interface PaginatedResponse<T> {
@@ -154,8 +208,8 @@ export interface Tenant {
   taxRegime: TaxRegime;
   /** Tasa de compensación agraria (%). Solo cuando taxRegime = REAGYP. */
   reaypRate: number | null;
-  plan: Plan;
   isActive: boolean;
+  subscription?: Subscription | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1099,6 +1153,230 @@ export interface UpdateInvoiceTemplateInput {
   layout?: Partial<InvoiceLayout>;
 }
 
+// ==================== EXPENSES ====================
+
+export interface ExpenseCategory {
+  id: string;
+  slug: string;
+  name: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Supplier {
+  id: string;
+  tenantId: string;
+  name: string;
+  legalName: string | null;
+  taxId: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  postalCode: string | null;
+  city: string | null;
+  province: string | null;
+  country: string;
+  notes: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  expenseCount?: number;
+  totalExpenses?: number;
+}
+
+export interface ExpenseAttachment {
+  id: string;
+  tenantId: string;
+  expenseId: string | null;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  storageKey: string;
+  createdAt: string;
+}
+
+export interface Expense {
+  id: string;
+  tenantId: string;
+  date: string;
+  description: string;
+  categoryId: string;
+  supplierId: string | null;
+  clientId: string | null;
+  baseAmount: number;
+  vatRate: number;
+  vatAmount: number;
+  totalAmount: number;
+  notes: string | null;
+  attachmentId: string | null;
+  recurringExpense?: RecurringExpense | null;
+  createdByUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  category?: ExpenseCategory;
+  supplier?: Supplier | null;
+  client?: Customer | null;
+  attachment?: ExpenseAttachment | null;
+}
+
+export interface CreateExpenseInput {
+  date: string;
+  description: string;
+  categoryId: string;
+  supplierId?: string | null;
+  clientId?: string | null;
+  baseAmount: number;
+  vatRate: number;
+  notes?: string | null;
+  attachmentId?: string | null;
+}
+
+export interface UpdateExpenseInput {
+  date?: string;
+  description?: string;
+  categoryId?: string;
+  supplierId?: string | null;
+  clientId?: string | null;
+  baseAmount?: number;
+  vatRate?: number;
+  notes?: string | null;
+  attachmentId?: string | null;
+}
+
+export interface QueryExpensesInput {
+  page?: number;
+  limit?: number;
+  search?: string;
+  categoryId?: string;
+  supplierId?: string;
+  clientId?: string;
+  fromDate?: string;
+  toDate?: string;
+  sortBy?: 'date' | 'description' | 'totalAmount' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface ExpenseSummary {
+  monthTotal: number;
+  yearTotal: number;
+}
+
+export interface CreateSupplierInput {
+  name: string;
+  legalName?: string;
+  taxId?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  postalCode?: string;
+  city?: string;
+  province?: string;
+  country?: string;
+  notes?: string;
+}
+
+export interface UpdateSupplierInput {
+  name?: string;
+  legalName?: string;
+  taxId?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  postalCode?: string;
+  city?: string;
+  province?: string;
+  country?: string;
+  notes?: string;
+}
+
+export interface QuerySuppliersInput {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: 'name' | 'taxId' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export enum RecurringExpenseFrequency {
+  WEEKLY = 'WEEKLY',
+  MONTHLY = 'MONTHLY',
+  BIMONTHLY = 'BIMONTHLY',
+  QUARTERLY = 'QUARTERLY',
+  YEARLY = 'YEARLY',
+}
+
+export interface RecurringExpense {
+  id: string;
+  tenantId: string;
+  description: string;
+  categoryId: string;
+  supplierId: string | null;
+  clientId: string | null;
+  baseAmount: number;
+  vatRate: number;
+  vatAmount: number;
+  totalAmount: number;
+  frequency: RecurringExpenseFrequency;
+  startDate: string;
+  endDate: string | null;
+  lastGeneratedDate: string | null;
+  isActive: boolean;
+  notes: string | null;
+  createdByUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  category?: ExpenseCategory;
+  supplier?: Supplier | null;
+  client?: Customer | null;
+}
+
+export interface CreateRecurringExpenseInput {
+  description: string;
+  categoryId: string;
+  supplierId?: string | null;
+  clientId?: string | null;
+  baseAmount: number;
+  vatRate: number;
+  frequency: RecurringExpenseFrequency;
+  startDate: string;
+  endDate?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateRecurringExpenseInput {
+  description?: string;
+  categoryId?: string;
+  supplierId?: string | null;
+  clientId?: string | null;
+  baseAmount?: number;
+  vatRate?: number;
+  frequency?: RecurringExpenseFrequency;
+  startDate?: string;
+  endDate?: string | null;
+  isActive?: boolean;
+  notes?: string | null;
+}
+
+export interface QueryRecurringExpensesInput {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isActive?: boolean;
+  sortBy?: 'description' | 'startDate' | 'totalAmount' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface GenerateRecurringExpensesInput {
+  upToDate?: string;
+}
+
+export interface GenerateRecurringExpensesResult {
+  generatedCount: number;
+  lastGeneratedDate: string | null;
+}
+
 // ==================== REPORTS ====================
 
 export interface DashboardStats {
@@ -1178,12 +1456,35 @@ export interface InvoiceReportData {
   };
 }
 
-export interface QueryReportsInput {
-  fromDate: string;
-  toDate: string;
+
+
+export interface ExpenseItem {
+  id: string;
+  date: string;
+  description: string;
+  categoryId: string;
+  categoryName: string;
+  amount: number;
 }
 
-// ==================== AGENCY ====================
+export interface ActivitySummary {
+  incomeThisMonth: number;
+  incomeLastMonth: number;
+  incomeThisYear: number;
+  expenseThisMonth: number;
+  expenseLastMonth: number;
+  expenseThisYear: number;
+  monthlyChart: Array<{ month: string; ingresos: number; gastos: number }>;
+  topExpenseCategories: Array<{ categoryId: string; name: string; amount: number }>;
+  monthlyExpenseCategories: Array<{
+    month: string;
+    categories: Array<{ categoryId: string; name: string; amount: number }>;
+  }>;
+  monthlyExpenses: Array<{
+    month: string;
+    expenses: ExpenseItem[];
+  }>;
+}
 
 export interface AgencyClientRelation {
   id: string;

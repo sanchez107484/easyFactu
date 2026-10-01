@@ -8,7 +8,7 @@ import { brandConfig } from '@easyfactura/brand-config';
 import { useUIStore } from '@/store/ui-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useAgencyContext } from '@/hooks/use-agency-context';
-import { AccountType } from '@easyfactura/shared-types';
+import { AccountType, PlanTier } from '@easyfactura/shared-types';
 import {
   LayoutDashboard,
   FileText,
@@ -26,6 +26,9 @@ import {
   FileDown,
   ShieldCheck,
   Upload,
+  Receipt,
+  Truck,
+  Activity,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +43,10 @@ interface NavItem {
   prefetch?: boolean;
   /** When true, applies agency (violet) color scheme to this nav item */
   isAgency?: boolean;
+  /** Minimum plan required to see this item. Undefined = visible to all. */
+  requiredPlan?: PlanTier;
+  /** When set, the item is visible to lower plans but shown as read-only. */
+  readOnlyBelowPlan?: PlanTier;
 }
 
 interface NavSeparator {
@@ -55,10 +62,28 @@ type NavEntry = NavItem | NavSeparator;
 
 const defaultNavItems: NavEntry[] = [
   { title: 'Inicio', href: '/dashboard', icon: LayoutDashboard },
+  {
+    title: 'Mi actividad',
+    href: '/dashboard/mi-actividad',
+    icon: Activity,
+    requiredPlan: PlanTier.PROFESSIONAL,
+  },
   { title: 'Facturas', href: '/dashboard/facturas', icon: FileText },
   { title: 'Clientes', href: '/dashboard/clientes', icon: Users },
   { title: 'Productos', href: '/dashboard/productos', icon: Package },
   { title: 'Presupuestos', href: '/dashboard/presupuestos', icon: ClipboardList },
+  {
+    title: 'Gastos',
+    href: '/dashboard/gastos',
+    icon: Receipt,
+    readOnlyBelowPlan: PlanTier.PROFESSIONAL,
+  },
+  {
+    title: 'Proveedores',
+    href: '/dashboard/proveedores',
+    icon: Truck,
+    requiredPlan: PlanTier.PROFESSIONAL,
+  },
   { title: 'Recurrentes', href: '/dashboard/recurrentes', icon: RefreshCw },
   {
     title: 'Importar',
@@ -76,6 +101,12 @@ const actingAsNavItems: NavEntry[] = defaultNavItems;
 const agencyNavItems: NavEntry[] = [
   // ── Facturación propia de la asesoría ─────────────────────────────────────
   { title: 'Inicio', href: '/dashboard', icon: LayoutDashboard },
+  {
+    title: 'Mi actividad',
+    href: '/dashboard/mi-actividad',
+    icon: Activity,
+    requiredPlan: PlanTier.PROFESSIONAL,
+  },
   { title: 'Facturas', href: '/dashboard/facturas', icon: FileText },
   {
     title: 'Clientes para facturar',
@@ -85,6 +116,18 @@ const agencyNavItems: NavEntry[] = [
   },
   { title: 'Productos', href: '/dashboard/productos', icon: Package },
   { title: 'Presupuestos', href: '/dashboard/presupuestos', icon: ClipboardList },
+  {
+    title: 'Gastos',
+    href: '/dashboard/gastos',
+    icon: Receipt,
+    readOnlyBelowPlan: PlanTier.PROFESSIONAL,
+  },
+  {
+    title: 'Proveedores',
+    href: '/dashboard/proveedores',
+    icon: Truck,
+    requiredPlan: PlanTier.PROFESSIONAL,
+  },
   { title: 'Recurrentes', href: '/dashboard/recurrentes', icon: RefreshCw },
   {
     title: 'Importar',
@@ -129,6 +172,17 @@ const agencyNavItems: NavEntry[] = [
   },
 ];
 
+const PLAN_HIERARCHY: Record<PlanTier, number> = {
+  [PlanTier.BASIC]: 1,
+  [PlanTier.PROFESSIONAL]: 3,
+};
+
+function hasRequiredPlan(currentPlan: PlanTier | undefined, requiredPlan: PlanTier | undefined): boolean {
+  if (!requiredPlan) return true;
+  const currentLevel = currentPlan ? PLAN_HIERARCHY[currentPlan] : 0;
+  return currentLevel >= PLAN_HIERARCHY[requiredPlan];
+}
+
 export function DashboardSidebar() {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebarCollapsed } = useUIStore();
@@ -136,11 +190,16 @@ export function DashboardSidebar() {
   const { agencyTenant, isOnAgencyTenant, isActingAsClient, returnToAgency, isReturning } =
     useAgencyContext();
 
-  const navItems: NavEntry[] = isOnAgencyTenant
+  const rawNavItems: NavEntry[] = isOnAgencyTenant
     ? agencyNavItems
     : isActingAsClient
       ? actingAsNavItems
       : defaultNavItems;
+
+  const navItems = rawNavItems.filter((entry) => {
+    if ('type' in entry) return true;
+    return hasRequiredPlan(currentTenant?.subscription?.plan?.tier, (entry as NavItem).requiredPlan);
+  });
 
   return (
     <aside
@@ -260,6 +319,9 @@ export function DashboardSidebar() {
               item.href === '/dashboard' || item.href === '/dashboard/asesoria'
                 ? pathname === item.href
                 : pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const isReadOnly =
+              item.readOnlyBelowPlan &&
+              !hasRequiredPlan(currentTenant?.subscription?.plan?.tier, item.readOnlyBelowPlan);
 
             return (
               <Link
@@ -278,7 +340,17 @@ export function DashboardSidebar() {
                 <Icon className="h-5 w-5 shrink-0" />
                 {!sidebarCollapsed && (
                   <div className="min-w-0 flex-1">
-                    <span className="block leading-tight">{item.title}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="block leading-tight">{item.title}</span>
+                      {isReadOnly && (
+                        <Badge
+                          variant="outline"
+                          className="h-4 px-1 text-[9px] font-medium border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400"
+                        >
+                          Plan PRO requerido
+                        </Badge>
+                      )}
+                    </div>
                     {item.description && (
                       <span
                         title={item.description}

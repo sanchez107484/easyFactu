@@ -40,8 +40,13 @@ export class PartnerService {
       this.prisma.user.aggregate({ _count: { id: true } }),
       // Tenants total
       this.prisma.tenant.aggregate({ _count: { id: true }, where: {} }),
-      // Tenants by plan
-      this.prisma.tenant.groupBy({ by: ['plan'], _count: { id: true } }),
+      // Tenants by plan tier (via subscription)
+      this.prisma.$queryRaw<Array<{ tier: string; count: bigint }>>`
+        SELECT p.tier, COUNT(*)::bigint AS count
+        FROM subscriptions s
+        JOIN plans p ON p.id = s.plan_id
+        GROUP BY p.tier
+      `,
       // Tenants by accountType
       this.prisma.tenant.groupBy({ by: ['accountType'], _count: { id: true } }),
       // Invoice counts (non-draft)
@@ -105,10 +110,20 @@ export class PartnerService {
           id: true,
           businessName: true,
           email: true,
-          plan: true,
           accountType: true,
           setupCompleted: true,
           createdAt: true,
+          subscription: {
+            select: {
+              plan: {
+                select: {
+                  tier: true,
+                  name: true,
+                  slug: true,
+                },
+              },
+            },
+          },
           _count: {
             select: { invoices: true, customers: true, recurringInvoices: true, products: true },
           },
@@ -150,9 +165,11 @@ export class PartnerService {
       }),
     ]);
 
-    // Build plan map
-    const planMap: Record<string, number> = { FREE: 0, BASIC: 0, PROFESSIONAL: 0 };
-    for (const row of tenantsByPlan) planMap[row.plan] = row._count.id;
+    // Build plan map from raw query result
+    const planMap: Record<string, number> = { BASIC: 0, PROFESSIONAL: 0 };
+    for (const row of tenantsByPlan) {
+      planMap[row.tier] = Number(row.count);
+    }
 
     // Build accountType map
     const typeMap: Record<string, number> = {
@@ -225,7 +242,9 @@ export class PartnerService {
           id: t.id,
           businessName: t.businessName,
           email: t.email,
-          plan: t.plan,
+          planTier: t.subscription?.plan?.tier ?? null,
+          planName: t.subscription?.plan?.name ?? null,
+          planSlug: t.subscription?.plan?.slug ?? null,
           accountType: t.accountType,
           setupCompleted: t.setupCompleted,
           createdAt: t.createdAt,

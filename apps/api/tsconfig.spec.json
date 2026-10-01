@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "removeComments": false,
+    "types": ["node", "express", "multer", "jest"],
+    "paths": {
+      "@/*": ["src/*"],
+      "@prisma/client": ["node_modules/.prisma/client"]
+    }
+  },
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist", "api"]
+}

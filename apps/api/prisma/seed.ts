@@ -1,13 +1,82 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, PlanCycle, PlanTier } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { seedExpenseCategories } from './seeds/expense-categories.seed';
 
 const prisma = new PrismaClient();
+
+const PLANS = [
+  {
+    slug: 'BASIC_MONTHLY',
+    name: 'Básico Mensual',
+    cycle: PlanCycle.MONTHLY,
+    tier: PlanTier.BASIC,
+    limits: { maxInvoicesPerYear: 60, allowExpenses: false },
+  },
+  {
+    slug: 'BASIC_YEARLY',
+    name: 'Básico Anual',
+    cycle: PlanCycle.YEARLY,
+    tier: PlanTier.BASIC,
+    limits: { maxInvoicesPerYear: 60, allowExpenses: false },
+  },
+  {
+    slug: 'BASIC_FREE',
+    name: 'Básico Gratuito',
+    cycle: PlanCycle.FREE,
+    tier: PlanTier.BASIC,
+    limits: { maxInvoicesPerYear: 60, allowExpenses: false },
+  },
+  {
+    slug: 'PROFESSIONAL_MONTHLY',
+    name: 'PRO Mensual',
+    cycle: PlanCycle.MONTHLY,
+    tier: PlanTier.PROFESSIONAL,
+    limits: { maxInvoicesPerYear: null, allowExpenses: true },
+  },
+  {
+    slug: 'PROFESSIONAL_YEARLY',
+    name: 'PRO Anual',
+    cycle: PlanCycle.YEARLY,
+    tier: PlanTier.PROFESSIONAL,
+    limits: { maxInvoicesPerYear: null, allowExpenses: true },
+  },
+  {
+    slug: 'PROFESSIONAL_FREE',
+    name: 'PRO Gratuito',
+    cycle: PlanCycle.FREE,
+    tier: PlanTier.PROFESSIONAL,
+    limits: { maxInvoicesPerYear: null, allowExpenses: true },
+  },
+];
+
+async function seedPlans() {
+  for (const planData of PLANS) {
+    const existing = await prisma.plan.findUnique({ where: { slug: planData.slug } });
+    if (!existing) {
+      await prisma.plan.create({ data: planData });
+      console.log(`  ✓ Plan created: ${planData.slug}`);
+    } else {
+      console.log(`  - Plan already exists: ${planData.slug}`);
+    }
+  }
+}
 
 async function main() {
   console.log('🌱 Seeding database...\n');
 
+  // Seed global expense categories (idempotent)
+  console.log('Seeding expense categories...');
+  await seedExpenseCategories(prisma);
+  console.log('✓ Expense categories seeded');
+
+  // Seed plans (idempotent)
+  console.log('\nSeeding plans...');
+  await seedPlans();
+
   // Clean existing data
-  console.log('Cleaning existing data...');
+  console.log('\nCleaning existing data...');
+  await prisma.planChangeLog.deleteMany();
+  await prisma.subscription.deleteMany();
   await prisma.verifactuLog.deleteMany();
   await prisma.invoiceLine.deleteMany();
   await prisma.invoice.deleteMany();
@@ -18,7 +87,7 @@ async function main() {
   await prisma.tenant.deleteMany();
 
   // Create test tenant
-  console.log('Creating test tenant...');
+  console.log('\nCreating test tenant...');
   const tenant = await prisma.tenant.create({
     data: {
       businessName: 'Test Company S.L.',
@@ -31,9 +100,15 @@ async function main() {
       country: 'ES',
       email: 'admin@testcompany.com',
       phone: '+34912345678',
-      plan: 'PROFESSIONAL',
       isActive: true,
       setupCompleted: true,
+      subscription: {
+        create: {
+          plan: { connect: { slug: 'PROFESSIONAL_FREE' } },
+          status: 'ACTIVE',
+          billingCycle: PlanCycle.FREE,
+        },
+      },
     },
   });
 
@@ -45,14 +120,22 @@ async function main() {
 
   const user = await prisma.user.create({
     data: {
-      tenantId: tenant.id,
       email: 'admin@testcompany.com',
       passwordHash,
       firstName: 'Admin',
       lastName: 'Test',
-      role: 'ADMIN',
       emailVerified: true,
       isActive: true,
+    },
+  });
+
+  // Link user to tenant
+  await prisma.tenantUser.create({
+    data: {
+      tenantId: tenant.id,
+      userId: user.id,
+      role: 'ADMIN',
+      isOwner: true,
     },
   });
 
