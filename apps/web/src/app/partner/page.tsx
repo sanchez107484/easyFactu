@@ -81,6 +81,8 @@ interface PartnerStats {
     customerCount: number;
     productCount: number;
     recurringInvoiceCount: number;
+    expenseCount: number;
+    agencyName: string | null;
     lastUserActivityAt: string | null;
   }>;
   generatedAt: string;
@@ -820,6 +822,7 @@ function Dashboard({
         cmp = a.recurringInvoiceCount - b.recurringInvoiceCount;
       else if (col === 'productCount') cmp = a.productCount - b.productCount;
       else if (col === 'customerCount') cmp = a.customerCount - b.customerCount;
+      else if (col === 'expenseCount') cmp = a.expenseCount - b.expenseCount;
       else if (col === 'setupCompleted')
         cmp = (a.setupCompleted ? 1 : 0) - (b.setupCompleted ? 1 : 0);
       else if (col === 'createdAt')
@@ -1251,9 +1254,11 @@ function Dashboard({
                         },
                         { col: 'productCount', label: 'Productos', align: 'text-center' },
                         { col: 'customerCount', label: 'Clientes', align: 'text-center' },
+                        { col: 'expenseCount', label: 'Gastos', align: 'text-center' },
                         { col: 'setupCompleted', label: 'Setup', align: 'text-center' },
                         { col: 'createdAt', label: 'Registro', align: 'text-left' },
                         { col: 'lastUserActivityAt', label: 'Últ. acceso', align: 'text-left' },
+                        { col: 'agencyName', label: 'Asesoría', align: 'text-center' },
                       ] as const
                     ).map(({ col, label, align }) => (
                       <SortableHeader
@@ -1273,7 +1278,7 @@ function Dashboard({
                 <tbody className="divide-y divide-gray-800/60">
                   {filteredTenants.length === 0 ? (
                     <tr>
-                      <td colSpan={12} className="px-4 py-10 text-center text-sm text-gray-500">
+                      <td colSpan={13} className="px-4 py-10 text-center text-sm text-gray-500">
                         Ninguna empresa coincide con los filtros aplicados.
                       </td>
                     </tr>
@@ -1320,6 +1325,15 @@ function Dashboard({
                           {fmt(t.customerCount)}
                         </td>
                         <td className="px-4 py-3 text-center">
+                          {t.expenseCount > 0 ? (
+                            <span className="px-4 py-3 text-center text-sm text-gray-400">
+                              {fmt(t.expenseCount)}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-gray-700">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
                           {t.setupCompleted ? (
                             <CheckCircle2 className="mx-auto h-4 w-4 text-emerald-400" />
                           ) : (
@@ -1331,6 +1345,15 @@ function Dashboard({
                           {t.lastUserActivityAt ? (
                             <span className="text-gray-300">
                               {fmtDateTime(t.lastUserActivityAt)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-700">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-left">
+                          {t.agencyName ? (
+                            <span className="text-xs text-purple-400" title="Asesoría asociada">
+                              {t.agencyName}
                             </span>
                           ) : (
                             <span className="text-gray-700">—</span>

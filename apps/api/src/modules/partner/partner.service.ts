@@ -125,10 +125,25 @@ export class PartnerService {
             },
           },
           _count: {
-            select: { invoices: true, customers: true, recurringInvoices: true, products: true },
+            select: {
+              invoices: true,
+              customers: true,
+              recurringInvoices: true,
+              products: true,
+              expenses: true,
+            },
           },
           tenantUsers: {
             select: { user: { select: { lastLoginAt: true } } },
+          },
+          agencyRelations: {
+            select: {
+              agencyTenant: {
+                select: {
+                  businessName: true,
+                },
+              },
+            },
           },
         },
         orderBy: { createdAt: 'desc' },
@@ -238,6 +253,8 @@ export class PartnerService {
           loginDates.length > 0
             ? new Date(Math.max(...loginDates.map((d) => d.getTime()))).toISOString()
             : null;
+        const agencyName =
+          t.agencyRelations.length > 0 ? t.agencyRelations[0]?.agencyTenant.businessName : null;
         return {
           id: t.id,
           businessName: t.businessName,
@@ -252,6 +269,8 @@ export class PartnerService {
           customerCount: t._count.customers,
           productCount: t._count.products,
           recurringInvoiceCount: t._count.recurringInvoices,
+          expenseCount: t._count.expenses,
+          agencyName,
           lastUserActivityAt,
         };
       }),
