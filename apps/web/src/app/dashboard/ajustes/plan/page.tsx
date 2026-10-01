@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/auth-store';
 import {
   useCurrentSubscription,
@@ -427,6 +427,14 @@ export default function AjustesPlanPage() {
   const isBasicFreePlan = currentPlan?.slug === 'BASIC_FREE';
   const preferredPlanSlug = subscription?.preferredPlanSlug;
   const isLoading = subLoading || plansLoading;
+
+  const preferredCycle: BillingCycle = preferredPlanSlug?.includes('MONTHLY') ? 'monthly' : 'annual';
+
+  useEffect(() => {
+    if (preferredPlanSlug) {
+      setCycle(preferredCycle);
+    }
+  }, [preferredPlanSlug, preferredCycle]);
 
   const handleActivatePro = async () => {
     try {
