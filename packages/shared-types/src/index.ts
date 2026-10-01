@@ -148,6 +148,7 @@ export interface Subscription {
   billingCycle: PlanCycle;
   startedAt: string;
   changedAt: string;
+  preferredPlanSlug?: string | null;
   plan?: Plan;
 }
 

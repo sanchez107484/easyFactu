@@ -89,15 +89,16 @@ model Plan {
 }
 
 model Subscription {
-  id           String             @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  tenantId     String             @unique @map("tenant_id")
-  planId       String             @map("plan_id")
-  status       SubscriptionStatus @default(ACTIVE)
-  billingCycle PlanCycle          @map("billing_cycle")
-  startedAt    DateTime           @default(now()) @map("started_at") @db.Timestamptz(6)
-  changedAt    DateTime           @default(now()) @updatedAt @map("changed_at") @db.Timestamptz(6)
-  plan         Plan               @relation(fields: [planId], references: [id], onDelete: NoAction)
-  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id                  String             @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  tenantId            String             @unique @map("tenant_id")
+  planId             String             @map("plan_id")
+  status             SubscriptionStatus @default(ACTIVE)
+  billingCycle       PlanCycle          @map("billing_cycle")
+  startedAt          DateTime           @default(now()) @map("started_at") @db.Timestamptz(6)
+  changedAt          DateTime           @default(now()) @updatedAt @map("changed_at") @db.Timestamptz(6)
+  preferredPlanSlug  String?            @map("preferred_plan_slug")
+  plan               Plan               @relation(fields: [planId], references: [id], onDelete: NoAction)
+  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([planId])
   @@index([status])

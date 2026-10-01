@@ -40,3 +40,18 @@ export function useChangePlan() {
     },
   });
 }
+
+export function useSetPreferredPlan() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (preferredPlanSlug: string | null) =>
+      subscriptionApi.setPreferredPlan(preferredPlanSlug),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscription', 'current'] });
+      toast.success('Preferencia guardada');
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}

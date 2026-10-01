@@ -25,4 +25,14 @@ export const subscriptionApi = {
         targetPlanSlug,
       })
       .then(unwrapApiResponse),
+
+  setPreferredPlan: (
+    preferredPlanSlug: string | null
+  ): Promise<{ success: boolean; preferredPlanSlug: string | null }> =>
+    apiClient
+      .post<ApiResponse<{ success: boolean; preferredPlanSlug: string | null }>>(
+        '/subscriptions/preferred-plan',
+        { preferredPlanSlug }
+      )
+      .then(unwrapApiResponse),
 };

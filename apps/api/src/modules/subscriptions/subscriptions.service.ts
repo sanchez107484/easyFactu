@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../common/email/email.service';
 import { ChangePlanDto } from './dto/change-plan.dto';
+import { SetPreferredPlanDto } from './dto/set-preferred-plan.dto';
 import { PlanTier, SubscriptionStatus } from '@easyfactura/shared-types';
 
 export interface DowngradeValidationResult {
@@ -18,7 +19,7 @@ export interface DowngradeValidationResult {
 export class SubscriptionsService {
   constructor(
     private prisma: PrismaService,
-    private emailService: EmailService,
+    private emailService: EmailService
   ) {}
 
   async getCurrentSubscription(tenantId: string) {
@@ -34,6 +35,25 @@ export class SubscriptionsService {
     }
 
     return subscription;
+  }
+
+  async setPreferredPlan(
+    tenantId: string,
+    dto: SetPreferredPlanDto
+  ): Promise<{ success: boolean; preferredPlanSlug: string | null }> {
+    const { preferredPlanSlug } = dto;
+
+    await this.prisma.subscription.update({
+      where: { tenantId },
+      data: {
+        preferredPlanSlug: preferredPlanSlug ?? null,
+      },
+    });
+
+    return {
+      success: true,
+      preferredPlanSlug: preferredPlanSlug ?? null,
+    };
   }
 
   async getAvailablePlans() {
@@ -71,7 +91,7 @@ export class SubscriptionsService {
 
   async validateDowngrade(
     tenantId: string,
-    targetPlanSlug: string,
+    targetPlanSlug: string
   ): Promise<DowngradeValidationResult> {
     const violations: string[] = [];
 
@@ -89,7 +109,7 @@ export class SubscriptionsService {
 
       if (maxInvoices !== null && invoiceCount > maxInvoices) {
         violations.push(
-          `Tienes ${invoiceCount} facturas emitidas en ${new Date().getFullYear()}. El plan BASIC permite máximo ${maxInvoices} facturas anuales.`,
+          `Tienes ${invoiceCount} facturas emitidas en ${new Date().getFullYear()}. El plan BASIC permite máximo ${maxInvoices} facturas anuales.`
         );
       }
     }
@@ -103,7 +123,7 @@ export class SubscriptionsService {
   async changePlan(
     tenantId: string,
     userId: string,
-    dto: ChangePlanDto,
+    dto: ChangePlanDto
   ): Promise<{ success: boolean; message: string }> {
     const { targetPlanSlug } = dto;
 
@@ -129,8 +149,7 @@ export class SubscriptionsService {
     }
 
     const isDowngrade =
-      (targetPlan.tier === PlanTier.BASIC &&
-        currentSubscription.plan.tier === PlanTier.PROFESSIONAL);
+      targetPlan.tier === PlanTier.BASIC && currentSubscription.plan.tier === PlanTier.PROFESSIONAL;
 
     if (isDowngrade) {
       const validation = await this.validateDowngrade(tenantId, targetPlanSlug);

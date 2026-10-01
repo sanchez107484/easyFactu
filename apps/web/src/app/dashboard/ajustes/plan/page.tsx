@@ -7,6 +7,7 @@ import {
   useAvailablePlans,
   useSubscriptionUsage,
   useChangePlan,
+  useSetPreferredPlan,
 } from '@/hooks/use-subscription';
 import { PlanTier, PlanCycle, Plan } from '@easyfactura/shared-types';
 import { PRICING } from '@easyfactura/brand-config';
@@ -33,6 +34,7 @@ import {
   Gift,
   Users,
   CheckCircle2,
+  Calendar,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BillingCycleToggle, BillingCycle } from '@/components/ui/billing-cycle-toggle';
@@ -54,10 +56,11 @@ const TIER_LABELS: Record<PlanTier, string> = {
 const ALL_FEATURES = [
   'VeriFactu',
   'Facturas ilimitadas',
-  'Facturación recurrente',
   'Clientes y productos ilimitados',
   'Presupuestos y proformas',
   'Rectificativas y abonos',
+  'Facturación recurrente',
+  'Tu asesor tiene tus facturas siempre al día',
   'Plantillas personalizadas',
   'Gestión completa de gastos',
   'Lectura inteligente de gastos (cuando esté disponible)',
@@ -79,9 +82,12 @@ interface PlanDisplayProps {
   annualTotal: string;
   annualSavings: string;
   isCurrent: boolean;
+  isFreePlan: boolean;
+  preferredPlanSlug?: string | null;
   currentCycle?: PlanCycle;
   onSelectMonthly: () => void;
   onSelectAnnual: () => void;
+  onSelectPreference: () => void;
   loading: boolean;
 }
 
@@ -95,9 +101,12 @@ function PlanDisplay({
   annualTotal,
   annualSavings,
   isCurrent,
+  isFreePlan,
+  preferredPlanSlug,
   currentCycle,
   onSelectMonthly,
   onSelectAnnual,
+  onSelectPreference,
   loading,
 }: PlanDisplayProps) {
   const isPro = name === 'PRO';
@@ -107,18 +116,25 @@ function PlanDisplay({
   const isCurrentMonthly = isCurrent && currentCycle === PlanCycle.MONTHLY;
   const isCurrentAnnual = isCurrent && currentCycle === PlanCycle.YEARLY;
 
+  const planSlug = isPro
+    ? cycle === 'monthly'
+      ? 'PROFESSIONAL_MONTHLY'
+      : 'PROFESSIONAL_YEARLY'
+    : cycle === 'monthly'
+      ? 'BASIC_MONTHLY'
+      : 'BASIC_YEARLY';
+  const isPreferred = preferredPlanSlug === planSlug;
+
   const displayPrice = cycle === 'monthly' ? monthlyPrice : annualTotal;
   const displaySublabel =
-    cycle === 'monthly'
-      ? '/mes'
-      : `/año · ${annualMonthlyPrice}/mes · Ahorra ${annualSavings}`;
+    cycle === 'monthly' ? '/mes' : `/año · ${annualMonthlyPrice}/mes · Ahorra ${annualSavings}`;
 
   return (
     <Card
       className={cn(
         'relative flex flex-col',
         isCurrent && 'ring-2 ring-primary',
-        highlighted && !isCurrent && 'border-primary/50'
+        highlighted && !isCurrent && 'border-primary/50',
       )}
     >
       {isCurrent && (
@@ -146,40 +162,88 @@ function PlanDisplay({
           )}
         </div>
 
-        {description && (
-          <p className="text-sm text-muted-foreground">{description}</p>
-        )}
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
 
         <div className="mt-4 p-4 bg-muted/30 rounded-lg">
-          <div className="text-center mb-3">
-            <span className="text-3xl font-bold">{displayPrice}</span>
-            <span className="text-sm text-muted-foreground ml-1">
-              {cycle === 'monthly' ? '/mes' : '/año'}
-            </span>
-          </div>
+          {!isFreePlan ? (
+            <>
+              <div className="text-center mb-3">
+                <span className="text-3xl font-bold">{displayPrice}</span>
+                <span className="text-sm text-muted-foreground ml-1">
+                  {cycle === 'monthly' ? '/mes' : '/año'}
+                </span>
+              </div>
 
-          {cycle === 'annual' && (
-            <div className="bg-green-100 text-green-700 text-center py-2 px-3 rounded-md mb-3 animate-in fade-in slide-in-from-top-2 duration-300">
-              <p className="text-sm font-medium">
-                <CheckCircle2 className="h-4 w-4 inline mr-1" />
-                Ahorras {annualSavings} al año
-              </p>
-              <p className="text-xs">Equivale a {annualMonthlyPrice}/mes</p>
-            </div>
+              {cycle === 'annual' && (
+                <div className="bg-green-100 text-green-700 text-center py-2 px-3 rounded-md mb-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <p className="text-sm font-medium">
+                    <CheckCircle2 className="h-4 w-4 inline mr-1" />
+                    Ahorras {annualSavings} al año
+                  </p>
+                  <p className="text-xs">Equivale a {annualMonthlyPrice}/mes</p>
+                </div>
+              )}
+
+              <Button
+                className="w-full"
+                onClick={cycle === 'monthly' ? onSelectMonthly : onSelectAnnual}
+                disabled={
+                  loading ||
+                  (isCurrent && (cycle === 'monthly' ? isCurrentMonthly : isCurrentAnnual))
+                }
+                variant={
+                  isCurrent && (cycle === 'monthly' ? isCurrentMonthly : isCurrentAnnual)
+                    ? 'outline'
+                    : 'default'
+                }
+              >
+                {isCurrent && (cycle === 'monthly' ? isCurrentMonthly : isCurrentAnnual)
+                  ? 'Plan actual'
+                  : cycle === 'monthly'
+                    ? 'Elegir mensual'
+                    : 'Elegir anual'}
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="text-center mb-3">
+                <span className="text-3xl font-bold">{displayPrice}</span>
+                <span className="text-sm text-muted-foreground ml-1">
+                  {cycle === 'monthly' ? '/mes' : '/año'}
+                </span>
+                <p className="text-xs text-muted-foreground mt-1">desde 2027</p>
+              </div>
+
+              {cycle === 'annual' && (
+                <div className="bg-green-100 text-green-700 text-center py-2 px-3 rounded-md mb-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <p className="text-sm font-medium">
+                    <CheckCircle2 className="h-4 w-4 inline mr-1" />
+                    Ahorras {annualSavings} al año
+                  </p>
+                  <p className="text-xs">Equivale a {annualMonthlyPrice}/mes</p>
+                </div>
+              )}
+
+              <Button
+                className="w-full"
+                onClick={onSelectPreference}
+                disabled={loading || isPreferred}
+                variant={isPreferred ? 'outline' : 'default'}
+              >
+                {isPreferred ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Seleccionado para 2027
+                  </>
+                ) : (
+                  <>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Seleccionar para 2027
+                  </>
+                )}
+              </Button>
+            </>
           )}
-
-          <Button
-            className="w-full"
-            onClick={cycle === 'monthly' ? onSelectMonthly : onSelectAnnual}
-            disabled={loading || (isCurrent && (cycle === 'monthly' ? isCurrentMonthly : isCurrentAnnual))}
-            variant={isCurrent && (cycle === 'monthly' ? isCurrentMonthly : isCurrentAnnual) ? 'outline' : 'default'}
-          >
-            {isCurrent && (cycle === 'monthly' ? isCurrentMonthly : isCurrentAnnual)
-              ? 'Plan actual'
-              : cycle === 'monthly'
-              ? 'Elegir mensual'
-              : 'Elegir anual'}
-          </Button>
         </div>
       </CardHeader>
 
@@ -232,8 +296,7 @@ function ChangePlanModal({
     usage &&
     usage.invoicesThisYear > (plan.limits.maxInvoicesPerYear ?? 0);
 
-  const isFreeToPaid =
-    currentPlan?.cycle === PlanCycle.FREE && plan.cycle !== PlanCycle.FREE;
+  const isFreeToPaid = currentPlan?.cycle === PlanCycle.FREE && plan.cycle !== PlanCycle.FREE;
   const isPaidToSameTier =
     currentPlan?.cycle !== PlanCycle.FREE &&
     plan.cycle !== PlanCycle.FREE &&
@@ -341,12 +404,17 @@ export default function AjustesPlanPage() {
   const { data: plans, isLoading: plansLoading } = useAvailablePlans();
   const { data: usage } = useSubscriptionUsage();
   const changePlan = useChangePlan();
+  const setPreferredPlan = useSetPreferredPlan();
 
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [preferredModalOpen, setPreferredModalOpen] = useState(false);
+  const [selectedPreferredSlug, setSelectedPreferredSlug] = useState<string | null>(null);
   const [cycle, setCycle] = useState<BillingCycle>('annual');
 
   const currentPlan = subscription?.plan;
+  const isFreePlan = currentPlan?.cycle === PlanCycle.FREE;
+  const preferredPlanSlug = subscription?.preferredPlanSlug;
   const isLoading = subLoading || plansLoading;
 
   const basicPlans = plans?.filter((p) => p.tier === PlanTier.BASIC);
@@ -372,6 +440,21 @@ export default function AjustesPlanPage() {
     setModalOpen(true);
   };
 
+  const handleSelectPreference = (slug: string) => {
+    setSelectedPreferredSlug(slug);
+    setPreferredModalOpen(true);
+  };
+
+  const handleConfirmPreferred = async () => {
+    try {
+      await setPreferredPlan.mutateAsync(selectedPreferredSlug);
+      setPreferredModalOpen(false);
+      setSelectedPreferredSlug(null);
+    } catch {
+      // Error toast already shown by the mutation
+    }
+  };
+
   const handleConfirm = async () => {
     if (!selectedPlan) return;
     try {
@@ -386,6 +469,11 @@ export default function AjustesPlanPage() {
   const handleCancel = () => {
     setModalOpen(false);
     setSelectedPlan(null);
+  };
+
+  const handleCancelPreferred = () => {
+    setPreferredModalOpen(false);
+    setSelectedPreferredSlug(null);
   };
 
   const isUpgrade = selectedPlan
@@ -432,19 +520,15 @@ export default function AjustesPlanPage() {
         <AlertDescription className="text-green-800">
           <span className="font-semibold text-base">¡Promoción de lanzamiento!</span>
           <span className="block text-sm mt-0.5">
-            Disfruta de NovaFactura PRO gratis hasta 2027. Después, tu plan costará según la
-            tabla inferior.
+            Disfruta de NovaFactura PRO gratis hasta 2027. Después, tu plan costará según la tabla
+            inferior.
           </span>
         </AlertDescription>
       </Alert>
 
       {/* Toggle de ciclo de facturación */}
       <div className="flex justify-center">
-        <BillingCycleToggle
-          value={cycle}
-          onChange={setCycle}
-          annualBadge="Ahorra hasta 60€"
-        />
+        <BillingCycleToggle value={cycle} onChange={setCycle} annualBadge="Ahorra hasta 60€" />
       </div>
 
       {/* Comparativa de planes */}
@@ -466,11 +550,14 @@ export default function AjustesPlanPage() {
               annualTotal={BASIC_ANNUAL_TOTAL}
               annualSavings={BASIC_ANNUAL_SAVINGS}
               isCurrent={basicIsCurrent ?? false}
-              currentCycle={
-                currentPlan?.tier === PlanTier.BASIC ? currentPlan.cycle : undefined
-              }
+              isFreePlan={isFreePlan ?? false}
+              preferredPlanSlug={preferredPlanSlug}
+              currentCycle={currentPlan?.tier === PlanTier.BASIC ? currentPlan.cycle : undefined}
               onSelectMonthly={() => handleSelectPlan(basicMonthly)}
               onSelectAnnual={() => handleSelectPlan(basicAnnual)}
+              onSelectPreference={() =>
+                handleSelectPreference(cycle === 'monthly' ? 'BASIC_MONTHLY' : 'BASIC_YEARLY')
+              }
               loading={changePlan.isPending}
             />
           )}
@@ -486,11 +573,18 @@ export default function AjustesPlanPage() {
               annualTotal={PRO_ANNUAL_TOTAL}
               annualSavings={PRO_ANNUAL_SAVINGS}
               isCurrent={proIsCurrent ?? false}
+              isFreePlan={isFreePlan ?? false}
+              preferredPlanSlug={preferredPlanSlug}
               currentCycle={
                 currentPlan?.tier === PlanTier.PROFESSIONAL ? currentPlan.cycle : undefined
               }
               onSelectMonthly={() => handleSelectPlan(proMonthly)}
               onSelectAnnual={() => handleSelectPlan(proAnnual)}
+              onSelectPreference={() =>
+                handleSelectPreference(
+                  cycle === 'monthly' ? 'PROFESSIONAL_MONTHLY' : 'PROFESSIONAL_YEARLY',
+                )
+              }
               loading={changePlan.isPending}
             />
           )}
@@ -529,6 +623,45 @@ export default function AjustesPlanPage() {
         usage={usage}
         currentPlan={currentPlan}
       />
+
+      <Dialog open={preferredModalOpen} onOpenChange={(o) => !o && handleCancelPreferred()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary shrink-0" />
+              Seleccionar plan para 2027
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="rounded-lg border border-muted bg-muted/30 p-4">
+              <p className="text-sm text-muted-foreground">
+                <strong className="text-foreground">¿Qué significa esto?</strong>
+                <br />
+                Estás seleccionando el plan que tendrás a partir de 2027. No se te cobrará nada
+                ahora. Te informaremos cuando se acerque la fecha.
+              </p>
+            </div>
+            <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+              <p className="text-sm text-green-700">
+                <CheckCircle2 className="h-4 w-4 inline mr-1" />
+                Podrás cambiar de opinión en cualquier momento antes de 2027.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleCancelPreferred}
+              disabled={setPreferredPlan.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirmPreferred} disabled={setPreferredPlan.isPending}>
+              {setPreferredPlan.isPending ? 'Guardando...' : 'Confirmar selección'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
