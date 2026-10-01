@@ -35,9 +35,16 @@ import {
   Users,
   CheckCircle2,
   Calendar,
+  ArrowRight,
+  ReceiptText,
+  Building2,
+  PiggyBank,
+  BarChart3,
+  TrendingUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BillingCycleToggle, BillingCycle } from '@/components/ui/billing-cycle-toggle';
+import { useQueryClient } from '@tanstack/react-query';
 
 const STARTER = PRICING.starter;
 const PRO = PRICING.pro;
@@ -60,17 +67,19 @@ const ALL_FEATURES = [
   'Presupuestos y proformas',
   'Rectificativas y abonos',
   'Facturación recurrente',
-  'Tu asesor tiene tus facturas siempre al día',
   'Plantillas personalizadas',
-  'Gestión completa de gastos',
-  'Lectura inteligente de gastos (cuando esté disponible)',
-  'Proveedores',
-  'Automatizaciones con IA (cuando esté disponible)',
+  'Tu asesor tiene tus facturas siempre al día',
+  'Gestión avanzada de gastos',
+  'Análisis de rentabilidad',
+  'Lectura inteligente de gastos (pronto)',
+  'Gestión de proveedores',
+  'Automatizaciones con IA (pronto)',
+  'Informes profesionales en segundos',
   'Soporte prioritario',
 ];
 
-const BASIC_FEATURES = ALL_FEATURES.slice(0, 7);
-const PRO_FEATURES = ALL_FEATURES.slice(7);
+const BASIC_FEATURES = ALL_FEATURES.slice(0, 8);
+const PRO_FEATURES = ALL_FEATURES.slice(8);
 
 interface PlanDisplayProps {
   name: string;
@@ -405,6 +414,7 @@ export default function AjustesPlanPage() {
   const { data: usage } = useSubscriptionUsage();
   const changePlan = useChangePlan();
   const setPreferredPlan = useSetPreferredPlan();
+  const queryClient = useQueryClient();
 
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -414,8 +424,19 @@ export default function AjustesPlanPage() {
 
   const currentPlan = subscription?.plan;
   const isFreePlan = currentPlan?.cycle === PlanCycle.FREE;
+  const isBasicFreePlan = currentPlan?.slug === 'BASIC_FREE';
   const preferredPlanSlug = subscription?.preferredPlanSlug;
   const isLoading = subLoading || plansLoading;
+
+  const handleActivatePro = async () => {
+    try {
+      await changePlan.mutateAsync('PROFESSIONAL_FREE');
+      queryClient.invalidateQueries({ queryKey: ['subscription', 'current'] });
+      window.location.reload();
+    } catch {
+      // Error is handled by the mutation
+    }
+  };
 
   const basicPlans = plans?.filter((p) => p.tier === PlanTier.BASIC);
   const proPlans = plans?.filter((p) => p.tier === PlanTier.PROFESSIONAL);
@@ -509,6 +530,36 @@ export default function AjustesPlanPage() {
               <Badge variant="outline" className="text-xs">
                 {TIER_LABELS[currentPlan.tier]} · {CYCLE_LABELS[currentPlan.cycle]}
               </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Banner para usuarios BASIC_FREE */}
+      {isBasicFreePlan && (
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-background to-primary/10">
+          <CardContent className="py-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                  <Gift className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold">Activa PRO gratuitamente</h3>
+                    <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">Gratis hasta 2027</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Desbloquea todas las funcionalidades PRO sin coste hasta 2027.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button onClick={handleActivatePro} disabled={changePlan.isPending} size="lg" className="gap-2">
+                  <Gift className="h-4 w-4" />
+                  {changePlan.isPending ? 'Activando...' : 'Activar PRO gratuito'}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
