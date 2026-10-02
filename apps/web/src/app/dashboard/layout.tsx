@@ -9,6 +9,7 @@ import { usePdfWarmup } from '@/hooks/use-pdf-warmup';
 import { DashboardSidebar } from '@/components/dashboard/sidebar';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { ActingAsBanner } from '@/components/dashboard/acting-as-banner';
+import { ProUpgradeBanner } from '@/components/dashboard/pro-upgrade-banner';
 import { cn } from '@/lib/utils';
 
 /**
@@ -104,6 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <DashboardHeader />
 
         <ActingAsBanner />
+        <ProUpgradeBanner />
 
         <main className="flex-1 overflow-y-auto bg-muted/40">
           <div className="px-4 py-4 h-full">{children}</div>

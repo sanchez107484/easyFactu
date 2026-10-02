@@ -177,7 +177,10 @@ const PLAN_HIERARCHY: Record<PlanTier, number> = {
   [PlanTier.PROFESSIONAL]: 3,
 };
 
-function hasRequiredPlan(currentPlan: PlanTier | undefined, requiredPlan: PlanTier | undefined): boolean {
+function hasRequiredPlan(
+  currentPlan: PlanTier | undefined,
+  requiredPlan: PlanTier | undefined,
+): boolean {
   if (!requiredPlan) return true;
   const currentLevel = currentPlan ? PLAN_HIERARCHY[currentPlan] : 0;
   return currentLevel >= PLAN_HIERARCHY[requiredPlan];
@@ -198,7 +201,10 @@ export function DashboardSidebar() {
 
   const navItems = rawNavItems.filter((entry) => {
     if ('type' in entry) return true;
-    return hasRequiredPlan(currentTenant?.subscription?.plan?.tier, (entry as NavItem).requiredPlan);
+    return hasRequiredPlan(
+      currentTenant?.subscription?.plan?.tier,
+      (entry as NavItem).requiredPlan,
+    );
   });
 
   return (

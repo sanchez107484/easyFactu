@@ -37,6 +37,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   nueva: 'Nueva',
   nuevo: 'Nuevo',
   editar: 'Editar',
+  'mi-actividad': 'Mi Actividad',
 };
 
 function InvoiceBreadcrumbLabel({ id }: { id: string }) {

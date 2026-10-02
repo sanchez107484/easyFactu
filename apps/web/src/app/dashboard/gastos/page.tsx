@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ActivateProDialog } from '@/components/ui/activate-pro-dialog';
 import {
   Plus,
   Search,
@@ -818,9 +819,9 @@ function FilterChips({
 }
 
 function UpgradeBanner({ isEmpty, isFreePlan }: { isEmpty: boolean; isFreePlan: boolean }) {
-  const proPrice = PRICING.pro.monthly;
-  const proAnnualPrice = PRICING.pro.annualMonthly;
-  const annualSaving = PRICING.pro.annualSaving;
+  const proPrice = PRICING.pro.monthly.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const proAnnualPrice = PRICING.pro.annualMonthly.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const annualSaving = PRICING.pro.annualSaving.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const [showProModal, setShowProModal] = useState(false);
   const changePlan = useChangePlan();
   const queryClient = useQueryClient();
@@ -975,13 +976,19 @@ function UpgradeBanner({ isEmpty, isFreePlan }: { isEmpty: boolean; isFreePlan: 
           <div className="flex-shrink-0 w-full lg:w-56">
             <div className="bg-background rounded-2xl p-5 border border-primary/20 shadow-lg relative overflow-hidden">
               <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-primary/20 to-transparent rounded-bl-full" />
-              <div className="relative text-center">
+                <div className="relative text-center">
                 <p className="text-xs text-muted-foreground mb-2">Precio PRO</p>
-                <div className="flex items-baseline justify-center gap-0.5 mb-1">
-                  <span className="text-4xl font-bold tracking-tight">{proPrice}</span>
-                  <span className="text-lg text-muted-foreground">€</span>
+                <div className="mb-2 relative">
+                  <span className="text-3xl font-bold text-muted-foreground relative z-10">{proPrice}€</span>
+                  <span className="absolute inset-0 flex items-center justify-center">
+                    <span className="w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent rotate-[-6deg] shadow-[0_0_8px_rgba(239,68,68,0.6)]"></span>
+                  </span>
                 </div>
-                <p className="text-xs text-muted-foreground mb-3">/mes</p>
+                <div className="flex justify-center mb-3">
+                  <span className="inline-flex items-center rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-3 py-1 text-xs font-bold text-white shadow-sm animate-pulse">
+                    AHORA GRATIS
+                  </span>
+                </div>
                 <div className="h-px bg-border my-3" />
                 <div className="space-y-1.5 mb-4">
                   <p className="text-sm font-medium text-green-600">Ahorra {annualSaving}€/año</p>
@@ -998,55 +1005,12 @@ function UpgradeBanner({ isEmpty, isFreePlan }: { isEmpty: boolean; isFreePlan: 
         </div>
       </div>
 
-      <Dialog open={showProModal} onOpenChange={setShowProModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                <Gift className="h-5 w-5 text-green-600" />
-              </div>
-              Activa PRO gratis hasta 2027
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-              <p className="text-sm text-muted-foreground">
-                <strong className="text-foreground block mb-1">¿Qué significa esto?</strong>
-                Estás a un paso de desbloquear todas las funcionalidades PRO sin coste alguno hasta 2027. Después de esa fecha, podrás elegir el plan que mejor se adapte a ti.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-sm font-medium">Lo que desbloqueas ahora:</p>
-              <ul className="space-y-2">
-                {proExclusiveFeatures.map(({ icon: Icon, text }) => (
-                  <li key={text} className="flex items-center gap-3 text-sm">
-                    <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <Icon className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <span>{text}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="rounded-lg border border-green-200 bg-green-50 p-3">
-              <p className="text-sm text-green-700">
-                <CheckCircle2 className="h-4 w-4 inline mr-1" />
-                Sin compromiso. Puedes cambiar de opinión en cualquier momento.
-              </p>
-            </div>
-          </div>
-          <DialogFooter className="gap-3">
-            <Button variant="outline" onClick={() => setShowProModal(false)} disabled={changePlan.isPending}>
-              Cancelar
-            </Button>
-            <Button onClick={handleActivatePro} disabled={changePlan.isPending}>
-              {changePlan.isPending ? 'Activando...' : 'Activar PRO gratuito'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ActivateProDialog
+        isOpen={showProModal}
+        onClose={() => setShowProModal(false)}
+        onActivate={handleActivatePro}
+        isPending={changePlan.isPending}
+      />
     </div>
   );
 }

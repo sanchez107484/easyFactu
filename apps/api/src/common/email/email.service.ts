@@ -19,6 +19,7 @@ export class EmailService {
   private readonly appName = brandConfig.app.name;
   private readonly supportEmail = brandConfig.app.supportEmail;
   private readonly appUrl: string;
+  private readonly brandColors = brandConfig.colors;
 
   constructor(private configService: ConfigService) {
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
@@ -222,36 +223,160 @@ export class EmailService {
       opts.toPlanName.toLowerCase().includes('pro') &&
       !opts.fromPlanName.toLowerCase().includes('pro');
 
+    const dashboardUrl = `${this.appUrl}/dashboard`;
+    const { highlight, highlightBg, highlightBorder } = this.brandColors;
+
+    const basicFeatures = [
+      'VeriFactu (obligatorio AEAT)',
+      'Facturas ilimitadas',
+      'Clientes y productos ilimitados',
+      'Presupuestos y proformas',
+      'Rectificativas y abonos',
+      'Facturación recurrente',
+      'Plantillas personalizadas',
+    ];
+
+    const proFeatures = [
+      'Gestión avanzada de gastos',
+      'Análisis de rentabilidad',
+      'Gestión de proveedores',
+      'Lectura inteligente de gastos',
+      'Automatizaciones con IA',
+      'Informes profesionales en segundos',
+      'Soporte prioritario',
+    ];
+
+    const featuresHtml = isUpgrade
+      ? `
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:24px;margin:24px 0;">
+          <h3 style="color:#166534;font-size:16px;font-weight:700;margin:0 0 16px;">
+            ✓ Lo que desbloqueas con ${opts.toPlanName}
+          </h3>
+          <table cellpadding="0" cellspacing="0" style="width:100%;">
+            ${proFeatures
+              .map(
+                (feature) => `
+              <tr>
+                <td style="padding:6px 0;color:#374151;font-size:14px;">
+                  <span style="color:#22c55e;margin-right:8px;">✦</span>${feature}
+                </td>
+              </tr>
+            `
+              )
+              .join('')}
+          </table>
+          <p style="color:#166534;font-size:13px;margin:16px 0 0;padding-top:16px;border-top:1px solid #bbf7d0;">
+            <strong>Gratis hasta 2027</strong> — Sin compromiso. Cancela cuando quieras.
+          </p>
+        </div>
+        <table cellpadding="0" cellspacing="0" style="margin:24px 0;">
+          <tr>
+            <td>
+              <a href="${dashboardUrl}" style="display:inline-block;background:#22c55e;color:#ffffff;font-size:14px;font-weight:600;padding:12px 24px;border-radius:8px;text-decoration:none;">
+                Empezar a usar ${opts.toPlanName} →
+              </a>
+            </td>
+          </tr>
+        </table>
+      `
+      : '';
+
+    const downgradeNotice = !isUpgrade
+      ? `
+        <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:12px;padding:24px;margin:24px 0;">
+          <h3 style="color:#92400e;font-size:16px;font-weight:700;margin:0 0 12px;">
+            ⚠️ Lo que ya no tendrás disponible
+          </h3>
+          <table cellpadding="0" cellspacing="0" style="width:100%;">
+            ${proFeatures
+              .map(
+                (feature) => `
+              <tr>
+                <td style="padding:4px 0;color:#78350f;font-size:14px;text-decoration:line-through;opacity:0.7;">
+                  <span style="margin-right:8px;">✦</span>${feature}
+                </td>
+              </tr>
+            `
+              )
+              .join('')}
+          </table>
+          <p style="color:#92400e;font-size:13px;margin:16px 0 0;">
+            Si crees que esto es un error, contacta con nuestro equipo de soporte.
+          </p>
+        </div>
+      `
+      : '';
+
     const html = this.buildBaseLayout(`
-      <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;">
-        ${isUpgrade ? '¡Bienvenido a ' + opts.toPlanName + '!' : 'Tu plan ha cambiado'}
-      </h1>
-      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
-        Hola <strong>${opts.firstName}</strong>,
-      </p>
-      ${
-        isUpgrade
-          ? `<p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
-              Has actualizado tu plan a <strong>${opts.toPlanName}</strong>.
-              Ahora tienes acceso a todas las funcionalidades PRO.
-            </p>`
-          : `<p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
-              Tu plan ha cambiado de <strong>${opts.fromPlanName}</strong> a <strong>${opts.toPlanName}</strong>.
-            </p>
-            <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
-              Si crees que esto es un error, ponte en contacto con nuestro equipo de soporte.
-            </p>`
-      }
-      <p style="color:#9ca3af;font-size:13px;line-height:1.6;margin:24px 0 0;">
-        Fecha del cambio: ${formattedDate}
+      <div style="text-align:center;margin-bottom:32px;">
+        ${
+          isUpgrade
+            ? `
+          <div style="display:inline-block;background:linear-gradient(135deg,${highlight},${highlight});color:#ffffff;font-size:12px;font-weight:700;padding:6px 16px;border-radius:20px;margin-bottom:16px;box-shadow:0 2px 8px ${highlightBg};">
+            NUEVO PLAN ACTIVADO
+          </div>
+        `
+            : `
+          <div style="display:inline-block;background:#f3f4f6;color:#6b7280;font-size:12px;font-weight:700;padding:6px 16px;border-radius:20px;margin-bottom:16px;">
+            PLAN ACTUALIZADO
+          </div>
+        `
+        }
+        <h1 style="color:#1e1e2e;font-size:28px;font-weight:700;margin:0 0 8px;">
+          ${isUpgrade ? '¡Bienvenido a ' + opts.toPlanName + '!' : 'Tu plan ha cambiado'}
+        </h1>
+        <p style="color:#6b7280;font-size:15px;margin:0;">
+          Hola <strong>${opts.firstName}</strong>, tu plan se ha actualizado correctamente.
+        </p>
+      </div>
+
+      <!-- Plan comparison -->
+      <table cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;margin-bottom:24px;">
+        <tr>
+          <td style="padding:24px;text-align:center;border-right:1px solid #e5e7eb;background:#f9fafb;">
+            <p style="color:#9ca3af;font-size:12px;font-weight:600;text-transform:uppercase;margin:0 0 8px;">Plan anterior</p>
+            <p style="color:#6b7280;font-size:16px;font-weight:700;margin:0;">${opts.fromPlanName}</p>
+          </td>
+          <td style="padding:24px;text-align:center;background:${isUpgrade ? '#f0fdf4' : highlightBg};border-left:1px solid ${isUpgrade ? '#bbf7d0' : highlightBorder};">
+            <p style="color:#9ca3af;font-size:12px;font-weight:600;text-transform:uppercase;margin:0 0 8px;">Plan nuevo</p>
+            <p style="color:${isUpgrade ? '#166534' : highlight};font-size:16px;font-weight:700;margin:0;">${opts.toPlanName}</p>
+          </td>
+        </tr>
+      </table>
+
+      ${isUpgrade ? featuresHtml : downgradeNotice}
+
+      <!-- Features included in basic -->
+      <div style="background:#f9fafb;border-radius:12px;padding:24px;margin:24px 0;">
+        <h3 style="color:#374151;font-size:14px;font-weight:700;margin:0 0 12px;">
+          ✓ Incluido en tu plan
+        </h3>
+        <table cellpadding="0" cellspacing="0" style="width:100%;">
+          ${basicFeatures
+            .map(
+              (feature) => `
+            <tr>
+              <td style="padding:4px 0;color:#6b7280;font-size:14px;">
+                <span style="color:${highlight};margin-right:8px;">✓</span>${feature}
+              </td>
+            </tr>
+          `
+            )
+            .join('')}
+        </table>
+      </div>
+
+      <p style="color:#9ca3af;font-size:13px;line-height:1.6;margin:24px 0 0;padding-top:24px;border-top:1px solid #e5e7eb;">
+        Fecha del cambio: ${formattedDate}<br />
+        <a href="${dashboardUrl}" style="color:${highlight};">Ir a mi dashboard →</a>
       </p>
     `);
 
     await this.send({
       to: opts.to,
       subject: isUpgrade
-        ? `Bienvenido a ${opts.toPlanName} - NovaFactura`
-        : `Tu plan ha cambiado a ${opts.toPlanName} - NovaFactura`,
+        ? `¡Bienvenido a ${opts.toPlanName}! - ${this.appName}`
+        : `Tu plan ha cambiado a ${opts.toPlanName} - ${this.appName}`,
       html,
     });
   }
@@ -322,7 +447,9 @@ export class EmailService {
     return this.buildBaseLayout(content);
   }
 
-  private buildBaseLayout(content: string): string {
+  private buildBaseLayout(content: string, logoUrl?: string): string {
+    const logoSrc = logoUrl ?? (this.appUrl ? `${this.appUrl}${brandConfig.logos.email}` : null);
+    const { highlight } = this.brandColors;
     return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -338,12 +465,16 @@ export class EmailService {
           <!-- Logo header -->
           <tr>
             <td align="center" style="padding-bottom:24px;">
-              <span style="font-size:22px;font-weight:700;color:#3B82F6;letter-spacing:0.5px;text-transform:uppercase;">${this.appName}</span>
+              ${
+                logoSrc
+                  ? `<img src="${logoSrc}" alt="${this.appName}" height="40" style="height:40px;object-fit:contain;" />`
+                  : `<span style="font-size:24px;font-weight:700;color:${highlight};letter-spacing:0.5px;">${this.appName}</span>`
+              }
             </td>
           </tr>
           <!-- Card -->
           <tr>
-            <td style="background:#ffffff;border-radius:12px;padding:40px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+            <td style="background:#ffffff;border-radius:12px;padding:40px;box-shadow:0 1px 3px rgba(0,0,0,0.08);border-top:4px solid ${highlight};">
               ${content}
             </td>
           </tr>
@@ -365,9 +496,10 @@ export class EmailService {
   }
 
   private buildButton(text: string, url: string): string {
+    const { highlight } = this.brandColors;
     return `<table cellpadding="0" cellspacing="0" style="margin:28px 0;">
       <tr>
-        <td style="background:#3B82F6;border-radius:8px;padding:12px 28px;">
+        <td style="background:${highlight};border-radius:8px;padding:12px 28px;">
           <a href="${url}" style="color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">${text}</a>
         </td>
       </tr>
