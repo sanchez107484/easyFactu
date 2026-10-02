@@ -385,15 +385,12 @@ export class EmailService {
 
   private async send(opts: SendEmailOptions): Promise<void> {
     if (!this.resend) {
-      // Dev mode: log to console instead of sending
-      this.logger.debug(
-        `[EMAIL] To: ${opts.to} | Subject: ${opts.subject}\n--- HTML preview snipped ---`
-      );
+      this.logger.warn(`[EMAIL] Resend no configurado. Email no enviado. To: ${opts.to} | Subject: ${opts.subject}`);
       return;
     }
 
     try {
-      const { error } = await this.resend.emails.send({
+      const { error, data } = await this.resend.emails.send({
         from: opts.from ?? this.defaultFrom,
         to: Array.isArray(opts.to) ? opts.to : [opts.to],
         subject: opts.subject,
@@ -401,11 +398,12 @@ export class EmailService {
       });
 
       if (error) {
-        this.logger.error(`Error al enviar email a ${opts.to}: ${error.message}`);
+        this.logger.error(`[EMAIL] Error al enviar email a ${opts.to}: ${error.message}`);
+      } else {
+        this.logger.log(`[EMAIL] Email enviado correctamente a ${opts.to}. ID: ${data?.id}`);
       }
     } catch (err) {
-      // Log but don't throw — email failures shouldn't break the main flow
-      this.logger.error(`Excepción al enviar email a ${opts.to}`, err);
+      this.logger.error(`[EMAIL] Excepción al enviar email a ${opts.to}`, err);
     }
   }
 
