@@ -204,6 +204,103 @@ export class EmailService {
     });
   }
 
+  async sendAgencyClientRequestNotification(opts: {
+    to: string;
+    agencyName: string;
+    clientBusinessName: string;
+    clientNif: string;
+    clientEmail: string;
+    message?: string;
+  }): Promise<void> {
+    const dashboardUrl = `${this.appUrl}/dashboard/asesoria/solicitudes`;
+
+    let messageBlock = '';
+    if (opts.message) {
+      messageBlock = `
+        <div style="background:#f9fafb;border-left:4px solid ${this.brandColors.highlight};padding:12px 16px;margin:20px 0;border-radius:4px;">
+          <p style="color:#6b7280;font-size:14px;margin:0 0 4px;font-weight:600;">Mensaje del autónomo:</p>
+          <p style="color:#374151;font-size:14px;margin:0;line-height:1.6;">${opts.message}</p>
+        </div>
+      `;
+    }
+
+    const html = this.buildBaseLayout(`
+      <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;">
+        Nueva solicitud de vinculación
+      </h1>
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
+        <strong>${opts.clientBusinessName}</strong> (NIF: ${opts.clientNif}) ha solicitado vincularse
+        a <strong>${opts.agencyName}</strong> para que gestionéis su facturación.
+      </p>
+      ${messageBlock}
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 24px;">
+        Puedes aceptar o rechazar esta solicitud desde tu panel de asesoría.
+      </p>
+      ${this.buildButton('Ver solicitudes', dashboardUrl)}
+    `);
+
+    await this.send({
+      to: opts.to,
+      subject: `Nueva solicitud de vinculación de ${opts.clientBusinessName} en ${this.appName}`,
+      html,
+    });
+  }
+
+  async sendAgencyRequestAcceptedNotification(opts: {
+    to: string;
+    agencyName: string;
+    clientBusinessName: string;
+  }): Promise<void> {
+    const dashboardUrl = `${this.appUrl}/dashboard`;
+
+    const html = this.buildBaseLayout(`
+      <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;">
+        ¡Tu asesoría ha aceptado la vinculación!
+      </h1>
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
+        <strong>${opts.agencyName}</strong> ha aceptado tu solicitud de vinculación.
+        Ahora tienen acceso a tu cuenta y pueden gestionar tu facturación.
+      </p>
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 24px;">
+        Podrás revocar este acceso en cualquier momento desde Ajustes → Mis asesorías.
+      </p>
+      ${this.buildButton('Ir al dashboard', dashboardUrl)}
+    `);
+
+    await this.send({
+      to: opts.to,
+      subject: `${opts.agencyName} ha aceptado tu solicitud en ${this.appName}`,
+      html,
+    });
+  }
+
+  async sendAgencyRequestRejectedNotification(opts: {
+    to: string;
+    agencyName: string;
+    clientBusinessName: string;
+  }): Promise<void> {
+    const findAgencyUrl = `${this.appUrl}/dashboard/ajustes/asesorias`;
+
+    const html = this.buildBaseLayout(`
+      <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;">
+        Solicitud de vinculación rechazada
+      </h1>
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
+        <strong>${opts.agencyName}</strong> ha rechazado tu solicitud de vinculación.
+      </p>
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 24px;">
+        Puedes buscar otra asesoría desde tu panel de facturación.
+      </p>
+      ${this.buildButton('Buscar otra asesoría', findAgencyUrl)}
+    `);
+
+    await this.send({
+      to: opts.to,
+      subject: `${opts.agencyName} ha rechazado tu solicitud en ${this.appName}`,
+      html,
+    });
+  }
+
   async sendPlanChangeNotification(opts: {
     to: string | string[];
     firstName: string;

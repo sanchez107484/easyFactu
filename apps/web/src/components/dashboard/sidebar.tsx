@@ -29,6 +29,7 @@ import {
   Receipt,
   Truck,
   Activity,
+  UserPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -146,6 +147,13 @@ const agencyNavItems: NavEntry[] = [
     icon: UserCheck,
     isAgency: true,
     description: 'Autónomos y empresas que gestionas',
+  },
+  {
+    title: 'Solicitudes',
+    href: '/dashboard/asesoria/solicitudes',
+    icon: UserPlus,
+    isAgency: true,
+    description: 'Solicitudes de autónomos que quieren vincularse',
   },
   {
     title: 'Facturas de clientes',

@@ -24,6 +24,8 @@ import { QueryAgencyClientsDto } from './dto/query-agency-clients.dto';
 import { QueryAgencyInvoicesDto } from './dto/query-agency-invoices.dto';
 import { QueryImpersonationLogsDto } from './dto/query-impersonation-logs.dto';
 import { ResendActivationDto } from './dto/resend-activation.dto';
+import { SendAgencyRequestDto } from './dto/send-agency-request.dto';
+import { QueryAgencyRequestsDto } from './dto/query-agency-requests.dto';
 import {
   ExportInvoicesDto,
   QueryInvoicesForExportDto,
@@ -253,6 +255,75 @@ export class AgencyController {
   @ApiOperation({ summary: 'Cancelar una invitación pendiente' })
   cancelInvitation(@CurrentTenant() tenantId: string, @Param('id', ParseUUIDPipe) id: string) {
     return this.agencyService.cancelInvitation(tenantId, id);
+  }
+
+  // ─── Agency client requests (client-initiated) ────────────────────────────
+
+  @Post('requests')
+  @SkipAgencyGuard()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'Enviar solicitud de vinculación a una asesoría (autónomo → asesoría)' })
+  sendAgencyRequest(
+    @CurrentTenant() clientTenantId: string,
+    @Body() dto: SendAgencyRequestDto
+  ) {
+    return this.agencyService.sendAgencyRequest(clientTenantId, dto);
+  }
+
+  @Get('requests/received')
+  @ApiOperation({ summary: 'Solicitudes de vinculación recibidas por la asesoría (paginado)' })
+  findReceivedRequests(
+    @CurrentTenant() tenantId: string,
+    @Query() query: QueryAgencyRequestsDto
+  ) {
+    return this.agencyService.findReceivedRequests(tenantId, query);
+  }
+
+  @Get('requests/my-requests')
+  @SkipAgencyGuard()
+  @ApiOperation({ summary: 'Mis solicitudes de vinculación enviadas (autónomo)' })
+  findMyRequests(
+    @CurrentTenant() clientTenantId: string,
+    @Query() query: QueryAgencyRequestsDto
+  ) {
+    return this.agencyService.findMyRequests(clientTenantId, query);
+  }
+
+  @Post('requests/:id/accept')
+  @ApiOperation({ summary: 'Aceptar solicitud de vinculación (asesoría)' })
+  acceptAgencyRequest(
+    @CurrentTenant() agencyTenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('id') userId: string
+  ) {
+    return this.agencyService.acceptAgencyRequest(agencyTenantId, id, userId);
+  }
+
+  @Post('requests/:id/reject')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Rechazar solicitud de vinculación (asesoría)' })
+  rejectAgencyRequest(
+    @CurrentTenant() agencyTenantId: string,
+    @Param('id', ParseUUIDPipe) id: string
+  ) {
+    return this.agencyService.rejectAgencyRequest(agencyTenantId, id);
+  }
+
+  @Post('requests/:id/cancel')
+  @SkipAgencyGuard()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Cancelar mi solicitud de vinculación (autónomo)' })
+  cancelAgencyRequest(
+    @CurrentTenant() clientTenantId: string,
+    @Param('id', ParseUUIDPipe) id: string
+  ) {
+    return this.agencyService.cancelAgencyRequest(clientTenantId, id);
+  }
+
+  @Get('requests/count')
+  @ApiOperation({ summary: 'Contador de solicitudes pendientes para badge en sidebar' })
+  getReceivedRequestsCount(@CurrentTenant() tenantId: string) {
+    return this.agencyService.getReceivedRequestsCount(tenantId);
   }
 
   // ─── Shared customer pool ───────────────────────────────────────────────

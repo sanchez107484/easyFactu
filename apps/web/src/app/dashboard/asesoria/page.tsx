@@ -30,6 +30,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { AgencyKpiStrip } from './_components/agency-kpi-strip';
 import { PendingInvitationsWidget } from './_components/pending-invitations-widget';
+import { PendingRequestsWidget } from './_components/pending-requests-widget';
 import { SoftwareSelectModal } from './exportar/_components/software-select-modal';
 import { VincularClienteModal } from './_components/vincular-cliente-modal';
 import { AnadirClienteModal } from './_components/anadir-cliente-modal';
@@ -233,6 +234,9 @@ export default function AgencyHubPage() {
 
       {/* ── Invitaciones pendientes ── */}
       <PendingInvitationsWidget invitations={invitations} />
+
+      {/* ── Solicitudes de autónomos ── */}
+      <PendingRequestsWidget />
 
       {/* ── Guía de inicio rápido ── */}
       <div className="rounded-xl border bg-card p-6">

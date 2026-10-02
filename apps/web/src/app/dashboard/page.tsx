@@ -53,6 +53,7 @@ import { InvoiceStatus } from '@easyfactura/shared-types';
 import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge';
 import { cn, formatCurrency } from '@/lib/utils';
 import { InvitationCards } from '@/components/common/invitation-alert';
+import { AgencyFinderWidget } from '@/components/dashboard/agency-finder-widget';
 
 // ==================== HELPERS ====================
 
@@ -574,6 +575,8 @@ export default function DashboardPage() {
       )}
       {/* Pending agency invitations */}
       <InvitationCards />
+      {/* Agency finder for autonomous users without agency */}
+      <AgencyFinderWidget />
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>

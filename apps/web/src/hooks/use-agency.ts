@@ -48,6 +48,11 @@ const AGENCY_KEYS = {
     [...AGENCY_KEYS.all, 'all-clients-invoices', query] as const,
   impersonationLogs: (query: AgencyImpersonationLogQuery) =>
     [...AGENCY_KEYS.all, 'impersonation-logs', query] as const,
+  receivedRequests: (query?: { page?: number; limit?: number; search?: string; status?: string }) =>
+    [...AGENCY_KEYS.all, 'received-requests', query] as const,
+  myRequests: (query?: { page?: number; limit?: number; status?: string }) =>
+    [...AGENCY_KEYS.all, 'my-requests', query] as const,
+  receivedRequestsCount: () => [...AGENCY_KEYS.all, 'received-requests-count'] as const,
 };
 
 export function useAgencyStats(enabled = true) {
@@ -472,5 +477,107 @@ export function useImpersonationLogs(query: AgencyImpersonationLogQuery, enabled
     staleTime: 30 * 1000,
     enabled,
     placeholderData: keepPreviousData,
+  });
+}
+
+// ─── Agency client requests (client-initiated) ───────────────────────────────
+
+export function useReceivedAgencyRequests(
+  query?: { page?: number; limit?: number; search?: string; status?: string },
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: AGENCY_KEYS.receivedRequests(query),
+    queryFn: () => agencyApi.getReceivedRequests(query),
+    enabled,
+    staleTime: 30 * 1000,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useMyAgencyRequests(
+  query?: { page?: number; limit?: number; status?: string },
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: AGENCY_KEYS.myRequests(query),
+    queryFn: () => agencyApi.getMyRequests(query),
+    enabled,
+    staleTime: 30 * 1000,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useReceivedRequestsCount(enabled = true) {
+  return useQuery<number>({
+    queryKey: AGENCY_KEYS.receivedRequestsCount(),
+    queryFn: agencyApi.getReceivedRequestsCount,
+    enabled,
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useSendAgencyRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { agencyNif: string; message?: string }) =>
+      agencyApi.sendAgencyRequest(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.myRequests() });
+      toast.success('Solicitud enviada correctamente');
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useAcceptAgencyRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (requestId: string) => agencyApi.acceptAgencyRequest(requestId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.receivedRequests() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.receivedRequestsCount() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clients() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.myAgencies() });
+      toast.success('Solicitud aceptada — el autónomo ahora forma parte de tu cartera');
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useRejectAgencyRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (requestId: string) => agencyApi.rejectAgencyRequest(requestId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.receivedRequests() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.receivedRequestsCount() });
+      toast.success('Solicitud rechazada');
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useCancelAgencyRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (requestId: string) => agencyApi.cancelAgencyRequest(requestId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.myRequests() });
+      toast.success('Solicitud cancelada');
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error));
+    },
   });
 }
