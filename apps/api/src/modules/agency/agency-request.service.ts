@@ -15,7 +15,7 @@ import { Prisma } from '@prisma/client';
 export class AgencyRequestService {
   constructor(
     private prisma: PrismaService,
-    private emailService: EmailService,
+    private emailService: EmailService
   ) {}
 
   // ─── Send agency request (client-initiated) ─────────────────────────────────
@@ -67,7 +67,7 @@ export class AgencyRequestService {
     if (dailyCount >= 5) {
       throw new HttpException(
         'Has alcanzado el límite de 5 solicitudes por día. Inténtalo mañana.',
-        HttpStatus.TOO_MANY_REQUESTS,
+        HttpStatus.TOO_MANY_REQUESTS
       );
     }
 
@@ -98,7 +98,7 @@ export class AgencyRequestService {
       if (new Date() < cooldownEnds) {
         throw new HttpException(
           `Puedes reenviar la solicitud a partir del ${cooldownEnds.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}.`,
-          HttpStatus.TOO_MANY_REQUESTS,
+          HttpStatus.TOO_MANY_REQUESTS
         );
       }
     }
@@ -132,13 +132,16 @@ export class AgencyRequestService {
 
   // ─── Get requests received by agency ───────────────────────────────────────
 
-  async findReceivedRequests(agencyTenantId: string, query: { page?: number; limit?: number; search?: string; status?: string }) {
+  async findReceivedRequests(
+    agencyTenantId: string,
+    query: { page?: number; limit?: number; search?: string; status?: string }
+  ) {
     const { page = 1, limit = 20, search, status } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.AgencyClientRequestWhereInput = {
       agencyTenantId,
-      ...(status ? { status } : {}),
+      ...(status ? { status: status as Prisma.AgencyClientRequestWhereInput['status'] } : {}),
       ...(search
         ? {
             OR: [
@@ -182,13 +185,16 @@ export class AgencyRequestService {
 
   // ─── Get my sent requests (client side) ───────────────────────────────────
 
-  async findMyRequests(clientTenantId: string, query: { page?: number; limit?: number; status?: string }) {
+  async findMyRequests(
+    clientTenantId: string,
+    query: { page?: number; limit?: number; status?: string }
+  ) {
     const { page = 1, limit = 20, status } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.AgencyClientRequestWhereInput = {
       clientTenantId,
-      ...(status ? { status } : {}),
+      ...(status ? { status: status as Prisma.AgencyClientRequestWhereInput['status'] } : {}),
     };
 
     const [requests, total] = await Promise.all([

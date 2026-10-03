@@ -74,6 +74,56 @@ export class AgencyInvitationService {
     };
   }
 
+  // ─── Public search agency by email or NIF ──────────────────────────────
+
+  async searchAgencyPublic(
+    q: string
+  ): Promise<
+    | { status: 'NOT_FOUND' }
+    | { status: 'FOUND'; businessName: string; nif: string; email: string; city: string | null; province: string | null }
+  > {
+    const identifier = q.trim();
+    if (!identifier) return { status: 'NOT_FOUND' };
+
+    const isEmail = identifier.includes('@');
+
+    if (isEmail) {
+      const normalizedEmail = identifier.toLowerCase();
+      const tenant = await this.prisma.tenant.findFirst({
+        where: { email: normalizedEmail, accountType: 'AGENCY', isActive: true },
+        select: { businessName: true, nif: true, email: true, city: true, province: true },
+      });
+
+      if (!tenant) return { status: 'NOT_FOUND' };
+
+      return {
+        status: 'FOUND',
+        businessName: tenant.businessName,
+        nif: tenant.nif,
+        email: tenant.email ?? '',
+        city: tenant.city,
+        province: tenant.province,
+      };
+    }
+
+    const normalizedNif = identifier.toUpperCase();
+    const tenantByNif = await this.prisma.tenant.findFirst({
+      where: { nif: normalizedNif, accountType: 'AGENCY', isActive: true },
+      select: { businessName: true, nif: true, email: true, city: true, province: true },
+    });
+
+    if (!tenantByNif) return { status: 'NOT_FOUND' };
+
+    return {
+      status: 'FOUND',
+      businessName: tenantByNif.businessName,
+      nif: tenantByNif.nif,
+      email: tenantByNif.email ?? '',
+      city: tenantByNif.city,
+      province: tenantByNif.province,
+    };
+  }
+
   // ─── Check identifier (NIF or email) ───────────────────────────────────
 
   async checkIdentifier(

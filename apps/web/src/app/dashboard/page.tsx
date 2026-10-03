@@ -53,7 +53,7 @@ import { InvoiceStatus } from '@easyfactura/shared-types';
 import { INVOICE_STATUS_CONFIG } from '@/components/common/invoice-status-badge';
 import { cn, formatCurrency } from '@/lib/utils';
 import { InvitationCards } from '@/components/common/invitation-alert';
-import { AgencyFinderWidget } from '@/components/dashboard/agency-finder-widget';
+import { AgencyInfoBanner } from '@/components/dashboard/agency-info-banner';
 
 // ==================== HELPERS ====================
 
@@ -575,8 +575,6 @@ export default function DashboardPage() {
       )}
       {/* Pending agency invitations */}
       <InvitationCards />
-      {/* Agency finder for autonomous users without agency */}
-      <AgencyFinderWidget />
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
@@ -592,6 +590,8 @@ export default function DashboardPage() {
             })}
           </p>
         </div>
+        {/* Agency banner inline */}
+        <AgencyInfoBanner className="hidden sm:flex" />
         <Link href="/dashboard/facturas/nueva">
           <Button className="shrink-0 h-8 text-sm">
             <Plus className="mr-1.5 h-3.5 w-3.5" />
@@ -599,6 +599,8 @@ export default function DashboardPage() {
           </Button>
         </Link>
       </div>
+      {/* Agency banner for mobile */}
+      <AgencyInfoBanner className="sm:hidden" />
       {/* Acciones rapidas — 10 botones en grid 2x5 */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <Link href="/dashboard/facturas/nueva?tipo=standard">

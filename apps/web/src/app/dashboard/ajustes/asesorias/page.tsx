@@ -158,8 +158,8 @@ function RequestCard({
   return (
     <div className="rounded-lg border bg-card p-4 flex items-center justify-between gap-4">
       <div className="flex items-center gap-3 min-w-0">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
-          <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-agency-100 dark:bg-agency-950/30">
+          <Building2 className="h-4 w-4 text-agency-600 dark:text-agency-400" />
         </div>
         <div className="min-w-0">
           <p className="text-sm font-medium truncate">{request.agencyName}</p>
@@ -266,9 +266,9 @@ export default function MisAsesoriasPage() {
 
       {/* Solicitar vinculación */}
       {!loadingAgencies && agencies.length === 0 && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-800/50 dark:bg-blue-950/20 p-5 space-y-4">
+        <div className="rounded-xl border border-agency-200 bg-agency-50/50 dark:border-agency-800/50 dark:bg-agency-950/20 p-5 space-y-4">
           <div className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-blue-600" />
+            <Building2 className="h-5 w-5 text-agency-600" />
             <h3 className="font-semibold">Solicitar vinculación con una asesoría</h3>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -314,7 +314,7 @@ export default function MisAsesoriasPage() {
                 <div className="flex gap-2">
                   <Button
                     size="sm"
-                    className="gap-1.5 flex-1 bg-blue-600 hover:bg-blue-700"
+                    className="gap-1.5 flex-1 bg-agency-600 hover:bg-agency-700"
                     onClick={handleSendRequest}
                     disabled={!canSend}
                   >

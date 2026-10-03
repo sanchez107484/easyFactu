@@ -75,6 +75,12 @@ export class AgencyService {
     return this.clientService.getExportLogs(agencyTenantId, clientTenantId, page, limit);
   }
 
+  // ─── Public search ───────────────────────────────────────────────────────
+
+  searchAgencyPublic(q: string) {
+    return this.invitationService.searchAgencyPublic(q);
+  }
+
   // ─── Invitations ────────────────────────────────────────────────────────
 
   checkNif(agencyTenantId: string, nif: string) {

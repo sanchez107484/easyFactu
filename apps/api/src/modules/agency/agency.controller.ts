@@ -51,6 +51,17 @@ export class AgencyController {
     private readonly fiscalValidatorService: FiscalValidatorService
   ) {}
 
+  // ─── Public: search agency by email or NIF ─────────────────────────────
+
+  @Get('search')
+  @Public()
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @ApiOperation({ summary: 'Busca una asesoría por email o NIF (público)' })
+  @ApiResponse({ status: 200, description: 'Resultado de la búsqueda' })
+  searchAgencyPublic(@Query('q') q: string) {
+    return this.agencyService.searchAgencyPublic(q);
+  }
+
   // ─── Stats / hub overview ───────────────────────────────────────────────
 
   @Get('stats')

@@ -364,4 +364,18 @@ export const agencyApi = {
     const response = await apiClient.get('/agency/requests/count');
     return unwrapApiResponse(response);
   },
+
+  // ─── Public: search agency by email or NIF ─────────────────────────────────
+
+  searchAgencyPublic: async (q: string): Promise<{
+    status: 'NOT_FOUND' | 'FOUND';
+    businessName?: string;
+    nif?: string;
+    email?: string;
+    city?: string | null;
+    province?: string | null;
+  }> => {
+    const response = await apiClient.get('/agency/search', { params: { q } });
+    return unwrapApiResponse(response);
+  },
 };
