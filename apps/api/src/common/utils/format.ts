@@ -31,3 +31,17 @@ export function formatUnitPrice(value: number | string | null | undefined): stri
     }).format(n) + '\u00A0€'
   );
 }
+
+/**
+ * Parses a date string in YYYY-MM-DD format as local time (not UTC).
+ * Uses midday to avoid timezone-related date shifts.
+ * @throws Error if the date string is invalid
+ */
+export function parseLocalDate(dateStr: string): Date {
+  const parts = dateStr.split('-').map(Number);
+  const [year, month, day] = parts;
+  if (year == null || month == null || day == null) {
+    throw new Error('Invalid date format: ' + dateStr);
+  }
+  return new Date(year, month - 1, day, 12, 0, 0, 0);
+}

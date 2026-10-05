@@ -78,6 +78,7 @@ const expenseSchema = z.object({
     .number({ invalid_type_error: 'Introduce un importe válido' })
     .min(0.01, 'La base imponible debe ser mayor que 0'),
   vatRate: z.number().min(0).max(100),
+  totalAmount: z.number().optional(),
   notes: z.string().max(2000).optional(),
   attachmentId: z.string().uuid().optional().or(z.literal('')),
   isRecurring: z.boolean().optional(),
@@ -96,6 +97,7 @@ interface ExpenseFormProps {
   isPending: boolean;
   mode: 'create' | 'edit';
   readOnly?: boolean;
+  defaultRecurring?: boolean;
 }
 
 function formatCurrency(amount: number) {
@@ -281,6 +283,7 @@ export function ExpenseForm({
   isPending,
   mode,
   readOnly = false,
+  defaultRecurring = false,
 }: ExpenseFormProps) {
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
@@ -292,6 +295,7 @@ export function ExpenseForm({
       clientId: expense.clientId ?? '',
       baseAmount: Number(expense.baseAmount) || 0,
       vatRate: Number(expense.vatRate) || 21,
+      totalAmount: Number(expense.totalAmount) || 0,
       notes: expense.notes ?? '',
       attachmentId: expense.attachmentId ?? '',
       isRecurring: !!expense.recurringExpense?.id,
@@ -314,7 +318,7 @@ export function ExpenseForm({
       vatRate: 21,
       notes: '',
       attachmentId: '',
-      isRecurring: false,
+      isRecurring: defaultRecurring,
       recurringFrequency: RecurringExpenseFrequency.MONTHLY,
       recurringDayOfMonth: 1,
       recurringStartDate: new Date().toISOString().split('T')[0],
@@ -325,6 +329,7 @@ export function ExpenseForm({
 
   const [baseAmountRaw, setBaseAmountRaw] = useState<string>('');
   const [totalRaw, setTotalRaw] = useState<string>('');
+  const [userEnteredTotal, setUserEnteredTotal] = useState<number | null>(null);
   const [showQuickCustomer, setShowQuickCustomer] = useState(false);
   const [showQuickSupplier, setShowQuickSupplier] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -350,6 +355,7 @@ export function ExpenseForm({
   useEffect(() => {
     if (expense && mode === 'create') {
       const base = Number(expense.baseAmount) || 0;
+      const total = Number(expense.totalAmount) || 0;
       const vat = Number(expense.vatRate) || 21;
       form.setValue('date', new Date().toISOString().split('T')[0]);
       form.setValue('description', `Copia de ${expense.description}`);
@@ -358,6 +364,7 @@ export function ExpenseForm({
       form.setValue('clientId', expense.clientId ?? '');
       form.setValue('baseAmount', base);
       form.setValue('vatRate', vat);
+      form.setValue('totalAmount', total);
       form.setValue('notes', expense.notes ?? '');
       form.setValue('attachmentId', expense.attachmentId ?? '');
       form.setValue('isRecurring', !!expense.recurringExpense?.id);
@@ -370,15 +377,19 @@ export function ExpenseForm({
         ? new Date(expense.recurringExpense.endDate).toISOString().split('T')[0]
         : null);
       setBaseAmountRaw(base > 0 ? formatBaseAmount(base) : '');
-      setTotalRaw(base > 0 ? formatTotal(round2(base * (1 + vat / 100))) : '');
+      setTotalRaw(total > 0 ? formatTotal(total) : '');
+      setUserEnteredTotal(total > 0 ? total : null);
     }
   }, [expense, form, mode]);
 
   useEffect(() => {
     if (mode === 'edit' && expense) {
       const base = Number(expense.baseAmount) || 0;
+      const total = Number(expense.totalAmount) || 0;
+      const vat = Number(expense.vatRate) || 21;
       setBaseAmountRaw(base > 0 ? formatBaseAmount(base) : '');
-      setTotalRaw(base > 0 ? formatTotal(round2(base * (1 + (Number(expense.vatRate) || 21) / 100))) : '');
+      setTotalRaw(total > 0 ? formatTotal(total) : '');
+      setUserEnteredTotal(total > 0 ? total : null);
     }
   }, [expense, mode]);
 
@@ -631,9 +642,10 @@ export function ExpenseForm({
                   recurringStartDate: new Date().toISOString().split('T')[0],
                   recurringEndDate: null,
                 });
-                setBaseAmountRaw('');
-                setTotalRaw('');
-                setDraftRestored(false);
+                  setBaseAmountRaw('');
+                  setTotalRaw('');
+                  setUserEnteredTotal(null);
+                  setDraftRestored(false);
               }}
               className="text-xs text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300 underline bg-transparent border-0 cursor-pointer"
             >
@@ -727,17 +739,20 @@ export function ExpenseForm({
                   onTotalRawChange={setTotalRaw}
                   onCategoryChange={trackCategoryUsage}
                   onBaseAmountBlur={() => {
+                    setUserEnteredTotal(null);
                     const num = parseFloat(baseAmountRaw.replace(',', '.'));
                     if (isNaN(num) || num < 0) {
                       setBaseAmountRaw('');
                       setTotalRaw('');
                       form.setValue('baseAmount', 0, { shouldValidate: true });
+                      form.setValue('totalAmount', undefined);
                     } else {
                       setBaseAmountRaw(new Intl.NumberFormat('es-ES', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       }).format(num));
                       form.setValue('baseAmount', num, { shouldValidate: true });
+                      form.setValue('totalAmount', undefined);
                       setTotalRaw(new Intl.NumberFormat('es-ES', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
@@ -749,9 +764,12 @@ export function ExpenseForm({
                     if (isNaN(num) || num < 0) {
                       setTotalRaw('');
                       setBaseAmountRaw('');
+                      setUserEnteredTotal(null);
                       form.setValue('baseAmount', 0, { shouldValidate: true });
+                      form.setValue('totalAmount', undefined);
                     } else {
                       const calculatedBase = round2(num / (1 + vatRate / 100));
+                      setUserEnteredTotal(num);
                       setTotalRaw(new Intl.NumberFormat('es-ES', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
@@ -761,6 +779,7 @@ export function ExpenseForm({
                         maximumFractionDigits: 2,
                       }).format(calculatedBase));
                       form.setValue('baseAmount', calculatedBase, { shouldValidate: true });
+                      form.setValue('totalAmount', num, { shouldValidate: true });
                     }
                   }}
                   isPending={isPending}
@@ -996,7 +1015,7 @@ export function ExpenseForm({
                 <div className="rounded-lg bg-primary/5 border border-primary/15 px-4 py-3 mt-1">
                   <p className="text-xs text-muted-foreground mb-0.5">Total del gasto</p>
                   <p className="text-3xl font-extrabold tabular-nums text-primary leading-none">
-                    {formatCurrency(totalAmount)}
+                    {formatCurrency(userEnteredTotal ?? totalAmount)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">IVA incluido</p>
                 </div>

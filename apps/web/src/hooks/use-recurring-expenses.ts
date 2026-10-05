@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { recurringExpenseApi } from '@/lib/api/recurring-expense-api';
@@ -62,7 +63,12 @@ export function useUpdateRecurringExpense() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['recurring-expenses', 'list'] });
       queryClient.invalidateQueries({ queryKey: ['recurring-expenses', 'detail', variables.id] });
-      toast.success('Gasto recurrente actualizado correctamente');
+      const isPausing = variables.data.isActive === false;
+      toast.success(
+        isPausing
+          ? 'Gasto recurrente pausado'
+          : 'Gasto recurrente activado'
+      );
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
@@ -94,4 +100,45 @@ export function useGenerateRecurringExpenses() {
     },
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
+}
+
+export interface GenerateDialogState {
+  item: RecurringExpense | null;
+  isOpen: boolean;
+}
+
+export function useGenerateRecurringExpensesDialog() {
+  const [dialogState, setDialogState] = useState<GenerateDialogState>({ item: null, isOpen: false });
+  const mutation = useGenerateRecurringExpenses();
+
+  const openDialog = useCallback((item: RecurringExpense) => {
+    setDialogState({ item, isOpen: true });
+  }, []);
+
+  const closeDialog = useCallback(() => {
+    if (!mutation.isPending) {
+      setDialogState({ item: null, isOpen: false });
+    }
+  }, [mutation.isPending]);
+
+  const confirmGenerate = useCallback(async () => {
+    const item = dialogState.item;
+    if (!item) return;
+
+    try {
+      await mutation.mutateAsync({ id: item.id });
+      setDialogState({ item: null, isOpen: false });
+    } catch {
+      // Error handled by mutation
+    }
+  }, [dialogState.item, mutation]);
+
+  return {
+    dialogState,
+    isPending: mutation.isPending,
+    error: mutation.error,
+    openDialog,
+    closeDialog,
+    confirmGenerate,
+  };
 }

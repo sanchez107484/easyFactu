@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
 const CATEGORIES = [
+  { slug: 'sin-categoria', name: 'Sin categoría' },
   { slug: 'software-y-aplicaciones', name: 'Software y aplicaciones' },
   { slug: 'material', name: 'Material' },
   { slug: 'suministros', name: 'Suministros' },
@@ -14,7 +15,7 @@ const CATEGORIES = [
   { slug: 'formacion', name: 'Formación' },
   { slug: 'equipamiento', name: 'Equipamiento' },
   { slug: 'comisiones-y-gastos-bancarios', name: 'Comisiones y gastos bancarios' },
-  { slug: 'otros', name: 'Otros' },
+  { slug: 'otros', name: 'Otros / Varios' },
 ];
 
 export async function seedExpenseCategories(prisma: PrismaClient): Promise<void> {

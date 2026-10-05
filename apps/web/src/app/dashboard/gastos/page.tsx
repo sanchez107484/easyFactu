@@ -89,6 +89,8 @@ import {
   usePrefetchExpense,
   useExpenseSummary,
 } from '@/hooks/use-expenses';
+import { useRecurringExpenses } from '@/hooks/use-recurring-expenses';
+import { ExpenseCard } from '@/components/gastos/expense-card';
 import { useExpenseCategories } from '@/hooks/use-expense-categories';
 import { useSuppliers } from '@/hooks/use-suppliers';
 import { useCustomers } from '@/hooks/use-customers';
@@ -489,188 +491,6 @@ function ExpenseDetailDialog({ expense, onClose, onEdit }: ExpenseDetailDialogPr
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-interface ExpenseCardProps {
-  expense: Expense;
-  onDelete: (expense: Expense) => void;
-  onView: (expense: Expense) => void;
-  onDuplicate: (expense: Expense) => void;
-  canWrite: boolean;
-  onPrefetch: (id: string) => void;
-  isSelected?: boolean;
-  onToggleSelect?: () => void;
-}
-
-function ExpenseCard({
-  expense,
-  onDelete,
-  onView,
-  onDuplicate,
-  canWrite,
-  onPrefetch,
-  isSelected,
-  onToggleSelect,
-}: ExpenseCardProps) {
-  const [expanded, setExpanded] = useState(false);
-
-  const catColor = expense.category ? getCategoryColorFromName(expense.category.name) : null;
-  const hasDetails = expense.baseAmount !== undefined || expense.client || expense.notes;
-
-  const shortDate = (() => {
-    const d = new Date(expense.date);
-    return `${d.getDate()} ${MONTHS_ES[d.getMonth()]}`;
-  })();
-
-  return (
-    <div
-      className={cn(
-        'group relative flex items-center gap-0 border-b last:border-b-0 px-0 py-0 hover:bg-muted/30 transition-all bg-card',
-        isSelected && 'bg-primary/5',
-      )}
-      onMouseEnter={() => onPrefetch(expense.id)}
-    >
-      {catColor && (
-        <div
-          className="w-1 self-stretch shrink-0 rounded-full mx-0"
-          style={{
-            backgroundColor: catColor.text.includes('emerald')
-              ? '#059669'
-              : catColor.text.includes('amber')
-                ? '#d97706'
-                : catColor.text.includes('blue')
-                  ? '#2563eb'
-                  : catColor.text.includes('purple')
-                    ? '#7c3aed'
-                    : catColor.text.includes('rose')
-                      ? '#e11d48'
-                      : catColor.text.includes('cyan')
-                        ? '#0891b2'
-                        : 'hsl(var(--primary))',
-          }}
-        />
-      )}
-
-      {canWrite ? (
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={onToggleSelect}
-          className="ml-3 mr-2 shrink-0"
-        />
-      ) : (
-        <div className="ml-3 mr-2 shrink-0 w-4" />
-      )}
-
-      <div className="flex-1 min-w-0 py-2.5 pr-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <h3 className="text-sm font-medium truncate">{expense.description}</h3>
-            {expense.recurringExpense?.id && (
-              <Repeat className="h-3.5 w-3.5 text-primary shrink-0" />
-            )}
-            {hasDetails && (
-              <span
-                className="h-1.5 w-1.5 rounded-full bg-primary/40 shrink-0"
-                title="Tiene detalles"
-              />
-            )}
-          </div>
-          <span className="text-sm font-semibold tabular-nums text-foreground shrink-0 ml-2">
-            {formatCurrency(expense.totalAmount)}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-x-3 gap-y-0.5 mt-0.5 flex-wrap">
-          <span className="text-[11px] text-muted-foreground">{shortDate}</span>
-          {expense.category && (
-            <span className="text-[11px] text-muted-foreground">{expense.category.name}</span>
-          )}
-          {expense.supplier && (
-            <span className="text-[11px] text-muted-foreground truncate max-w-[120px]">
-              {expense.supplier.name}
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-0.5 mr-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 w-7 p-0"
-          onClick={() => onView(expense)}
-          title="Ver detalle"
-        >
-          <FileText className="h-3.5 w-3.5" />
-        </Button>
-        {canWrite && (
-          <>
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" asChild title="Editar">
-              <Link href={`/dashboard/gastos/${expense.id}`}>
-                <ExternalLink className="h-3.5 w-3.5" />
-              </Link>
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                  <MoreVertical className="h-3.5 w-3.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link href={`/dashboard/gastos/${expense.id}`} className="flex items-center">
-                    <Edit className="mr-2 h-4 w-4" />
-                    Editar
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onDuplicate(expense)}>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Duplicar
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={() => onDelete(expense)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Eliminar
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </>
-        )}
-      </div>
-
-      {expanded && (
-        <div className="absolute left-0 right-0 top-full z-10 bg-card border rounded-lg shadow-lg p-4 mt-1 mx-0">
-          {expense.baseAmount !== undefined && (
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <span className="text-xs text-muted-foreground">Base:</span>
-                <span className="ml-2">{formatCurrency(expense.baseAmount)}</span>
-              </div>
-              <div>
-                <span className="text-xs text-muted-foreground">IVA ({expense.vatRate}%):</span>
-                <span className="ml-2">{formatCurrency(expense.vatAmount)}</span>
-              </div>
-            </div>
-          )}
-          {expense.client && (
-            <div>
-              <span className="text-xs text-muted-foreground">Cliente:</span>
-              <span className="ml-2">{expense.client.name}</span>
-            </div>
-          )}
-          {expense.notes && (
-            <div>
-              <span className="text-xs text-muted-foreground">Notas:</span>
-              <p className="mt-1 text-xs">{expense.notes}</p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -1119,6 +939,9 @@ export default function GastosPage() {
     limit: 20,
   });
 
+  const { data: recurringData, isLoading: isRecurringLoading } = useRecurringExpenses({ limit: 1 });
+  const hasRecurringExpenses = (recurringData?.meta?.total ?? 0) > 0;
+
   const { data: summaryData, isLoading: isSummaryLoading } = useExpenseSummary();
   const { data: categoriesData } = useExpenseCategories();
   const { data: suppliersData } = useSuppliers({ limit: 500 });
@@ -1230,14 +1053,29 @@ export default function GastosPage() {
                 Registra los gastos de tu actividad
               </p>
             </div>
-            {canWrite && (
-              <Link href="/dashboard/gastos/nuevo">
-                <Button size="lg">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nuevo gasto
-                </Button>
-              </Link>
-            )}
+            <div className="flex items-center gap-2">
+              {canWrite && (
+                <Link href="/dashboard/gastos/recurrentes">
+                  <Button variant="outline">
+                    <Repeat className="mr-2 h-4 w-4" />
+                    Recurrentes
+                    {hasRecurringExpenses && (
+                      <Badge variant="secondary" className="ml-2">
+                        {recurringData?.meta.total}
+                      </Badge>
+                    )}
+                  </Button>
+                </Link>
+              )}
+              {canWrite && (
+                <Link href="/dashboard/gastos/nuevo">
+                  <Button size="lg">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nuevo gasto
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-6 px-5 py-4 rounded-2xl bg-gradient-to-r from-primary/5 via-primary/10 to-transparent border border-primary/10">
@@ -1283,6 +1121,24 @@ export default function GastosPage() {
 
         {!canWrite ? (
           <UpgradeBanner isEmpty={true} isFreePlan={isFreePlan} />
+        ) : hasRecurringExpenses ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 mb-4">
+                <Repeat className="h-7 w-7 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Tienes gastos recurrentes</h3>
+              <p className="text-muted-foreground max-w-md mb-6">
+                Tienes {recurringData?.meta.total} gasto{recurringData!.meta.total !== 1 ? 's' : ''} recurrente{recurringData!.meta.total !== 1 ? 's' : ''} configurado{recurringData!.meta.total !== 1 ? 's' : ''}, pero aún no se han generado gastos. Pulsa "Generar" para crear los gastos reales.
+              </p>
+              <Link href="/dashboard/gastos/recurrentes">
+                <Button size="lg">
+                  <Repeat className="mr-2 h-4 w-4" />
+                  Ver gastos recurrentes
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
         ) : (
           <EmptyState
             icon={Receipt}
@@ -1370,17 +1226,23 @@ export default function GastosPage() {
             </div>
             <div className="flex items-center gap-2">
               {canWrite && (
-                <Link href="/dashboard/gastos/nuevo">
-                  <Button size="lg">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nuevo gasto
+                <Link href="/dashboard/gastos/recurrentes">
+                  <Button variant="outline">
+                    <Repeat className="mr-2 h-4 w-4" />
+                    Recurrentes
+                    {hasRecurringExpenses && (
+                      <Badge variant="secondary" className="ml-2">
+                        {recurringData?.meta.total}
+                      </Badge>
+                    )}
                   </Button>
                 </Link>
               )}
               {canWrite && (
-                <Link href="/dashboard/gastos/recurrentes">
-                  <Button variant="outline" size="icon" title="Gastos recurrentes">
-                    <Repeat className="h-4 w-4" />
+                <Link href="/dashboard/gastos/nuevo">
+                  <Button size="lg">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nuevo gasto
                   </Button>
                 </Link>
               )}

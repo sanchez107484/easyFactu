@@ -28,7 +28,6 @@ import {
 import {
   Plus,
   Search,
-  MoreVertical,
   Edit,
   Trash2,
   RefreshCw,
@@ -40,13 +39,17 @@ import {
   Clock,
   Play,
   Pause,
+  MoreVertical,
+  Loader2,
+  X,
 } from 'lucide-react';
 import { RecurringExpense, RecurringExpenseFrequency } from '@easyfactura/shared-types';
 import {
   useRecurringExpenses,
   useDeleteRecurringExpense,
-  useGenerateRecurringExpenses,
   usePrefetchRecurringExpense,
+  useUpdateRecurringExpense,
+  useGenerateRecurringExpensesDialog,
 } from '@/hooks/use-recurring-expenses';
 import { useHasProfessionalPlan } from '@/hooks/use-current-plan';
 import { EmptyState } from '@/components/common/empty-state';
@@ -81,15 +84,16 @@ function formatDate(dateString: string | null | undefined) {
   });
 }
 
-function RecurringCard({ item, onDelete, onGenerate, canWrite }: {
+function RecurringCard({ item, onDelete, onGenerate, onTogglePause, canWrite }: {
   item: RecurringExpense;
   onDelete: () => void;
   onGenerate: () => void;
+  onTogglePause: () => void;
   canWrite: boolean;
 }) {
   return (
     <div className="group border rounded-lg p-4 hover:border-primary/30 hover:shadow-sm transition-all bg-card">
-      <div className="flex items-start gap-4">
+      <div className="flex items-center gap-4">
         <div className={cn(
           'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
           item.isActive ? 'bg-primary/10' : 'bg-muted'
@@ -97,72 +101,95 @@ function RecurringCard({ item, onDelete, onGenerate, canWrite }: {
           <Repeat className={cn('h-5 w-5', item.isActive ? 'text-primary' : 'text-muted-foreground')} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <h3 className="font-medium truncate">{item.description}</h3>
-            <span className="text-lg font-bold tabular-nums text-primary shrink-0">
-              {formatCurrency(Number(item.totalAmount))}
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span className={cn('flex items-center gap-1 px-2 py-0.5 rounded-full font-medium', FREQUENCY_COLORS[item.frequency])}>
-              {FREQUENCY_LABELS[item.frequency]}
-            </span>
-            {item.category && (
-              <Badge variant="secondary" className="text-xs gap-1">
-                {item.category.name}
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              {formatDate(item.startDate)} — {formatDate(item.endDate)}
-            </span>
-            {item.lastGeneratedDate && (
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                Última: {formatDate(item.lastGeneratedDate)}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-medium truncate">{item.description}</h3>
+                <span className={cn('flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium', FREQUENCY_COLORS[item.frequency])}>
+                  {FREQUENCY_LABELS[item.frequency]}
+                </span>
+                {item.category && (
+                  <Badge variant="secondary" className="text-xs gap-1">
+                    {item.category.name}
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {formatDate(item.startDate)} — {formatDate(item.endDate)}
+                </span>
+                {item.lastGeneratedDate && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Última: {formatDate(item.lastGeneratedDate)}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 shrink-0">
+              <span className="text-lg font-bold tabular-nums text-primary">
+                {formatCurrency(Number(item.totalAmount))}
               </span>
-            )}
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-muted-foreground hover:text-foreground"
+                  onClick={onGenerate}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  <span className="text-xs">Generar</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-muted-foreground hover:text-foreground"
+                  asChild
+                >
+                  <Link href={`/dashboard/gastos/${item.id}`}>
+                    <Edit className="h-4 w-4" />
+                    <span className="text-xs">Editar</span>
+                  </Link>
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 text-muted-foreground hover:text-foreground"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={onTogglePause}>
+                      {item.isActive ? (
+                        <>
+                          <Pause className="mr-2 h-4 w-4" />
+                          Pausar
+                        </>
+                      ) : (
+                        <>
+                          <Play className="mr-2 h-4 w-4" />
+                          Activar
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={onDelete}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Eliminar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {canWrite && (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-                onClick={onGenerate}
-                title="Generar gastos ahora"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link href={`/dashboard/gastos/recurrentes/${item.id}`} className="flex items-center">
-                      <Edit className="mr-2 h-4 w-4" />
-                      Editar
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={onDelete}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Eliminar
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
-          )}
         </div>
       </div>
       {!item.isActive && (
@@ -182,7 +209,7 @@ export default function RecurrentesPage() {
   const search = useDebounce(searchInput, 300);
   const [page, setPage] = useState(1);
   const [itemToDelete, setItemToDelete] = useState<RecurringExpense | null>(null);
-  const [itemToGenerate, setItemToGenerate] = useState<RecurringExpense | null>(null);
+  const [itemToTogglePause, setItemToTogglePause] = useState<RecurringExpense | null>(null);
   const canWrite = useHasProfessionalPlan();
   const prefetch = usePrefetchRecurringExpense();
 
@@ -193,7 +220,14 @@ export default function RecurrentesPage() {
   });
 
   const deleteMutation = useDeleteRecurringExpense();
-  const generateMutation = useGenerateRecurringExpenses();
+  const updateMutation = useUpdateRecurringExpense();
+  const {
+    dialogState: generateDialogState,
+    isPending: isGenerating,
+    openDialog: openGenerateDialog,
+    closeDialog: closeGenerateDialog,
+    confirmGenerate: confirmGenerate,
+  } = useGenerateRecurringExpensesDialog();
 
   const items = data?.data ?? [];
   const total = data?.meta?.total ?? 0;
@@ -204,10 +238,13 @@ export default function RecurrentesPage() {
     setItemToDelete(null);
   };
 
-  const handleGenerate = async () => {
-    if (!itemToGenerate) return;
-    await generateMutation.mutateAsync({ id: itemToGenerate.id });
-    setItemToGenerate(null);
+  const handleTogglePause = async () => {
+    if (!itemToTogglePause) return;
+    await updateMutation.mutateAsync({
+      id: itemToTogglePause.id,
+      data: { isActive: !itemToTogglePause.isActive },
+    });
+    setItemToTogglePause(null);
   };
 
   if (error) {
@@ -247,11 +284,19 @@ export default function RecurrentesPage() {
             <h1 className="text-2xl font-bold tracking-tight">Gastos recurrentes</h1>
             <p className="text-sm text-muted-foreground">Suscripciones y gastos periódicos</p>
           </div>
-          {canWrite && (
-            <Link href="/dashboard/gastos/recurrentes/nuevo">
-              <Button><Plus className="mr-2 h-4 w-4" />Nuevo recurrente</Button>
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard/gastos">
+              <Button variant="outline">
+                <Receipt className="mr-2 h-4 w-4" />
+                Ver todos los gastos
+              </Button>
             </Link>
-          )}
+            {canWrite && (
+              <Link href="/dashboard/gastos/nuevo?recurring=true">
+                <Button><Plus className="mr-2 h-4 w-4" />Nuevo recurrente</Button>
+              </Link>
+            )}
+          </div>
         </div>
         <EmptyState
           icon={Repeat}
@@ -259,7 +304,7 @@ export default function RecurrentesPage() {
           description="Registra suscripciones o pagos periódicos para generarlos automáticamente."
           action={
             canWrite ? (
-              <Link href="/dashboard/gastos/recurrentes/nuevo">
+              <Link href="/dashboard/gastos/nuevo?recurring=true">
                 <Button><Plus className="mr-2 h-4 w-4" />Crear recurrente</Button>
               </Link>
             ) : undefined
@@ -294,7 +339,7 @@ export default function RecurrentesPage() {
             </Button>
           </Link>
           {canWrite && (
-            <Link href="/dashboard/gastos/recurrentes/nuevo">
+            <Link href="/dashboard/gastos/nuevo?recurring=true">
               <Button><Plus className="mr-2 h-4 w-4" />Nuevo recurrente</Button>
             </Link>
           )}
@@ -348,7 +393,8 @@ export default function RecurrentesPage() {
               key={item.id}
               item={item}
               onDelete={() => setItemToDelete(item)}
-              onGenerate={() => setItemToGenerate(item)}
+              onGenerate={() => openGenerateDialog(item)}
+              onTogglePause={() => setItemToTogglePause(item)}
               canWrite={canWrite}
             />
           ))}
@@ -392,18 +438,40 @@ export default function RecurrentesPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={!!itemToGenerate} onOpenChange={() => setItemToGenerate(null)}>
+      <AlertDialog open={generateDialogState.isOpen} onOpenChange={closeGenerateDialog}>
         <AlertDialogContent>
+          <button
+            onClick={closeGenerateDialog}
+            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+            disabled={isGenerating}
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">Cerrar</span>
+          </button>
           <AlertDialogHeader>
             <AlertDialogTitle>Generar gastos</AlertDialogTitle>
             <AlertDialogDescription>
-              Se crearán gastos para <strong>{itemToGenerate?.description}</strong> desde la última fecha generada (o el inicio) hasta hoy.
+              {isGenerating ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generando gastos, por favor espera...
+                </span>
+              ) : (
+                <>Se crearán gastos para <strong>{generateDialogState.item?.description}</strong> desde la última fecha generada (o el inicio) hasta hoy.</>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={generateMutation.isPending}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleGenerate} disabled={generateMutation.isPending}>
-              {generateMutation.isPending ? 'Generando...' : 'Generar'}
+            <AlertDialogCancel disabled={isGenerating}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmGenerate} disabled={isGenerating}>
+              {isGenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generando...
+                </>
+              ) : (
+                'Generar'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

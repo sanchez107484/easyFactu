@@ -20,12 +20,18 @@ import {
 } from 'lucide-react';
 import { useTenant } from '@/hooks/use-tenant';
 import { useAuthStore } from '@/store/auth-store';
-import { AccountType, PlanTier } from '@easyfactura/shared-types';
+import { AccountType, PlanTier, PlanCycle } from '@easyfactura/shared-types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const PLAN_LABELS: Record<PlanTier, string> = {
   [PlanTier.BASIC]: 'Básico',
   [PlanTier.PROFESSIONAL]: 'PRO',
+};
+
+const CYCLE_LABELS: Record<PlanCycle, string> = {
+  [PlanCycle.MONTHLY]: 'Mensual',
+  [PlanCycle.YEARLY]: 'Anual',
+  [PlanCycle.FREE]: 'Gratuito',
 };
 
 const BASE_SETTINGS_SECTIONS = [

@@ -239,7 +239,7 @@ async findAll(query: QueryInvoiceDto) {
 | `VERIFACTU_ENDPOINT_PRODUCTION` | AEAT production URL               |                                                            |
 | `CERTIFICATE_ENCRYPTION_KEY`    | AES encryption for certs          | **Must be 64 hex chars (32 bytes)**                        |
 | `UPLOAD_DIR`                    | Upload directory path             | Default `uploads`                                          |
-| `SCHEDULER_SECRET`              | Secures recurring invoice trigger | Strong random hex in production                            |
+| `CRON_SECRET`                   | Vercel Cron auth (auto-sent as Bearer) | Strong random hex in production                   |
 
 ### Frontend (`apps/web/.env.local`) — see `apps/web/.env.example`
 

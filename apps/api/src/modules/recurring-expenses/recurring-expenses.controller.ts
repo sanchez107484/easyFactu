@@ -10,6 +10,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,8 +19,12 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiNoContentResponse,
+  ApiUnauthorizedResponse,
+  ApiForbiddenResponse,
 } from '@nestjs/swagger';
+import { Request } from 'express';
 import { RecurringExpensesService } from './recurring-expenses.service';
+import { RecurringExpenseSchedulerService } from './recurring-expense-scheduler.service';
 import { CreateRecurringExpenseDto } from './dto/create-recurring-expense.dto';
 import { UpdateRecurringExpenseDto } from './dto/update-recurring-expense.dto';
 import { QueryRecurringExpenseDto } from './dto/query-recurring-expense.dto';
@@ -30,6 +35,8 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RequirePlan } from '../../common/decorators/require-plan.decorator';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Public } from '../../common/decorators/public.decorator';
+import { SchedulerSecretGuard } from '../recurring-invoices/guards/scheduler-secret.guard';
 import { TenantUserRole, PlanTier } from '@easyfactura/shared-types';
 
 @ApiTags('recurring-expenses')
@@ -37,7 +44,10 @@ import { TenantUserRole, PlanTier } from '@easyfactura/shared-types';
 @UseGuards(JwtAuthGuard, PlanGuard)
 @ApiBearerAuth()
 export class RecurringExpensesController {
-  constructor(private readonly recurringExpensesService: RecurringExpensesService) {}
+  constructor(
+    private readonly recurringExpensesService: RecurringExpensesService,
+    private readonly schedulerService: RecurringExpenseSchedulerService,
+  ) {}
 
   @Post()
   @RequirePlan(PlanTier.PROFESSIONAL)
@@ -57,6 +67,14 @@ export class RecurringExpensesController {
   @ApiOkResponse({ description: 'Lista paginada de gastos recurrentes' })
   findAll(@CurrentTenant() tenantId: string, @Query() query: QueryRecurringExpenseDto) {
     return this.recurringExpensesService.findAll(tenantId, query);
+  }
+
+  @Get('scheduler/health')
+  @Public()
+  @ApiOperation({ summary: 'Scheduler health check' })
+  @ApiOkResponse({ description: 'Returns scheduler health status' })
+  getSchedulerHealth() {
+    return this.schedulerService.getHealthStatus();
   }
 
   @Get(':id')
@@ -100,5 +118,25 @@ export class RecurringExpensesController {
     @Body() dto: GenerateRecurringExpensesDto
   ) {
     return this.recurringExpensesService.generate(tenantId, id, dto.upToDate);
+  }
+
+  @Post('trigger-scheduler')
+  @HttpCode(HttpStatus.OK)
+  @Public()
+  @UseGuards(SchedulerSecretGuard)
+  @ApiOperation({ summary: '[Vercel Cron] Trigger recurring expense scheduler' })
+  @ApiOkResponse({ description: 'Scheduler executed successfully' })
+  @ApiUnauthorizedResponse({ description: 'Invalid or missing scheduler secret' })
+  @ApiForbiddenResponse({ description: 'Scheduler secret not configured' })
+  async triggerScheduler(@Req() req: Request) {
+    const origin = req.headers['x-vercel-cron'] ? 'vercel-cron' : 'manual';
+
+    const result = await this.schedulerService.execute();
+
+    return {
+      success: result.success,
+      metrics: result.metrics,
+      triggeredBy: origin,
+    };
   }
 }

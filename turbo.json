@@ -29,7 +29,7 @@
         "VERIFACTU_ENDPOINT_PRODUCTION",
         "CERTIFICATE_ENCRYPTION_KEY",
         "UPLOAD_DIR",
-        "SCHEDULER_SECRET",
+        "CRON_SECRET",
         "PARTNER_SECRET"
       ]
     },

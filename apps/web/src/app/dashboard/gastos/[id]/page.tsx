@@ -2,9 +2,14 @@
 
 import { useRouter, useParams } from 'next/navigation';
 import { useExpense, useUpdateExpense } from '@/hooks/use-expenses';
+import { useRecurringExpense, useUpdateRecurringExpense, useCreateRecurringExpense, useDeleteRecurringExpense } from '@/hooks/use-recurring-expenses';
 import { useHasProfessionalPlan } from '@/hooks/use-current-plan';
-import { useCreateRecurringExpense, useDeleteRecurringExpense, useUpdateRecurringExpense } from '@/hooks/use-recurring-expenses';
 import { ExpenseForm, ExpenseFormData } from '../_components/expense-form';
+import { RecurringExpenseForm } from '../recurrentes/_components/recurring-expense-form';
+import { useExpenseCategories } from '@/hooks/use-expense-categories';
+import { useSuppliers } from '@/hooks/use-suppliers';
+import { useCustomers } from '@/hooks/use-customers';
+import { UpdateRecurringExpenseInput } from '@easyfactura/shared-types';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle } from 'lucide-react';
@@ -15,12 +20,21 @@ export default function EditarGastoPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const { data: expense, isLoading, error } = useExpense(id);
+  const { data: expense, isLoading: isLoadingExpense, error: errorExpense } = useExpense(id);
+  const { data: recurringExpense, isLoading: isLoadingRecurring, error: errorRecurring } = useRecurringExpense(id);
   const updateMutation = useUpdateExpense();
   const createRecurringMutation = useCreateRecurringExpense();
   const deleteRecurringMutation = useDeleteRecurringExpense();
   const updateRecurringMutation = useUpdateRecurringExpense();
   const canWrite = useHasProfessionalPlan();
+
+  const { data: categories } = useExpenseCategories();
+  const { data: suppliersData } = useSuppliers({ limit: 500 });
+  const { data: customersData } = useCustomers({ limit: 500 });
+
+  const isLoading = isLoadingExpense || isLoadingRecurring;
+  const hasExpenseData = expense && !errorExpense;
+  const hasRecurringData = recurringExpense && !errorRecurring;
 
   const onSubmit = async (data: ExpenseFormData, _pendingFile: File | null) => {
     const originalIsRecurring = !!expense?.recurringExpense?.id;
@@ -36,6 +50,7 @@ export default function EditarGastoPage() {
         clientId: data.clientId || null,
         baseAmount: base,
         vatRate: vat,
+        totalAmount: data.totalAmount,
         frequency: data.recurringFrequency!,
         startDate: data.recurringStartDate || new Date().toISOString().split('T')[0],
         endDate: data.recurringEndDate || null,
@@ -53,6 +68,7 @@ export default function EditarGastoPage() {
             clientId: data.clientId || null,
             baseAmount: Number(data.baseAmount) || 0,
             vatRate: Number(data.vatRate) || 0,
+            totalAmount: data.totalAmount,
             frequency: data.recurringFrequency,
             startDate: data.recurringStartDate || undefined,
             endDate: data.recurringEndDate || null,
@@ -77,11 +93,17 @@ export default function EditarGastoPage() {
         clientId: data.clientId || null,
         baseAmount: data.baseAmount,
         vatRate: data.vatRate,
+        totalAmount: data.totalAmount,
         notes: data.notes || null,
         attachmentId: data.attachmentId || null,
       },
     });
     router.push('/dashboard/gastos');
+  };
+
+  const onRecurringSubmit = async (values: UpdateRecurringExpenseInput) => {
+    await updateRecurringMutation.mutateAsync({ id, data: values });
+    router.push('/dashboard/gastos/recurrentes');
   };
 
   if (isLoading) {
@@ -105,7 +127,21 @@ export default function EditarGastoPage() {
     );
   }
 
-  if (error || !expense) {
+  if (hasRecurringData && !hasExpenseData) {
+    return (
+      <RecurringExpenseForm
+        recurringExpense={recurringExpense}
+        categories={categories ?? []}
+        suppliers={suppliersData?.data ?? []}
+        customers={customersData?.data ?? []}
+        onSubmit={onRecurringSubmit}
+        isSubmitting={updateRecurringMutation.isPending}
+        readOnly={!canWrite}
+      />
+    );
+  }
+
+  if (!hasExpenseData) {
     return (
       <div className="pb-10">
         <div className="flex items-center gap-3 mb-8">

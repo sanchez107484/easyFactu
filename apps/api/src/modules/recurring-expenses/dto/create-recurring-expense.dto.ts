@@ -47,6 +47,12 @@ export class CreateRecurringExpenseDto {
   @IsEnum(VALID_TAX_RATES, { message: 'El tipo de IVA debe ser 0, 4, 10 o 21' })
   vatRate!: number;
 
+  @ApiPropertyOptional({ description: 'Total del gasto (opcional - si se proporciona, se usa este valor en lugar de recalcular desde la base)' })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El total admite hasta 2 decimales' })
+  @Min(0.01, { message: 'El total debe ser mayor que 0' })
+  totalAmount?: number;
+
   @ApiProperty({ description: 'Frecuencia de generación', enum: RecurringExpenseFrequency })
   @IsEnum(RecurringExpenseFrequency, { message: 'La frecuencia no es válida' })
   frequency!: RecurringExpenseFrequency;

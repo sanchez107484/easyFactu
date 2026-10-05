@@ -1229,6 +1229,7 @@ export interface CreateExpenseInput {
   clientId?: string | null;
   baseAmount: number;
   vatRate: number;
+  totalAmount?: number;
   notes?: string | null;
   attachmentId?: string | null;
 }
@@ -1241,6 +1242,7 @@ export interface UpdateExpenseInput {
   clientId?: string | null;
   baseAmount?: number;
   vatRate?: number;
+  totalAmount?: number;
   notes?: string | null;
   attachmentId?: string | null;
 }
@@ -1339,6 +1341,7 @@ export interface CreateRecurringExpenseInput {
   clientId?: string | null;
   baseAmount: number;
   vatRate: number;
+  totalAmount?: number;
   frequency: RecurringExpenseFrequency;
   startDate: string;
   endDate?: string | null;
@@ -1352,6 +1355,7 @@ export interface UpdateRecurringExpenseInput {
   clientId?: string | null;
   baseAmount?: number;
   vatRate?: number;
+  totalAmount?: number;
   frequency?: RecurringExpenseFrequency;
   startDate?: string;
   endDate?: string | null;

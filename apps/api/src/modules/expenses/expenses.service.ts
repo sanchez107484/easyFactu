@@ -27,10 +27,17 @@ export class ExpensesService {
     this.validateDate(dto.date);
     this.validateBaseAmount(dto.baseAmount);
 
-    const { vatAmount, totalAmount } = this.calculationService.calculate(
-      dto.baseAmount,
-      dto.vatRate
-    );
+    let vatAmount: number;
+    let totalAmount: number;
+
+    if (dto.totalAmount !== undefined) {
+      totalAmount = dto.totalAmount;
+      vatAmount = this.calculationService.round2(totalAmount - dto.baseAmount);
+    } else {
+      const calculated = this.calculationService.calculate(dto.baseAmount, dto.vatRate);
+      vatAmount = calculated.vatAmount;
+      totalAmount = calculated.totalAmount;
+    }
 
     return this.prisma.expense.create({
       data: {
@@ -180,10 +187,18 @@ export class ExpensesService {
       this.validateBaseAmount(dto.baseAmount);
     }
     const vatRate = dto.vatRate ?? existing.vatRate;
-    const { vatAmount, totalAmount } = this.calculationService.calculate(
-      Number(baseAmount),
-      Number(vatRate)
-    );
+
+    let vatAmount: number;
+    let totalAmount: number;
+
+    if (dto.totalAmount !== undefined) {
+      totalAmount = dto.totalAmount;
+      vatAmount = this.calculationService.round2(totalAmount - Number(baseAmount));
+    } else {
+      const calculated = this.calculationService.calculate(Number(baseAmount), Number(vatRate));
+      vatAmount = calculated.vatAmount;
+      totalAmount = calculated.totalAmount;
+    }
 
     const data: Prisma.ExpenseUpdateInput = {
       date: dto.date ? new Date(dto.date) : undefined,

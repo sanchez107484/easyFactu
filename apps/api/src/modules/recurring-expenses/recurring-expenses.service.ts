@@ -6,6 +6,7 @@ import { UpdateRecurringExpenseDto } from './dto/update-recurring-expense.dto';
 import { QueryRecurringExpenseDto } from './dto/query-recurring-expense.dto';
 import { ExpensesCalculationService } from '../expenses/expenses-calculation.service';
 import { SuppliersService } from '../suppliers/suppliers.service';
+import { parseLocalDate } from '../../common/utils/format';
 
 const TEN_YEARS_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 
@@ -23,7 +24,17 @@ export class RecurringExpensesService {
     if (dto.endDate) this.validateEndDate(dto.startDate, dto.endDate);
     this.validateBaseAmount(dto.baseAmount);
 
-    const { vatAmount, totalAmount } = this.calculationService.calculate(dto.baseAmount, dto.vatRate);
+    let vatAmount: number;
+    let totalAmount: number;
+
+    if (dto.totalAmount !== undefined) {
+      totalAmount = dto.totalAmount;
+      vatAmount = this.calculationService.round2(totalAmount - dto.baseAmount);
+    } else {
+      const calculated = this.calculationService.calculate(dto.baseAmount, dto.vatRate);
+      vatAmount = calculated.vatAmount;
+      totalAmount = calculated.totalAmount;
+    }
 
     return this.prisma.recurringExpense.create({
       data: {
@@ -37,12 +48,16 @@ export class RecurringExpensesService {
         vatAmount,
         totalAmount,
         frequency: dto.frequency,
-        startDate: new Date(dto.startDate),
-        endDate: dto.endDate ? new Date(dto.endDate) : null,
+        startDate: parseLocalDate(dto.startDate),
+        endDate: dto.endDate ? parseLocalDate(dto.endDate) : null,
         notes: dto.notes?.trim() ?? null,
         createdByUserId: userId,
       },
-      include: { category: true, supplier: true, client: { select: { id: true, name: true, nif: true } } },
+      include: {
+        category: true,
+        supplier: true,
+        client: { select: { id: true, name: true, nif: true } },
+      },
     });
   }
 
@@ -61,13 +76,24 @@ export class RecurringExpensesService {
     }
     if (isActive !== undefined) where.isActive = isActive;
 
-    const SORT_FIELDS: Record<string, true> = { description: true, startDate: true, totalAmount: true, createdAt: true };
+    const SORT_FIELDS: Record<string, true> = {
+      description: true,
+      startDate: true,
+      totalAmount: true,
+      createdAt: true,
+    };
     const primarySort = SORT_FIELDS[sortBy ?? ''] ? sortBy! : 'createdAt';
-    const orderBy: Prisma.RecurringExpenseOrderByWithRelationInput[] = [{ [primarySort]: sortOrder }, { createdAt: 'desc' }];
+    const orderBy: Prisma.RecurringExpenseOrderByWithRelationInput[] = [
+      { [primarySort]: sortOrder },
+      { createdAt: 'desc' },
+    ];
 
     const [data, total] = await Promise.all([
       this.prisma.recurringExpense.findMany({
-        where, skip, take: limit, orderBy,
+        where,
+        skip,
+        take: limit,
+        orderBy,
         include: {
           category: { select: { id: true, name: true, slug: true } },
           supplier: { select: { id: true, name: true, taxId: true } },
@@ -87,7 +113,11 @@ export class RecurringExpensesService {
         category: true,
         supplier: true,
         client: { select: { id: true, name: true, nif: true } },
-        generatedExpenses: { select: { id: true, date: true, totalAmount: true }, orderBy: { date: 'desc' }, take: 12 },
+        generatedExpenses: {
+          select: { id: true, date: true, totalAmount: true },
+          orderBy: { date: 'desc' },
+          take: 12,
+        },
       },
     });
     if (!recurring) throw new NotFoundException('Gasto recurrente no encontrado');
@@ -100,22 +130,42 @@ export class RecurringExpensesService {
     if (dto.startDate) this.validateDate(dto.startDate);
     if (dto.endDate) {
       this.validateDate(dto.endDate);
-      const start = dto.startDate ? new Date(dto.startDate) : existing.startDate;
-      if (new Date(dto.endDate) < start) throw new BadRequestException('La fecha de fin no puede ser anterior a la de inicio');
+      const start = dto.startDate ? parseLocalDate(dto.startDate) : existing.startDate;
+      if (parseLocalDate(dto.endDate) < start)
+        throw new BadRequestException('La fecha de fin no puede ser anterior a la de inicio');
     }
     if (dto.baseAmount !== undefined) this.validateBaseAmount(dto.baseAmount);
 
     const baseAmount = dto.baseAmount ?? Number(existing.baseAmount);
     const vatRate = dto.vatRate ?? Number(existing.vatRate);
-    const { vatAmount, totalAmount } = this.calculationService.calculate(baseAmount, vatRate);
+
+    let vatAmount: number;
+    let totalAmount: number;
+
+    if (dto.totalAmount !== undefined) {
+      totalAmount = dto.totalAmount;
+      vatAmount = this.calculationService.round2(totalAmount - baseAmount);
+    } else {
+      const calculated = this.calculationService.calculate(baseAmount, vatRate);
+      vatAmount = calculated.vatAmount;
+      totalAmount = calculated.totalAmount;
+    }
 
     const supplierInput: Prisma.RecurringExpenseUpdateInput['supplier'] =
-      dto.supplierId === undefined ? undefined : dto.supplierId ? { connect: { id: dto.supplierId } } : { disconnect: true };
+      dto.supplierId === undefined
+        ? undefined
+        : dto.supplierId
+          ? { connect: { id: dto.supplierId } }
+          : { disconnect: true };
     const clientInput: Prisma.RecurringExpenseUpdateInput['client'] =
-      dto.clientId === undefined ? undefined : dto.clientId ? { connect: { id: dto.clientId } } : { disconnect: true };
+      dto.clientId === undefined
+        ? undefined
+        : dto.clientId
+          ? { connect: { id: dto.clientId } }
+          : { disconnect: true };
 
     const data: Prisma.RecurringExpenseUpdateInput = {
-      description: dto.description?.trim() ?? undefined,
+      description: dto.description?.trim() || undefined,
       category: dto.categoryId ? { connect: { id: dto.categoryId } } : undefined,
       supplier: supplierInput,
       client: clientInput,
@@ -124,35 +174,44 @@ export class RecurringExpensesService {
       vatAmount,
       totalAmount,
       frequency: dto.frequency ?? undefined,
-      startDate: dto.startDate ? new Date(dto.startDate) : undefined,
-      endDate: dto.endDate === undefined ? undefined : dto.endDate ? new Date(dto.endDate) : null,
+      startDate: dto.startDate ? parseLocalDate(dto.startDate) : undefined,
+      endDate: dto.endDate === undefined ? undefined : dto.endDate ? parseLocalDate(dto.endDate) : null,
       isActive: dto.isActive ?? undefined,
-      notes: dto.notes === undefined ? undefined : dto.notes.trim() || null,
+      notes: dto.notes?.trim() || null,
     };
 
     return this.prisma.recurringExpense.update({
       where: { id },
       data,
-      include: { category: true, supplier: true, client: { select: { id: true, name: true, nif: true } } },
+      include: {
+        category: true,
+        supplier: true,
+        client: { select: { id: true, name: true, nif: true } },
+      },
     });
   }
 
   async remove(tenantId: string, id: string) {
     await this.findOne(tenantId, id);
-    await this.prisma.expense.updateMany({ where: { recurringExpenseId: id, tenantId }, data: { recurringExpenseId: null } });
+    await this.prisma.expense.updateMany({
+      where: { recurringExpenseId: id, tenantId },
+      data: { recurringExpenseId: null },
+    });
     await this.prisma.recurringExpense.delete({ where: { id } });
     return { id, deleted: true };
   }
 
   async generate(tenantId: string, id: string, upToDateInput?: string) {
     const recurring = await this.findOne(tenantId, id);
-    if (!recurring.isActive) throw new BadRequestException('No se pueden generar gastos de una suscripción inactiva');
+    if (!recurring.isActive)
+      throw new BadRequestException('No se pueden generar gastos de una suscripción inactiva');
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    let upToDate = upToDateInput ? new Date(upToDateInput) : today;
+    let upToDate = upToDateInput ? parseLocalDate(upToDateInput) : today;
     upToDate.setHours(0, 0, 0, 0);
-    if (upToDate > new Date(today.getTime() + TEN_YEARS_MS)) throw new BadRequestException('La fecha límite debe estar dentro de 10 años');
+    if (upToDate > new Date(today.getTime() + TEN_YEARS_MS))
+      throw new BadRequestException('La fecha límite debe estar dentro de 10 años');
 
     let current = recurring.lastGeneratedDate
       ? this.nextDate(new Date(recurring.lastGeneratedDate), recurring.frequency)
@@ -164,21 +223,27 @@ export class RecurringExpensesService {
     let lastGenerated: Date | null = null;
     const baseAmount = Number(recurring.baseAmount);
     const vatRate = Number(recurring.vatRate);
-    const { vatAmount, totalAmount } = this.calculationService.calculate(baseAmount, vatRate);
+    const recurringTotalAmount = Number(recurring.totalAmount);
+    const recurringVatAmount = Number(recurring.vatAmount);
 
     while (current <= upToDate && (!endDate || current <= endDate)) {
+      const year = current.getFullYear();
+      const month = current.getMonth();
+      const day = current.getDate();
+      const expenseDate = new Date(year, month, day, 12, 0, 0, 0);
+
       await this.prisma.expense.create({
         data: {
           tenantId,
-          date: new Date(current),
+          date: expenseDate,
           description: recurring.description,
           categoryId: recurring.categoryId,
           supplierId: recurring.supplierId,
           clientId: recurring.clientId,
           baseAmount,
           vatRate,
-          vatAmount,
-          totalAmount,
+          vatAmount: recurringVatAmount,
+          totalAmount: recurringTotalAmount,
           notes: recurring.notes,
           recurringExpenseId: recurring.id,
           createdByUserId: recurring.createdByUserId,
@@ -190,36 +255,105 @@ export class RecurringExpensesService {
     }
 
     if (lastGenerated) {
-      await this.prisma.recurringExpense.update({ where: { id }, data: { lastGeneratedDate: lastGenerated } });
+      await this.prisma.recurringExpense.update({
+        where: { id },
+        data: { lastGeneratedDate: lastGenerated },
+      });
     }
 
     return { generatedCount, lastGeneratedDate: lastGenerated };
   }
 
+  async findDueRecurringExpensesAllTenants() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const allActive = await this.prisma.recurringExpense.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        tenantId: true,
+        startDate: true,
+        lastGeneratedDate: true,
+        frequency: true,
+        endDate: true,
+      },
+    });
+
+    return allActive.filter((recurring) => {
+      const endDate = recurring.endDate ? new Date(recurring.endDate) : null;
+      if (endDate && endDate < today) return false;
+
+      const lastGen = recurring.lastGeneratedDate ? new Date(recurring.lastGeneratedDate) : null;
+      if (lastGen) {
+        lastGen.setHours(0, 0, 0, 0);
+        if (lastGen.getTime() === today.getTime()) return false;
+      }
+
+      const nextDate = this.calculateNextDate(recurring);
+      return nextDate <= today;
+    });
+  }
+
+  private calculateNextDate(recurring: {
+    startDate: Date;
+    lastGeneratedDate: Date | null;
+    frequency: RecurringExpenseFrequency;
+  }): Date {
+    const base = recurring.lastGeneratedDate
+      ? new Date(recurring.lastGeneratedDate)
+      : new Date(recurring.startDate);
+    return this.nextDate(base, recurring.frequency);
+  }
+
   private nextDate(date: Date, frequency: RecurringExpenseFrequency): Date {
     const next = new Date(date);
     switch (frequency) {
-      case 'WEEKLY': next.setDate(next.getDate() + 7); break;
-      case 'MONTHLY': next.setMonth(next.getMonth() + 1); break;
-      case 'BIMONTHLY': next.setMonth(next.getMonth() + 2); break;
-      case 'QUARTERLY': next.setMonth(next.getMonth() + 3); break;
-      case 'YEARLY': next.setFullYear(next.getFullYear() + 1); break;
+      case 'WEEKLY':
+        next.setDate(next.getDate() + 7);
+        break;
+      case 'MONTHLY':
+        next.setMonth(next.getMonth() + 1);
+        break;
+      case 'BIMONTHLY':
+        next.setMonth(next.getMonth() + 2);
+        break;
+      case 'QUARTERLY':
+        next.setMonth(next.getMonth() + 3);
+        break;
+      case 'YEARLY':
+        next.setFullYear(next.getFullYear() + 1);
+        break;
     }
     return next;
   }
 
-  private async validateRelations(tenantId: string, dto: CreateRecurringExpenseDto | UpdateRecurringExpenseDto): Promise<void> {
+  private async validateRelations(
+    tenantId: string,
+    dto: CreateRecurringExpenseDto | UpdateRecurringExpenseDto
+  ): Promise<void> {
     if (dto.categoryId) {
-      const category = await this.prisma.expenseCategory.findUnique({ where: { id: dto.categoryId } });
-      if (!category || !category.isActive) throw new BadRequestException('La categoría seleccionada no existe o no está activa');
+      const category = await this.prisma.expenseCategory.findUnique({
+        where: { id: dto.categoryId },
+      });
+      if (!category || !category.isActive)
+        throw new BadRequestException('La categoría seleccionada no existe o no está activa');
     }
     if (dto.supplierId) {
       const belongs = await this.suppliersService.belongsToTenant(tenantId, dto.supplierId);
-      if (!belongs) throw new BadRequestException('El proveedor seleccionado no existe o no pertenece a tu empresa');
+      if (!belongs)
+        throw new BadRequestException(
+          'El proveedor seleccionado no existe o no pertenece a tu empresa'
+        );
     }
     if (dto.clientId) {
-      const client = await this.prisma.customer.findFirst({ where: { id: dto.clientId, tenantId } });
-      if (!client) throw new BadRequestException('El cliente seleccionado no existe o no pertenece a tu empresa');
+      const client = await this.prisma.customer.findFirst({
+        where: { id: dto.clientId, tenantId },
+      });
+      if (!client)
+        throw new BadRequestException(
+          'El cliente seleccionado no existe o no pertenece a tu empresa'
+        );
     }
   }
 
