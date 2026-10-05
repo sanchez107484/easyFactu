@@ -17,7 +17,7 @@
   ],
   "crons": [
     {
-      "path": "api/v1/recurring-expenses/trigger-scheduler",
+      "path": "/api/v1/recurring-expenses/trigger-scheduler",
       "schedule": "0 6 * * *"
     }
   ]
