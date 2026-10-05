@@ -17,6 +17,7 @@ interface AnadirClienteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onVincularClick: () => void;
+  onCreateNewClick?: () => void;
 }
 
 interface OptionCardProps {
@@ -49,12 +50,16 @@ function OptionCard({ icon: Icon, iconClassName, title, description, action }: O
   );
 }
 
-export function AnadirClienteModal({ isOpen, onClose, onVincularClick }: AnadirClienteModalProps) {
+export function AnadirClienteModal({ isOpen, onClose, onVincularClick, onCreateNewClick }: AnadirClienteModalProps) {
   const router = useRouter();
 
   const handleAddDirectly = () => {
     onClose();
-    router.push('/dashboard/asesoria/clientes/nuevo');
+    if (onCreateNewClick) {
+      onCreateNewClick();
+    } else {
+      router.push('/dashboard/asesoria/clientes/nuevo');
+    }
   };
 
   const handleVincular = () => {

@@ -136,7 +136,7 @@ export class PartnerService {
           tenantUsers: {
             select: { user: { select: { lastLoginAt: true } } },
           },
-          agencyRelations: {
+          clientRelations: {
             select: {
               agencyTenant: {
                 select: {
@@ -254,7 +254,7 @@ export class PartnerService {
             ? new Date(Math.max(...loginDates.map((d) => d.getTime()))).toISOString()
             : null;
         const agencyName =
-          t.agencyRelations.length > 0 ? t.agencyRelations[0]?.agencyTenant.businessName : null;
+          t.clientRelations.length > 0 ? t.clientRelations[0]?.agencyTenant.businessName : null;
         return {
           id: t.id,
           businessName: t.businessName,

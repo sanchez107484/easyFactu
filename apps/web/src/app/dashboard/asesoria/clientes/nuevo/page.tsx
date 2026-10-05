@@ -307,6 +307,7 @@ export default function NuevoClienteAsesoriaPage() {
     handleSubmit,
     control,
     watch,
+    reset,
     formState: { errors },
     setError,
   } = useForm<FormData>({
@@ -360,6 +361,12 @@ export default function NuevoClienteAsesoriaPage() {
     },
     [createMutation, hasConflict, setError],
   );
+
+  const handleCreateNew = useCallback(() => {
+    setSuccessInfo(null);
+    createMutation.reset();
+    reset();
+  }, [createMutation, reset]);
 
   const handleInvite = useCallback(async () => {
     const email =
@@ -707,6 +714,7 @@ export default function NuevoClienteAsesoriaPage() {
           setIsAnadirModalOpen(false);
           setIsVincularModalOpen(true);
         }}
+        onCreateNewClick={handleCreateNew}
       />
       <VincularClienteModal
         isOpen={isVincularModalOpen}

@@ -562,6 +562,22 @@ export class AgencyService {
       // Default invoice series — atomic with tenant create
       await this.invoiceSeriesService.createDefaultSeries(clientTenant.id, tx);
 
+      // Create subscription with BASIC_FREE plan
+      const basicFreePlan = await tx.plan.findUnique({
+        where: { slug: 'BASIC_FREE' },
+      });
+      if (!basicFreePlan) {
+        throw new Error('Plan BASIC_FREE no encontrado en el seed');
+      }
+      await tx.subscription.create({
+        data: {
+          tenantId: clientTenant.id,
+          planId: basicFreePlan.id,
+          status: 'ACTIVE',
+          billingCycle: 'FREE',
+        },
+      });
+
       return { clientTenant, relation };
     });
 

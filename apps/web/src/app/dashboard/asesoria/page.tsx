@@ -25,7 +25,10 @@ import {
   Loader2,
   Settings2,
   FileDown,
+  FileText,
+  Activity,
 } from 'lucide-react';
+import { formatCurrency, cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { AgencyKpiStrip } from './_components/agency-kpi-strip';
@@ -44,7 +47,7 @@ export default function AgencyHubPage() {
   const [isSoftwareModalOpen, setIsSoftwareModalOpen] = useState(false);
   const { data: stats, isLoading: statsLoading } = useAgencyStats(isOnAgencyTenant);
   const { data: clientsData, isLoading: clientsLoading } = useAgencyClients(
-    { limit: 50 },
+    { limit: 10 },
     isOnAgencyTenant,
   );
   const { data: invitations = [] } = useAgencyPendingInvitations(isOnAgencyTenant);
@@ -169,7 +172,7 @@ export default function AgencyHubPage() {
         </div>
       </div>
 
-      {/* ── Grid de clientes ── */}
+      {/* ── Tabla de clientes ── */}
       <div className="rounded-xl border bg-card p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-base font-semibold">Mis clientes</h2>
@@ -184,9 +187,9 @@ export default function AgencyHubPage() {
         </div>
 
         {clientsLoading ? (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-[120px] rounded-xl" />
+          <div className="space-y-2">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
             ))}
           </div>
         ) : !clientsData?.data.length ? (
@@ -202,32 +205,125 @@ export default function AgencyHubPage() {
             </div>
           </div>
         ) : (
-          <div className="divide-y rounded-lg border">
-            {clientsData.data.map((relation) => (
-              <button
-                key={relation.id}
-                type="button"
-                onClick={() => handleSwitchToClient(relation.clientTenantId)}
-                disabled={managingClientId === relation.clientTenantId || isSwitching}
-                className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-customer-100 text-xs font-bold text-customer-600 dark:bg-customer-950 dark:text-customer-400">
-                  {relation.clientTenant?.businessName.charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold leading-tight">
-                    {relation.clientTenant?.businessName}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{relation.clientTenant?.nif}</p>
-                </div>
-                {managingClientId === relation.clientTenantId ? (
-                  <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-customer-500" />
-                ) : (
-                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-customer-500" />
-                )}
-              </button>
-            ))}
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full">
+              <thead className="border-b bg-muted/40">
+                <tr>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground">
+                    Cliente
+                  </th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground hidden sm:table-cell">
+                    NIF
+                  </th>
+                  <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground hidden md:table-cell">
+                    Facturas
+                  </th>
+                  <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground hidden lg:table-cell">
+                    Ingreso mensual
+                  </th>
+                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground hidden md:table-cell">
+                    Última actividad
+                  </th>
+                  <th className="px-4 py-2.5 w-10" />
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {[...clientsData.data]
+                  .sort(
+                    (a, b) =>
+                      (b.stats?.totalInvoices ?? 0) - (a.stats?.totalInvoices ?? 0) ||
+                      new Date(b.stats?.lastActivity ?? 0).getTime() -
+                        new Date(a.stats?.lastActivity ?? 0).getTime(),
+                  )
+                  .map((relation) => {
+                    const client = relation.clientTenant;
+                    const s = relation.stats;
+                    const isManaging = managingClientId === relation.clientTenantId;
+
+                    const lastActivity = s?.lastActivity
+                      ? (() => {
+                          const diffDays = Math.floor(
+                            (Date.now() - new Date(s.lastActivity!).getTime()) /
+                              (1000 * 60 * 60 * 24),
+                          );
+                          if (diffDays === 0) return 'Hoy';
+                          if (diffDays === 1) return 'Ayer';
+                          if (diffDays < 30) return `Hace ${diffDays} días`;
+                          const months = Math.floor(diffDays / 30);
+                          return `Hace ${months} mes${months > 1 ? 'es' : ''}`;
+                        })()
+                      : '—';
+
+                    return (
+                      <tr
+                        key={relation.id}
+                        onClick={() => handleSwitchToClient(relation.clientTenantId)}
+                        className={cn(
+                          'cursor-pointer transition-colors hover:bg-muted/30',
+                          (isManaging || isSwitching) && 'pointer-events-none opacity-60',
+                        )}
+                      >
+                        <td className="px-4 py-2.5">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-customer-100 text-[11px] font-bold text-customer-700 dark:bg-customer-950 dark:text-customer-300">
+                              {client?.businessName.charAt(0).toUpperCase()}
+                            </div>
+                            <p className="truncate text-sm font-semibold leading-tight">
+                              {client?.businessName}
+                            </p>
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-2.5 hidden sm:table-cell">
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {client?.nif}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-2.5 text-right hidden md:table-cell">
+                          <span className="flex items-center justify-end gap-1 text-sm">
+                            <FileText className="h-3 w-3 text-muted-foreground/60" />
+                            {s?.totalInvoices ?? 0}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-2.5 text-right hidden lg:table-cell">
+                          <span className="text-sm">
+                            {formatCurrency(s?.monthlyRevenue ?? 0)}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-2.5 hidden md:table-cell">
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Activity className="h-3 w-3 shrink-0" />
+                            {lastActivity}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-2.5">
+                          {isManaging ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-customer-500" />
+                          ) : (
+                            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40" />
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
           </div>
+        )}
+        {(stats?.totalClients ?? 0) > 10 && (
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Mostrando los 10 clientes más activos ·{' '}
+            <Link
+              href="/dashboard/asesoria/clientes"
+              className="text-primary underline underline-offset-2"
+            >
+              Ver los {stats!.totalClients} clientes
+            </Link>
+          </p>
         )}
       </div>
 

@@ -25,8 +25,9 @@ const AGENCY_KEYS = {
   all: ['agency'] as const,
   stats: () => [...AGENCY_KEYS.all, 'stats'] as const,
   quarterlyIva: () => [...AGENCY_KEYS.all, 'quarterly-iva'] as const,
-  clients: (query?: QueryAgencyClientsInput) => [...AGENCY_KEYS.all, 'clients', query] as const,
-  client: (id: string) => [...AGENCY_KEYS.all, 'clients', id] as const,
+  clientsBase: () => [...AGENCY_KEYS.all, 'clients'] as const,
+  clients: (query?: QueryAgencyClientsInput) => [...AGENCY_KEYS.clientsBase(), query] as const,
+  client: (id: string) => [...AGENCY_KEYS.all, 'client', id] as const,
   invitations: () => [...AGENCY_KEYS.all, 'invitations'] as const,
   allInvitations: () => [...AGENCY_KEYS.all, 'invitations-all'] as const,
   receivedInvitations: () => [...AGENCY_KEYS.all, 'received-invitations'] as const,
@@ -100,7 +101,7 @@ export function useCreateDirectClient() {
   return useMutation({
     mutationFn: (data: CreateDirectClientInput) => agencyApi.createDirectClient(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clients() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clientsBase() });
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.stats() });
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.allInvitations() });
       toast.success('Cliente añadido correctamente');
@@ -177,7 +178,7 @@ export function useRevokeClient() {
   return useMutation({
     mutationFn: (clientTenantId: string) => agencyApi.revokeClient(clientTenantId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clients() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clientsBase() });
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.stats() });
       toast.success('Cliente dado de baja correctamente');
     },
@@ -345,7 +346,7 @@ export function useResendActivation() {
     }) => agencyApi.resendActivation(clientTenantId, data),
     onSuccess: (_result, { clientTenantId }) => {
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.client(clientTenantId) });
-      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clients() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clientsBase() });
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.allInvitations() });
       toast.success('Enlace de activación enviado correctamente');
     },
@@ -411,7 +412,7 @@ export function useExportInvoices(clientTenantId: string) {
         queryKey: [...AGENCY_KEYS.all, 'invoices-for-export', clientTenantId],
       });
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.exportLogs() });
-      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clients() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clientsBase() });
       // Refresh client detail page (export history + stats)
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.client(clientTenantId) });
     },

@@ -1,13 +1,13 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { agencyApi, type InvitationPublicInfo } from '@/lib/api/agency-api';
 import { useAuthStore } from '@/store/auth-store';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { getErrorMessage } from '@/lib/api-client';
+import { getErrorMessage, getAccessToken } from '@/lib/api-client';
 import { brandConfig } from '@easyfactura/brand-config';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,8 +21,15 @@ export default function InvitacionPage({ params }: { params: Promise<{ token: st
   const router = useRouter();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const currentTenant = useAuthStore((state) => state.currentTenant);
+  const checkAuth = useAuthStore((state) => state.checkAuth);
 
   const [accepted, setAccepted] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(() => !!getAccessToken());
+
+  useEffect(() => {
+    if (!getAccessToken()) return;
+    checkAuth().finally(() => setIsCheckingAuth(false));
+  }, [checkAuth]);
 
   const {
     data: invitation,
@@ -47,7 +54,7 @@ export default function InvitacionPage({ params }: { params: Promise<{ token: st
   });
 
   // ── Loading state ──
-  if (isLoading) {
+  if (isLoading || isCheckingAuth) {
     return (
       <InvitationLayout>
         <div className="space-y-4">
