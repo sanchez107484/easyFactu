@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -8,7 +8,16 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { KeyRound, Lock, Eye, EyeOff, ArrowRight, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import {
+  KeyRound,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -23,10 +32,6 @@ import { brandConfig } from '@easyfactura/brand-config';
 import { PasswordStrength } from '@/components/auth/password-strength';
 import { authApi } from '@/lib/api/auth-api';
 import { getErrorMessage } from '@/lib/api-client';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Schema
-// ─────────────────────────────────────────────────────────────────────────────
 
 const schema = z
   .object({
@@ -44,11 +49,7 @@ const schema = z
 
 type FormData = z.infer<typeof schema>;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Page
-// ─────────────────────────────────────────────────────────────────────────────
-
-export default function NuevaContrasenaPage() {
+function NuevaContrasenaContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get('token');
@@ -75,46 +76,37 @@ export default function NuevaContrasenaPage() {
     }
   };
 
-  // ── No token in URL ──
   if (!token) {
     return (
-      <PageShell>
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-            <XCircle className="h-8 w-8 text-destructive" />
-          </div>
-          <h1 className="text-xl font-bold">Enlace incompleto</h1>
-          <p className="text-sm text-muted-foreground">
-            Este enlace no contiene el token necesario. Solicita un nuevo enlace de recuperación.
-          </p>
-          <Link href="/recuperar-password">
-            <Button variant="outline">Solicitar nuevo enlace</Button>
-          </Link>
+      <div className="flex flex-col items-center gap-4 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+          <XCircle className="h-8 w-8 text-destructive" />
         </div>
-      </PageShell>
+        <h1 className="text-xl font-bold">Enlace incompleto</h1>
+        <p className="text-sm text-muted-foreground">
+          Este enlace no contiene el token necesario. Solicita un nuevo enlace de recuperación.
+        </p>
+        <Link href="/recuperar-password">
+          <Button variant="outline">Solicitar nuevo enlace</Button>
+        </Link>
+      </div>
     );
   }
 
-  // ── Success ──
   if (success) {
     return (
-      <PageShell>
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-950">
-            <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
-          </div>
-          <h1 className="text-xl font-bold">¡Contraseña actualizada!</h1>
-          <p className="text-sm text-muted-foreground">
-            Redirigiendo al inicio de sesión…
-          </p>
+      <div className="flex flex-col items-center gap-4 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-950">
+          <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
         </div>
-      </PageShell>
+        <h1 className="text-xl font-bold">¡Contraseña actualizada!</h1>
+        <p className="text-sm text-muted-foreground">Redirigiendo al inicio de sesión…</p>
+      </div>
     );
   }
 
-  // ── Form ──
   return (
-    <PageShell>
+    <>
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
           <KeyRound className="h-6 w-6 text-primary" />
@@ -214,13 +206,9 @@ export default function NuevaContrasenaPage() {
           Iniciar sesión
         </Link>
       </p>
-    </PageShell>
+    </>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Layout
-// ─────────────────────────────────────────────────────────────────────────────
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
@@ -239,5 +227,15 @@ function PageShell({ children }: { children: React.ReactNode }) {
       </div>
       <div className="w-full max-w-md rounded-2xl border bg-card p-8 shadow-sm">{children}</div>
     </div>
+  );
+}
+
+export default function NuevaContrasenaPage() {
+  return (
+    <PageShell>
+      <Suspense fallback={<Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />}>
+        <NuevaContrasenaContent />
+      </Suspense>
+    </PageShell>
   );
 }
