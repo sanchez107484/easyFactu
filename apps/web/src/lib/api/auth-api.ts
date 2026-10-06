@@ -41,4 +41,14 @@ export const authApi = {
     apiClient
       .post<ApiResponse<AuthResponse>>('/auth/activate-account', data)
       .then(unwrapApiResponse),
+
+  verifyEmail: (token: string): Promise<{ message: string }> =>
+    apiClient
+      .post<ApiResponse<{ message: string }>>('/auth/verify-email', { token })
+      .then(unwrapApiResponse),
+
+  resetPassword: (token: string, password: string): Promise<{ message: string }> =>
+    apiClient
+      .post<ApiResponse<{ message: string }>>('/auth/reset-password', { token, password })
+      .then(unwrapApiResponse),
 };

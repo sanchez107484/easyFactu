@@ -8,6 +8,7 @@ import { brandConfig } from '@easyfactura/brand-config';
 import { useUIStore } from '@/store/ui-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useAgencyContext } from '@/hooks/use-agency-context';
+import { useReceivedRequestsCount } from '@/hooks/use-agency';
 import { AccountType, PlanTier } from '@easyfactura/shared-types';
 import {
   LayoutDashboard,
@@ -200,6 +201,7 @@ export function DashboardSidebar() {
   const currentTenant = useAuthStore((state) => state.currentTenant);
   const { agencyTenant, isOnAgencyTenant, isActingAsClient, returnToAgency, isReturning } =
     useAgencyContext();
+  const { data: pendingRequestsCount = 0 } = useReceivedRequestsCount(isOnAgencyTenant);
 
   const rawNavItems: NavEntry[] = isOnAgencyTenant
     ? agencyNavItems
@@ -388,6 +390,8 @@ export function DashboardSidebar() {
               item.href === '/dashboard' || item.href === '/dashboard/asesoria'
                 ? pathname === item.href
                 : pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const isSolicitudes = item.href === '/dashboard/asesoria/solicitudes';
+            const badgeCount = isSolicitudes ? pendingRequestsCount : 0;
 
             return (
               <Link
@@ -403,10 +407,24 @@ export function DashboardSidebar() {
                 )}
                 title={sidebarCollapsed ? item.title : undefined}
               >
-                <Icon className="h-5 w-5 shrink-0" />
+                <div className="relative shrink-0">
+                  <Icon className="h-5 w-5" />
+                  {badgeCount > 0 && sidebarCollapsed && (
+                    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                      {badgeCount > 9 ? '9+' : badgeCount}
+                    </span>
+                  )}
+                </div>
                 {!sidebarCollapsed && (
                   <div className="min-w-0 flex-1">
-                    <span className="block leading-tight">{item.title}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="block leading-tight">{item.title}</span>
+                      {badgeCount > 0 && (
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                          {badgeCount > 99 ? '99+' : badgeCount}
+                        </span>
+                      )}
+                    </div>
                     {item.description && (
                       <span
                         title={item.description}

@@ -7,16 +7,39 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../common/email/email.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AgencyRequestService {
+  private readonly apiUrl: string;
+  private readonly frontendUrl: string;
+
   constructor(
     private prisma: PrismaService,
-    private emailService: EmailService
-  ) {}
+    private emailService: EmailService,
+    private configService: ConfigService,
+  ) {
+    this.apiUrl = this.configService.get<string>('APP_URL') ?? 'http://localhost:3001';
+    this.frontendUrl = this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+  }
+
+  private generateEmailAcceptToken(requestId: string, agencyTenantId: string): string {
+    const secret = this.configService.get<string>('SCHEDULER_SECRET') ?? 'fallback-secret';
+    return createHmac('sha256', secret).update(`${requestId}:${agencyTenantId}`).digest('hex');
+  }
+
+  verifyEmailAcceptToken(requestId: string, agencyTenantId: string, token: string): boolean {
+    try {
+      const expected = this.generateEmailAcceptToken(requestId, agencyTenantId);
+      return timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(token, 'hex'));
+    } catch {
+      return false;
+    }
+  }
 
   // ─── Send agency request (client-initiated) ─────────────────────────────────
 
@@ -106,8 +129,20 @@ export class AgencyRequestService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    const request = await this.prisma.agencyClientRequest.create({
-      data: {
+    // Upsert: if a previous CANCELLED/EXPIRED/REJECTED (post-cooldown) record exists,
+    // reset it to PENDING instead of creating a duplicate (unique constraint on clientTenantId+agencyTenantId).
+    const request = await this.prisma.agencyClientRequest.upsert({
+      where: {
+        clientTenantId_agencyTenantId: { clientTenantId, agencyTenantId: agencyTenant.id },
+      },
+      update: {
+        status: 'PENDING',
+        message: dto.message ?? null,
+        expiresAt,
+        rejectedAt: null,
+        ...({ rejectionReason: null } as object),
+      },
+      create: {
         clientTenantId,
         agencyTenantId: agencyTenant.id,
         clientEmail: clientTenant.email,
@@ -118,6 +153,10 @@ export class AgencyRequestService {
       },
     });
 
+    const emailToken = this.generateEmailAcceptToken(request.id, agencyTenant.id);
+    const emailAcceptUrl = `${this.apiUrl}/api/v1/agency/requests/${request.id}/email-accept?token=${emailToken}`;
+    const requestsUrl = `${this.frontendUrl}/dashboard/asesoria/solicitudes`;
+
     this.emailService.sendAgencyClientRequestNotification({
       to: agencyTenant.email,
       agencyName: agencyTenant.businessName,
@@ -125,6 +164,8 @@ export class AgencyRequestService {
       clientNif: clientTenant.nif,
       clientEmail: clientTenant.email,
       message: dto.message,
+      emailAcceptUrl,
+      requestsUrl,
     });
 
     return { id: request.id, status: request.status };
@@ -138,6 +179,11 @@ export class AgencyRequestService {
   ) {
     const { page = 1, limit = 20, search, status } = query;
     const skip = (page - 1) * limit;
+
+    await this.prisma.agencyClientRequest.updateMany({
+      where: { agencyTenantId, status: 'PENDING', expiresAt: { lt: new Date() } },
+      data: { status: 'EXPIRED' },
+    });
 
     const where: Prisma.AgencyClientRequestWhereInput = {
       agencyTenantId,
@@ -164,16 +210,20 @@ export class AgencyRequestService {
     ]);
 
     return {
-      data: requests.map((r) => ({
-        id: r.id,
-        clientBusinessName: r.clientBusinessName,
-        clientNif: r.clientNif,
-        clientEmail: r.clientEmail,
-        message: r.message,
-        status: r.status,
-        expiresAt: r.expiresAt.toISOString(),
-        createdAt: r.createdAt.toISOString(),
-      })),
+      data: requests.map((r) => {
+        const row = r as typeof r & { rejectionReason?: string | null };
+        return {
+          id: row.id,
+          clientBusinessName: row.clientBusinessName,
+          clientNif: row.clientNif,
+          clientEmail: row.clientEmail,
+          message: row.message,
+          status: row.status,
+          rejectionReason: row.rejectionReason ?? null,
+          expiresAt: row.expiresAt.toISOString(),
+          createdAt: row.createdAt.toISOString(),
+        };
+      }),
       meta: {
         total,
         page,
@@ -191,6 +241,11 @@ export class AgencyRequestService {
   ) {
     const { page = 1, limit = 20, status } = query;
     const skip = (page - 1) * limit;
+
+    await this.prisma.agencyClientRequest.updateMany({
+      where: { clientTenantId, status: 'PENDING', expiresAt: { lt: new Date() } },
+      data: { status: 'EXPIRED' },
+    });
 
     const where: Prisma.AgencyClientRequestWhereInput = {
       clientTenantId,
@@ -213,16 +268,20 @@ export class AgencyRequestService {
     ]);
 
     return {
-      data: requests.map((r) => ({
-        id: r.id,
-        agencyName: r.agencyTenant.businessName,
-        agencyNif: r.agencyTenant.nif,
-        agencyEmail: r.agencyTenant.email,
-        message: r.message,
-        status: r.status,
-        expiresAt: r.expiresAt.toISOString(),
-        createdAt: r.createdAt.toISOString(),
-      })),
+      data: requests.map((r) => {
+        const row = r as typeof r & { rejectionReason?: string | null };
+        return {
+          id: row.id,
+          agencyName: row.agencyTenant.businessName,
+          agencyNif: row.agencyTenant.nif,
+          agencyEmail: row.agencyTenant.email,
+          message: row.message,
+          status: row.status,
+          rejectionReason: row.rejectionReason ?? null,
+          expiresAt: row.expiresAt.toISOString(),
+          createdAt: row.createdAt.toISOString(),
+        };
+      }),
       meta: {
         total,
         page,
@@ -332,7 +391,7 @@ export class AgencyRequestService {
 
   // ─── Reject agency request (agency side) ─────────────────────────────────
 
-  async rejectAgencyRequest(agencyTenantId: string, requestId: string) {
+  async rejectAgencyRequest(agencyTenantId: string, requestId: string, reason?: string) {
     const request = await this.prisma.agencyClientRequest.findUnique({
       where: { id: requestId },
       include: {
@@ -352,13 +411,15 @@ export class AgencyRequestService {
 
     await this.prisma.agencyClientRequest.update({
       where: { id: requestId },
-      data: { status: 'REJECTED', rejectedAt: new Date() },
+      // rejectionReason added in migration 20261006_add_rejection_reason — cast until Prisma client regenerates
+      data: { status: 'REJECTED', rejectedAt: new Date(), ...({ rejectionReason: reason ?? null } as object) },
     });
 
     this.emailService.sendAgencyRequestRejectedNotification({
       to: request.clientEmail,
       agencyName: request.agencyTenant.businessName,
       clientBusinessName: request.clientBusinessName,
+      reason,
     });
 
     return { success: true };
@@ -399,5 +460,187 @@ export class AgencyRequestService {
         expiresAt: { gt: new Date() },
       },
     });
+  }
+
+  // ─── Accept via email token (one-click accept from email) ────────────────
+
+  async acceptViaEmailToken(requestId: string, token: string): Promise<string> {
+    const request = await this.prisma.agencyClientRequest.findUnique({
+      where: { id: requestId },
+      include: {
+        agencyTenant: { select: { id: true, businessName: true } },
+        clientTenant: { select: { id: true, businessName: true, nif: true } },
+      },
+    });
+
+    if (!request) throw new NotFoundException('Solicitud no encontrada');
+
+    if (!this.verifyEmailAcceptToken(requestId, request.agencyTenantId, token)) {
+      throw new ForbiddenException('Token de aceptación inválido');
+    }
+
+    if (request.status !== 'PENDING') {
+      return `${this.frontendUrl}/dashboard/asesoria/solicitudes`;
+    }
+
+    if (request.expiresAt < new Date()) {
+      await this.prisma.agencyClientRequest.update({
+        where: { id: requestId },
+        data: { status: 'EXPIRED' },
+      });
+      return `${this.frontendUrl}/dashboard/asesoria/solicitudes?emailAccept=expired`;
+    }
+
+    const existingRelation = await this.prisma.agencyClientRelation.findUnique({
+      where: {
+        agencyTenantId_clientTenantId: {
+          agencyTenantId: request.agencyTenantId,
+          clientTenantId: request.clientTenantId,
+        },
+      },
+    });
+
+    if (existingRelation) {
+      return `${this.frontendUrl}/dashboard/asesoria/solicitudes`;
+    }
+
+    const agencyOwner = await this.prisma.tenantUser.findFirst({
+      where: { tenantId: request.agencyTenantId, role: { in: ['OWNER', 'ADMIN'] } },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const addedByUserId = agencyOwner?.userId ?? 'system';
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.agencyClientRelation.create({
+        data: {
+          agencyTenantId: request.agencyTenantId,
+          clientTenantId: request.clientTenantId,
+          addedByUserId,
+        },
+      });
+
+      await tx.agencyClientRequest.update({
+        where: { id: requestId },
+        data: { status: 'ACCEPTED', acceptedAt: new Date() },
+      });
+
+      await tx.agencyRelationHistory.create({
+        data: {
+          agencyTenantId: request.agencyTenantId,
+          clientTenantId: request.clientTenantId,
+          agencyBusinessName: request.agencyTenant.businessName,
+          clientBusinessName: request.clientTenant.businessName,
+          clientNif: request.clientTenant.nif,
+          startedAt: new Date(),
+        },
+      });
+
+      const agencyUsers = await tx.tenantUser.findMany({
+        where: { tenantId: request.agencyTenantId, role: { in: ['OWNER', 'ADMIN'] } },
+        select: { userId: true },
+      });
+
+      await tx.tenantUser.createMany({
+        data: agencyUsers.map((tu) => ({
+          tenantId: request.clientTenantId,
+          userId: tu.userId,
+          role: 'ADMIN' as const,
+          isOwner: false,
+        })),
+        skipDuplicates: true,
+      });
+    });
+
+    this.emailService.sendAgencyRequestAcceptedNotification({
+      to: request.clientEmail,
+      agencyName: request.agencyTenant.businessName,
+      clientBusinessName: request.clientTenant.businessName,
+    });
+
+    return `${this.frontendUrl}/dashboard/asesoria/solicitudes?emailAccept=success`;
+  }
+
+  // ─── Send referral email to unregistered agency ──────────────────────────
+
+  async sendAgencyReferral(
+    clientTenantId: string,
+    dto: { agencyEmail: string; message?: string },
+  ) {
+    const clientTenant = await this.prisma.tenant.findUnique({
+      where: { id: clientTenantId },
+      select: { businessName: true, nif: true, accountType: true },
+    });
+
+    if (!clientTenant) throw new NotFoundException('Tu cuenta no fue encontrada');
+    if (clientTenant.accountType === 'AGENCY') {
+      throw new BadRequestException('Una asesoría no puede enviar esta invitación');
+    }
+
+    const existingAgency = await this.prisma.tenant.findFirst({
+      where: { email: dto.agencyEmail, accountType: 'AGENCY', isActive: true },
+    });
+
+    if (existingAgency) {
+      throw new BadRequestException(
+        'Esta asesoría ya está registrada. Usa su NIF para enviarle una solicitud de vinculación.',
+      );
+    }
+
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const dailyCount = await this.prisma.agencyReferral.count({
+      where: { clientTenantId, createdAt: { gte: oneDayAgo } },
+    });
+
+    if (dailyCount >= 3) {
+      throw new HttpException(
+        'Has alcanzado el límite de 3 invitaciones por día. Inténtalo mañana.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    const existingReferral = await this.prisma.agencyReferral.findFirst({
+      where: { clientTenantId, agencyEmail: dto.agencyEmail.toLowerCase() },
+    });
+
+    if (existingReferral) {
+      throw new ConflictException('Ya enviaste una invitación a este email.');
+    }
+
+    const referral = await this.prisma.agencyReferral.create({
+      data: {
+        clientTenantId,
+        agencyEmail: dto.agencyEmail.toLowerCase(),
+        clientBusinessName: clientTenant.businessName,
+        clientNif: clientTenant.nif,
+        message: dto.message,
+      },
+    });
+
+    this.emailService.sendAgencyReferralInvitation({
+      to: dto.agencyEmail,
+      clientBusinessName: clientTenant.businessName,
+      clientNif: clientTenant.nif,
+      message: dto.message,
+      referralId: referral.id,
+    });
+
+    return { id: referral.id, success: true };
+  }
+
+  // ─── List referrals sent by client ─────────────────────────────────────────
+
+  async findMyReferrals(clientTenantId: string) {
+    const referrals = await this.prisma.agencyReferral.findMany({
+      where: { clientTenantId },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
+
+    return referrals.map((r) => ({
+      id: r.id,
+      agencyEmail: r.agencyEmail,
+      createdAt: r.createdAt.toISOString(),
+    }));
   }
 }

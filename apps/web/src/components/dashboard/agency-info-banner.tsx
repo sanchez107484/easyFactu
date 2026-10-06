@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import { useMyAgencies } from '@/hooks/use-agency';
 import { AgencyConnectionModal } from './agency-connection-modal';
-import { Building2, Info } from 'lucide-react';
+import { Building2, Info, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { AccountType } from '@easyfactura/shared-types';
@@ -36,12 +36,18 @@ export function AgencyInfoBanner({ className }: AgencyInfoBannerProps) {
   const isAgency = currentTenant?.accountType === AccountType.AGENCY;
 
   const [showModal, setShowModal] = useState(false);
+  const [dismissed, setDismissedState] = useState(() => isRecentlyDismissed());
 
   const { data: myAgencies = [], isLoading: loadingMyAgencies } = useMyAgencies();
   const hasAgenciesLinked = myAgencies.length > 0;
 
+  const handleDismiss = () => {
+    setDismissed();
+    setDismissedState(true);
+  };
+
   const showBanner =
-    !isAgency && !hasAgenciesLinked && !loadingMyAgencies && !isRecentlyDismissed();
+    !isAgency && !hasAgenciesLinked && !loadingMyAgencies && !dismissed;
 
   if (!showBanner) return null;
 
@@ -75,9 +81,16 @@ export function AgencyInfoBanner({ className }: AgencyInfoBannerProps) {
         >
           Añadir asesor
         </Button>
+        <button
+          onClick={handleDismiss}
+          className="ml-1 shrink-0 rounded-md p-1 text-agency-400 hover:text-agency-600 hover:bg-agency-100 dark:hover:text-agency-300 dark:hover:bg-agency-900/50 transition-colors"
+          aria-label="Cerrar"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
       </div>
 
-      <AgencyConnectionModal open={showModal} onOpenChange={setShowModal} variant="banner" />
+      <AgencyConnectionModal open={showModal} onOpenChange={setShowModal} />
     </>
   );
 }

@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, MaxLength, Matches, IsEnum } from 'class-validator';
+import { IsEmail, IsString, MinLength, MaxLength, Matches, IsEnum, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsValidNif } from '../../../common/validators/is-valid-nif.validator';
 import { AccountType } from '@easyfactura/shared-types';
@@ -53,4 +53,9 @@ export class RegisterDto {
   })
   @IsEnum(AccountType, { message: 'Tipo de cuenta inválido' })
   accountType!: AccountType;
+
+  @ApiProperty({ required: false, description: 'ID of AgencyReferral that triggered this registration' })
+  @IsOptional()
+  @IsString()
+  referralId?: string;
 }

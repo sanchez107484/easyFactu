@@ -25,7 +25,9 @@ import { QueryAgencyInvoicesDto } from './dto/query-agency-invoices.dto';
 import { QueryImpersonationLogsDto } from './dto/query-impersonation-logs.dto';
 import { ResendActivationDto } from './dto/resend-activation.dto';
 import { SendAgencyRequestDto } from './dto/send-agency-request.dto';
+import { SendAgencyReferralDto } from './dto/send-agency-referral.dto';
 import { QueryAgencyRequestsDto } from './dto/query-agency-requests.dto';
+import { RejectAgencyRequestDto } from './dto/reject-agency-request.dto';
 import {
   ExportInvoicesDto,
   QueryInvoicesForExportDto,
@@ -54,11 +56,11 @@ export class AgencyController {
   // ─── Public: search agency by email or NIF ─────────────────────────────
 
   @Get('search')
-  @Public()
-  @Throttle({ default: { limit: 20, ttl: 60000 } })
-  @ApiOperation({ summary: 'Busca una asesoría por email o NIF (público)' })
+  @SkipAgencyGuard()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'Busca una asesoría por email o NIF (requiere auth)' })
   @ApiResponse({ status: 200, description: 'Resultado de la búsqueda' })
-  searchAgencyPublic(@Query('q') q: string) {
+  searchAgency(@Query('q') q: string) {
     return this.agencyService.searchAgencyPublic(q);
   }
 
@@ -315,9 +317,10 @@ export class AgencyController {
   @ApiOperation({ summary: 'Rechazar solicitud de vinculación (asesoría)' })
   rejectAgencyRequest(
     @CurrentTenant() agencyTenantId: string,
-    @Param('id', ParseUUIDPipe) id: string
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RejectAgencyRequestDto,
   ) {
-    return this.agencyService.rejectAgencyRequest(agencyTenantId, id);
+    return this.agencyService.rejectAgencyRequest(agencyTenantId, id, dto.reason);
   }
 
   @Post('requests/:id/cancel')
@@ -335,6 +338,38 @@ export class AgencyController {
   @ApiOperation({ summary: 'Contador de solicitudes pendientes para badge en sidebar' })
   getReceivedRequestsCount(@CurrentTenant() tenantId: string) {
     return this.agencyService.getReceivedRequestsCount(tenantId);
+  }
+
+  @Post('requests/referral')
+  @SkipAgencyGuard()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'Enviar email informativo a una asesoría no registrada' })
+  sendAgencyReferral(
+    @CurrentTenant() clientTenantId: string,
+    @Body() dto: SendAgencyReferralDto,
+  ) {
+    return this.agencyService.sendAgencyReferral(clientTenantId, dto);
+  }
+
+  @Get('requests/referrals')
+  @SkipAgencyGuard()
+  @ApiOperation({ summary: 'Invitaciones enviadas a asesorías no registradas' })
+  findMyReferrals(@CurrentTenant() clientTenantId: string) {
+    return this.agencyService.findMyReferrals(clientTenantId);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Get('requests/:id/email-accept')
+  @ApiOperation({ summary: 'Aceptar solicitud de vinculación mediante token firmado del email' })
+  @ApiResponse({ status: 302, description: 'Redirección al dashboard de solicitudes' })
+  async acceptViaEmailToken(
+    @Param('id') id: string,
+    @Query('token') token: string,
+    @Res() res: Response,
+  ) {
+    const redirectUrl = await this.agencyService.acceptViaEmailToken(id, token);
+    res.redirect(302, redirectUrl);
   }
 
   // ─── Shared customer pool ───────────────────────────────────────────────

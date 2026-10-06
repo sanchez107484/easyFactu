@@ -176,6 +176,50 @@ export function useCheckIdentifier(q: string) {
   });
 }
 
+export function useSearchAgencyPublic(q: string) {
+  const trimmed = q.trim();
+  const isEmail = trimmed.includes('@');
+  const debounced = useDebounce(trimmed, isEmail ? 400 : 150);
+
+  const isValidEmail = isEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(debounced);
+  const isValidNif =
+    !isEmail && debounced.length >= 9 && validateNif(debounced.toUpperCase()).isValid;
+  const enabled = isValidEmail || isValidNif;
+
+  return useQuery({
+    queryKey: [...AGENCY_KEYS.all, 'search-public', debounced] as const,
+    queryFn: () => agencyApi.searchAgencyPublic(debounced),
+    enabled,
+    staleTime: 30 * 1000,
+    retry: false,
+  });
+}
+
+export function useSendAgencyReferral() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { agencyEmail: string; message?: string }) =>
+      agencyApi.sendAgencyReferral(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...AGENCY_KEYS.all, 'referrals'] });
+      toast.success('Invitación enviada a tu asesoría');
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
+export function useMyReferrals(enabled = true) {
+  return useQuery({
+    queryKey: [...AGENCY_KEYS.all, 'referrals'] as const,
+    queryFn: () => agencyApi.getMyReferrals(),
+    enabled,
+    staleTime: 60 * 1000,
+  });
+}
+
 export function useRevokeClient() {
   const queryClient = useQueryClient();
 
@@ -513,7 +557,9 @@ export function useReceivedRequestsCount(enabled = true) {
     queryKey: AGENCY_KEYS.receivedRequestsCount(),
     queryFn: agencyApi.getReceivedRequestsCount,
     enabled,
-    staleTime: 60 * 1000,
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -524,7 +570,7 @@ export function useSendAgencyRequest() {
     mutationFn: (data: { agencyNif: string; message?: string }) =>
       agencyApi.sendAgencyRequest(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.myRequests() });
+      queryClient.invalidateQueries({ queryKey: [...AGENCY_KEYS.all, 'my-requests'] });
       toast.success('Solicitud enviada correctamente');
     },
     onError: (error) => {
@@ -555,7 +601,8 @@ export function useRejectAgencyRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (requestId: string) => agencyApi.rejectAgencyRequest(requestId),
+    mutationFn: ({ requestId, reason }: { requestId: string; reason?: string }) =>
+      agencyApi.rejectAgencyRequest(requestId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.receivedRequests() });
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.receivedRequestsCount() });
@@ -573,7 +620,7 @@ export function useCancelAgencyRequest() {
   return useMutation({
     mutationFn: (requestId: string) => agencyApi.cancelAgencyRequest(requestId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.myRequests() });
+      queryClient.invalidateQueries({ queryKey: [...AGENCY_KEYS.all, 'my-requests'] });
       toast.success('Solicitud cancelada');
     },
     onError: (error) => {

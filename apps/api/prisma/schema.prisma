@@ -45,6 +45,7 @@ model Tenant {
   agencyInvitations         AgencyInvitation[]
   agencyClientRequests      AgencyClientRequest[]    @relation("AgencyClientRequests")
   clientAgencyRequests      AgencyClientRequest[]   @relation("ClientAgencyRequests")
+  clientReferrals           AgencyReferral[]         @relation("ClientReferrals")
   agencyRelationHistory     AgencyRelationHistory[]  @relation("AgencyHistoryRelations")
   clientRelationHistory     AgencyRelationHistory[]  @relation("ClientHistoryRelations")
   customers                 Customer[]
@@ -545,6 +546,7 @@ model AgencyClientRequest {
   status            AgencyClientRequestStatus @default(PENDING)
   expiresAt         DateTime                 @map("expires_at")
   rejectedAt        DateTime?                @map("rejected_at")
+  rejectionReason   String?                  @map("rejection_reason")
   acceptedAt        DateTime?                @map("accepted_at")
   createdAt         DateTime                 @default(now()) @map("created_at")
   updatedAt         DateTime                 @updatedAt @map("updated_at")
@@ -556,6 +558,22 @@ model AgencyClientRequest {
   @@index([clientTenantId])
   @@index([status])
   @@map("agency_client_requests")
+}
+
+model AgencyReferral {
+  id                 String   @id @default(uuid())
+  clientTenantId     String   @map("client_tenant_id")
+  agencyEmail        String   @map("agency_email")
+  clientBusinessName String   @map("client_business_name")
+  clientNif          String   @map("client_nif")
+  message            String?
+  createdAt          DateTime @default(now()) @map("created_at")
+  clientTenant       Tenant   @relation("ClientReferrals", fields: [clientTenantId], references: [id], onDelete: Cascade)
+
+  @@unique([clientTenantId, agencyEmail])
+  @@index([clientTenantId])
+  @@index([agencyEmail])
+  @@map("agency_referrals")
 }
 
 model AgencyRelationHistory {
@@ -958,6 +976,7 @@ enum AgencyClientRequestStatus {
   REJECTED
   CANCELLED
   EXPIRED
+  REVOKED
 }
 
 enum ExportFormat {

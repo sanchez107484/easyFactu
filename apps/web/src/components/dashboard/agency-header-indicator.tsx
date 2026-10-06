@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuthStore } from '@/store/auth-store';
-import { useMyAgencies } from '@/hooks/use-agency';
-import { agencyApi } from '@/lib/api/agency-api';
+import { useMyAgencies, useMyAgencyRequests } from '@/hooks/use-agency';
 import { AgencyConnectionModal } from './agency-connection-modal';
 import { Building2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -13,49 +12,24 @@ interface AgencyHeaderIndicatorProps {
   className?: string;
 }
 
-interface PendingRequest {
-  id: string;
-  agencyName: string;
-  agencyNif: string;
-  status: string;
-  createdAt: string;
-}
-
 export function AgencyHeaderIndicator({ className }: AgencyHeaderIndicatorProps) {
   const currentTenant = useAuthStore((state) => state.currentTenant);
   const isAgency = currentTenant?.accountType === AccountType.AGENCY;
 
   const [showModal, setShowModal] = useState(false);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [pendingRequest, setPendingRequest] = useState<PendingRequest | null>(null);
 
   const { data: myAgencies = [], isLoading: loadingMyAgencies } = useMyAgencies();
   const hasAgenciesLinked = myAgencies.length > 0;
 
   const showIndicator = !isAgency && !hasAgenciesLinked && !loadingMyAgencies;
 
-  // Load pending requests count for badge
-  useEffect(() => {
-    if (!showIndicator) return;
+  const { data: pendingData } = useMyAgencyRequests(
+    { status: 'PENDING', limit: 1 },
+    showIndicator,
+  );
 
-    agencyApi
-      .getMyRequests({ status: 'PENDING', limit: 1 })
-      .then((res) => {
-        setPendingCount(res.meta.total);
-        if (res.data.length > 0) {
-          setPendingRequest({
-            id: res.data[0].id,
-            agencyName: res.data[0].agencyName,
-            agencyNif: res.data[0].agencyNif,
-            status: res.data[0].status,
-            createdAt: res.data[0].createdAt,
-          });
-        } else {
-          setPendingRequest(null);
-        }
-      })
-      .catch(() => {});
-  }, [showIndicator]);
+  const pendingCount = pendingData?.meta?.total ?? 0;
+  const pendingRequest = pendingData?.data?.[0] ?? null;
 
   if (!showIndicator) return null;
 
@@ -84,11 +58,7 @@ export function AgencyHeaderIndicator({ className }: AgencyHeaderIndicatorProps)
         <Info className="h-3 w-3 text-agency-500 opacity-70" />
       </button>
 
-      <AgencyConnectionModal
-        open={showModal}
-        onOpenChange={setShowModal}
-        variant="header"
-      />
+      <AgencyConnectionModal open={showModal} onOpenChange={setShowModal} />
     </>
   );
 }

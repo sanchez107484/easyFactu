@@ -161,8 +161,8 @@ export class AgencyService {
     return this.requestService.acceptAgencyRequest(agencyTenantId, requestId, userId);
   }
 
-  rejectAgencyRequest(agencyTenantId: string, requestId: string) {
-    return this.requestService.rejectAgencyRequest(agencyTenantId, requestId);
+  rejectAgencyRequest(agencyTenantId: string, requestId: string, reason?: string) {
+    return this.requestService.rejectAgencyRequest(agencyTenantId, requestId, reason);
   }
 
   cancelAgencyRequest(clientTenantId: string, requestId: string) {
@@ -171,5 +171,17 @@ export class AgencyService {
 
   getReceivedRequestsCount(agencyTenantId: string) {
     return this.requestService.getReceivedRequestsCount(agencyTenantId);
+  }
+
+  sendAgencyReferral(clientTenantId: string, dto: { agencyEmail: string; message?: string }) {
+    return this.requestService.sendAgencyReferral(clientTenantId, dto);
+  }
+
+  findMyReferrals(clientTenantId: string) {
+    return this.requestService.findMyReferrals(clientTenantId);
+  }
+
+  acceptViaEmailToken(requestId: string, token: string) {
+    return this.requestService.acceptViaEmailToken(requestId, token);
   }
 }

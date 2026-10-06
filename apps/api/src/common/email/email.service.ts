@@ -136,7 +136,7 @@ export class EmailService {
       </h1>
       <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
         <strong>${opts.clientName}</strong> (${opts.clientEmail}) ha rechazado tu invitación para
-        unirse a <strong>${opts.agencyName}</strong> en NovaFactura.
+        unirse a <strong>${opts.agencyName}</strong> en ${this.appName}.
       </p>
       <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0;">
         Si lo deseas, podrás enviar una nueva invitación pasado el período de espera establecido.
@@ -162,7 +162,7 @@ export class EmailService {
       </h1>
       <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
         El cliente <strong>${opts.clientName}</strong> (NIF: ${opts.clientNif}) ha aceptado vincularse
-        a <strong>${opts.agencyName}</strong> y ahora forma parte de tu cartera en NovaFactura.
+        a <strong>${opts.agencyName}</strong> y ahora forma parte de tu cartera en ${this.appName}.
       </p>
       <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0;">
         Ya puedes acceder a su cuenta desde el panel de asesoría y gestionar su facturación.
@@ -189,7 +189,7 @@ export class EmailService {
       </h1>
       <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
         El cliente <strong>${opts.clientBusinessName}</strong> (NIF: ${opts.clientNif}) ha verificado
-        su email y activado su cuenta en NovaFactura a través de <strong>${opts.agencyName}</strong>.
+        su email y activado su cuenta en ${this.appName} a través de <strong>${opts.agencyName}</strong>.
       </p>
       <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 24px;">
         Ya puedes acceder a su panel de facturación.
@@ -211,13 +211,15 @@ export class EmailService {
     clientNif: string;
     clientEmail: string;
     message?: string;
+    emailAcceptUrl: string;
+    requestsUrl: string;
   }): Promise<void> {
-    const dashboardUrl = `${this.appUrl}/dashboard/asesoria/solicitudes`;
+    const { highlight } = this.brandColors;
 
     let messageBlock = '';
     if (opts.message) {
       messageBlock = `
-        <div style="background:#f9fafb;border-left:4px solid ${this.brandColors.highlight};padding:12px 16px;margin:20px 0;border-radius:4px;">
+        <div style="background:#f9fafb;border-left:4px solid ${highlight};padding:12px 16px;margin:20px 0;border-radius:4px;">
           <p style="color:#6b7280;font-size:14px;margin:0 0 4px;font-weight:600;">Mensaje del autónomo:</p>
           <p style="color:#374151;font-size:14px;margin:0;line-height:1.6;">${opts.message}</p>
         </div>
@@ -228,15 +230,49 @@ export class EmailService {
       <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;">
         Nueva solicitud de vinculación
       </h1>
-      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
-        <strong>${opts.clientBusinessName}</strong> (NIF: ${opts.clientNif}) ha solicitado vincularse
-        a <strong>${opts.agencyName}</strong> para que gestionéis su facturación.
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 16px;">
+        <strong>${opts.clientBusinessName}</strong> ha solicitado vincularse a
+        <strong>${opts.agencyName}</strong> para que gestionéis su facturación en ${this.appName}.
       </p>
+
+      <!-- Client info card -->
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:0 0 20px;">
+        <table cellpadding="0" cellspacing="0" style="width:100%;">
+          <tr>
+            <td style="color:#9ca3af;font-size:12px;font-weight:600;text-transform:uppercase;padding-bottom:8px;">Datos del autónomo</td>
+          </tr>
+          <tr>
+            <td style="color:#374151;font-size:14px;font-weight:600;padding-bottom:4px;">${opts.clientBusinessName}</td>
+          </tr>
+          <tr>
+            <td style="color:#6b7280;font-size:13px;padding-bottom:2px;">NIF: <strong>${opts.clientNif}</strong></td>
+          </tr>
+          <tr>
+            <td style="color:#6b7280;font-size:13px;">${opts.clientEmail}</td>
+          </tr>
+        </table>
+      </div>
+
       ${messageBlock}
-      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 24px;">
-        Puedes aceptar o rechazar esta solicitud desde tu panel de asesoría.
+
+      <!-- Primary CTA: accept from email -->
+      <table cellpadding="0" cellspacing="0" style="margin:0 0 12px;">
+        <tr>
+          <td style="background:#16a34a;border-radius:8px;padding:13px 28px;">
+            <a href="${opts.emailAcceptUrl}" style="color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">✓ Aceptar solicitud</a>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Secondary: go to requests page -->
+      <p style="color:#6b7280;font-size:13px;margin:0 0 4px;">
+        ¿Prefieres revisar primero?
+        <a href="${opts.requestsUrl}" style="color:${highlight};text-decoration:underline;">Ver todas las solicitudes →</a>
       </p>
-      ${this.buildButton('Ver solicitudes', dashboardUrl)}
+
+      <p style="color:#9ca3af;font-size:12px;margin:24px 0 0;padding-top:16px;border-top:1px solid #f3f4f6;">
+        Esta solicitud expirará en 7 días si no se acepta ni rechaza.
+      </p>
     `);
 
     await this.send({
@@ -278,8 +314,18 @@ export class EmailService {
     to: string;
     agencyName: string;
     clientBusinessName: string;
+    reason?: string;
   }): Promise<void> {
     const findAgencyUrl = `${this.appUrl}/dashboard/ajustes/asesorias`;
+
+    const reasonBlock = opts.reason
+      ? `
+        <div style="background:#fef2f2;border-left:4px solid #fca5a5;padding:12px 16px;margin:20px 0;border-radius:4px;">
+          <p style="color:#7f1d1d;font-size:14px;margin:0 0 4px;font-weight:600;">Motivo indicado por la asesoría:</p>
+          <p style="color:#991b1b;font-size:14px;margin:0;line-height:1.6;">${opts.reason}</p>
+        </div>
+      `
+      : '';
 
     const html = this.buildBaseLayout(`
       <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;">
@@ -288,15 +334,105 @@ export class EmailService {
       <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
         <strong>${opts.agencyName}</strong> ha rechazado tu solicitud de vinculación.
       </p>
-      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 24px;">
-        Puedes buscar otra asesoría desde tu panel de facturación.
+      ${reasonBlock}
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 8px;">
+        Puedes ponerte en contacto directamente con ellos o buscar otra asesoría desde tu panel.
       </p>
-      ${this.buildButton('Buscar otra asesoría', findAgencyUrl)}
+      <p style="color:#9ca3af;font-size:13px;line-height:1.6;margin:0 0 24px;">
+        Si crees que ha sido un error, espera 72 horas antes de volver a enviar la solicitud.
+      </p>
+      ${this.buildButton('Ver mis asesorías', findAgencyUrl)}
     `);
 
     await this.send({
       to: opts.to,
       subject: `${opts.agencyName} ha rechazado tu solicitud en ${this.appName}`,
+      html,
+    });
+  }
+
+  async sendAgencyReferralInvitation(opts: {
+    to: string;
+    clientBusinessName: string;
+    clientNif: string;
+    message?: string;
+    referralId: string;
+  }): Promise<void> {
+    const registerUrl = `${this.appUrl}/registro/asesoria?referral=${opts.referralId}`;
+    const { highlight } = this.brandColors;
+
+    let messageBlock = '';
+    if (opts.message) {
+      messageBlock = `
+        <div style="background:#f9fafb;border-left:4px solid ${highlight};padding:12px 16px;margin:20px 0;border-radius:4px;">
+          <p style="color:#6b7280;font-size:14px;margin:0 0 4px;font-weight:600;">Mensaje de tu cliente:</p>
+          <p style="color:#374151;font-size:14px;margin:0;line-height:1.6;">${opts.message}</p>
+        </div>
+      `;
+    }
+
+    const features = [
+      { icon: '📄', text: 'Accede a las facturas de tus clientes en tiempo real' },
+      { icon: '✅', text: 'Gestiona el cumplimiento VeriFactu (obligatorio AEAT 2025)' },
+      { icon: '📊', text: 'Exporta datos contables: ContaPlus, A3, CEGID, Diamacon' },
+      { icon: '🏢', text: 'Centraliza toda tu cartera de clientes en un solo panel' },
+      { icon: '🔔', text: 'Alertas fiscales automáticas por cliente' },
+    ];
+
+    const html = this.buildBaseLayout(`
+      <!-- Free badge -->
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="display:inline-block;background:#dcfce7;color:#166534;font-size:13px;font-weight:700;padding:6px 18px;border-radius:20px;border:1px solid #86efac;">
+          ✓ COMPLETAMENTE GRATUITO PARA ASESORÍAS
+        </div>
+      </div>
+
+      <h1 style="color:#1e1e2e;font-size:24px;font-weight:700;margin:0 0 8px;text-align:center;">
+        Tu cliente quiere vincularse contigo
+      </h1>
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;text-align:center;">
+        <strong>${opts.clientBusinessName}</strong> (NIF: ${opts.clientNif}) ya usa ${this.appName}
+        para su facturación y te ha buscado para vincular su gestión contigo.
+      </p>
+
+      ${messageBlock}
+
+      <!-- Benefits -->
+      <div style="background:#f9fafb;border-radius:10px;padding:20px;margin:0 0 24px;">
+        <p style="color:#374151;font-size:14px;font-weight:700;margin:0 0 14px;">
+          Como asesoría en ${this.appName} podrás:
+        </p>
+        <table cellpadding="0" cellspacing="0" style="width:100%;">
+          ${features.map((f) => `
+          <tr>
+            <td style="padding:5px 0;color:#374151;font-size:14px;">
+              <span style="margin-right:10px;">${f.icon}</span>${f.text}
+            </td>
+          </tr>`).join('')}
+        </table>
+      </div>
+
+      <!-- Free explanation -->
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin:0 0 24px;">
+        <p style="color:#166534;font-size:14px;margin:0;font-weight:600;">
+          💰 Sin coste ni permanencia para asesorías
+        </p>
+        <p style="color:#15803d;font-size:13px;margin:8px 0 0;line-height:1.6;">
+          El registro como asesoría es 100% gratuito. Gestiona toda tu cartera de clientes
+          sin pagar nada. Solo tus clientes pagan su propia suscripción.
+        </p>
+      </div>
+
+      ${this.buildButton('Registrarme gratis como asesoría', registerUrl)}
+
+      <p style="color:#9ca3af;font-size:12px;margin:16px 0 0;text-align:center;">
+        Al registrarte con este enlace, <strong>${opts.clientBusinessName}</strong> quedará vinculado automáticamente a tu cartera.
+      </p>
+    `);
+
+    await this.send({
+      to: opts.to,
+      subject: `${opts.clientBusinessName} quiere que seas su asesoría en ${this.appName} (gratis)`,
       html,
     });
   }

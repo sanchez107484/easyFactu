@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { agencyApi } from '@/lib/api/agency-api';
+import { useMyAgencyRequests } from '@/hooks/use-agency';
 import { brandConfig } from '@easyfactura/brand-config';
 import { Building2, CheckCircle, Loader2, Clock, ArrowRight, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,18 +14,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-interface PendingRequest {
-  id: string;
-  agencyName: string;
-  agencyNif: string;
-  status: string;
-  createdAt: string;
-}
-
 interface AgencyConnectionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  variant?: 'banner' | 'header';
 }
 
 const COPY = {
@@ -94,44 +84,12 @@ function BenefitItem({ benefit }: { benefit: { label: string; text: string } }) 
 export function AgencyConnectionModal({ open, onOpenChange }: AgencyConnectionModalProps) {
   const router = useRouter();
 
-  const [isLoadingPending, setIsLoadingPending] = useState(false);
-  const [pendingRequest, setPendingRequest] = useState<PendingRequest | null>(null);
+  const { data: pendingData, isLoading: isLoadingPending } = useMyAgencyRequests(
+    { status: 'PENDING', limit: 1 },
+    open,
+  );
 
-  const isMountedRef = useRef(true);
-
-  // Load pending on open
-  useEffect(() => {
-    if (!open) return;
-
-    isMountedRef.current = true;
-    setIsLoadingPending(true);
-
-    agencyApi
-      .getMyRequests({ status: 'PENDING', limit: 1 })
-      .then((res) => {
-        if (!isMountedRef.current) return;
-        if (res.data?.length > 0) {
-          const r = res.data[0];
-          setPendingRequest({
-            id: r.id,
-            agencyName: r.agencyName,
-            agencyNif: r.agencyNif,
-            status: r.status,
-            createdAt: r.createdAt,
-          });
-        } else {
-          setPendingRequest(null);
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (isMountedRef.current) setIsLoadingPending(false);
-      });
-
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, [open]);
+  const pendingRequest = pendingData?.data?.[0] ?? null;
 
   const handleGoToAsesorias = () => {
     onOpenChange(false);

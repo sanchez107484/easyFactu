@@ -21,6 +21,7 @@ import {
 import { useTenant } from '@/hooks/use-tenant';
 import { useAuthStore } from '@/store/auth-store';
 import { AccountType, PlanTier } from '@easyfactura/shared-types';
+import { useAgencyContext } from '@/hooks/use-agency-context';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const PLAN_LABELS: Record<PlanTier, string> = {
@@ -89,12 +90,15 @@ const BASE_SETTINGS_SECTIONS = [
 export default function AjustesPage() {
   const { data: tenant, isLoading } = useTenant();
   const currentTenant = useAuthStore((s) => s.currentTenant);
+  const { isActingAsClient } = useAgencyContext();
 
   const isAgency = currentTenant?.accountType === AccountType.AGENCY;
 
   const SETTINGS_SECTIONS = [
-    ...BASE_SETTINGS_SECTIONS,
-    ...(!isAgency
+    ...BASE_SETTINGS_SECTIONS.filter(
+      (s) => !isActingAsClient || s.href !== '/dashboard/ajustes/cuenta',
+    ),
+    ...(!isAgency && !isActingAsClient
       ? [
           {
             href: '/dashboard/ajustes/asesorias',

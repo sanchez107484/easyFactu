@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Building2,
   Mail,
@@ -15,7 +15,6 @@ import {
   Loader2,
   Clock,
   XCircle,
-  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,8 +33,10 @@ import {
 import {
   useMyAgencies,
   useRevokeMyAgency,
-  useCheckIdentifier,
+  useSearchAgencyPublic,
   useSendAgencyRequest,
+  useSendAgencyReferral,
+  useMyReferrals,
   useMyAgencyRequests,
   useCancelAgencyRequest,
 } from '@/hooks/use-agency';
@@ -132,17 +133,23 @@ function AgencyCardSkeleton() {
 function RequestCard({
   request,
   onCancel,
+  onResend,
   isCancelling,
+  isResending,
 }: {
   request: {
     id: string;
     agencyName: string;
     agencyNif: string;
     status: string;
+    expiresAt: string;
     createdAt: string;
+    rejectionReason?: string | null;
   };
   onCancel: (id: string) => void;
+  onResend?: (agencyNif: string) => void;
   isCancelling: boolean;
+  isResending?: boolean;
 }) {
   const statusConfig: Record<string, { label: string; icon: React.ElementType; className: string }> = {
     PENDING: { label: 'Pendiente', icon: Clock, className: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800' },
@@ -150,39 +157,137 @@ function RequestCard({
     REJECTED: { label: 'Rechazada', icon: XCircle, className: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' },
     CANCELLED: { label: 'Cancelada', icon: XCircle, className: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-900/30 dark:text-gray-400 dark:border-gray-800' },
     EXPIRED: { label: 'Expirada', icon: Clock, className: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-900/30 dark:text-gray-400 dark:border-gray-800' },
+    REVOKED: { label: 'Acceso revocado', icon: ShieldOff, className: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-900/30 dark:text-gray-400 dark:border-gray-800' },
   };
 
   const config = statusConfig[request.status] ?? statusConfig.PENDING;
   const Icon = config.icon;
 
+  const daysLeft = request.status === 'PENDING'
+    ? Math.ceil((new Date(request.expiresAt).getTime() - Date.now()) / 86400000)
+    : null;
+  const isExpiringSoon = daysLeft !== null && daysLeft <= 2;
+
   return (
-    <div className="rounded-lg border bg-card p-4 flex items-center justify-between gap-4">
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-agency-100 dark:bg-agency-950/30">
-          <Building2 className="h-4 w-4 text-agency-600 dark:text-agency-400" />
+    <div className="rounded-lg border bg-card overflow-hidden">
+      <div className="p-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-agency-100 dark:bg-agency-950/30">
+            <Building2 className="h-4 w-4 text-agency-600 dark:text-agency-400" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium truncate">{request.agencyName}</p>
+            <p className="text-xs text-muted-foreground font-mono">{request.agencyNif}</p>
+            {daysLeft !== null && (
+              <p className={cn(
+                'text-xs mt-0.5',
+                isExpiringSoon ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-muted-foreground',
+              )}>
+                {daysLeft <= 0 ? 'Expira hoy' : daysLeft === 1 ? 'Expira mañana' : `Expira en ${daysLeft} días`}
+              </p>
+            )}
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="text-sm font-medium truncate">{request.agencyName}</p>
-          <p className="text-xs text-muted-foreground font-mono">{request.agencyNif}</p>
+        <div className="flex items-center gap-3">
+          <Badge variant="outline" className={cn('text-xs gap-1', config.className)}>
+            <Icon className="h-3 w-3" />
+            {config.label}
+          </Badge>
+          {request.status === 'PENDING' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs text-muted-foreground hover:text-destructive"
+              onClick={() => onCancel(request.id)}
+              disabled={isCancelling}
+            >
+              Cancelar
+            </Button>
+          )}
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <Badge variant="outline" className={cn('text-xs gap-1', config.className)}>
-          <Icon className="h-3 w-3" />
-          {config.label}
-        </Badge>
-        {request.status === 'PENDING' && (
+
+      {request.status === 'REJECTED' && (
+        <div className="border-t border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-950/10 px-4 py-3 space-y-2">
+          <p className="text-xs text-red-700 dark:text-red-400">
+            <span className="font-semibold">{request.agencyName}</span> ha rechazado tu solicitud de vinculación.
+            Puedes ponerte en contacto directamente con ellos o enviarles una nueva solicitud.
+          </p>
+          {request.rejectionReason && (
+            <div className="rounded-md bg-red-100/60 dark:bg-red-900/20 px-3 py-2 text-xs text-red-800 dark:text-red-300">
+              <span className="font-semibold">Motivo indicado: </span>{request.rejectionReason}
+            </div>
+          )}
+          {onResend && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1.5 border-red-200 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400"
+              onClick={() => onResend(request.agencyNif)}
+              disabled={isResending}
+            >
+              {isResending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+              Enviar nueva solicitud
+            </Button>
+          )}
+        </div>
+      )}
+
+      {request.status === 'EXPIRED' && (
+        <div className="border-t border-gray-200 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-950/10 px-4 py-3 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Tu solicitud ha caducado. Te recomendamos <span className="font-medium">contactar directamente con el asesor</span> para agilizar el proceso antes de volver a enviar una nueva solicitud.
+          </p>
+          {onResend && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1.5"
+              onClick={() => onResend(request.agencyNif)}
+              disabled={isResending}
+            >
+              {isResending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+              Volver a enviar solicitud
+            </Button>
+          )}
+        </div>
+      )}
+
+      {request.status === 'CANCELLED' && onResend && (
+        <div className="border-t border-gray-200 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-950/10 px-4 py-3 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Cancelaste esta solicitud. Puedes enviar una nueva cuando quieras.
+          </p>
           <Button
-            variant="ghost"
             size="sm"
-            className="h-7 text-xs text-muted-foreground hover:text-destructive"
-            onClick={() => onCancel(request.id)}
-            disabled={isCancelling}
+            variant="outline"
+            className="h-7 text-xs gap-1.5"
+            onClick={() => onResend(request.agencyNif)}
+            disabled={isResending}
           >
-            Cancelar
+            {isResending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+            Enviar nueva solicitud
           </Button>
-        )}
-      </div>
+        </div>
+      )}
+
+      {request.status === 'REVOKED' && onResend && (
+        <div className="border-t border-gray-200 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-950/10 px-4 py-3 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Revocaste el acceso de esta asesoría. Puedes volver a solicitarlo cuando quieras.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1.5"
+            onClick={() => onResend(request.agencyNif)}
+            disabled={isResending}
+          >
+            {isResending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+            Volver a solicitar vinculación
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -193,21 +298,31 @@ export default function MisAsesoriasPage() {
 
   const { data: agencies = [], isLoading: loadingAgencies } = useMyAgencies();
   const { data: myRequests, isLoading: loadingRequests } = useMyAgencyRequests({});
+  const { data: myReferrals = [] } = useMyReferrals(!isAgency);
   const revokeMutation = useRevokeMyAgency();
   const cancelRequestMutation = useCancelAgencyRequest();
   const [confirmAgency, setConfirmAgency] = useState<MyAgencyRelation | null>(null);
 
   const [searchValue, setSearchValue] = useState('');
   const [message, setMessage] = useState('');
-  const { data: checkResult, isFetching: isChecking } = useCheckIdentifier(searchValue);
+  const [referralEmail, setReferralEmail] = useState('');
+  const [referralMessage, setReferralMessage] = useState('');
+  const { data: searchResult, isFetching: isChecking } = useSearchAgencyPublic(searchValue);
   const sendRequest = useSendAgencyRequest();
+  const sendReferral = useSendAgencyReferral();
 
-  const agencyData =
-    checkResult?.status === 'EXISTS_CAN_INVITE'
-      ? { businessName: checkResult.businessName, nif: checkResult.nif }
-      : checkResult?.status === 'ALREADY_IN_PORTFOLIO'
-        ? { businessName: checkResult.businessName, nif: checkResult.nif }
-        : null;
+  const agencyFound = searchResult?.status === 'FOUND';
+  const agencyNotFound = searchResult?.status === 'NOT_FOUND';
+  const agencyData = agencyFound
+    ? { businessName: searchResult.businessName!, nif: searchResult.nif! }
+    : null;
+
+  const searchIsEmail = searchValue.trim().includes('@');
+  useEffect(() => {
+    if (agencyNotFound && searchIsEmail) {
+      setReferralEmail(searchValue.trim());
+    }
+  }, [agencyNotFound, searchIsEmail, searchValue]);
 
   const canSend = agencyData && !sendRequest.isPending;
   const pendingRequests = myRequests?.data.filter((r) => r.status === 'PENDING') ?? [];
@@ -223,10 +338,10 @@ export default function MisAsesoriasPage() {
   }
 
   const handleSendRequest = async () => {
-    if (!canSend) return;
+    if (!canSend || !agencyData) return;
     try {
       await sendRequest.mutateAsync({
-        agencyNif: searchValue.toUpperCase().trim(),
+        agencyNif: agencyData.nif,
         message: message.trim() || undefined,
       });
       setSearchValue('');
@@ -236,8 +351,27 @@ export default function MisAsesoriasPage() {
     }
   };
 
+  const handleSendReferral = async () => {
+    if (!referralEmail.trim()) return;
+    try {
+      await sendReferral.mutateAsync({
+        agencyEmail: referralEmail.trim(),
+        message: referralMessage.trim() || undefined,
+      });
+      setReferralEmail('');
+      setReferralMessage('');
+      setSearchValue('');
+    } catch {
+      // Error handled by mutation
+    }
+  };
+
   const handleCancelRequest = (id: string) => {
     cancelRequestMutation.mutate(id);
+  };
+
+  const handleResendRequest = (agencyNif: string) => {
+    sendRequest.mutate({ agencyNif });
   };
 
   if (isAgency) {
@@ -272,8 +406,8 @@ export default function MisAsesoriasPage() {
             <h3 className="font-semibold">Solicitar vinculación con una asesoría</h3>
           </div>
           <p className="text-sm text-muted-foreground">
-            Busca tu asesoría por NIF y envíales una solicitud de vinculación. Ellos podrán
-            aceptar o rechazar tu petición.
+            Busca tu asesoría por NIF o email y envíales una solicitud de vinculación.
+            Si no están registrados, podrás enviarles una invitación.
           </p>
 
           <div className="space-y-3">
@@ -281,7 +415,7 @@ export default function MisAsesoriasPage() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="NIF de tu asesoría (ej: B12345678)"
+                  placeholder="NIF o email de tu asesoría"
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
                   className="pl-9 bg-white dark:bg-card"
@@ -339,10 +473,62 @@ export default function MisAsesoriasPage() {
               </div>
             )}
 
-            {checkResult?.status === 'ALREADY_IN_PORTFOLIO' && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                Esta asesoría ya está vinculada a tu cuenta.
-              </p>
+            {agencyNotFound && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800/50 p-4 space-y-3">
+                <div className="flex items-start gap-2">
+                  <Mail className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                      Asesoría no registrada
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                      No encontramos ninguna asesoría con ese NIF. Puedes enviarle un email
+                      para que se registre y así podréis vincularos.
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Input
+                    type="email"
+                    placeholder="Email de tu asesoría"
+                    value={referralEmail}
+                    onChange={(e) => setReferralEmail(e.target.value)}
+                    className="bg-white dark:bg-card"
+                  />
+                  <Input
+                    placeholder="Mensaje opcional..."
+                    value={referralMessage}
+                    onChange={(e) => setReferralMessage(e.target.value)}
+                    className="bg-white dark:bg-card"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="gap-1.5 flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+                      onClick={handleSendReferral}
+                      disabled={!referralEmail.trim() || sendReferral.isPending}
+                    >
+                      {sendReferral.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Mail className="h-4 w-4" />
+                      )}
+                      Enviar invitación
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSearchValue('');
+                        setReferralEmail('');
+                        setReferralMessage('');
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -368,7 +554,46 @@ export default function MisAsesoriasPage() {
         </div>
       )}
 
-      {/* Historial de solicitudes aceptadas/rechazadas */}
+      {/* Invitaciones enviadas a asesorías no registradas */}
+
+      {myReferrals.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Mail className="h-4 w-4 text-muted-foreground" />
+            Invitaciones enviadas
+          </h3>
+          <div className="space-y-2">
+            {myReferrals.map((referral) => (
+              <div
+                key={referral.id}
+                className="rounded-lg border bg-card p-4 flex items-center justify-between gap-4"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950/30">
+                    <Mail className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{referral.agencyEmail}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Enviada el{' '}
+                      {new Date(referral.createdAt).toLocaleDateString('es-ES', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
+                  Pendiente de registro
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Historial de solicitudes aceptadas/rechazadas/expiradas */}
       {!loadingRequests && myRequests && myRequests.data.filter((r) => r.status !== 'PENDING').length > 0 && (
         <div className="space-y-3">
           <h3 className="font-semibold text-muted-foreground">Historial de solicitudes</h3>
@@ -380,7 +605,16 @@ export default function MisAsesoriasPage() {
                   key={request.id}
                   request={request}
                   onCancel={handleCancelRequest}
+                  onResend={
+                    request.status === 'REJECTED' ||
+                    request.status === 'EXPIRED' ||
+                    request.status === 'CANCELLED' ||
+                    request.status === 'REVOKED'
+                      ? handleResendRequest
+                      : undefined
+                  }
                   isCancelling={cancelRequestMutation.isPending}
+                  isResending={sendRequest.isPending}
                 />
               ))}
           </div>

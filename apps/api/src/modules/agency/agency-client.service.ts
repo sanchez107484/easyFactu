@@ -8,7 +8,10 @@ export class AgencyClientService {
 
   // ─── Clients list ─────────────────────────────────────────────────────
 
-  async findAllClients(agencyTenantId: string, query: { page?: number; limit?: number; search?: string }) {
+  async findAllClients(
+    agencyTenantId: string,
+    query: { page?: number; limit?: number; search?: string }
+  ) {
     const { page = 1, limit = 20, search } = query;
     const skip = (page - 1) * limit;
 
@@ -294,6 +297,11 @@ export class AgencyClientService {
         },
       });
 
+      await tx.agencyClientRequest.updateMany({
+        where: { clientTenantId, agencyTenantId, status: 'ACCEPTED' },
+        data: { status: 'REVOKED' },
+      });
+
       const closed = await tx.agencyRelationHistory.updateMany({
         where: { agencyTenantId, clientTenantId, endedAt: null },
         data: { endedAt: now, terminatedBy: 'AGENCY', terminatedByUserId },
@@ -422,6 +430,11 @@ export class AgencyClientService {
           userId: { in: agencyUserIds },
           isOwner: false,
         },
+      });
+
+      await tx.agencyClientRequest.updateMany({
+        where: { clientTenantId, agencyTenantId, status: 'ACCEPTED' },
+        data: { status: 'REVOKED' },
       });
 
       const closed = await tx.agencyRelationHistory.updateMany({
