@@ -303,4 +303,103 @@ export const agencyApi = {
   updatePreferredExportFormat: async (format: ExportFormat): Promise<void> => {
     await apiClient.patch('/agency/export/preferred-format', { format });
   },
+
+  // ─── Agency client requests (client-initiated) ───────────────────────────
+
+  sendAgencyRequest: async (data: {
+    agencyNif: string;
+    message?: string;
+  }): Promise<{ id: string; status: string }> => {
+    const response = await apiClient.post('/agency/requests', data);
+    return unwrapApiResponse(response);
+  },
+
+  getReceivedRequests: async (query?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+  }): Promise<
+    PaginatedResponse<{
+      id: string;
+      clientBusinessName: string;
+      clientNif: string;
+      clientEmail: string;
+      message: string | null;
+      status: string;
+      expiresAt: string;
+      createdAt: string;
+    }>
+  > => {
+    const response = await apiClient.get('/agency/requests/received', { params: query });
+    return unwrapApiResponse(response);
+  },
+
+  getMyRequests: async (query?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  }): Promise<
+    PaginatedResponse<{
+      id: string;
+      agencyName: string;
+      agencyNif: string;
+      agencyEmail: string | null;
+      message: string | null;
+      status: string;
+      expiresAt: string;
+      createdAt: string;
+    }>
+  > => {
+    const response = await apiClient.get('/agency/requests/my-requests', { params: query });
+    return unwrapApiResponse(response);
+  },
+
+  acceptAgencyRequest: async (requestId: string): Promise<void> => {
+    await apiClient.post(`/agency/requests/${requestId}/accept`);
+  },
+
+  rejectAgencyRequest: async (requestId: string, reason?: string): Promise<void> => {
+    await apiClient.post(`/agency/requests/${requestId}/reject`, { reason });
+  },
+
+  cancelAgencyRequest: async (requestId: string): Promise<void> => {
+    await apiClient.post(`/agency/requests/${requestId}/cancel`);
+  },
+
+  getReceivedRequestsCount: async (): Promise<number> => {
+    const response = await apiClient.get('/agency/requests/count');
+    return unwrapApiResponse(response);
+  },
+
+  sendAgencyReferral: async (data: {
+    agencyEmail: string;
+    message?: string;
+  }): Promise<{ id: string; success: boolean }> => {
+    const response = await apiClient.post('/agency/requests/referral', data);
+    return unwrapApiResponse(response);
+  },
+
+  getMyReferrals: async (): Promise<
+    Array<{ id: string; agencyEmail: string; createdAt: string }>
+  > => {
+    const response = await apiClient.get('/agency/requests/referrals');
+    return unwrapApiResponse(response);
+  },
+
+  // ─── Public: search agency by email or NIF ─────────────────────────────────
+
+  searchAgencyPublic: async (
+    q: string,
+  ): Promise<{
+    status: 'NOT_FOUND' | 'FOUND';
+    businessName?: string;
+    nif?: string;
+    email?: string;
+    city?: string | null;
+    province?: string | null;
+  }> => {
+    const response = await apiClient.get('/agency/search', { params: { q } });
+    return unwrapApiResponse(response);
+  },
 };

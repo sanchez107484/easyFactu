@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +16,7 @@ import { User, Key, Loader2, Mail } from 'lucide-react';
 import { authApi } from '@/lib/api/auth-api';
 import { useAuthStore } from '@/store/auth-store';
 import { getApiErrorMessage } from '@/lib/api-error';
+import { useAgencyContext } from '@/hooks/use-agency-context';
 
 // ── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -213,6 +216,17 @@ function ChangePasswordCard() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AjustesCuentaPage() {
+  const router = useRouter();
+  const { isActingAsClient } = useAgencyContext();
+
+  useEffect(() => {
+    if (isActingAsClient) {
+      router.replace('/dashboard/ajustes/empresa');
+    }
+  }, [isActingAsClient, router]);
+
+  if (isActingAsClient) return null;
+
   return (
     <div className="space-y-6">
       <PersonalDataCard />

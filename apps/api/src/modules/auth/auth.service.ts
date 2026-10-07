@@ -145,6 +145,83 @@ export class AuthService {
       include: { plan: true },
     });
 
+    // Auto-link if agency registered via a referral email
+    let autoLinkedClient: { businessName: string } | null = null;
+    if (dto.referralId && dto.accountType === 'AGENCY') {
+      try {
+        const referral = await this.prisma.agencyReferral.findFirst({
+          where: { id: dto.referralId, agencyEmail: dto.email.toLowerCase() },
+          include: {
+            clientTenant: { select: { id: true, businessName: true, nif: true, email: true } },
+          },
+        });
+
+        if (referral?.clientTenant) {
+          const clientTenant = referral.clientTenant;
+          const existingRelation = await this.prisma.agencyClientRelation.findUnique({
+            where: {
+              agencyTenantId_clientTenantId: {
+                agencyTenantId: result.tenant.id,
+                clientTenantId: clientTenant.id,
+              },
+            },
+          });
+
+          if (!existingRelation) {
+            const now = new Date();
+            const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+            await this.prisma.$transaction(async (tx) => {
+              await tx.agencyClientRelation.create({
+                data: {
+                  agencyTenantId: result.tenant.id,
+                  clientTenantId: clientTenant.id,
+                  addedByUserId: result.user.id,
+                },
+              });
+
+              await tx.agencyClientRequest.create({
+                data: {
+                  clientTenantId: clientTenant.id,
+                  agencyTenantId: result.tenant.id,
+                  clientEmail: clientTenant.email,
+                  clientBusinessName: referral.clientBusinessName,
+                  clientNif: referral.clientNif,
+                  status: 'ACCEPTED',
+                  acceptedAt: now,
+                  expiresAt,
+                },
+              });
+
+              await tx.agencyRelationHistory.create({
+                data: {
+                  agencyTenantId: result.tenant.id,
+                  clientTenantId: clientTenant.id,
+                  agencyBusinessName: result.tenant.businessName,
+                  clientBusinessName: referral.clientBusinessName,
+                  clientNif: referral.clientNif,
+                  startedAt: now,
+                },
+              });
+
+              await tx.tenantUser.create({
+                data: {
+                  tenantId: clientTenant.id,
+                  userId: result.user.id,
+                  role: 'ADMIN',
+                  isOwner: false,
+                },
+              });
+            });
+
+            autoLinkedClient = { businessName: clientTenant.businessName };
+          }
+        }
+      } catch (err) {
+        this.logger.warn(`Auto-link via referral ${dto.referralId} failed silently: ${err}`);
+      }
+    }
+
     return {
       user: {
         id: result.user.id,
@@ -176,6 +253,7 @@ export class AuthService {
         accountType: result.tenant.accountType,
         subscription,
       },
+      ...(autoLinkedClient ? { autoLinkedClient } : {}),
       ...tokens,
     };
   }

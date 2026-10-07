@@ -106,6 +106,14 @@ export enum AgencyInvitationStatus {
   CANCELLED = 'CANCELLED',
 }
 
+export enum AgencyClientRequestStatus {
+  PENDING = 'PENDING',
+  ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED',
+  CANCELLED = 'CANCELLED',
+  EXPIRED = 'EXPIRED',
+}
+
 export enum RectificationType {
   SUBSTITUTION = 'SUBSTITUTION',
   DIFFERENCES = 'DIFFERENCES',
@@ -1575,6 +1583,59 @@ export interface MyAgencyRelation {
   agencyPhone: string | null;
   agencyCity: string | null;
   linkedAt: string;
+}
+
+export interface AgencyClientRequest {
+  id: string;
+  clientTenantId: string;
+  agencyTenantId: string;
+  clientEmail: string;
+  clientBusinessName: string;
+  clientNif: string;
+  message: string | null;
+  status: AgencyClientRequestStatus;
+  expiresAt: string;
+  rejectedAt: string | null;
+  acceptedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReceivedAgencyRequest {
+  id: string;
+  clientBusinessName: string;
+  clientNif: string;
+  clientEmail: string;
+  message: string | null;
+  status: AgencyClientRequestStatus;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface MyAgencyRequest {
+  id: string;
+  agencyName: string;
+  agencyNif: string;
+  agencyEmail: string | null;
+  message: string | null;
+  status: AgencyClientRequestStatus;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface AgencyRequestFull {
+  id: string;
+  clientTenantId: string;
+  clientBusinessName: string;
+  clientNif: string;
+  clientEmail: string;
+  message: string | null;
+  status: AgencyClientRequestStatus;
+  expiresAt: string;
+  rejectedAt: string | null;
+  acceptedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** Full invitation record returned to the agency in the invitations history view. */

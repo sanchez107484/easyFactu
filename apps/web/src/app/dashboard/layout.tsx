@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import { useUIStore } from '@/store/ui-store';
@@ -40,8 +40,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // 1) Hydration mismatch (same value on both sides)
   // 2) Race condition where redirect fires before auth check starts
   const [isChecking, setIsChecking] = useState(true);
+  // Capture the intended URL once at mount so double-renders don't overwrite it with /login
+  const intendedPath = useRef<string | null>(null);
+  const redirectedRef = useRef(false);
 
   useEffect(() => {
+    // Capture the path+search before any navigation happens
+    intendedPath.current = window.location.pathname + window.location.search;
+
     // Sesión ya activa en Zustand: navegación client-side, sin necesidad de red.
     if (isAuthenticated) {
       setIsChecking(false);
@@ -59,9 +65,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- solo en mount
 
   useEffect(() => {
-    if (!isChecking && !isAuthenticated) {
-      const currentPath = window.location.pathname;
-      router.replace('/login?from=' + encodeURIComponent(currentPath));
+    if (!isChecking && !isAuthenticated && !redirectedRef.current) {
+      redirectedRef.current = true;
+      const from = intendedPath.current ?? window.location.pathname + window.location.search;
+      router.replace('/login?from=' + encodeURIComponent(from));
     }
   }, [isChecking, isAuthenticated, router]);
 

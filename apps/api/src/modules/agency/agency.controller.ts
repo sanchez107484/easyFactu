@@ -24,6 +24,10 @@ import { QueryAgencyClientsDto } from './dto/query-agency-clients.dto';
 import { QueryAgencyInvoicesDto } from './dto/query-agency-invoices.dto';
 import { QueryImpersonationLogsDto } from './dto/query-impersonation-logs.dto';
 import { ResendActivationDto } from './dto/resend-activation.dto';
+import { SendAgencyRequestDto } from './dto/send-agency-request.dto';
+import { SendAgencyReferralDto } from './dto/send-agency-referral.dto';
+import { QueryAgencyRequestsDto } from './dto/query-agency-requests.dto';
+import { RejectAgencyRequestDto } from './dto/reject-agency-request.dto';
 import {
   ExportInvoicesDto,
   QueryInvoicesForExportDto,
@@ -48,6 +52,17 @@ export class AgencyController {
     private readonly agencyExportService: AgencyExportService,
     private readonly fiscalValidatorService: FiscalValidatorService
   ) {}
+
+  // ─── Public: search agency by email or NIF ─────────────────────────────
+
+  @Get('search')
+  @SkipAgencyGuard()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'Busca una asesoría por email o NIF (requiere auth)' })
+  @ApiResponse({ status: 200, description: 'Resultado de la búsqueda' })
+  searchAgency(@Query('q') q: string) {
+    return this.agencyService.searchAgencyPublic(q);
+  }
 
   // ─── Stats / hub overview ───────────────────────────────────────────────
 
@@ -253,6 +268,108 @@ export class AgencyController {
   @ApiOperation({ summary: 'Cancelar una invitación pendiente' })
   cancelInvitation(@CurrentTenant() tenantId: string, @Param('id', ParseUUIDPipe) id: string) {
     return this.agencyService.cancelInvitation(tenantId, id);
+  }
+
+  // ─── Agency client requests (client-initiated) ────────────────────────────
+
+  @Post('requests')
+  @SkipAgencyGuard()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'Enviar solicitud de vinculación a una asesoría (autónomo → asesoría)' })
+  sendAgencyRequest(
+    @CurrentTenant() clientTenantId: string,
+    @Body() dto: SendAgencyRequestDto
+  ) {
+    return this.agencyService.sendAgencyRequest(clientTenantId, dto);
+  }
+
+  @Get('requests/received')
+  @ApiOperation({ summary: 'Solicitudes de vinculación recibidas por la asesoría (paginado)' })
+  findReceivedRequests(
+    @CurrentTenant() tenantId: string,
+    @Query() query: QueryAgencyRequestsDto
+  ) {
+    return this.agencyService.findReceivedRequests(tenantId, query);
+  }
+
+  @Get('requests/my-requests')
+  @SkipAgencyGuard()
+  @ApiOperation({ summary: 'Mis solicitudes de vinculación enviadas (autónomo)' })
+  findMyRequests(
+    @CurrentTenant() clientTenantId: string,
+    @Query() query: QueryAgencyRequestsDto
+  ) {
+    return this.agencyService.findMyRequests(clientTenantId, query);
+  }
+
+  @Post('requests/:id/accept')
+  @ApiOperation({ summary: 'Aceptar solicitud de vinculación (asesoría)' })
+  acceptAgencyRequest(
+    @CurrentTenant() agencyTenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('id') userId: string
+  ) {
+    return this.agencyService.acceptAgencyRequest(agencyTenantId, id, userId);
+  }
+
+  @Post('requests/:id/reject')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Rechazar solicitud de vinculación (asesoría)' })
+  rejectAgencyRequest(
+    @CurrentTenant() agencyTenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RejectAgencyRequestDto,
+  ) {
+    return this.agencyService.rejectAgencyRequest(agencyTenantId, id, dto.reason);
+  }
+
+  @Post('requests/:id/cancel')
+  @SkipAgencyGuard()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Cancelar mi solicitud de vinculación (autónomo)' })
+  cancelAgencyRequest(
+    @CurrentTenant() clientTenantId: string,
+    @Param('id', ParseUUIDPipe) id: string
+  ) {
+    return this.agencyService.cancelAgencyRequest(clientTenantId, id);
+  }
+
+  @Get('requests/count')
+  @ApiOperation({ summary: 'Contador de solicitudes pendientes para badge en sidebar' })
+  getReceivedRequestsCount(@CurrentTenant() tenantId: string) {
+    return this.agencyService.getReceivedRequestsCount(tenantId);
+  }
+
+  @Post('requests/referral')
+  @SkipAgencyGuard()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'Enviar email informativo a una asesoría no registrada' })
+  sendAgencyReferral(
+    @CurrentTenant() clientTenantId: string,
+    @Body() dto: SendAgencyReferralDto,
+  ) {
+    return this.agencyService.sendAgencyReferral(clientTenantId, dto);
+  }
+
+  @Get('requests/referrals')
+  @SkipAgencyGuard()
+  @ApiOperation({ summary: 'Invitaciones enviadas a asesorías no registradas' })
+  findMyReferrals(@CurrentTenant() clientTenantId: string) {
+    return this.agencyService.findMyReferrals(clientTenantId);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Get('requests/:id/email-accept')
+  @ApiOperation({ summary: 'Aceptar solicitud de vinculación mediante token firmado del email' })
+  @ApiResponse({ status: 302, description: 'Redirección al dashboard de solicitudes' })
+  async acceptViaEmailToken(
+    @Param('id') id: string,
+    @Query('token') token: string,
+    @Res() res: Response,
+  ) {
+    const redirectUrl = await this.agencyService.acceptViaEmailToken(id, token);
+    res.redirect(302, redirectUrl);
   }
 
   // ─── Shared customer pool ───────────────────────────────────────────────

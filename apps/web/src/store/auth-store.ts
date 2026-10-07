@@ -28,12 +28,12 @@ interface AuthState {
 
   // Actions
   login: (email: string, password: string, tenantId?: string) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  register: (data: RegisterData) => Promise<{ autoLinkedClient?: { businessName: string } }>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   switchTenant: (tenantId: string) => Promise<void>;
   updateCurrentTenant: (tenant: Tenant) => void;
-  updateUser: (userData: Partial<Pick<User, 'firstName' | 'lastName'>>) => void;
+  updateUser: (userData: Partial<Pick<User, 'firstName' | 'lastName' | 'emailVerified'>>) => void;
   /** Sync store from an AuthResponse already in memory — no extra HTTP round-trip. */
   setFromAuthResponse: (authData: AuthResponse) => void;
 }
@@ -46,6 +46,7 @@ interface RegisterData {
   businessName: string;
   nif: string;
   accountType: AccountType;
+  referralId?: string;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -77,7 +78,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   register: async (registerData) => {
     const response = await apiClient.post('/auth/register', registerData);
-    const authData = unwrapApiResponse<AuthResponse>(response);
+    const authData = unwrapApiResponse<AuthResponse & { autoLinkedClient?: { businessName: string } }>(response);
 
     if (!authData.accessToken || !authData.refreshToken) {
       throw new Error('El servidor no devolvió los tokens necesarios');
@@ -93,6 +94,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isAuthenticated: true,
       isLoading: false,
     });
+
+    return { autoLinkedClient: authData.autoLinkedClient };
   },
 
   logout: async () => {

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { useAgencyContext } from '@/hooks/use-agency-context';
 import { DashboardUserMenu } from './user-menu';
 import { ThemeToggle } from './theme-toggle';
+import { AgencyHeaderIndicator } from './agency-header-indicator';
 import { ChevronRight } from 'lucide-react';
 import { useInvoice } from '@/hooks/use-invoices';
 import { useCustomer } from '@/hooks/use-customers';
@@ -153,7 +154,8 @@ export function DashboardHeader() {
       </div>
 
       {/* Right side */}
-      <div className="ml-auto flex items-center gap-4">
+      <div className="ml-auto flex items-center gap-3">
+        <AgencyHeaderIndicator />
         <ThemeToggle />
         <DashboardUserMenu user={user} />
       </div>

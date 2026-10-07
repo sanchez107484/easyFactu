@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Loader2 as SuspenseLoader } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -170,9 +171,11 @@ function AgencySidePanel() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Page component
 // ─────────────────────────────────────────────────────────────────────────────
-export default function RegisterAgencyPage() {
+function RegisterAgencyContent() {
   const register = useAuthStore((state) => state.register);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const referralId = searchParams.get('referral') ?? undefined;
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -194,9 +197,14 @@ export default function RegisterAgencyPage() {
   const onSubmit = async (data: RegisterAgencyFormData) => {
     setIsLoading(true);
     try {
-      await register({ ...data, accountType: AccountType.AGENCY });
-      toast.success('¡Cuenta de asesoría creada!');
-      router.push('/dashboard/asesoria');
+      const result = await register({ ...data, accountType: AccountType.AGENCY, referralId });
+      if (result?.autoLinkedClient) {
+        toast.success(`¡Cuenta creada! ${result.autoLinkedClient.businessName} ya aparece en tu cartera.`);
+        router.push('/dashboard/asesoria/clientes');
+      } else {
+        toast.success('¡Cuenta de asesoría creada!');
+        router.push('/dashboard/asesoria');
+      }
     } catch (error) {
       toast.error(getErrorMessage(error));
       setIsLoading(false);
@@ -256,6 +264,14 @@ export default function RegisterAgencyPage() {
                 Empieza a gestionar tu cartera de clientes en 2 minutos
               </p>
             </div>
+
+            {referralId && (
+              <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-900 dark:bg-green-950/30">
+                <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                  ✓ Al registrarte, tu cliente quedará vinculado automáticamente a tu cartera.
+                </p>
+              </div>
+            )}
 
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -457,5 +473,13 @@ export default function RegisterAgencyPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterAgencyPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><SuspenseLoader className="h-8 w-8 animate-spin text-primary" /></div>}>
+      <RegisterAgencyContent />
+    </Suspense>
   );
 }

@@ -1,123 +1,105 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
-import Link from 'next/link';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { authApi } from '@/lib/api/auth-api';
-import { getAccessToken, getErrorMessage } from '@/lib/api-client';
-import { brandConfig } from '@easyfactura/brand-config';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { CheckCircle2, XCircle, Loader2, Mail } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { brandConfig } from '@easyfactura/brand-config';
+import { authApi } from '@/lib/api/auth-api';
+import { getErrorMessage } from '@/lib/api-client';
+import { useAuthStore } from '@/store/auth-store';
 
-type VerifyState = 'loading' | 'success' | 'error' | 'no-token';
+type State = 'loading' | 'success' | 'error' | 'missing';
 
 function VerificarEmailContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const token = searchParams.get('token');
-  const [state, setState] = useState<VerifyState>(token ? 'loading' : 'no-token');
-  const [errorMessage, setErrorMessage] = useState('');
-
-  const isLoggedIn = !!getAccessToken();
+  const [state, setState] = useState<State>(token ? 'loading' : 'missing');
+  const [errorMsg, setErrorMsg] = useState<string>('');
+  const called = useRef(false);
+  const updateUser = useAuthStore((s) => s.updateUser);
 
   useEffect(() => {
-    if (!token) return;
-
-    const isValidFormat = /^[a-f0-9]{64}$/.test(token);
-    if (!isValidFormat) {
-      setState('error');
-      setErrorMessage('El enlace de verificación no es válido.');
-      return;
-    }
+    if (!token || called.current) return;
+    called.current = true;
 
     authApi
       .verifyEmail(token)
       .then(() => {
+        updateUser({ emailVerified: true });
         setState('success');
-        if (isLoggedIn) {
-          setTimeout(() => router.push('/dashboard'), 2000);
-        }
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
+        setErrorMsg(getErrorMessage(err));
         setState('error');
-        setErrorMessage(getErrorMessage(err));
       });
-  }, [token, isLoggedIn, router]);
+  }, [token, updateUser]);
 
   if (state === 'loading') {
     return (
-      <div className="flex flex-col items-center gap-4 py-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">Verificando tu email...</p>
-      </div>
+      <>
+        <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+        <h1 className="mt-4 text-xl font-bold">Verificando tu email…</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Un momento, por favor.</p>
+      </>
     );
   }
 
   if (state === 'success') {
     return (
-      <div className="flex flex-col items-center gap-4 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-950">
+      <>
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-950">
           <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
         </div>
-        <div>
-          <h1 className="text-xl font-bold">¡Email verificado!</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {isLoggedIn
-              ? 'Tu correo ha sido verificado. Redirigiendo a tu panel...'
-              : 'Tu dirección de correo ha sido verificada correctamente. Ya puedes iniciar sesión.'}
-          </p>
-        </div>
-        {isLoggedIn ? (
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        ) : (
-          <Link href="/login">
-            <Button>Iniciar sesión</Button>
-          </Link>
-        )}
-      </div>
+        <h1 className="mt-4 text-xl font-bold">¡Email verificado!</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Tu dirección de correo ha sido confirmada. Ya puedes acceder a todas las funciones de tu
+          cuenta.
+        </p>
+        <Link href="/dashboard" className="mt-6 block">
+          <Button className="w-full">Ir a mi panel</Button>
+        </Link>
+      </>
     );
   }
 
   if (state === 'error') {
     return (
-      <div className="flex flex-col items-center gap-4 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+      <>
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
           <XCircle className="h-8 w-8 text-destructive" />
         </div>
-        <div>
-          <h1 className="text-xl font-bold">No se pudo verificar</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {errorMessage || 'El enlace de verificación no es válido o ha expirado.'}
-          </p>
-        </div>
-        <Link href={isLoggedIn ? '/dashboard' : '/login'}>
-          <Button variant="outline">
-            {isLoggedIn ? 'Volver al panel' : 'Ir al inicio de sesión'}
+        <h1 className="mt-4 text-xl font-bold">Enlace no válido</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {errorMsg || 'Este enlace de verificación no es válido o ha caducado.'}
+        </p>
+        <Link href="/login" className="mt-6 block">
+          <Button variant="outline" className="w-full">
+            Ir al inicio de sesión
           </Button>
         </Link>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-4 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+    <>
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted">
         <Mail className="h-8 w-8 text-muted-foreground" />
       </div>
-      <div>
-        <h1 className="text-xl font-bold">Enlace no válido</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          No se encontró un token de verificación en el enlace. Revisa el email que recibiste e
-          intenta de nuevo.
-        </p>
-      </div>
-      <Link href={isLoggedIn ? '/dashboard' : '/login'}>
-        <Button variant="outline">
-          {isLoggedIn ? 'Volver al panel' : 'Ir al inicio de sesión'}
+      <h1 className="mt-4 text-xl font-bold">Enlace incompleto</h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        No se encontró el token de verificación en el enlace. Asegúrate de haber copiado el enlace
+        completo del correo.
+      </p>
+      <Link href="/login" className="mt-6 block">
+        <Button variant="outline" className="w-full">
+          Ir al inicio de sesión
         </Button>
       </Link>
-    </div>
+    </>
   );
 }
 
@@ -136,15 +118,8 @@ export default function VerificarEmailPage() {
           />
         </Link>
       </div>
-      <div className="w-full max-w-md rounded-2xl border bg-card p-8 shadow-sm">
-        <Suspense
-          fallback={
-            <div className="flex flex-col items-center gap-4 py-4">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Cargando...</p>
-            </div>
-          }
-        >
+      <div className="w-full max-w-md rounded-2xl border bg-card p-8 shadow-sm text-center">
+        <Suspense fallback={<Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />}>
           <VerificarEmailContent />
         </Suspense>
       </div>
