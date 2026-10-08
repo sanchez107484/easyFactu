@@ -49,10 +49,12 @@ const AGENCY_KEYS = {
     [...AGENCY_KEYS.all, 'all-clients-invoices', query] as const,
   impersonationLogs: (query: AgencyImpersonationLogQuery) =>
     [...AGENCY_KEYS.all, 'impersonation-logs', query] as const,
+  receivedRequestsBase: () => [...AGENCY_KEYS.all, 'received-requests'] as const,
   receivedRequests: (query?: { page?: number; limit?: number; search?: string; status?: string }) =>
-    [...AGENCY_KEYS.all, 'received-requests', query] as const,
+    [...AGENCY_KEYS.receivedRequestsBase(), query] as const,
+  myRequestsBase: () => [...AGENCY_KEYS.all, 'my-requests'] as const,
   myRequests: (query?: { page?: number; limit?: number; status?: string }) =>
-    [...AGENCY_KEYS.all, 'my-requests', query] as const,
+    [...AGENCY_KEYS.myRequestsBase(), query] as const,
   receivedRequestsCount: () => [...AGENCY_KEYS.all, 'received-requests-count'] as const,
 };
 
@@ -374,6 +376,7 @@ export function useRevokeMyAgency() {
     mutationFn: (agencyTenantId: string) => agencyApi.revokeMyAgency(agencyTenantId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.myAgencies() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.myRequestsBase() });
       toast.success('Acceso de la asesoría revocado correctamente');
     },
     onError: (error) => {
@@ -571,7 +574,7 @@ export function useSendAgencyRequest() {
     mutationFn: (data: { agencyNif: string; message?: string }) =>
       agencyApi.sendAgencyRequest(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...AGENCY_KEYS.all, 'my-requests'] });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.myRequestsBase() });
       toast.success('Solicitud enviada correctamente');
     },
     onError: (error) => {
@@ -586,7 +589,7 @@ export function useAcceptAgencyRequest() {
   return useMutation({
     mutationFn: (requestId: string) => agencyApi.acceptAgencyRequest(requestId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.receivedRequests() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.receivedRequestsBase() });
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.receivedRequestsCount() });
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.clients() });
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.myAgencies() });
@@ -605,7 +608,7 @@ export function useRejectAgencyRequest() {
     mutationFn: ({ requestId, reason }: { requestId: string; reason?: string }) =>
       agencyApi.rejectAgencyRequest(requestId, reason),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.receivedRequests() });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.receivedRequestsBase() });
       queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.receivedRequestsCount() });
       toast.success('Solicitud rechazada');
     },
@@ -636,7 +639,7 @@ export function useCancelAgencyRequest() {
   return useMutation({
     mutationFn: (requestId: string) => agencyApi.cancelAgencyRequest(requestId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...AGENCY_KEYS.all, 'my-requests'] });
+      queryClient.invalidateQueries({ queryKey: AGENCY_KEYS.myRequestsBase() });
       toast.success('Solicitud cancelada');
     },
     onError: (error) => {

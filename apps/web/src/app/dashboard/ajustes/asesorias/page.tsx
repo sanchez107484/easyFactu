@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
   Building2,
+  ChevronDown,
   Mail,
   MapPin,
   Phone,
@@ -305,6 +306,7 @@ export default function MisAsesoriasPage() {
   const revokeMutation = useRevokeMyAgency();
   const cancelRequestMutation = useCancelAgencyRequest();
   const [confirmAgency, setConfirmAgency] = useState<MyAgencyRelation | null>(null);
+  const [showReferrals, setShowReferrals] = useState(false);
 
   const [searchValue, setSearchValue] = useState('');
   const [message, setMessage] = useState('');
@@ -537,118 +539,6 @@ export default function MisAsesoriasPage() {
         </div>
       )}
 
-      {/* Mis solicitudes pendientes */}
-      {!loadingRequests && pendingRequests.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="font-semibold flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            Mis solicitudes pendientes
-          </h3>
-          <div className="space-y-2">
-            {pendingRequests.map((request) => (
-              <RequestCard
-                key={request.id}
-                request={request}
-                onCancel={handleCancelRequest}
-                isCancelling={cancelRequestMutation.isPending}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Invitaciones enviadas a asesorías no registradas */}
-
-      {myReferrals.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="font-semibold flex items-center gap-2">
-            <Mail className="h-4 w-4 text-muted-foreground" />
-            Invitaciones enviadas
-          </h3>
-          <div className="space-y-2">
-            {myReferrals.map((referral) => (
-              <div
-                key={referral.id}
-                className="rounded-lg border bg-card overflow-hidden"
-              >
-                <div className="p-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950/30">
-                      <Mail className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{referral.agencyEmail}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Enviada el{' '}
-                        {new Date(referral.createdAt).toLocaleDateString('es-ES', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </p>
-                      {referral.resendCount > 0 && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Reenviada {referral.resendCount}/3 {referral.resendCount >= 3 ? '— límite alcanzado' : ''}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {referral.resendCount < 3 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs text-muted-foreground hover:text-amber-700 gap-1"
-                        onClick={() => resendReferralMutation.mutate(referral.id)}
-                        disabled={resendReferralMutation.isPending}
-                      >
-                        {resendReferralMutation.isPending ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <RefreshCw className="h-3 w-3" />
-                        )}
-                        Reenviar
-                      </Button>
-                    )}
-                    <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
-                      Pendiente de registro
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Historial de solicitudes aceptadas/rechazadas/expiradas */}
-      {!loadingRequests && myRequests && myRequests.data.filter((r) => r.status !== 'PENDING').length > 0 && (
-        <div className="space-y-3">
-          <h3 className="font-semibold text-muted-foreground">Historial de solicitudes</h3>
-          <div className="space-y-2">
-            {myRequests.data
-              .filter((r) => r.status !== 'PENDING')
-              .map((request) => (
-                <RequestCard
-                  key={request.id}
-                  request={request}
-                  onCancel={handleCancelRequest}
-                  onResend={
-                    request.status === 'REJECTED' ||
-                    request.status === 'EXPIRED' ||
-                    request.status === 'CANCELLED' ||
-                    request.status === 'REVOKED'
-                      ? handleResendRequest
-                      : undefined
-                  }
-                  isCancelling={cancelRequestMutation.isPending}
-                  isResending={sendRequest.isPending}
-                />
-              ))}
-          </div>
-        </div>
-      )}
-
       {/* Asesorías vinculadas */}
       <div className="space-y-3">
         <h3 className="font-semibold">Asesorías vinculadas</h3>
@@ -680,6 +570,127 @@ export default function MisAsesoriasPage() {
           </div>
         )}
       </div>
+
+      {/* Mis solicitudes pendientes */}
+      {!loadingRequests && pendingRequests.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            Mis solicitudes pendientes
+          </h3>
+          <div className="space-y-2">
+            {pendingRequests.map((request) => (
+              <RequestCard
+                key={request.id}
+                request={request}
+                onCancel={handleCancelRequest}
+                isCancelling={cancelRequestMutation.isPending}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Invitaciones enviadas a asesorías no registradas */}
+      {myReferrals.length > 0 && (
+        <div className="space-y-3">
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 text-left"
+            onClick={() => setShowReferrals((v) => !v)}
+          >
+            <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', !showReferrals && '-rotate-90')} />
+            <h3 className="font-semibold flex items-center gap-2">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              Invitaciones enviadas
+            </h3>
+            <Badge variant="secondary" className="text-xs ml-1">{myReferrals.length}</Badge>
+          </button>
+          {showReferrals && (
+            <div className="space-y-2">
+              {myReferrals.map((referral) => (
+                <div
+                  key={referral.id}
+                  className="rounded-lg border bg-card overflow-hidden"
+                >
+                  <div className="p-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950/30">
+                        <Mail className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{referral.agencyEmail}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Enviada el{' '}
+                          {new Date(referral.createdAt).toLocaleDateString('es-ES', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </p>
+                        {referral.resendCount > 0 && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Reenviada {referral.resendCount}/3 {referral.resendCount >= 3 ? '— límite alcanzado' : ''}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {referral.resendCount < 3 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-muted-foreground hover:text-amber-700 gap-1"
+                          onClick={() => resendReferralMutation.mutate(referral.id)}
+                          disabled={resendReferralMutation.isPending}
+                        >
+                          {resendReferralMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-3 w-3" />
+                          )}
+                          Reenviar
+                        </Button>
+                      )}
+                      <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
+                        Pendiente de registro
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Historial de solicitudes aceptadas/rechazadas/expiradas */}
+      {!loadingRequests && myRequests && myRequests.data.filter((r) => r.status !== 'PENDING').length > 0 && (
+        <div className="space-y-3">
+          <h3 className="font-semibold text-muted-foreground">Historial de solicitudes</h3>
+          <div className="space-y-2">
+            {myRequests.data
+              .filter((r) => r.status !== 'PENDING')
+              .map((request) => (
+                <RequestCard
+                  key={request.id}
+                  request={request}
+                  onCancel={handleCancelRequest}
+                  onResend={
+                    request.status === 'REJECTED' ||
+                    request.status === 'EXPIRED' ||
+                    request.status === 'CANCELLED' ||
+                    request.status === 'REVOKED'
+                      ? handleResendRequest
+                      : undefined
+                  }
+                  isCancelling={cancelRequestMutation.isPending}
+                  isResending={sendRequest.isPending}
+                />
+              ))}
+          </div>
+        </div>
+      )}
 
       <AlertDialog open={!!confirmAgency} onOpenChange={(open) => !open && setConfirmAgency(null)}>
         <AlertDialogContent>

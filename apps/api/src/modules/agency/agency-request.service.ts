@@ -702,12 +702,23 @@ export class AgencyRequestService {
       take: 20,
     });
 
-    return referrals.map((r) => ({
-      id: r.id,
-      agencyEmail: r.agencyEmail,
-      resendCount: r.resendCount,
-      lastResentAt: r.lastResentAt?.toISOString() ?? null,
-      createdAt: r.createdAt.toISOString(),
-    }));
+    if (referrals.length === 0) return [];
+
+    const emails = referrals.map((r) => r.agencyEmail);
+    const registeredAgencies = await this.prisma.tenant.findMany({
+      where: { email: { in: emails }, accountType: 'AGENCY', isActive: true },
+      select: { email: true },
+    });
+    const registeredEmails = new Set(registeredAgencies.map((t) => t.email.toLowerCase()));
+
+    return referrals
+      .filter((r) => !registeredEmails.has(r.agencyEmail.toLowerCase()))
+      .map((r) => ({
+        id: r.id,
+        agencyEmail: r.agencyEmail,
+        resendCount: r.resendCount,
+        lastResentAt: r.lastResentAt?.toISOString() ?? null,
+        createdAt: r.createdAt.toISOString(),
+      }));
   }
 }
