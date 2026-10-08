@@ -6,6 +6,7 @@ import {
   Mail,
   MapPin,
   Phone,
+  RefreshCw,
   ShieldOff,
   Trash2,
   Search,
@@ -39,6 +40,7 @@ import {
   useMyReferrals,
   useMyAgencyRequests,
   useCancelAgencyRequest,
+  useResendAgencyReferral,
 } from '@/hooks/use-agency';
 import type { MyAgencyRelation } from '@easyfactura/shared-types';
 import { useAuthStore } from '@/store/auth-store';
@@ -299,6 +301,7 @@ export default function MisAsesoriasPage() {
   const { data: agencies = [], isLoading: loadingAgencies } = useMyAgencies();
   const { data: myRequests, isLoading: loadingRequests } = useMyAgencyRequests({});
   const { data: myReferrals = [] } = useMyReferrals(!isAgency);
+  const resendReferralMutation = useResendAgencyReferral();
   const revokeMutation = useRevokeMyAgency();
   const cancelRequestMutation = useCancelAgencyRequest();
   const [confirmAgency, setConfirmAgency] = useState<MyAgencyRelation | null>(null);
@@ -566,27 +569,52 @@ export default function MisAsesoriasPage() {
             {myReferrals.map((referral) => (
               <div
                 key={referral.id}
-                className="rounded-lg border bg-card p-4 flex items-center justify-between gap-4"
+                className="rounded-lg border bg-card overflow-hidden"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950/30">
-                    <Mail className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <div className="p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-950/30">
+                      <Mail className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{referral.agencyEmail}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Enviada el{' '}
+                        {new Date(referral.createdAt).toLocaleDateString('es-ES', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </p>
+                      {referral.resendCount > 0 && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Reenviada {referral.resendCount}/3 {referral.resendCount >= 3 ? '— límite alcanzado' : ''}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{referral.agencyEmail}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Enviada el{' '}
-                      {new Date(referral.createdAt).toLocaleDateString('es-ES', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </p>
+                  <div className="flex items-center gap-2">
+                    {referral.resendCount < 3 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-muted-foreground hover:text-amber-700 gap-1"
+                        onClick={() => resendReferralMutation.mutate(referral.id)}
+                        disabled={resendReferralMutation.isPending}
+                      >
+                        {resendReferralMutation.isPending ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3 w-3" />
+                        )}
+                        Reenviar
+                      </Button>
+                    )}
+                    <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
+                      Pendiente de registro
+                    </Badge>
                   </div>
                 </div>
-                <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
-                  Pendiente de registro
-                </Badge>
               </div>
             ))}
           </div>

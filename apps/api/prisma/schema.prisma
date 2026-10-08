@@ -561,14 +561,16 @@ model AgencyClientRequest {
 }
 
 model AgencyReferral {
-  id                 String   @id @default(uuid())
-  clientTenantId     String   @map("client_tenant_id")
-  agencyEmail        String   @map("agency_email")
-  clientBusinessName String   @map("client_business_name")
-  clientNif          String   @map("client_nif")
+  id                 String    @id @default(uuid())
+  clientTenantId     String    @map("client_tenant_id")
+  agencyEmail        String    @map("agency_email")
+  clientBusinessName String    @map("client_business_name")
+  clientNif          String    @map("client_nif")
   message            String?
-  createdAt          DateTime @default(now()) @map("created_at")
-  clientTenant       Tenant   @relation("ClientReferrals", fields: [clientTenantId], references: [id], onDelete: Cascade)
+  resendCount        Int       @default(0) @map("resend_count")
+  lastResentAt       DateTime? @map("last_resent_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  clientTenant       Tenant    @relation("ClientReferrals", fields: [clientTenantId], references: [id], onDelete: Cascade)
 
   @@unique([clientTenantId, agencyEmail])
   @@index([clientTenantId])

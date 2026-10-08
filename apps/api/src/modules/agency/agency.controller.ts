@@ -351,6 +351,19 @@ export class AgencyController {
     return this.agencyService.sendAgencyReferral(clientTenantId, dto);
   }
 
+  @Post('requests/referrals/:id/resend')
+  @SkipAgencyGuard()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'Reenviar correo de invitación a una asesoría no registrada' })
+  @ApiResponse({ status: 200, description: 'Correo reenviado' })
+  @ApiResponse({ status: 429, description: 'Límite de reenvíos alcanzado o cooldown activo' })
+  resendAgencyReferral(
+    @CurrentTenant() clientTenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.agencyService.resendAgencyReferral(clientTenantId, id);
+  }
+
   @Get('requests/referrals')
   @SkipAgencyGuard()
   @ApiOperation({ summary: 'Invitaciones enviadas a asesorías no registradas' })

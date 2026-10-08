@@ -343,7 +343,7 @@ export class AgencyInvitationService {
       return { clientTenant, relation };
     });
 
-    this.emailService.sendAccountActivation({
+    await this.emailService.sendAccountActivation({
       to: normalizedEmail,
       businessName: dto.businessName,
       agencyName: agencyTenantRecord.businessName,
@@ -440,7 +440,7 @@ export class AgencyInvitationService {
       },
     });
 
-    this.emailService.sendAccountActivation({
+    await this.emailService.sendAccountActivation({
       to: targetEmail,
       businessName: relation.clientTenant.businessName,
       agencyName: agencyTenantRecord?.businessName ?? '',
@@ -547,7 +547,7 @@ export class AgencyInvitationService {
       }),
     ]);
 
-    this.emailService.sendAgencyInvitation({
+    await this.emailService.sendAgencyInvitation({
       to: dto.inviteeEmail,
       inviteeName: dto.inviteeName,
       agencyName: agencyTenant?.businessName ?? 'Tu asesoría',
@@ -706,7 +706,7 @@ export class AgencyInvitationService {
     });
 
     if (agencyTenantDetails) {
-      this.emailService.sendClientAcceptedInvitationNotification({
+      await this.emailService.sendClientAcceptedInvitationNotification({
         to: agencyTenantDetails.email,
         agencyName: agencyTenantDetails.businessName,
         clientName: relation.clientTenant.businessName,
@@ -760,7 +760,7 @@ export class AgencyInvitationService {
     ]);
 
     if (clientTenant && invitation.agencyTenant.email) {
-      this.emailService.sendClientRejectedInvitationNotification({
+      await this.emailService.sendClientRejectedInvitationNotification({
         to: invitation.agencyTenant.email,
         agencyName: invitation.agencyTenant.businessName,
         clientName: clientTenant.businessName,

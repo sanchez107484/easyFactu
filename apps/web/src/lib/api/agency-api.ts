@@ -347,6 +347,7 @@ export const agencyApi = {
       agencyEmail: string | null;
       message: string | null;
       status: string;
+      rejectionReason?: string | null;
       expiresAt: string;
       createdAt: string;
     }>
@@ -380,8 +381,15 @@ export const agencyApi = {
     return unwrapApiResponse(response);
   },
 
+  resendAgencyReferral: async (
+    referralId: string,
+  ): Promise<{ success: boolean; resendCount: number; maxResends: number }> => {
+    const response = await apiClient.post(`/agency/requests/referrals/${referralId}/resend`);
+    return unwrapApiResponse(response);
+  },
+
   getMyReferrals: async (): Promise<
-    Array<{ id: string; agencyEmail: string; createdAt: string }>
+    Array<{ id: string; agencyEmail: string; resendCount: number; lastResentAt: string | null; createdAt: string }>
   > => {
     const response = await apiClient.get('/agency/requests/referrals');
     return unwrapApiResponse(response);

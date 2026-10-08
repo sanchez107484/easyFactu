@@ -35,7 +35,7 @@ export class TenantService {
       throw new ForbiddenException('No tienes permisos para actualizar la empresa');
     }
 
-    return this.prisma.tenant.update({
+    const tenant = await this.prisma.tenant.update({
       where: { id: tenantId },
       data: {
         ...dto,
@@ -43,6 +43,27 @@ export class TenantService {
         ...(dto.taxRegime === TaxRegime.GENERAL ? { reaypRate: null } : {}),
       },
     });
+
+    // When switching to AGENCY, upgrade to PROFESSIONAL_FREE if on a BASIC plan
+    if (dto.accountType === 'AGENCY') {
+      const subscription = await this.prisma.subscription.findUnique({
+        where: { tenantId },
+        include: { plan: true },
+      });
+      if (subscription?.plan.tier === 'BASIC') {
+        const proPlan = await this.prisma.plan.findUnique({
+          where: { slug: 'PROFESSIONAL_FREE' },
+        });
+        if (proPlan) {
+          await this.prisma.subscription.update({
+            where: { tenantId },
+            data: { planId: proPlan.id, billingCycle: 'FREE' },
+          });
+        }
+      }
+    }
+
+    return tenant;
   }
 
   async completeSetup(tenantId: string) {

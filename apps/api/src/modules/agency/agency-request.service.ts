@@ -157,7 +157,7 @@ export class AgencyRequestService {
     const emailAcceptUrl = `${this.apiUrl}/api/v1/agency/requests/${request.id}/email-accept?token=${emailToken}`;
     const requestsUrl = `${this.frontendUrl}/dashboard/asesoria/solicitudes`;
 
-    this.emailService.sendAgencyClientRequestNotification({
+    await this.emailService.sendAgencyClientRequestNotification({
       to: agencyTenant.email,
       agencyName: agencyTenant.businessName,
       clientBusinessName: clientTenant.businessName,
@@ -380,7 +380,7 @@ export class AgencyRequestService {
       return created;
     });
 
-    this.emailService.sendAgencyRequestAcceptedNotification({
+    await this.emailService.sendAgencyRequestAcceptedNotification({
       to: request.clientEmail,
       agencyName: request.agencyTenant.businessName,
       clientBusinessName: request.clientTenant.businessName,
@@ -415,7 +415,7 @@ export class AgencyRequestService {
       data: { status: 'REJECTED', rejectedAt: new Date(), ...({ rejectionReason: reason ?? null } as object) },
     });
 
-    this.emailService.sendAgencyRequestRejectedNotification({
+    await this.emailService.sendAgencyRequestRejectedNotification({
       to: request.clientEmail,
       agencyName: request.agencyTenant.businessName,
       clientBusinessName: request.clientBusinessName,
@@ -552,7 +552,7 @@ export class AgencyRequestService {
       });
     });
 
-    this.emailService.sendAgencyRequestAcceptedNotification({
+    await this.emailService.sendAgencyRequestAcceptedNotification({
       to: request.clientEmail,
       agencyName: request.agencyTenant.businessName,
       clientBusinessName: request.clientTenant.businessName,
@@ -617,7 +617,7 @@ export class AgencyRequestService {
       },
     });
 
-    this.emailService.sendAgencyReferralInvitation({
+    await this.emailService.sendAgencyReferralInvitation({
       to: dto.agencyEmail,
       clientBusinessName: clientTenant.businessName,
       clientNif: clientTenant.nif,
@@ -626,6 +626,71 @@ export class AgencyRequestService {
     });
 
     return { id: referral.id, success: true };
+  }
+
+  // ─── Resend referral email to unregistered agency ───────────────────────────
+
+  private static readonly MAX_REFERRAL_RESENDS = 3;
+  private static readonly REFERRAL_RESEND_COOLDOWN_MS = 2 * 60 * 1000;
+
+  async resendAgencyReferral(clientTenantId: string, referralId: string) {
+    const referral = await this.prisma.agencyReferral.findUnique({
+      where: { id: referralId },
+      include: { clientTenant: { select: { businessName: true, nif: true, accountType: true } } },
+    });
+
+    if (!referral) throw new NotFoundException('Invitación no encontrada');
+
+    if (referral.clientTenantId !== clientTenantId) {
+      throw new ForbiddenException('No tienes permiso para reenviar esta invitación');
+    }
+
+    const existingAgency = await this.prisma.tenant.findFirst({
+      where: { email: referral.agencyEmail, accountType: 'AGENCY', isActive: true },
+    });
+
+    if (existingAgency) {
+      throw new BadRequestException(
+        'Esta asesoría ya se ha registrado. Usa su NIF para enviarle una solicitud de vinculación.',
+      );
+    }
+
+    if (referral.resendCount >= AgencyRequestService.MAX_REFERRAL_RESENDS) {
+      throw new HttpException(
+        `Has alcanzado el límite de ${AgencyRequestService.MAX_REFERRAL_RESENDS} reenvíos para esta invitación.`,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    if (referral.lastResentAt) {
+      const cooldownEnds = new Date(referral.lastResentAt.getTime() + AgencyRequestService.REFERRAL_RESEND_COOLDOWN_MS);
+      if (new Date() < cooldownEnds) {
+        const secondsLeft = Math.ceil((cooldownEnds.getTime() - Date.now()) / 1000);
+        throw new HttpException(
+          `Espera ${secondsLeft} segundos antes de volver a enviar el correo.`,
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+    }
+
+    await this.prisma.agencyReferral.update({
+      where: { id: referralId },
+      data: { resendCount: referral.resendCount + 1, lastResentAt: new Date() },
+    });
+
+    await this.emailService.sendAgencyReferralInvitation({
+      to: referral.agencyEmail,
+      clientBusinessName: referral.clientTenant.businessName,
+      clientNif: referral.clientTenant.nif,
+      message: referral.message ?? undefined,
+      referralId: referral.id,
+    });
+
+    return {
+      success: true,
+      resendCount: referral.resendCount + 1,
+      maxResends: AgencyRequestService.MAX_REFERRAL_RESENDS,
+    };
   }
 
   // ─── List referrals sent by client ─────────────────────────────────────────
@@ -640,6 +705,8 @@ export class AgencyRequestService {
     return referrals.map((r) => ({
       id: r.id,
       agencyEmail: r.agencyEmail,
+      resendCount: r.resendCount,
+      lastResentAt: r.lastResentAt?.toISOString() ?? null,
       createdAt: r.createdAt.toISOString(),
     }));
   }

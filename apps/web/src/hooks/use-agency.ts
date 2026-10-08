@@ -615,6 +615,21 @@ export function useRejectAgencyRequest() {
   });
 }
 
+export function useResendAgencyReferral() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (referralId: string) => agencyApi.resendAgencyReferral(referralId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...AGENCY_KEYS.all, 'referrals'] });
+      toast.success('Correo reenviado a tu asesoría');
+    },
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error));
+    },
+  });
+}
+
 export function useCancelAgencyRequest() {
   const queryClient = useQueryClient();
 

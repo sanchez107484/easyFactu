@@ -105,17 +105,18 @@ export class AuthService {
       // orphan tenant without series.
       await this.invoiceSeriesService.createDefaultSeries(tenant.id, tx);
 
-      // Create subscription with BASIC_FREE plan for new tenants
-      const basicFreePlan = await tx.plan.findUnique({
-        where: { slug: 'BASIC_FREE' },
+      // Agencies get PROFESSIONAL_FREE; everyone else gets BASIC_FREE
+      const planSlug = dto.accountType === 'AGENCY' ? 'PROFESSIONAL_FREE' : 'BASIC_FREE';
+      const freePlan = await tx.plan.findUnique({
+        where: { slug: planSlug },
       });
-      if (!basicFreePlan) {
-        throw new Error('Plan BASIC_FREE no encontrado en el seed');
+      if (!freePlan) {
+        throw new Error(`Plan ${planSlug} no encontrado en el seed`);
       }
       await tx.subscription.create({
         data: {
           tenantId: tenant.id,
-          planId: basicFreePlan.id,
+          planId: freePlan.id,
           status: 'ACTIVE',
           billingCycle: 'FREE',
         },
@@ -124,8 +125,8 @@ export class AuthService {
       return { user, tenant, tenantUser };
     });
 
-    // Send verification email (fire-and-forget)
-    this.emailService.sendEmailVerification({
+    // Send verification email (awaited: serverless freezes the function after the response)
+    await this.emailService.sendEmailVerification({
       to: result.user.email,
       firstName: result.user.firstName,
       verifyToken: emailVerifyToken,
@@ -720,8 +721,8 @@ export class AuthService {
       },
     });
 
-    // Send reset email (fire-and-forget)
-    this.emailService.sendPasswordReset({
+    // Send reset email (awaited: serverless freezes the function after the response)
+    await this.emailService.sendPasswordReset({
       to: user.email,
       firstName: user.firstName,
       resetToken,
@@ -1041,7 +1042,7 @@ export class AuthService {
 
     const activeTenantUser = tenantUsers.find((tu) => tu.tenantId === activeTenantId);
 
-    // Notify agency owners (fire-and-forget) if this account was created by an agency
+    // Notify agency owners (awaited: serverless freezes the function after the response) if this account was created by an agency
     this.notifyAgencyOnClientActivation(
       activeTenantId,
       activeTenantUser?.tenant.businessName ?? '',
@@ -1107,7 +1108,7 @@ export class AuthService {
 
         const dashboardUrl = `${frontendUrl}/dashboard/asesoria/clientes/${clientTenantId}`;
 
-        this.emailService.sendClientActivatedNotification({
+        await this.emailService.sendClientActivatedNotification({
           to: agencyEmails,
           agencyName: relation.agencyTenant.businessName,
           clientBusinessName,

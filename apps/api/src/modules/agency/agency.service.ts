@@ -177,6 +177,10 @@ export class AgencyService {
     return this.requestService.sendAgencyReferral(clientTenantId, dto);
   }
 
+  resendAgencyReferral(clientTenantId: string, referralId: string) {
+    return this.requestService.resendAgencyReferral(clientTenantId, referralId);
+  }
+
   findMyReferrals(clientTenantId: string) {
     return this.requestService.findMyReferrals(clientTenantId);
   }
