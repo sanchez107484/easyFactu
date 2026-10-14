@@ -1541,12 +1541,15 @@ export class InvoiceService {
     }
 
     const customerId = dto.customerId ?? invoice.customerId;
+    const isQuote = invoice.invoiceType === 'quote';
     const expectedSeriesType = invoice.isRectificative
       ? SeriesType.RECTIFICATIVE
       : SeriesType.INVOICE;
-    const seriesId = dto.seriesId
-      ? await this.resolveSeriesId(tenantId, dto.seriesId, expectedSeriesType)
-      : invoice.seriesId;
+    const seriesId = isQuote
+      ? invoice.seriesId
+      : dto.seriesId
+        ? await this.resolveSeriesId(tenantId, dto.seriesId, expectedSeriesType)
+        : invoice.seriesId;
 
     const linesToUse = dto.lines ?? (invoice.lines as unknown as CreateInvoiceLineDto[]);
     if (dto.lines) {
@@ -1941,13 +1944,10 @@ export class InvoiceService {
   async duplicate(tenantId: string, id: string) {
     const original = await this.findForMutation(tenantId, id);
 
-    const defaultSeries = await this.invoiceNumberService.findDefaultSeries(
-      tenantId,
-      original.isRectificative ? SeriesType.RECTIFICATIVE : SeriesType.INVOICE
-    );
+    const isQuote = original.invoiceType === 'quote';
+    const isProforma = original.invoiceType === 'proforma';
 
     const lines = original.lines as unknown as CreateInvoiceLineDto[];
-    // Re-derive compensation: duplicate creates a new draft — use current tenant config
     const compensacionPercent = await this.resolveCompensacionPercent(
       tenantId,
       original.customerId
@@ -1966,48 +1966,81 @@ export class InvoiceService {
 
     const paymentDetails = original.paymentDetails;
 
-    return this.prisma.invoice.create({
-      data: {
-        tenantId,
-        seriesId: defaultSeries.id,
-        customerId: original.customerId,
-        number: null,
-        issueDate: new Date(),
-        dueDate: null,
-        status: PrismaInvoiceStatus.DRAFT,
-        templateId: original.templateId ?? null,
-        ...(original.layoutOverride != null ? { layoutOverride: original.layoutOverride } : {}),
-        subtotal: totals.subtotal,
-        discountPercent: original.discountPercent,
-        discountAmount: Math.abs(totals.discountAmount) > 0 ? totals.discountAmount : null,
-        taxTotal: totals.taxTotal,
-        irpfPercent: original.irpfPercent,
-        irpfTotal: Math.abs(totals.irpfTotal) > 0 ? totals.irpfTotal : null,
-        compensacionPercent: compensacionPercent ?? null,
-        compensacionAmount:
-          Math.abs(totals.compensacionAmount) > 0 ? totals.compensacionAmount : null,
-        surchargeTotal: Math.abs(totals.surchargeTotal) > 0 ? totals.surchargeTotal : null,
-        total: totals.total,
-        paymentMethod: original.paymentMethod as any,
-        ...(paymentDetails != null ? { paymentDetails } : {}),
-        notes: original.notes,
-        ...(original.isRectificative
-          ? {
-              isRectificative: true,
-              rectifiedInvoiceId: original.rectifiedInvoiceId,
-              rectificationReason: original.rectificationReason,
-              rectificationType: original.rectificationType,
-            }
-          : {}),
-        lines: {
-          create: this.buildLineCreateData(tenantId, lines, totals.lines),
+    let duplicateStatus: PrismaInvoiceStatus;
+    if (isQuote) {
+      duplicateStatus = PrismaInvoiceStatus.QUOTE;
+    } else if (isProforma) {
+      duplicateStatus = PrismaInvoiceStatus.PROFORMA;
+    } else {
+      duplicateStatus = PrismaInvoiceStatus.DRAFT;
+    }
+
+    return this.runTransaction('InvoiceService.duplicate', async (tx) => {
+      let resolvedSeriesId: string;
+      let duplicateNumber: string | null = null;
+
+      if (isQuote) {
+        const quoteSeries = await this.invoiceNumberService.findOrCreateQuoteSeries(tenantId, tx);
+        duplicateNumber = await this.invoiceNumberService.generateNextNumber(
+          tenantId,
+          quoteSeries.id,
+          tx
+        );
+        resolvedSeriesId = quoteSeries.id;
+      } else {
+        const defaultSeries = await this.invoiceNumberService.findDefaultSeries(
+          tenantId,
+          original.isRectificative ? SeriesType.RECTIFICATIVE : SeriesType.INVOICE
+        );
+        resolvedSeriesId = defaultSeries.id;
+      }
+
+      return tx.invoice.create({
+        data: {
+          tenantId,
+          seriesId: resolvedSeriesId,
+          customerId: original.customerId,
+          number: duplicateNumber,
+          issueDate: new Date(),
+          dueDate: null,
+          status: duplicateStatus,
+          invoiceType: original.invoiceType as PrismaInvoiceType,
+          templateId: original.templateId ?? null,
+          ...(original.layoutOverride != null ? { layoutOverride: original.layoutOverride } : {}),
+          validUntil: isQuote && original.validUntil ? original.validUntil : null,
+          quoteAcceptanceStatus: isQuote ? PrismaQuoteAcceptanceStatus.PENDING : null,
+          subtotal: totals.subtotal,
+          discountPercent: original.discountPercent,
+          discountAmount: Math.abs(totals.discountAmount) > 0 ? totals.discountAmount : null,
+          taxTotal: totals.taxTotal,
+          irpfPercent: original.irpfPercent,
+          irpfTotal: Math.abs(totals.irpfTotal) > 0 ? totals.irpfTotal : null,
+          compensacionPercent: compensacionPercent ?? null,
+          compensacionAmount:
+            Math.abs(totals.compensacionAmount) > 0 ? totals.compensacionAmount : null,
+          surchargeTotal: Math.abs(totals.surchargeTotal) > 0 ? totals.surchargeTotal : null,
+          total: totals.total,
+          paymentMethod: original.paymentMethod as any,
+          ...(paymentDetails != null ? { paymentDetails } : {}),
+          notes: original.notes,
+          ...(original.isRectificative
+            ? {
+                isRectificative: true,
+                rectifiedInvoiceId: original.rectifiedInvoiceId,
+                rectificationReason: original.rectificationReason,
+                rectificationType: original.rectificationType,
+              }
+            : {}),
+          lines: {
+            create: this.buildLineCreateData(tenantId, lines, totals.lines),
+          },
         },
-      },
-      include: {
-        lines: { orderBy: { sortOrder: 'asc' } },
-        customer: true,
-        series: true,
-      },
+        include: {
+          lines: { orderBy: { sortOrder: 'asc' } },
+          customer: true,
+          series: true,
+        },
+      });
     });
   }
 
