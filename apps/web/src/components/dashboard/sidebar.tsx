@@ -31,6 +31,7 @@ import {
   Truck,
   Activity,
   UserPlus,
+  FileBarChart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -70,6 +71,12 @@ const defaultNavItems: NavEntry[] = [
     icon: Activity,
     requiredPlan: PlanTier.PROFESSIONAL,
   },
+  {
+    title: 'Informes',
+    href: '/dashboard/informes',
+    icon: FileBarChart,
+    requiredPlan: PlanTier.PROFESSIONAL,
+  },
   { title: 'Facturas', href: '/dashboard/facturas', icon: FileText },
   { title: 'Clientes', href: '/dashboard/clientes', icon: Users },
   { title: 'Productos', href: '/dashboard/productos', icon: Package },
@@ -107,6 +114,12 @@ const agencyNavItems: NavEntry[] = [
     title: 'Mi actividad',
     href: '/dashboard/mi-actividad',
     icon: Activity,
+    requiredPlan: PlanTier.PROFESSIONAL,
+  },
+  {
+    title: 'Informes',
+    href: '/dashboard/informes',
+    icon: FileBarChart,
     requiredPlan: PlanTier.PROFESSIONAL,
   },
   { title: 'Facturas', href: '/dashboard/facturas', icon: FileText },

@@ -1,4 +1,4 @@
-import { apiClient } from '../api-client';
+import { apiClient, buildQueryString } from '../api-client';
 import { unwrapApiResponse, ApiResponse } from '../api-response';
 import {
   InvoiceSeries,
@@ -8,11 +8,11 @@ import {
 } from '@easyfactura/shared-types';
 
 export const seriesApi = {
-  getAll: (year?: number): Promise<PaginatedResponse<InvoiceSeries>> =>
+  getAll: (year?: number, limit?: number): Promise<PaginatedResponse<InvoiceSeries>> =>
     apiClient
       .get<
         ApiResponse<PaginatedResponse<InvoiceSeries>>
-      >(`/invoice-series${year ? `?year=${year}` : ''}`)
+      >(`/invoice-series${buildQueryString({ year, limit })}`)
       .then(unwrapApiResponse),
 
   getById: (id: string): Promise<InvoiceSeries> =>

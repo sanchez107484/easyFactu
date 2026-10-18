@@ -20,6 +20,16 @@ export function useInvoiceSeries(year?: number) {
   });
 }
 
+/** Distinct series codes across all years (series are per year: "A" 2025, "A" 2026...). */
+export function useSeriesCodes() {
+  return useQuery({
+    queryKey: [...seriesKeys.lists(), 'codes'] as const,
+    queryFn: () => seriesApi.getAll(undefined, 500),
+    staleTime: 5 * 60_000,
+    select: (response) => [...new Set(response.data.map((series) => series.code))].sort(),
+  });
+}
+
 export function useCreateSeries() {
   const queryClient = useQueryClient();
 

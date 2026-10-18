@@ -7,6 +7,7 @@
   forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { buildRevenueInvoiceFilter } from './invoice-revenue-filter';
 import {
   Prisma,
   InvoiceStatus as PrismaInvoiceStatus,
@@ -2553,41 +2554,8 @@ export class InvoiceService {
 
   // ==================== STATS & REPORTS ====================
 
-  /**
-   * Returns a SQL predicate that selects:
-   * - Normal confirmed/sent/paid invoices.
-   - Invoices marked as RECTIFIED whose confirmed rectificatives are **only**
-   *   credit notes (DIFFERENCES). Those originals remain economically valid and
-   *   must be summed algebraically with their credit notes.
-   * - It excludes RECTIFIED invoices that were substituted (SUBSTITUTION), because
-   *   the substitute invoice already replaces them in the aggregates.
-   */
   private buildRectificationAwareStatusFilter(alias: string = 'i'): Prisma.Sql {
-    const prefix = alias ? `${alias}.` : '';
-    return Prisma.sql`
-      (
-        -- Normal invoices: count them
-        ${Prisma.raw(`${prefix}status`)} IN ('CONFIRMED', 'SENT', 'PAID')
-        OR (
-          -- RECTIFIED invoices: only count if they have a confirmed DIFFERENCES
-          -- and were NOT superseded by a SUBSTITUTION (indicated by superseded_by_substitution_id)
-          ${Prisma.raw(`${prefix}status`)} = 'RECTIFIED'
-          AND ${Prisma.raw(`${prefix}superseded_by_substitution_id`)} IS NULL
-          AND EXISTS (
-            SELECT 1 FROM invoices r
-            WHERE r.rectified_invoice_id = ${Prisma.raw(`${prefix}id`)}
-              AND r.rectification_type = 'DIFFERENCES'
-              AND r.status IN ('CONFIRMED', 'SENT', 'PAID')
-          )
-          AND NOT EXISTS (
-            SELECT 1 FROM invoices r
-            WHERE r.rectified_invoice_id = ${Prisma.raw(`${prefix}id`)}
-              AND r.rectification_type = 'SUBSTITUTION'
-              AND r.status IN ('CONFIRMED', 'SENT', 'PAID')
-          )
-        )
-      )
-    `;
+    return buildRevenueInvoiceFilter(alias);
   }
 
   async getStats(tenantId: string, year?: number) {
@@ -2754,98 +2722,6 @@ export class InvoiceService {
         invoicesThisMonth > 0 ? Math.round((billedThisMonth / invoicesThisMonth) * 100) / 100 : 0,
       vatThisQuarter: Math.round(Number(vatRows[0]?.vat ?? 0) * 100) / 100,
       surchargeThisQuarter: Math.round(Number(vatRows[0]?.surcharge ?? 0) * 100) / 100,
-    };
-  }
-
-  async getReports(tenantId: string, fromDate: string, toDate: string) {
-    const from = new Date(fromDate);
-    const to = new Date(toDate);
-
-    type MonthlyRow = { month: string; revenue: string | null; invoices: bigint };
-    type CustomerRow = {
-      id: string;
-      name: string;
-      invoices: bigint;
-      total: string | null;
-    };
-    type SummaryRow = {
-      total_subtotal: string | null;
-      total_iva: string | null;
-      total_irpf: string | null;
-      total_surcharge: string | null;
-      invoices_count: bigint;
-    };
-
-    // 3 parallel SQL aggregates — replaces full-range findMany + JS aggregation.
-    const [monthlyRows, customerRows, summaryRows] = await Promise.all([
-      this.prisma.$queryRaw<MonthlyRow[]>(Prisma.sql`
-        SELECT
-          TO_CHAR(i.issue_date, 'YYYY-MM') AS month,
-          SUM(i.total)::text               AS revenue,
-          COUNT(*)                         AS invoices
-        FROM invoices i
-        WHERE i.tenant_id = ${tenantId}
-          AND ${this.buildRectificationAwareStatusFilter('i')}
-          AND i.issue_date >= ${from}
-          AND i.issue_date <= ${to}
-        GROUP BY month
-        ORDER BY month ASC
-      `),
-      this.prisma.$queryRaw<CustomerRow[]>(Prisma.sql`
-        SELECT
-          c.id,
-          c.name,
-          COUNT(i.id) AS invoices,
-          SUM(i.total)::text AS total
-        FROM invoices i
-        JOIN customers c ON c.id = i.customer_id
-        WHERE i.tenant_id = ${tenantId}
-          AND ${this.buildRectificationAwareStatusFilter('i')}
-          AND i.issue_date >= ${from}
-          AND i.issue_date <= ${to}
-        GROUP BY c.id, c.name
-        ORDER BY SUM(i.total) DESC NULLS LAST
-        LIMIT 10
-      `),
-      this.prisma.$queryRaw<SummaryRow[]>(Prisma.sql`
-        SELECT
-          SUM(i.subtotal)::text        AS total_subtotal,
-          SUM(i.tax_total)::text       AS total_iva,
-          SUM(i.irpf_total)::text      AS total_irpf,
-          SUM(i.surcharge_total)::text AS total_surcharge,
-          COUNT(*)                     AS invoices_count
-        FROM invoices i
-        WHERE i.tenant_id = ${tenantId}
-          AND ${this.buildRectificationAwareStatusFilter('i')}
-          AND i.issue_date >= ${from}
-          AND i.issue_date <= ${to}
-      `),
-    ]);
-
-    const monthlyRevenue = monthlyRows.map((r) => ({
-      month: r.month,
-      revenue: Math.round(Number(r.revenue ?? 0) * 100) / 100,
-      invoices: Number(r.invoices),
-    }));
-
-    const topCustomers = customerRows.map((r) => ({
-      id: r.id,
-      name: r.name,
-      invoices: Number(r.invoices),
-      total: Math.round(Number(r.total ?? 0) * 100) / 100,
-    }));
-
-    const summary = summaryRows[0];
-    return {
-      monthlyRevenue,
-      topCustomers,
-      taxSummary: {
-        totalSubtotal: Math.round(Number(summary?.total_subtotal ?? 0) * 100) / 100,
-        totalIva: Math.round(Number(summary?.total_iva ?? 0) * 100) / 100,
-        totalIrpf: Math.round(Number(summary?.total_irpf ?? 0) * 100) / 100,
-        totalSurcharge: Math.round(Number(summary?.total_surcharge ?? 0) * 100) / 100,
-        invoicesCount: Number(summary?.invoices_count ?? 0),
-      },
     };
   }
 }

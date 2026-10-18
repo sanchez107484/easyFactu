@@ -12,7 +12,6 @@ import {
   UpdateInvoiceInput,
   CreatePaymentInput,
   InvoiceStats,
-  InvoiceReportData,
 } from '@easyfactura/shared-types';
 import { getApiErrorMessage } from '@/lib/api-error';
 
@@ -62,15 +61,6 @@ export function useInvoiceStats(year?: number) {
     queryKey: ['invoices', 'stats', year ?? 'current'],
     queryFn: () => invoiceApi.getStats(year),
     staleTime: 60_000, // 1 min — KPIs no cambian segundo a segundo
-  });
-}
-
-export function useInvoiceReports(fromDate: string, toDate: string) {
-  return useQuery<InvoiceReportData>({
-    queryKey: ['invoices', 'reports', fromDate, toDate],
-    queryFn: () => invoiceApi.getReports(fromDate, toDate),
-    enabled: Boolean(fromDate) && Boolean(toDate),
-    staleTime: 60_000,
   });
 }
 

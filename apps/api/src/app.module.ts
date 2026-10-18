@@ -25,6 +25,7 @@ import { ExpenseAttachmentsModule } from './modules/expense-attachments/expense-
 import { RecurringExpensesModule } from './modules/recurring-expenses/recurring-expenses.module';
 import { ActivitySummaryModule } from './modules/activity-summary/activity-summary.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
     RecurringExpensesModule,
     ActivitySummaryModule,
     SubscriptionsModule,
+    ReportsModule,
   ],
   controllers: [],
   providers: [

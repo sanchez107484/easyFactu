@@ -32,7 +32,6 @@ import { QueryInvoiceDto } from './dto/query-invoice.dto';
 import { QuerySelectableInvoicesForRectificationDto } from './dto/query-selectable-for-rectification.dto';
 import { UpdateInvoiceNotesDto } from './dto/update-invoice-notes.dto';
 import { QueryStatsDto } from './dto/query-stats.dto';
-import { QueryReportsDto } from './dto/query-reports.dto';
 import { IsIn, IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -95,13 +94,6 @@ export class InvoiceController {
   @ApiOkResponse({ description: 'Estadísticas del año solicitado' })
   getStats(@CurrentTenant() tenantId: string, @Query() query: QueryStatsDto) {
     return this.invoiceService.getStats(tenantId, query.year);
-  }
-
-  @Get('reports')
-  @ApiOperation({ summary: 'Informe de ingresos, clientes top y resumen fiscal' })
-  @ApiOkResponse({ description: 'Datos del informe para el rango de fechas' })
-  getReports(@CurrentTenant() tenantId: string, @Query() query: QueryReportsDto) {
-    return this.invoiceService.getReports(tenantId, query.fromDate, query.toDate);
   }
 
   @Get(':id')

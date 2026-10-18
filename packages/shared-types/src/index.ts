@@ -1443,33 +1443,6 @@ export interface InvoiceStats {
   vatThisQuarter: number;
 }
 
-export interface InvoiceReportMonthly {
-  month: string;
-  revenue: number;
-  invoices: number;
-}
-
-export interface InvoiceReportCustomer {
-  id: string;
-  name: string;
-  invoices: number;
-  total: number;
-}
-
-export interface InvoiceReportData {
-  monthlyRevenue: InvoiceReportMonthly[];
-  topCustomers: InvoiceReportCustomer[];
-  taxSummary: {
-    totalSubtotal: number;
-    totalIva: number;
-    totalIrpf: number;
-    totalSurcharge: number;
-    invoicesCount: number;
-  };
-}
-
-
-
 export interface ExpenseItem {
   id: string;
   date: string;
@@ -1968,4 +1941,186 @@ export interface FiscalAlertSummaryItem {
   errorCount: number;
   warningCount: number;
   infoCount: number;
+}
+
+// ==================== REPORTS (PRO) ====================
+
+export enum ReportType {
+  SUMMARY = 'SUMMARY',
+  SALES = 'SALES',
+  EXPENSES = 'EXPENSES',
+}
+
+/** Axes a grouped report can be grouped / broken down by. */
+export enum ReportDimension {
+  CUSTOMER = 'CUSTOMER',
+  PRODUCT = 'PRODUCT',
+  CATEGORY = 'CATEGORY',
+  SUPPLIER = 'SUPPLIER',
+  PERIOD = 'PERIOD',
+}
+
+export enum ReportTimeGrouping {
+  MONTH = 'MONTH',
+  QUARTER = 'QUARTER',
+  YEAR = 'YEAR',
+}
+
+export enum ReportComparison {
+  NONE = 'NONE',
+  PREVIOUS_PERIOD = 'PREVIOUS_PERIOD',
+  PREVIOUS_YEAR = 'PREVIOUS_YEAR',
+}
+
+/** Request shared by preview and Excel generation. Dates as YYYY-MM-DD. */
+export interface ReportRequest {
+  type: ReportType;
+  fromDate: string;
+  toDate: string;
+  /** Defaults to MONTH. */
+  timeGrouping?: ReportTimeGrouping;
+  /** Defaults to NONE. */
+  comparison?: ReportComparison;
+  /** SALES / EXPENSES only (required there). */
+  groupBy?: ReportDimension;
+  /** SALES / EXPENSES only. Must differ from groupBy. */
+  breakdownBy?: ReportDimension;
+  /** Keep the first N groups and fold the rest into "Otros". Ignored when grouping by period. */
+  topN?: number;
+  // SALES filters
+  customerIds?: string[];
+  productIds?: string[];
+  seriesCodes?: string[];
+  paymentStatuses?: PaymentStatus[];
+  productType?: ProductType;
+  // EXPENSES filters
+  categoryIds?: string[];
+  supplierIds?: string[];
+}
+
+export interface ReportNamedRef {
+  id: string;
+  name: string;
+}
+
+/** Resolved filters (with display names) persisted in the history. */
+export interface ReportAppliedFilters {
+  customers?: ReportNamedRef[];
+  products?: ReportNamedRef[];
+  categories?: ReportNamedRef[];
+  suppliers?: ReportNamedRef[];
+  seriesCodes?: string[];
+  paymentStatuses?: PaymentStatus[];
+  productType?: ProductType;
+}
+
+/** Normalized options (defaults applied). */
+export interface ReportOptions {
+  timeGrouping: ReportTimeGrouping;
+  comparison: ReportComparison;
+  groupBy?: ReportDimension;
+  breakdownBy?: ReportDimension;
+  topN?: number;
+}
+
+export interface ReportParameters {
+  options: ReportOptions;
+  filters: ReportAppliedFilters;
+}
+
+export interface ReportDateRange {
+  fromDate: string;
+  toDate: string;
+}
+
+interface ReportBase {
+  options: ReportOptions;
+  /** Present when options.comparison !== NONE. */
+  comparisonPeriod?: ReportDateRange;
+}
+
+/** All amounts are tax base (sin IVA/IRPF) unless the field name says otherwise. */
+export interface SummaryValues {
+  income: number;
+  expenses: number;
+  result: number;
+}
+
+export interface SummaryReportBucket extends SummaryValues {
+  /** YYYY-MM | YYYY-Qn | YYYY */
+  period: string;
+  label: string;
+  previous?: SummaryValues;
+}
+
+export interface SummaryReport extends ReportBase {
+  type: ReportType.SUMMARY;
+  totals: SummaryValues & { invoicesCount: number; expensesCount: number };
+  previousTotals?: SummaryValues & { invoicesCount: number; expensesCount: number };
+  buckets: SummaryReportBucket[];
+}
+
+export interface ReportGroupRow<M> {
+  key: string;
+  label: string;
+  sublabel: string | null;
+  metrics: M;
+  /** Same group in the comparison period (absent when there was no activity). */
+  previous?: M;
+  /** The "Otros" row produced by topN. */
+  isOther?: boolean;
+  children?: ReportGroupRow<M>[];
+}
+
+export interface SalesMetrics {
+  invoiced: number;
+  units: number;
+  invoicesCount: number;
+  averagePrice: number;
+  /** Customer-level only (see SalesReport.hasCustomerMetrics). */
+  expenses?: number;
+  margin?: number;
+  /** Invoice totals incl. taxes — cash, not tax base. Customer-level only. */
+  collectedGross?: number;
+  pendingGross?: number;
+}
+
+export interface ExpenseMetrics {
+  amount: number;
+  count: number;
+}
+
+export interface SalesReport extends ReportBase {
+  type: ReportType.SALES;
+  totals: SalesMetrics;
+  previousTotals?: SalesMetrics;
+  rows: ReportGroupRow<SalesMetrics>[];
+  /**
+   * True when rows carry expenses/margin/collected/pending: only when grouping by
+   * customer without a product breakdown or product filters (those are invoice-level).
+   */
+  hasCustomerMetrics: boolean;
+}
+
+export interface ExpensesReport extends ReportBase {
+  type: ReportType.EXPENSES;
+  totals: ExpenseMetrics;
+  previousTotals?: ExpenseMetrics;
+  rows: ReportGroupRow<ExpenseMetrics>[];
+}
+
+export type ReportData = SummaryReport | SalesReport | ExpensesReport;
+
+export interface ReportHistoryEntry {
+  id: string;
+  type: ReportType;
+  fromDate: string;
+  toDate: string;
+  parameters: ReportParameters;
+  fileName: string;
+  fileSize: number;
+  isFileAvailable: boolean;
+  generatedByAgency: boolean;
+  generatedBy: { name: string; email: string } | null;
+  createdAt: string;
 }

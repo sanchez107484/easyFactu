@@ -9,7 +9,6 @@ import {
   CreatePaymentInput,
   QueryInvoicesInput,
   InvoiceStats,
-  InvoiceReportData,
   RectificationType,
   SelectableInvoiceForRectification,
   QuerySelectableInvoicesForRectificationInput,
@@ -105,12 +104,6 @@ export const invoiceApi = {
     return apiClient.get<ApiResponse<InvoiceStats>>(`/invoices/stats${qs}`).then(unwrapApiResponse);
   },
 
-  getReports: (fromDate: string, toDate: string): Promise<InvoiceReportData> =>
-    apiClient
-      .get<
-        ApiResponse<InvoiceReportData>
-      >(`/invoices/reports?fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}`)
-      .then(unwrapApiResponse),
 };
 
 // ==================== PAYMENT API ====================

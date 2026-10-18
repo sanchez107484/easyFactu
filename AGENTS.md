@@ -115,6 +115,7 @@ modules/
   payments/               # Payment tracking (full/partial)
   verifactu/              # AEAT VeriFactu: hash, XML, signing, sending, QR
   agency/                 # Gestoría/agency multi-client management (confirmed ✅)
+  reports/                # PRO reports: summary + grouped SALES/EXPENSES (GROUPING SETS engine in grouping/, comparison, top N) → Excel + history in Supabase Storage bucket `reports`
 ```
 
 **Frontend `apps/web/src/`**
@@ -711,7 +712,7 @@ Antes de dar cualquier tarea por terminada — verificar punto a punto:
 3. **Refresh token storage**: Both tokens in `localStorage` (confirmed in `api-client.ts`). XSS risk. Known trade-off or pending improvement?
 4. **Frontend middleware**: `middleware.ts` is permissive — auth validated client-side in dashboard layout (confirmed). Server-side validation at middleware level would improve security posture.
 5. **Certificate exposure**: `uploads/certificates/` served by NestJS static assets at `/api/v1/uploads/`. Confirm route prefix does NOT publicly expose certificate files.
-6. **Plan enforcement**: `PlanGuard` + `@RequirePlan()` implemented for expenses, suppliers, attachments and recurring expenses. Pending review for other modules.
+6. **Plan enforcement**: `PlanGuard` + `@RequirePlan()` implemented for expenses, suppliers, attachments, recurring expenses, activity summary and reports. Pending review for other modules.
 7. **Email verification**: `emailVerified` on User model. Is verification enforced (blocks login until verified)?
 8. **CI pipeline**: Only `lighthouse-ci.yml` (daily audit). No build/lint/test CI on PRs — a broken build could go undetected.
 9. **Sanity revalidation**: Sanity CMS configured for blog. Is ISR revalidation webhook active in production?

@@ -62,6 +62,7 @@ model Tenant {
   products                  Product[]
   recurringExpenses         RecurringExpense[]
   recurringInvoices         RecurringInvoice[]
+  reportHistory             ReportHistory[]
   subscription              Subscription?
   suppliers                 Supplier[]
   tenantUsers               TenantUser[]
@@ -167,6 +168,7 @@ model User {
   invoicesCreated          Invoice[]                @relation("InvoiceCreatedBy")
   recurringExpensesCreated RecurringExpense[]       @relation("RecurringExpenseCreatedBy")
   recurringInvoicesCreated RecurringInvoice[]       @relation("RecurringInvoiceCreatedBy")
+  reportsGenerated         ReportHistory[]          @relation("ReportGeneratedBy")
   tenantUsers              TenantUser[]
 
   @@map("users")
@@ -807,6 +809,26 @@ model Expense {
   @@map("expenses")
 }
 
+model ReportHistory {
+  id                String     @id @default(uuid())
+  tenantId          String     @map("tenant_id")
+  generatedByUserId String?    @map("generated_by_user_id")
+  generatedByAgency Boolean    @default(false) @map("generated_by_agency")
+  type              ReportType
+  fromDate          DateTime   @map("from_date") @db.Date
+  toDate            DateTime   @map("to_date") @db.Date
+  parameters        Json       @default("{}")
+  fileName          String     @map("file_name")
+  storagePath       String?    @map("storage_path")
+  fileSize          Int        @map("file_size")
+  createdAt         DateTime   @default(now()) @map("created_at")
+  tenant            Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  generatedByUser   User?      @relation("ReportGeneratedBy", fields: [generatedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@map("report_history")
+}
+
 model RecurringExpense {
   id                String                    @id @default(uuid())
   tenantId          String                    @map("tenant_id")
@@ -979,6 +1001,12 @@ enum AgencyClientRequestStatus {
   CANCELLED
   EXPIRED
   REVOKED
+}
+
+enum ReportType {
+  SUMMARY
+  SALES
+  EXPENSES
 }
 
 enum ExportFormat {

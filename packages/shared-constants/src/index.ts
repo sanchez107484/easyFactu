@@ -5,3 +5,4 @@ export * from './invoice-status';
 export * from './countries';
 export * from './units';
 export * from './frequencies';
+export * from './reports';
