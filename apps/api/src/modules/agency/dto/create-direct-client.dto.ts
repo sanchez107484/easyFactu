@@ -1,12 +1,16 @@
-﻿import { IsString, IsEmail, IsEnum, IsOptional, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsEmail, IsIn, IsOptional, MinLength, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AccountType } from '@easyfactura/shared-types';
+import { AGENCY_CLIENT_ACCOUNT_TYPES } from '@easyfactura/shared-constants';
 import { IsValidNif } from '../../../common/validators/is-valid-nif.validator';
 
 export class CreateDirectClientDto {
-  @ApiPropertyOptional({ enum: AccountType, description: 'Tipo de cuenta del cliente' })
+  @ApiPropertyOptional({
+    enum: AGENCY_CLIENT_ACCOUNT_TYPES,
+    description: 'Tipo de cuenta del cliente (una asesoría no puede crear otra asesoría)',
+  })
   @IsOptional()
-  @IsEnum(AccountType, { message: 'Tipo de cuenta no válido' })
+  @IsIn([...AGENCY_CLIENT_ACCOUNT_TYPES], { message: 'Tipo de cuenta no válido para un cliente' })
   accountType?: AccountType;
 
   @ApiProperty({ example: 'Acme Construcciones S.L.' })

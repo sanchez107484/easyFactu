@@ -8,6 +8,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { createFreeSubscription } from '../subscriptions/initial-subscription';
 import { InvoiceSeriesService } from '../invoice-series/invoice-series.service';
 import { EmailService } from '../../common/email/email.service';
 import { CreateDirectClientDto } from './dto/create-direct-client.dto';
@@ -339,6 +340,9 @@ export class AgencyInvitationService {
       });
 
       await this.invoiceSeriesService.createDefaultSeries(clientTenant.id, tx);
+
+      // Clients registered by an agency always start on the free basic plan.
+      await createFreeSubscription(tx, clientTenant.id, 'BASIC_FREE');
 
       return { clientTenant, relation };
     });

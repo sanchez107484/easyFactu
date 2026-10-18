@@ -6,3 +6,4 @@ export * from './countries';
 export * from './units';
 export * from './frequencies';
 export * from './reports';
+export * from './agency';

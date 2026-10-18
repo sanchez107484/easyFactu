@@ -9,6 +9,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
+import { createFreeSubscription } from '../subscriptions/initial-subscription';
 import { Prisma } from '@prisma/client';
 import { InvoiceSeriesService } from '../invoice-series/invoice-series.service';
 import { EmailService } from '../../common/email/email.service';
@@ -107,20 +108,7 @@ export class AuthService {
 
       // Agencies get PROFESSIONAL_FREE; everyone else gets BASIC_FREE
       const planSlug = dto.accountType === 'AGENCY' ? 'PROFESSIONAL_FREE' : 'BASIC_FREE';
-      const freePlan = await tx.plan.findUnique({
-        where: { slug: planSlug },
-      });
-      if (!freePlan) {
-        throw new Error(`Plan ${planSlug} no encontrado en el seed`);
-      }
-      await tx.subscription.create({
-        data: {
-          tenantId: tenant.id,
-          planId: freePlan.id,
-          status: 'ACTIVE',
-          billingCycle: 'FREE',
-        },
-      });
+      await createFreeSubscription(tx, tenant.id, planSlug);
 
       return { user, tenant, tenantUser };
     });

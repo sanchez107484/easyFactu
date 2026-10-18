@@ -25,7 +25,7 @@ const PRO_FEATURES = [
   { icon: Building2, text: 'Gestión de proveedores' },
   { icon: PiggyBank, text: 'Lectura inteligente de gastos (Pronto)' },
   { icon: Sparkles, text: 'Automatizaciones con IA (Pronto)' },
-  { icon: BarChart3, text: 'Informes profesionales en segundos (Pronto)' },
+  { icon: BarChart3, text: 'Informes profesionales en segundos' },
   { icon: CheckCircle2, text: 'Soporte prioritario' },
 ] as const;
 

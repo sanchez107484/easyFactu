@@ -8,6 +8,7 @@ import { z } from 'zod';
 import Link from 'next/link';
 import { validateNif } from '@easyfactura/shared-validators';
 import { AccountType } from '@easyfactura/shared-types';
+import { isAgencyClientAccountType } from '@easyfactura/shared-constants';
 import { useAgencyContext } from '@/hooks/use-agency-context';
 import { useCreateDirectClient, useInviteClient, useCheckIdentifier } from '@/hooks/use-agency';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,6 @@ import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
-  Briefcase,
   Building2,
   CheckCircle2,
   LayoutDashboard,
@@ -54,12 +54,6 @@ const ACCOUNT_TYPE_OPTIONS = [
     description: 'Tiene empleados o es sociedad',
   },
   {
-    value: AccountType.AGENCY,
-    icon: Briefcase,
-    label: 'Gestoría / Asesoría',
-    description: 'Gestiona la facturación de otros',
-  },
-  {
     value: AccountType.COLLABORATIVE,
     icon: Network,
     label: 'Colaborativo',
@@ -70,7 +64,9 @@ const ACCOUNT_TYPE_OPTIONS = [
 // ==================== SCHEMA ====================
 
 const schema = z.object({
-  accountType: z.nativeEnum(AccountType),
+  accountType: z
+    .nativeEnum(AccountType)
+    .refine((type) => isAgencyClientAccountType(type), 'Tipo de cuenta no válido para un cliente'),
   businessName: z
     .string()
     .min(2, 'El nombre es obligatorio (mínimo 2 caracteres)')
