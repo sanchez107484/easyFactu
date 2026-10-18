@@ -1949,6 +1949,10 @@ export enum ReportType {
   SUMMARY = 'SUMMARY',
   SALES = 'SALES',
   EXPENSES = 'EXPENSES',
+  /** Outstanding balance at a date (aging), not a period flow. */
+  RECEIVABLES = 'RECEIVABLES',
+  /** Payments received, by payment date (cash in). */
+  COLLECTIONS = 'COLLECTIONS',
 }
 
 /** Axes a grouped report can be grouped / broken down by. */
@@ -1957,7 +1961,19 @@ export enum ReportDimension {
   PRODUCT = 'PRODUCT',
   CATEGORY = 'CATEGORY',
   SUPPLIER = 'SUPPLIER',
+  PAYMENT_METHOD = 'PAYMENT_METHOD',
   PERIOD = 'PERIOD',
+}
+
+/** Metric used to rank groups (and pick the top N). */
+export enum ReportSortBy {
+  /** Invoiced / spent / collected amount (default). */
+  AMOUNT = 'AMOUNT',
+  UNITS = 'UNITS',
+  /** Number of invoices / expenses / payments. */
+  COUNT = 'COUNT',
+  /** Sales by customer only (needs customer-level metrics). */
+  MARGIN = 'MARGIN',
 }
 
 export enum ReportTimeGrouping {
@@ -1987,6 +2003,8 @@ export interface ReportRequest {
   breakdownBy?: ReportDimension;
   /** Keep the first N groups and fold the rest into "Otros". Ignored when grouping by period. */
   topN?: number;
+  /** Defaults to AMOUNT. Ignored when grouping by period. */
+  sortBy?: ReportSortBy;
   // SALES filters
   customerIds?: string[];
   productIds?: string[];
@@ -1996,6 +2014,8 @@ export interface ReportRequest {
   // EXPENSES filters
   categoryIds?: string[];
   supplierIds?: string[];
+  // COLLECTIONS filters (customerIds and seriesCodes also apply)
+  paymentMethods?: PaymentMethod[];
 }
 
 export interface ReportNamedRef {
@@ -2012,6 +2032,7 @@ export interface ReportAppliedFilters {
   seriesCodes?: string[];
   paymentStatuses?: PaymentStatus[];
   productType?: ProductType;
+  paymentMethods?: PaymentMethod[];
 }
 
 /** Normalized options (defaults applied). */
@@ -2021,6 +2042,7 @@ export interface ReportOptions {
   groupBy?: ReportDimension;
   breakdownBy?: ReportDimension;
   topN?: number;
+  sortBy?: ReportSortBy;
 }
 
 export interface ReportParameters {
@@ -2109,7 +2131,76 @@ export interface ExpensesReport extends ReportBase {
   rows: ReportGroupRow<ExpenseMetrics>[];
 }
 
-export type ReportData = SummaryReport | SalesReport | ExpensesReport;
+export interface CollectionMetrics {
+  /** Cash received (incl. taxes). */
+  amount: number;
+  count: number;
+}
+
+export interface CollectionsReport extends ReportBase {
+  type: ReportType.COLLECTIONS;
+  totals: CollectionMetrics;
+  previousTotals?: CollectionMetrics;
+  rows: ReportGroupRow<CollectionMetrics>[];
+  /** Invoice totals (incl. taxes) issued in the same period, for "cobrado vs facturado". */
+  invoicedGross: number;
+}
+
+export enum ReceivableAgingBucket {
+  NOT_DUE = 'NOT_DUE',
+  DAYS_1_30 = 'DAYS_1_30',
+  DAYS_31_60 = 'DAYS_31_60',
+  DAYS_61_90 = 'DAYS_61_90',
+  OVER_90 = 'OVER_90',
+}
+
+export type ReceivableAging = Record<ReceivableAgingBucket, number>;
+
+export interface ReceivableInvoice {
+  id: string;
+  number: string | null;
+  issueDate: string;
+  /** Falls back to the issue date when the invoice has no due date. */
+  dueDate: string;
+  /** Negative while not yet due. */
+  daysOverdue: number;
+  bucket: ReceivableAgingBucket;
+  totalGross: number;
+  paidGross: number;
+  pendingGross: number;
+}
+
+export interface ReceivablesCustomerRow {
+  customerId: string;
+  name: string;
+  nif: string | null;
+  pendingGross: number;
+  aging: ReceivableAging;
+  invoicesCount: number;
+  maxDaysOverdue: number;
+  invoices: ReceivableInvoice[];
+}
+
+export interface ReceivablesReport extends ReportBase {
+  type: ReportType.RECEIVABLES;
+  /** Balance computed at this date (payments after it are ignored). */
+  asOfDate: string;
+  totals: {
+    pendingGross: number;
+    overdueGross: number;
+    aging: ReceivableAging;
+    invoicesCount: number;
+    customersCount: number;
+  };
+  rows: ReceivablesCustomerRow[];
+}
+
+export type ReportData =
+  | SummaryReport
+  | SalesReport
+  | ExpensesReport
+  | CollectionsReport
+  | ReceivablesReport;
 
 export interface ReportHistoryEntry {
   id: string;

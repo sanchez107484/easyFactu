@@ -22,6 +22,7 @@ import {
   attachComparison,
   buildTree,
   fillPeriodBuckets,
+  sortRows,
 } from './grouped-rows.builder';
 
 export interface GroupedReportInput<M> {
@@ -32,6 +33,8 @@ export interface GroupedReportInput<M> {
   buildQuery: (period: ReportPeriod) => GroupedQuery;
   /** Optional extra metrics merged into first-level rows before topN folding. */
   enrichGroups?: (rows: ReportGroupRow<M>[]) => Promise<ReportGroupRow<M>[]>;
+  /** Ranking metric; when omitted the SQL order (by amount) is kept. */
+  sortValue?: (metrics: M) => number;
 }
 
 export interface GroupedReportOutput<M> {
@@ -62,6 +65,8 @@ export class GroupedReportService {
     }
     if (options.groupBy === ReportDimension.PERIOD) {
       rows = fillPeriodBuckets(rows, listBuckets(period, options.timeGrouping), ops);
+    } else if (input.sortValue) {
+      rows = sortRows(rows, input.sortValue);
     }
 
     return {

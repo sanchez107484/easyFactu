@@ -3,7 +3,9 @@ import * as ExcelJS from 'exceljs';
 import {
   ReportComparison,
   ReportDimension,
+  ReceivableAgingBucket,
   ReportGroupRow,
+  ReportSortBy,
   ReportTimeGrouping,
   ReportType,
   SalesReport,
@@ -25,7 +27,14 @@ import {
   attachComparison,
   buildTree,
   fillPeriodBuckets,
+  sortRows,
 } from '../src/modules/reports/grouping/grouped-rows.builder';
+import {
+  ReceivableInvoiceRow,
+  agingBucketFor,
+  buildCustomerRows,
+  sumReceivables,
+} from '../src/modules/reports/receivables.helpers';
 import { RawGroupedRow } from '../src/modules/reports/grouping/grouped-source';
 import { EXPENSE_METRICS_OPS } from '../src/modules/reports/grouping/expenses-source';
 import { ReportsFiltersService } from '../src/modules/reports/reports-filters.service';
@@ -445,5 +454,132 @@ describe('parseHistoryParameters', () => {
       filters: { seriesCodes: ['A'] },
     };
     expect(parseHistoryParameters(parameters)).toEqual(parameters);
+  });
+});
+
+describe('receivables helpers', () => {
+  const asOf = new Date('2026-10-19');
+  const pendingRow = (overrides: Partial<ReceivableInvoiceRow>): ReceivableInvoiceRow => ({
+    id: 'i1',
+    number: 'F-1',
+    issue_date: new Date('2026-09-01'),
+    due_date: new Date('2026-10-16'),
+    total: '121',
+    paid: '21',
+    customer_id: CUSTOMER_A,
+    customer_name: 'ACME',
+    customer_nif: 'B1',
+    ...overrides,
+  });
+
+  it('assigns aging buckets by days overdue', () => {
+    expect(agingBucketFor(-5)).toBe(ReceivableAgingBucket.NOT_DUE);
+    expect(agingBucketFor(0)).toBe(ReceivableAgingBucket.NOT_DUE);
+    expect(agingBucketFor(30)).toBe(ReceivableAgingBucket.DAYS_1_30);
+    expect(agingBucketFor(61)).toBe(ReceivableAgingBucket.DAYS_61_90);
+    expect(agingBucketFor(91)).toBe(ReceivableAgingBucket.OVER_90);
+  });
+
+  it('groups invoices per customer, nets credit notes and sorts by balance', () => {
+    const rows = buildCustomerRows(
+      [
+        pendingRow({}),
+        pendingRow({
+          id: 'i2',
+          number: 'R-1',
+          total: '-30',
+          paid: '0',
+          due_date: new Date('2026-11-01'),
+        }),
+        pendingRow({
+          id: 'i3',
+          customer_id: CUSTOMER_B,
+          customer_name: 'Beta',
+          total: '500',
+          paid: '0',
+          due_date: new Date('2026-06-01'),
+        }),
+      ],
+      asOf
+    );
+
+    expect(rows.map((r) => [r.name, r.pendingGross])).toEqual([
+      ['Beta', 500],
+      ['ACME', 70],
+    ]);
+    expect(rows[1]?.aging).toMatchObject({ DAYS_1_30: 100, NOT_DUE: -30 });
+    expect(rows[0]?.invoices[0]).toMatchObject({
+      daysOverdue: 140,
+      bucket: ReceivableAgingBucket.OVER_90,
+    });
+
+    const totals = sumReceivables(rows);
+    expect(totals).toMatchObject({
+      pendingGross: 570,
+      overdueGross: 600,
+      invoicesCount: 3,
+      customersCount: 2,
+    });
+  });
+});
+
+describe('sorting and new report options', () => {
+  it('sorts groups and their breakdown by the chosen metric', () => {
+    const rows = sortRows(
+      [
+        { ...expenseRow('a', 100), metrics: { amount: 100, count: 1 } },
+        {
+          ...expenseRow('b', 10),
+          metrics: { amount: 10, count: 9 },
+          children: [
+            expenseRow('x', 1),
+            { ...expenseRow('y', 1), metrics: { amount: 1, count: 5 } },
+          ],
+        },
+      ],
+      (m) => m.count
+    );
+    expect(rows.map((r) => r.key)).toEqual(['b', 'a']);
+    expect(rows[0]?.children?.map((c) => c.key)).toEqual(['y', 'x']);
+  });
+
+  it('forbids grouping in receivables and forces no comparison', () => {
+    const base = request({
+      type: ReportType.RECEIVABLES,
+      groupBy: undefined,
+      comparison: ReportComparison.PREVIOUS_YEAR,
+    });
+    expect(normalizeReportOptions(base).comparison).toBe(ReportComparison.NONE);
+    expect(() => normalizeReportOptions({ ...base, groupBy: ReportDimension.CUSTOMER })).toThrow(
+      BadRequestException
+    );
+  });
+
+  it('accepts payment method grouping only for collections', () => {
+    expect(
+      normalizeReportOptions(
+        request({ type: ReportType.COLLECTIONS, groupBy: ReportDimension.PAYMENT_METHOD })
+      ).groupBy
+    ).toBe(ReportDimension.PAYMENT_METHOD);
+    expect(() =>
+      normalizeReportOptions(request({ groupBy: ReportDimension.PAYMENT_METHOD }))
+    ).toThrow(BadRequestException);
+  });
+
+  it('rejects sorting by margin outside sales and drops sorting for periods', () => {
+    expect(() =>
+      normalizeReportOptions(
+        request({
+          type: ReportType.EXPENSES,
+          groupBy: ReportDimension.CATEGORY,
+          sortBy: ReportSortBy.MARGIN,
+        })
+      )
+    ).toThrow(BadRequestException);
+    expect(
+      normalizeReportOptions(
+        request({ groupBy: ReportDimension.PERIOD, sortBy: ReportSortBy.UNITS })
+      ).sortBy
+    ).toBeUndefined();
   });
 });

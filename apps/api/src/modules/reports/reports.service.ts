@@ -12,6 +12,8 @@ import { ReportsFiltersService } from './reports-filters.service';
 import { ReportsSummaryService } from './reports-summary.service';
 import { ReportsExpensesService } from './reports-expenses.service';
 import { ReportsSalesService } from './reports-sales.service';
+import { ReportsCollectionsService } from './reports-collections.service';
+import { ReportsReceivablesService } from './reports-receivables.service';
 import { ReportsHistoryService } from './reports-history.service';
 import { ReportsExcelService } from './excel/reports-excel.service';
 import { ReportPeriod } from './report-period.helpers';
@@ -37,6 +39,8 @@ export class ReportsService {
     private readonly summaryService: ReportsSummaryService,
     private readonly expensesService: ReportsExpensesService,
     private readonly salesService: ReportsSalesService,
+    private readonly collectionsService: ReportsCollectionsService,
+    private readonly receivablesService: ReportsReceivablesService,
     private readonly historyService: ReportsHistoryService,
     private readonly excelService: ReportsExcelService
   ) {}
@@ -101,6 +105,11 @@ export class ReportsService {
         return this.salesService.build(tenantId, period, requireGroupBy(options), filters);
       case ReportType.EXPENSES:
         return this.expensesService.build(tenantId, period, requireGroupBy(options), filters);
+      case ReportType.COLLECTIONS:
+        return this.collectionsService.build(tenantId, period, requireGroupBy(options), filters);
+      // A balance "as of" the end of the requested period.
+      case ReportType.RECEIVABLES:
+        return this.receivablesService.build(tenantId, period.to, options, filters);
     }
   }
 

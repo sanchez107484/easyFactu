@@ -115,7 +115,7 @@ modules/
   payments/               # Payment tracking (full/partial)
   verifactu/              # AEAT VeriFactu: hash, XML, signing, sending, QR
   agency/                 # Gestoría/agency multi-client management (confirmed ✅)
-  reports/                # PRO reports: summary + grouped SALES/EXPENSES (GROUPING SETS engine in grouping/, comparison, top N) → Excel + history in Supabase Storage bucket `reports`
+  reports/                # PRO reports: summary, grouped SALES/EXPENSES/COLLECTIONS (GROUPING SETS engine in grouping/, comparison, sort, top N), RECEIVABLES aging → Excel + history in Supabase Storage bucket `reports`
 ```
 
 **Frontend `apps/web/src/`**

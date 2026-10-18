@@ -2,7 +2,7 @@
 
 import { ReportType } from '@easyfactura/shared-types';
 import { cn } from '@/lib/utils';
-import { REPORT_TYPES, REPORT_TYPE_CONFIG } from './report-type-config';
+import { REPORT_TYPES, REPORT_TYPE_CONFIG } from '@/lib/report-config';
 
 interface ReportTypeSelectorProps {
   value: ReportType;
@@ -11,7 +11,11 @@ interface ReportTypeSelectorProps {
 
 export function ReportTypeSelector({ value, onChange }: ReportTypeSelectorProps) {
   return (
-    <div role="radiogroup" aria-label="Tipo de informe" className="grid gap-3 sm:grid-cols-3">
+    <div
+      role="radiogroup"
+      aria-label="Tipo de informe"
+      className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5"
+    >
       {REPORT_TYPES.map((type) => {
         const { label, description, icon: Icon } = REPORT_TYPE_CONFIG[type];
         const isSelected = type === value;

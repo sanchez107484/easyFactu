@@ -27,7 +27,8 @@ interface ReportMultiSelectProps {
   allLabel: string;
   options: ReportSelectOption[];
   values: string[];
-  onChange: (values: string[]) => void;
+  /** `labels` maps each selected value to its display name (for chips/descriptions). */
+  onChange: (values: string[], labels: Record<string, string>) => void;
   searchPlaceholder?: string;
   isLoading?: boolean;
 }
@@ -54,8 +55,15 @@ export function ReportMultiSelect({
   const [isOpen, setIsOpen] = useState(false);
   const selected = options.filter((option) => values.includes(option.value));
 
+  function emit(nextValues: string[]) {
+    const labels = Object.fromEntries(
+      options.filter((o) => nextValues.includes(o.value)).map((o) => [o.value, o.label]),
+    );
+    onChange(nextValues, labels);
+  }
+
   function toggle(value: string) {
-    onChange(values.includes(value) ? values.filter((v) => v !== value) : [...values, value]);
+    emit(values.includes(value) ? values.filter((v) => v !== value) : [...values, value]);
   }
 
   return (
@@ -89,7 +97,7 @@ export function ReportMultiSelect({
               <CommandEmpty>Sin resultados.</CommandEmpty>
               {values.length > 0 && (
                 <CommandGroup>
-                  <CommandItem value="__clear__" onSelect={() => onChange([])}>
+                  <CommandItem value="__clear__" onSelect={() => emit([])}>
                     <X className="mr-2 h-4 w-4" />
                     Quitar selección ({allLabel.toLowerCase()})
                   </CommandItem>

@@ -58,3 +58,28 @@ export function getPresetRange(
       return null;
   }
 }
+
+function lastDayOfMonth(year: number, month: number): Date {
+  return new Date(year, month + 1, 0);
+}
+
+/** Date range of a period bucket key: "2026-03" (month), "2026-Q1" (quarter) or "2026" (year). */
+export function getBucketRange(key: string): ReportDateRange | null {
+  const quarter = key.match(/^(\d{4})-Q([1-4])$/);
+  if (quarter) {
+    const year = Number(quarter[1]);
+    const firstMonth = (Number(quarter[2]) - 1) * 3;
+    return range(new Date(year, firstMonth, 1), lastDayOfMonth(year, firstMonth + 2));
+  }
+  const month = key.match(/^(\d{4})-(\d{2})$/);
+  if (month) {
+    const year = Number(month[1]);
+    const monthIndex = Number(month[2]) - 1;
+    return range(new Date(year, monthIndex, 1), lastDayOfMonth(year, monthIndex));
+  }
+  if (/^\d{4}$/.test(key)) {
+    const year = Number(key);
+    return range(new Date(year, 0, 1), new Date(year, 11, 31));
+  }
+  return null;
+}

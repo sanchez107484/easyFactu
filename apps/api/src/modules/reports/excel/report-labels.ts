@@ -5,8 +5,10 @@ import {
   ReportDateRange,
   ReportDimension,
   ReportParameters,
+  ReportSortBy,
   ReportTimeGrouping,
 } from '@easyfactura/shared-types';
+import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 
 const PERIOD_LABELS: Record<ReportTimeGrouping, string> = {
   [ReportTimeGrouping.MONTH]: 'Mes',
@@ -19,6 +21,7 @@ const DIMENSION_LABELS: Record<Exclude<ReportDimension, ReportDimension.PERIOD>,
   [ReportDimension.PRODUCT]: 'Artículo',
   [ReportDimension.CATEGORY]: 'Categoría',
   [ReportDimension.SUPPLIER]: 'Proveedor',
+  [ReportDimension.PAYMENT_METHOD]: 'Forma de pago',
 };
 
 /** Header for the secondary text of a dimension (NIF, reference...), if it has one. */
@@ -26,6 +29,13 @@ const SUBLABEL_HEADERS: Partial<Record<ReportDimension, string>> = {
   [ReportDimension.CUSTOMER]: 'NIF',
   [ReportDimension.PRODUCT]: 'Referencia',
   [ReportDimension.SUPPLIER]: 'NIF/CIF',
+};
+
+const SORT_LABELS: Record<ReportSortBy, string> = {
+  [ReportSortBy.AMOUNT]: 'importe',
+  [ReportSortBy.UNITS]: 'unidades',
+  [ReportSortBy.COUNT]: 'número de documentos',
+  [ReportSortBy.MARGIN]: 'margen',
 };
 
 const COMPARISON_LABELS: Record<ReportComparison, string> = {
@@ -75,6 +85,9 @@ export function describeParameters(
   if (groupBy) {
     const breakdown = breakdownBy ? ` › ${dimensionLabel(breakdownBy, timeGrouping)}` : '';
     lines.push(`Agrupado por: ${dimensionLabel(groupBy, timeGrouping)}${breakdown}`);
+    if (options.sortBy && options.sortBy !== ReportSortBy.AMOUNT) {
+      lines.push(`Ordenado por: ${SORT_LABELS[options.sortBy]}`);
+    }
   }
   if (comparisonPeriod) {
     lines.push(
@@ -91,6 +104,8 @@ export function describeParameters(
     filters.paymentStatuses &&
       `Cobro: ${filters.paymentStatuses.map((s) => PAYMENT_STATUS_LABELS[s]).join(', ')}`,
     filters.productType && `Tipo: ${PRODUCT_TYPE_LABELS[filters.productType]}`,
+    filters.paymentMethods &&
+      `Forma de pago: ${filters.paymentMethods.map((m) => PAYMENT_METHOD_LABELS[m]).join(', ')}`,
     options.topN && `Mostrando los ${options.topN} primeros`,
   ].filter((part): part is string => Boolean(part));
 

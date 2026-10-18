@@ -3,6 +3,7 @@ import {
   ReportComparison,
   ReportDimension,
   ReportOptions,
+  ReportSortBy,
   ReportTimeGrouping,
   ReportType,
 } from '@easyfactura/shared-types';
@@ -17,28 +18,43 @@ type FilterKey =
   | 'paymentStatuses'
   | 'productType'
   | 'categoryIds'
-  | 'supplierIds';
+  | 'supplierIds'
+  | 'paymentMethods';
 
-const ALLOWED_DIMENSIONS: Record<ReportType, ReportDimension[]> = {
-  [ReportType.SUMMARY]: [],
-  [ReportType.SALES]: [ReportDimension.CUSTOMER, ReportDimension.PRODUCT, ReportDimension.PERIOD],
-  [ReportType.EXPENSES]: [
-    ReportDimension.CATEGORY,
-    ReportDimension.SUPPLIER,
-    ReportDimension.PERIOD,
-  ],
-};
+interface ReportTypeRules {
+  dimensions: ReportDimension[];
+  filters: FilterKey[];
+  sortBy: ReportSortBy[];
+  supportsComparison: boolean;
+}
 
-const ALLOWED_FILTERS: Record<ReportType, FilterKey[]> = {
-  [ReportType.SUMMARY]: [],
-  [ReportType.SALES]: [
-    'customerIds',
-    'productIds',
-    'seriesCodes',
-    'paymentStatuses',
-    'productType',
-  ],
-  [ReportType.EXPENSES]: ['categoryIds', 'supplierIds'],
+const RULES: Record<ReportType, ReportTypeRules> = {
+  [ReportType.SUMMARY]: { dimensions: [], filters: [], sortBy: [], supportsComparison: true },
+  [ReportType.SALES]: {
+    dimensions: [ReportDimension.CUSTOMER, ReportDimension.PRODUCT, ReportDimension.PERIOD],
+    filters: ['customerIds', 'productIds', 'seriesCodes', 'paymentStatuses', 'productType'],
+    sortBy: [ReportSortBy.AMOUNT, ReportSortBy.UNITS, ReportSortBy.COUNT, ReportSortBy.MARGIN],
+    supportsComparison: true,
+  },
+  [ReportType.EXPENSES]: {
+    dimensions: [ReportDimension.CATEGORY, ReportDimension.SUPPLIER, ReportDimension.PERIOD],
+    filters: ['categoryIds', 'supplierIds'],
+    sortBy: [ReportSortBy.AMOUNT, ReportSortBy.COUNT],
+    supportsComparison: true,
+  },
+  [ReportType.COLLECTIONS]: {
+    dimensions: [ReportDimension.CUSTOMER, ReportDimension.PAYMENT_METHOD, ReportDimension.PERIOD],
+    filters: ['customerIds', 'seriesCodes', 'paymentMethods'],
+    sortBy: [ReportSortBy.AMOUNT, ReportSortBy.COUNT],
+    supportsComparison: true,
+  },
+  // A balance at a date: no grouping options and nothing to compare against.
+  [ReportType.RECEIVABLES]: {
+    dimensions: [],
+    filters: ['customerIds', 'seriesCodes'],
+    sortBy: [],
+    supportsComparison: false,
+  },
 };
 
 const ALL_FILTERS: FilterKey[] = [
@@ -49,6 +65,7 @@ const ALL_FILTERS: FilterKey[] = [
   'productType',
   'categoryIds',
   'supplierIds',
+  'paymentMethods',
 ];
 
 export function parseReportPeriod(fromDate: string, toDate: string): ReportPeriod {
@@ -70,45 +87,56 @@ export function parseReportPeriod(fromDate: string, toDate: string): ReportPerio
 
 /** Validates grouping options for the report type and applies defaults. */
 export function normalizeReportOptions(dto: ReportRequestDto): ReportOptions {
-  const allowed = ALLOWED_DIMENSIONS[dto.type];
+  const rules = RULES[dto.type];
   const options: ReportOptions = {
     timeGrouping: dto.timeGrouping ?? ReportTimeGrouping.MONTH,
-    comparison: dto.comparison ?? ReportComparison.NONE,
+    comparison: rules.supportsComparison
+      ? (dto.comparison ?? ReportComparison.NONE)
+      : ReportComparison.NONE,
   };
 
-  if (allowed.length === 0) {
-    if (dto.groupBy || dto.breakdownBy || dto.topN) {
+  if (rules.dimensions.length === 0) {
+    if (dto.groupBy || dto.breakdownBy || dto.topN || dto.sortBy) {
       throw new BadRequestException('Este informe no admite agrupaciones');
     }
     return options;
   }
 
   if (!dto.groupBy) throw new BadRequestException('Indica cómo agrupar el informe');
-  assertDimensionAllowed(dto.groupBy, allowed);
+  assertAllowed(
+    dto.groupBy,
+    rules.dimensions,
+    'Agrupación no disponible para este tipo de informe'
+  );
   if (dto.breakdownBy) {
-    assertDimensionAllowed(dto.breakdownBy, allowed);
+    assertAllowed(
+      dto.breakdownBy,
+      rules.dimensions,
+      'Agrupación no disponible para este tipo de informe'
+    );
     if (dto.breakdownBy === dto.groupBy) {
       throw new BadRequestException('El desglose debe ser distinto de la agrupación');
     }
   }
+  if (dto.sortBy) assertAllowed(dto.sortBy, rules.sortBy, 'Orden no disponible para este informe');
 
+  // Periods are chronological: neither "top N months" nor re-sorting makes sense.
+  const isByPeriod = dto.groupBy === ReportDimension.PERIOD;
   return {
     ...options,
     groupBy: dto.groupBy,
     breakdownBy: dto.breakdownBy,
-    // Periods are chronological, a "top N months" makes no sense.
-    topN: dto.groupBy === ReportDimension.PERIOD ? undefined : dto.topN,
+    topN: isByPeriod ? undefined : dto.topN,
+    sortBy: isByPeriod ? undefined : dto.sortBy,
   };
 }
 
-function assertDimensionAllowed(dimension: ReportDimension, allowed: ReportDimension[]): void {
-  if (!allowed.includes(dimension)) {
-    throw new BadRequestException('Agrupación no disponible para este tipo de informe');
-  }
+function assertAllowed<T>(value: T, allowed: T[], message: string): void {
+  if (!allowed.includes(value)) throw new BadRequestException(message);
 }
 
 export function assertFiltersAllowed(dto: ReportRequestDto): void {
-  const allowed = ALLOWED_FILTERS[dto.type];
+  const allowed = RULES[dto.type].filters;
   const invalid = ALL_FILTERS.filter((key) => hasValue(dto[key]) && !allowed.includes(key));
   if (invalid.length > 0) {
     throw new BadRequestException('Hay filtros que no aplican a este tipo de informe');

@@ -1,10 +1,15 @@
-import { ReportDimension, SalesMetrics, SalesReport } from '@easyfactura/shared-types';
+import {
+  ReportDimension,
+  ReportGroupRow,
+  SalesMetrics,
+  SalesReport,
+} from '@easyfactura/shared-types';
 import { formatCurrency } from '@/lib/utils';
 import { ReportKpiCard, ReportKpiGrid } from './report-kpi-card';
 import { ReportSection } from './report-section';
-import { GroupedMetricColumn, GroupedReportTable } from './grouped-report-table';
+import { GroupedMetricColumn, GroupedReportTable, GroupedRowAction } from './grouped-report-table';
 import { GroupedReportChart } from './grouped-report-chart';
-import { groupedLabelHeader } from './report-type-config';
+import { groupedLabelHeader } from '@/lib/report-config';
 
 const formatNumber = (value: number) =>
   new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }).format(value);
@@ -28,7 +33,12 @@ function compare(report: SalesReport, pick: (m: SalesMetrics) => number) {
     : undefined;
 }
 
-export function SalesReportPreview({ report }: { report: SalesReport }) {
+interface SalesReportPreviewProps {
+  report: SalesReport;
+  getRowAction?: (row: ReportGroupRow<unknown>) => GroupedRowAction | undefined;
+}
+
+export function SalesReportPreview({ report, getRowAction }: SalesReportPreviewProps) {
   const { totals, options } = report;
   const groupBy = options.groupBy ?? ReportDimension.CUSTOMER;
   const columns = report.hasCustomerMetrics
@@ -87,6 +97,7 @@ export function SalesReportPreview({ report }: { report: SalesReport }) {
           totals={totals}
           previousTotals={report.previousTotals}
           columns={columns}
+          getRowAction={getRowAction}
         />
       </ReportSection>
     </div>

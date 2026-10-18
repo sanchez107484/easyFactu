@@ -12,11 +12,13 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  PaymentMethod,
   PaymentStatus,
   ProductType,
   ReportComparison,
   ReportDimension,
   ReportRequest,
+  ReportSortBy,
   ReportTimeGrouping,
   ReportType,
 } from '@easyfactura/shared-types';
@@ -62,6 +64,11 @@ export class ReportRequestDto implements ReportRequest {
   @IsInt()
   @IsIn([...REPORT_TOP_N_OPTIONS], { message: 'Valor de "mostrar los primeros" no válido' })
   topN?: number;
+
+  @ApiPropertyOptional({ enum: ReportSortBy, default: ReportSortBy.AMOUNT })
+  @IsOptional()
+  @IsEnum(ReportSortBy, { message: 'Orden no válido' })
+  sortBy?: ReportSortBy;
 
   @ApiPropertyOptional({ type: [String], description: 'Ventas: clientes' })
   @IsOptional()
@@ -113,4 +120,10 @@ export class ReportRequestDto implements ReportRequest {
   @ArrayMaxSize(MAX_FILTER_ITEMS)
   @IsUUID(undefined, { each: true, message: 'Proveedor no válido' })
   supplierIds?: string[];
+
+  @ApiPropertyOptional({ enum: PaymentMethod, isArray: true, description: 'Cobros: forma de pago' })
+  @IsOptional()
+  @IsArray()
+  @IsEnum(PaymentMethod, { each: true, message: 'Forma de pago no válida' })
+  paymentMethods?: PaymentMethod[];
 }

@@ -15,14 +15,31 @@ import {
   ReportPeriodPreset,
   getPresetRange,
 } from '@/lib/report-periods';
+import { ReportHelp } from './report-help';
 
 interface ReportPeriodFieldsProps {
   preset: ReportPeriodPreset;
   range: ReportDateRange;
   onChange: (preset: ReportPeriodPreset, range: ReportDateRange) => void;
+  /** Balance reports ask for a single date instead of a period. */
+  isSnapshot?: boolean;
 }
 
-export function ReportPeriodFields({ preset, range, onChange }: ReportPeriodFieldsProps) {
+export function ReportPeriodFields({
+  preset,
+  range,
+  onChange,
+  isSnapshot,
+}: ReportPeriodFieldsProps) {
+  if (isSnapshot) {
+    return (
+      <SnapshotDateField
+        date={range.toDate}
+        onChange={(date) => onChange('custom', { fromDate: date, toDate: date })}
+      />
+    );
+  }
+
   function handlePresetChange(value: string) {
     const option = REPORT_PERIOD_PRESETS.find((preset) => preset.value === value);
     if (!option) return;
@@ -70,6 +87,26 @@ export function ReportPeriodFields({ preset, range, onChange }: ReportPeriodFiel
           onChange={(e) => handleDateChange('toDate', e.target.value)}
         />
       </div>
+    </div>
+  );
+}
+
+function SnapshotDateField({ date, onChange }: { date: string; onChange: (date: string) => void }) {
+  return (
+    <div className="max-w-xs space-y-1.5">
+      <div className="flex items-center gap-1.5">
+        <Label htmlFor="report-as-of">Saldo a fecha de</Label>
+        <ReportHelp topic="Saldo a fecha de">
+          Muestra lo que te debían ese día: facturas emitidas hasta esa fecha que aún no estaban
+          cobradas, sea cual sea su fecha de emisión. Por defecto, hoy.
+        </ReportHelp>
+      </div>
+      <Input
+        id="report-as-of"
+        type="date"
+        value={date}
+        onChange={(e) => onChange(e.target.value)}
+      />
     </div>
   );
 }

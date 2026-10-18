@@ -1,5 +1,7 @@
 import * as ExcelJS from 'exceljs';
 import {
+  CollectionMetrics,
+  CollectionsReport,
   ExpenseMetrics,
   ExpensesReport,
   ReportGroupRow,
@@ -67,6 +69,17 @@ const CUSTOMER_COLUMNS: MetricColumn<SalesMetrics>[] = [
 const EXPENSE_COLUMNS: MetricColumn<ExpenseMetrics>[] = [
   { header: 'Importe', format: 'currency', value: (m) => m.amount, isCompared: true },
   { header: 'Nº gastos', format: 'integer', value: (m) => m.count },
+];
+
+const COLLECTION_COLUMNS: MetricColumn<CollectionMetrics>[] = [
+  {
+    header: 'Cobrado (IVA incl.)',
+    format: 'currency',
+    width: 20,
+    value: (m) => m.amount,
+    isCompared: true,
+  },
+  { header: 'Nº cobros', format: 'integer', value: (m) => m.count },
 ];
 
 export function writeSalesSheets(
@@ -216,4 +229,12 @@ function leafRows<M>(rows: ReportGroupRow<M>[]): FlatRow<M>[] {
       ? row.children.map((child) => ({ level: 1, parent: row, row: child }))
       : [{ level: 0, row }]
   );
+}
+
+export function writeCollectionsSheets(
+  wb: ExcelJS.Workbook,
+  header: ReportSheetHeader,
+  report: CollectionsReport
+) {
+  writeGroupedSheets(wb, header, { ...report, metricColumns: COLLECTION_COLUMNS });
 }

@@ -5,7 +5,7 @@ import { REPORT_CHART_COLORS, ReportPeriodChart } from './report-charts';
 import { ReportSection } from './report-section';
 import { ReportTable, ReportTableColumn } from './report-table';
 import { ReportVariation } from './report-variation';
-import { TIME_GROUPING_LABELS } from './report-type-config';
+import { TIME_GROUPING_LABELS } from '@/lib/report-config';
 
 const FIELDS: { key: keyof SummaryValues; header: string; isHigherBetter: boolean }[] = [
   { key: 'income', header: 'Ingresos', isHigherBetter: true },

@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   ReportAppliedFilters,
   ReportDimension,
   ReportOptions,
+  ReportSortBy,
   ReportType,
   SalesMetrics,
   SalesReport,
@@ -30,6 +31,11 @@ export class ReportsSalesService {
     filters: ReportAppliedFilters
   ): Promise<SalesReport> {
     const hasCustomerMetrics = supportsCustomerMetrics(options, filters);
+    if (options.sortBy === ReportSortBy.MARGIN && !hasCustomerMetrics) {
+      throw new BadRequestException(
+        'El margen solo está disponible al ver por cliente, sin detalle ni filtros de artículo'
+      );
+    }
 
     const output = await this.groupedReport.build({
       period,
@@ -42,6 +48,7 @@ export class ReportsSalesService {
         breakdownBy: options.breakdownBy,
         timeGrouping: options.timeGrouping,
       }),
+      sortValue: salesSortValue(options.sortBy),
       enrichGroups: hasCustomerMetrics
         ? (rows) => this.customerMetrics.enrich(tenantId, period, filters, rows)
         : undefined,
@@ -56,6 +63,20 @@ export class ReportsSalesService {
       rows: output.rows,
       hasCustomerMetrics,
     };
+  }
+}
+
+function salesSortValue(sortBy: ReportSortBy | undefined) {
+  switch (sortBy) {
+    case ReportSortBy.UNITS:
+      return (m: SalesMetrics) => m.units;
+    case ReportSortBy.COUNT:
+      return (m: SalesMetrics) => m.invoicesCount;
+    // Breakdown rows have no margin: they fall back to the invoiced amount.
+    case ReportSortBy.MARGIN:
+      return (m: SalesMetrics) => m.margin ?? m.invoiced;
+    default:
+      return undefined;
   }
 }
 

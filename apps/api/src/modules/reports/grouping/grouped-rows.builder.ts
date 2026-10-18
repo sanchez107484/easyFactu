@@ -118,6 +118,18 @@ export function attachComparison<M>(
   });
 }
 
+/** Ranks groups (and their breakdown) by the chosen metric, highest first. */
+export function sortRows<M>(
+  rows: ReportGroupRow<M>[],
+  sortValue: (metrics: M) => number
+): ReportGroupRow<M>[] {
+  const byValue = (a: ReportGroupRow<M>, b: ReportGroupRow<M>) =>
+    sortValue(b.metrics) - sortValue(a.metrics);
+  return [...rows]
+    .sort(byValue)
+    .map((row) => (row.children ? { ...row, children: [...row.children].sort(byValue) } : row));
+}
+
 /**
  * Keeps the first `topN` groups and folds the rest into a single "Otros" row.
  * Counts in "Otros" are summed per group, so an invoice spanning several folded

@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Search } from 'lucide-react';
 import { ReportGroupRow } from '@easyfactura/shared-types';
 import {
   Table,
@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ReportVariation } from './report-variation';
 
@@ -24,6 +25,11 @@ export interface GroupedMetricColumn<M> {
   isHigherBetter?: boolean;
 }
 
+export interface GroupedRowAction {
+  label: string;
+  onSelect: () => void;
+}
+
 interface GroupedReportTableProps<M> {
   labelHeader: string;
   rows: ReportGroupRow<M>[];
@@ -32,6 +38,8 @@ interface GroupedReportTableProps<M> {
   columns: GroupedMetricColumn<M>[];
   /** Groups beyond this limit are only included in the Excel file. */
   maxRows?: number;
+  /** Optional per-group "dig deeper" action (e.g. "Ver qué compra"). */
+  getRowAction?: (row: ReportGroupRow<M>) => GroupedRowAction | undefined;
 }
 
 const DEFAULT_MAX_ROWS = 50;
@@ -44,11 +52,14 @@ export function GroupedReportTable<M>({
   previousTotals,
   columns,
   maxRows = DEFAULT_MAX_ROWS,
+  getRowAction,
 }: GroupedReportTableProps<M>) {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const hasComparison = previousTotals !== undefined;
   const visibleRows = rows.slice(0, maxRows);
   const hasBreakdown = rows.some((row) => row.children?.length);
+  const hasActions = getRowAction !== undefined;
+  const actionPlaceholder = hasActions ? <TableCell /> : null;
 
   function toggle(key: string) {
     setExpandedKeys((current) => {
@@ -85,6 +96,11 @@ export function GroupedReportTable<M>({
                   )}
                 </Fragment>
               ))}
+              {hasActions && (
+                <TableHead>
+                  <span className="sr-only">Acciones</span>
+                </TableHead>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -105,6 +121,11 @@ export function GroupedReportTable<M>({
                       <RowLabel row={row} canExpand={canExpand} isExpanded={isExpanded} />
                     </TableCell>
                     <MetricCells row={row} columns={columns} hasComparison={hasComparison} />
+                    {hasActions && (
+                      <TableCell className="text-right">
+                        <RowActionButton action={getRowAction(row)} />
+                      </TableCell>
+                    )}
                   </TableRow>
                   {isExpanded &&
                     row.children?.map((child) => (
@@ -113,6 +134,7 @@ export function GroupedReportTable<M>({
                           <RowLabel row={child} />
                         </TableCell>
                         <MetricCells row={child} columns={columns} hasComparison={hasComparison} />
+                        {actionPlaceholder}
                       </TableRow>
                     ))}
                 </Fragment>
@@ -127,6 +149,7 @@ export function GroupedReportTable<M>({
                 columns={columns}
                 hasComparison={hasComparison}
               />
+              {actionPlaceholder}
             </TableRow>
           </TableFooter>
         </Table>
@@ -192,5 +215,24 @@ function MetricCells<M>({ row, columns, hasComparison }: MetricCellsProps<M>) {
         );
       })}
     </>
+  );
+}
+
+function RowActionButton({ action }: { action: GroupedRowAction | undefined }) {
+  if (!action) return null;
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="h-7 gap-1 whitespace-nowrap px-2 text-xs"
+      onClick={(event) => {
+        // The row itself toggles the breakdown; don't trigger it too.
+        event.stopPropagation();
+        action.onSelect();
+      }}
+    >
+      <Search className="h-3.5 w-3.5" />
+      {action.label}
+    </Button>
   );
 }

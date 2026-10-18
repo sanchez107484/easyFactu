@@ -1,7 +1,7 @@
 'use client';
 
 import { AlertCircle, FileBarChart } from 'lucide-react';
-import { ReportData, ReportType } from '@easyfactura/shared-types';
+import { ReportData, ReportGroupRow, ReportType } from '@easyfactura/shared-types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/common/empty-state';
@@ -9,11 +9,17 @@ import { getApiErrorMessage } from '@/lib/api-error';
 import { SummaryReportPreview } from './summary-report-preview';
 import { SalesReportPreview } from './sales-report-preview';
 import { ExpensesReportPreview } from './expenses-report-preview';
+import { CollectionsReportPreview } from './collections-report-preview';
+import { ReceivablesReportPreview } from './receivables-report-preview';
+import type { GroupedRowAction } from './grouped-report-table';
+
+type RowActionResolver = (row: ReportGroupRow<unknown>) => GroupedRowAction | undefined;
 
 interface ReportPreviewProps {
   data: ReportData | undefined;
   isLoading: boolean;
   error: unknown;
+  getRowAction?: RowActionResolver;
 }
 
 function isReportEmpty(report: ReportData): boolean {
@@ -23,11 +29,27 @@ function isReportEmpty(report: ReportData): boolean {
     case ReportType.SALES:
       return report.totals.invoicesCount === 0;
     case ReportType.EXPENSES:
+    case ReportType.COLLECTIONS:
       return report.totals.count === 0;
+    case ReportType.RECEIVABLES:
+      return report.totals.invoicesCount === 0;
   }
 }
 
-export function ReportPreview({ data, isLoading, error }: ReportPreviewProps) {
+function emptyMessage(report: ReportData | undefined) {
+  if (report?.type === ReportType.RECEIVABLES) {
+    return {
+      title: 'No hay nada pendiente de cobro',
+      description: 'Todas las facturas emitidas hasta esa fecha están cobradas.',
+    };
+  }
+  return {
+    title: 'No hay datos en este periodo',
+    description: 'Prueba con otro periodo o quita los filtros.',
+  };
+}
+
+export function ReportPreview({ data, isLoading, error, getRowAction }: ReportPreviewProps) {
   if (isLoading && !data) return <ReportPreviewSkeleton />;
 
   if (error) {
@@ -42,26 +64,30 @@ export function ReportPreview({ data, isLoading, error }: ReportPreviewProps) {
   }
 
   if (!data || isReportEmpty(data)) {
-    return (
-      <EmptyState
-        icon={FileBarChart}
-        title="No hay datos en este periodo"
-        description="Prueba con otro periodo o quita los filtros."
-      />
-    );
+    return <EmptyState icon={FileBarChart} {...emptyMessage(data)} />;
   }
 
-  return <ReportPreviewContent report={data} />;
+  return <ReportPreviewContent report={data} getRowAction={getRowAction} />;
 }
 
-function ReportPreviewContent({ report }: { report: ReportData }) {
+function ReportPreviewContent({
+  report,
+  getRowAction,
+}: {
+  report: ReportData;
+  getRowAction?: RowActionResolver;
+}) {
   switch (report.type) {
     case ReportType.SUMMARY:
       return <SummaryReportPreview report={report} />;
     case ReportType.SALES:
-      return <SalesReportPreview report={report} />;
+      return <SalesReportPreview report={report} getRowAction={getRowAction} />;
     case ReportType.EXPENSES:
-      return <ExpensesReportPreview report={report} />;
+      return <ExpensesReportPreview report={report} getRowAction={getRowAction} />;
+    case ReportType.COLLECTIONS:
+      return <CollectionsReportPreview report={report} getRowAction={getRowAction} />;
+    case ReportType.RECEIVABLES:
+      return <ReceivablesReportPreview report={report} />;
   }
 }
 

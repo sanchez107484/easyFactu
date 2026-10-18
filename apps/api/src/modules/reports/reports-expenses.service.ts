@@ -4,6 +4,7 @@ import {
   ReportAppliedFilters,
   ReportDimension,
   ReportOptions,
+  ReportSortBy,
   ReportType,
 } from '@easyfactura/shared-types';
 import { ReportPeriod } from './report-period.helpers';
@@ -29,6 +30,7 @@ export class ReportsExpensesService {
       period,
       options,
       ops: EXPENSE_METRICS_OPS,
+      sortValue: options.sortBy === ReportSortBy.COUNT ? (m) => m.count : undefined,
       buildQuery: (queryPeriod) => ({
         source: EXPENSES_SOURCE,
         where: buildExpensesWhere(tenantId, queryPeriod, filters),

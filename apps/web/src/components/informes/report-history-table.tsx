@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDownloadHistoryReport, useReportHistory } from '@/hooks/use-reports';
 import { formatDate, formatDateTime } from '@/lib/utils';
-import { REPORT_TYPE_CONFIG, groupedLabelHeader } from './report-type-config';
+import { REPORT_TYPE_CONFIG, groupedLabelHeader } from '@/lib/report-config';
 import { ReportSection } from './report-section';
 import { ReportTable } from './report-table';
 

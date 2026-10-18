@@ -38,6 +38,7 @@ export class ReportsFiltersService {
       seriesCodes: nonEmpty(dto.seriesCodes),
       paymentStatuses: nonEmpty(dto.paymentStatuses),
       productType: dto.productType,
+      paymentMethods: nonEmpty(dto.paymentMethods),
     };
   }
 

@@ -1,10 +1,15 @@
-import { ExpenseMetrics, ExpensesReport, ReportDimension } from '@easyfactura/shared-types';
+import {
+  ExpenseMetrics,
+  ExpensesReport,
+  ReportDimension,
+  ReportGroupRow,
+} from '@easyfactura/shared-types';
 import { formatCurrency } from '@/lib/utils';
 import { ReportKpiCard, ReportKpiGrid } from './report-kpi-card';
 import { ReportSection } from './report-section';
-import { GroupedMetricColumn, GroupedReportTable } from './grouped-report-table';
+import { GroupedMetricColumn, GroupedReportTable, GroupedRowAction } from './grouped-report-table';
 import { GroupedReportChart } from './grouped-report-chart';
-import { groupedLabelHeader } from './report-type-config';
+import { groupedLabelHeader } from '@/lib/report-config';
 
 const EXPENSE_COLUMNS: GroupedMetricColumn<ExpenseMetrics>[] = [
   {
@@ -17,7 +22,12 @@ const EXPENSE_COLUMNS: GroupedMetricColumn<ExpenseMetrics>[] = [
   { header: 'Nº gastos', value: (m) => m.count, format: String },
 ];
 
-export function ExpensesReportPreview({ report }: { report: ExpensesReport }) {
+interface ExpensesReportPreviewProps {
+  report: ExpensesReport;
+  getRowAction?: (row: ReportGroupRow<unknown>) => GroupedRowAction | undefined;
+}
+
+export function ExpensesReportPreview({ report, getRowAction }: ExpensesReportPreviewProps) {
   const { totals, previousTotals, options } = report;
   const groupBy = options.groupBy ?? ReportDimension.CATEGORY;
   const topGroup =
@@ -73,6 +83,7 @@ export function ExpensesReportPreview({ report }: { report: ExpensesReport }) {
           totals={totals}
           previousTotals={previousTotals}
           columns={EXPENSE_COLUMNS}
+          getRowAction={getRowAction}
         />
       </ReportSection>
     </div>
