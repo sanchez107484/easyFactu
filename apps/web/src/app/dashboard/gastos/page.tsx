@@ -674,7 +674,7 @@ function UpgradeBanner({ isEmpty, isFreePlan }: { isEmpty: boolean; isFreePlan: 
     { icon: Building2, text: 'Gestión de proveedores' },
     { icon: PiggyBank, text: 'Lectura inteligente de gastos', badge: 'Pronto' },
     { icon: Sparkles, text: 'Automatizaciones con IA', badge: 'Pronto' },
-    { icon: BarChart3, text: 'Informes profesionales en segundos', badge: 'Pronto' },
+    { icon: BarChart3, text: 'Informes profesionales en segundos'},
     { icon: CheckCircle2, text: 'Soporte prioritario' },
   ];
 
