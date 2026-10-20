@@ -45,8 +45,11 @@ function matchedLinesNote(row: ReportGroupRow<SalesMetrics>): string | undefined
 function freeTextDetail(report: SalesReport) {
   const lines = report.freeTextLines;
   if (!lines) return undefined;
-  return (row: ReportGroupRow<SalesMetrics>) =>
-    row.key === REPORT_FREE_TEXT_PRODUCT_KEY ? <FreeTextLinesTable lines={lines} /> : undefined;
+  return function renderFreeTextDetail(row: ReportGroupRow<SalesMetrics>) {
+    return row.key === REPORT_FREE_TEXT_PRODUCT_KEY ? (
+      <FreeTextLinesTable lines={lines} />
+    ) : undefined;
+  };
 }
 
 function sectionDescription(groupBy: ReportDimension, showsCustomerHint: boolean): string {
