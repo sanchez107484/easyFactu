@@ -30,9 +30,15 @@ import { cn } from '@/lib/utils';
 
 // ==================== SCHEMA ====================
 
+/** Same limit as the product API. */
+const PRODUCT_NAME_MAX = 100;
+
 const quickProductSchema = z.object({
   type: z.nativeEnum(ProductType),
-  name: z.string().min(1, 'El nombre es obligatorio').max(200),
+  name: z
+    .string()
+    .min(1, 'El nombre es obligatorio')
+    .max(PRODUCT_NAME_MAX, `Máximo ${PRODUCT_NAME_MAX} caracteres`),
   description: z.string().max(500).optional(),
   unitPrice: z
     .number({ invalid_type_error: 'Introduce un precio válido' })
@@ -43,6 +49,10 @@ const quickProductSchema = z.object({
 
 type QuickProductFormData = z.infer<typeof quickProductSchema>;
 
+export type QuickProductInitialValues = Partial<
+  Pick<QuickProductFormData, 'name' | 'description' | 'unitPrice' | 'taxRate'>
+>;
+
 // ==================== TYPES ====================
 
 export interface QuickCreateProductModalProps {
@@ -52,6 +62,10 @@ export interface QuickCreateProductModalProps {
   onProductReady: (product: Product) => void;
   /** Pre-selecciona el tipo según el modo de la línea activa */
   defaultType?: ProductType;
+  /** Valores con los que se rellena el formulario al abrirse */
+  initialValues?: QuickProductInitialValues;
+  description?: string;
+  submitLabel?: string;
 }
 
 // ==================== UNIT SUGGESTIONS ====================
@@ -68,22 +82,23 @@ export function QuickCreateProductModal({
   onClose,
   onProductReady,
   defaultType = ProductType.SERVICE,
+  initialValues,
+  description = 'Añade este elemento a tu catálogo y úsalo en todas tus facturas con un clic.',
+  submitLabel = 'Guardar y aplicar a la línea',
 }: QuickCreateProductModalProps) {
   const createMutation = useCreateProduct();
 
   const form = useForm<QuickProductFormData>({
     resolver: zodResolver(quickProductSchema),
-    defaultValues: {
-      type: defaultType,
-      unitPrice: 0,
-      taxRate: 21,
-    },
+    defaultValues: { type: defaultType, unitPrice: 0, taxRate: 21, ...initialValues },
   });
 
   useEffect(() => {
     if (open) {
-      form.reset({ type: defaultType, unitPrice: 0, taxRate: 21 });
+      form.reset({ type: defaultType, unitPrice: 0, taxRate: 21, ...initialValues });
     }
+    // initialValues is read only when the modal opens, so a new object identity must not reset it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, defaultType, form]);
 
   const selectedType = form.watch('type');
@@ -107,9 +122,7 @@ export function QuickCreateProductModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Guardar en el catálogo</DialogTitle>
-          <DialogDescription>
-            Añade este elemento a tu catálogo y úsalo en todas tus facturas con un clic.
-          </DialogDescription>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         {/* ── Informative banner ── */}
@@ -303,7 +316,7 @@ export function QuickCreateProductModal({
                   Guardando...
                 </>
               ) : (
-                'Guardar y aplicar a la línea'
+                submitLabel
               )}
             </Button>
           </div>

@@ -4,11 +4,13 @@ import {
   SalesMetrics,
   SalesReport,
 } from '@easyfactura/shared-types';
+import { REPORT_FREE_TEXT_PRODUCT_KEY } from '@easyfactura/shared-constants';
 import { formatCurrency } from '@/lib/utils';
 import { ReportKpiCard, ReportKpiGrid } from './report-kpi-card';
 import { ReportSection } from './report-section';
 import { GroupedMetricColumn, GroupedReportTable, GroupedRowAction } from './grouped-report-table';
 import { GroupedReportChart } from './grouped-report-chart';
+import { FreeTextLinesTable } from './free-text-lines-table';
 import { groupedLabelHeader } from '@/lib/report-config';
 
 const formatNumber = (value: number) =>
@@ -31,6 +33,30 @@ function compare(report: SalesReport, pick: (m: SalesMetrics) => number) {
   return report.previousTotals
     ? { current: pick(report.totals), previous: pick(report.previousTotals) }
     : undefined;
+}
+
+/** Products that received free-text lines because their description matched. */
+function matchedLinesNote(row: ReportGroupRow<SalesMetrics>): string | undefined {
+  const count = row.metrics.matchedLines;
+  if (!count) return undefined;
+  return count === 1 ? '1 línea por descripción' : `${count} líneas por descripción`;
+}
+
+function freeTextDetail(report: SalesReport) {
+  const lines = report.freeTextLines;
+  if (!lines) return undefined;
+  return (row: ReportGroupRow<SalesMetrics>) =>
+    row.key === REPORT_FREE_TEXT_PRODUCT_KEY ? <FreeTextLinesTable lines={lines} /> : undefined;
+}
+
+function sectionDescription(groupBy: ReportDimension, showsCustomerHint: boolean): string {
+  if (showsCustomerHint) {
+    return 'Margen y cobros solo se muestran al agrupar por cliente sin desglose ni filtros de artículo.';
+  }
+  if (groupBy === ReportDimension.PRODUCT) {
+    return 'Las líneas escritas a mano se suman al artículo con el mismo nombre (o casi igual). Despliega «Sin artículo» para ver el resto y en qué facturas están.';
+  }
+  return 'Importes en base imponible (sin IVA ni IRPF)';
 }
 
 interface SalesReportPreviewProps {
@@ -78,11 +104,7 @@ export function SalesReportPreview({ report, getRowAction }: SalesReportPreviewP
 
       <ReportSection
         title={`Ventas por ${groupedLabelHeader(options).toLowerCase()}`}
-        description={
-          showsCustomerHint
-            ? 'Margen y cobros solo se muestran al agrupar por cliente sin desglose ni filtros de artículo.'
-            : 'Importes en base imponible (sin IVA ni IRPF)'
-        }
+        description={sectionDescription(groupBy, showsCustomerHint)}
       >
         <GroupedReportChart
           rows={report.rows}
@@ -98,6 +120,8 @@ export function SalesReportPreview({ report, getRowAction }: SalesReportPreviewP
           previousTotals={report.previousTotals}
           columns={columns}
           getRowAction={getRowAction}
+          getRowNote={matchedLinesNote}
+          renderRowDetail={freeTextDetail(report)}
         />
       </ReportSection>
     </div>

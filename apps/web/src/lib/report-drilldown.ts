@@ -1,9 +1,10 @@
 import { ReportDimension, ReportGroupRow, ReportType } from '@easyfactura/shared-types';
+import { REPORT_FREE_TEXT_PRODUCT_KEY } from '@easyfactura/shared-constants';
 import { ReportDraft, ReportFilterFields } from './report-draft';
 import { getBucketRange } from './report-periods';
 
 /** Group keys that cannot be turned into a filter. */
-const UNFILTERABLE_KEYS = new Set(['__free__', '__none__', '__other__']);
+const UNFILTERABLE_KEYS = new Set([REPORT_FREE_TEXT_PRODUCT_KEY, '__none__', '__other__']);
 
 export interface ReportDrillDown {
   label: string;

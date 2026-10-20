@@ -37,6 +37,7 @@ import {
 } from '../src/modules/reports/receivables.helpers';
 import { RawGroupedRow } from '../src/modules/reports/grouping/grouped-source';
 import { EXPENSE_METRICS_OPS } from '../src/modules/reports/grouping/expenses-source';
+import { SALES_METRICS_OPS } from '../src/modules/reports/grouping/sales-source';
 import { ReportsFiltersService } from '../src/modules/reports/reports-filters.service';
 import { ReportsExcelService } from '../src/modules/reports/excel/reports-excel.service';
 import { ReportRequestDto } from '../src/modules/reports/dto/report-request.dto';
@@ -72,6 +73,7 @@ function raw(partial: Partial<RawGroupedRow>): RawGroupedRow {
     amount: '0',
     units: null,
     cnt: BigInt(1),
+    flagged: null,
     g1: 0,
     g2: 1,
     ...partial,
@@ -581,5 +583,82 @@ describe('sorting and new report options', () => {
         request({ groupBy: ReportDimension.PERIOD, sortBy: ReportSortBy.UNITS })
       ).sortBy
     ).toBeUndefined();
+  });
+});
+
+describe('free-text lines and description matches', () => {
+  it('counts lines attributed by description and keeps the count when folding into "Otros"', () => {
+    const matched = SALES_METRICS_OPS.fromRaw(
+      raw({ amount: '100', units: '2', flagged: BigInt(3) })
+    );
+    const plain = SALES_METRICS_OPS.fromRaw(raw({ amount: '50', units: '1', flagged: BigInt(0) }));
+
+    expect(matched.matchedLines).toBe(3);
+    expect(plain.matchedLines).toBeUndefined();
+    expect(SALES_METRICS_OPS.add(matched, plain).matchedLines).toBe(3);
+  });
+
+  it('adds a review column and a "Sin artículo" sheet to the sales Excel', async () => {
+    const metrics = { invoiced: 100, units: 2, invoicesCount: 1, averagePrice: 50 };
+    const report: SalesReport = {
+      type: ReportType.SALES,
+      options: {
+        timeGrouping: ReportTimeGrouping.MONTH,
+        comparison: ReportComparison.NONE,
+        groupBy: ReportDimension.PRODUCT,
+      },
+      hasCustomerMetrics: false,
+      totals: metrics,
+      rows: [
+        {
+          key: 'p1',
+          label: 'Consultoría',
+          sublabel: null,
+          metrics: { ...metrics, matchedLines: 2 },
+        },
+        { key: '__free__', label: 'Sin artículo (concepto libre)', sublabel: null, metrics },
+      ],
+      freeTextLines: [
+        {
+          invoiceId: 'i1',
+          invoiceNumber: 'F-2026-0001',
+          issueDate: '2026-02-01',
+          customerName: 'ACME',
+          description: 'Asesoramiento puntual',
+          quantity: 1,
+          unitPrice: 100,
+          taxRate: 21,
+          amount: 100,
+          suggestedProduct: { id: 'p1', name: 'Consultoría', similarity: 0.45 },
+        },
+      ],
+    };
+
+    const buffer = await new ReportsExcelService().build(report, {
+      tenantName: 'Mi Empresa SL',
+      fromDate: '2026-01-01',
+      toDate: '2026-03-31',
+      parameters: { options: report.options, filters: {} },
+    });
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(Uint8Array.from(buffer).buffer);
+    const values = (name: string) =>
+      (workbook.getWorksheet(name)?.getSheetValues() ?? [])
+        .filter(Boolean)
+        .map((row) => (row as unknown[]).slice(1));
+
+    expect(workbook.worksheets.map((s) => s.name)).toEqual(['Agrupado', 'Datos', 'Sin artículo']);
+    expect(values('Sin artículo')).toContainEqual([
+      'F-2026-0001',
+      '2026-02-01',
+      'ACME',
+      'Asesoramiento puntual',
+      1,
+      100,
+      'Consultoría',
+    ]);
+    expect(values('Agrupado').find((row) => row.includes('Facturado'))).toContain(
+      'Líneas asignadas por descripción'
+    );
   });
 });

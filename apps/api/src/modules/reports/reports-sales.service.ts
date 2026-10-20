@@ -13,6 +13,7 @@ import { toAmount } from './report-sql.helpers';
 import { GroupedReportService } from './grouping/grouped-report.service';
 import { SALES_METRICS_OPS, SALES_SOURCE, buildSalesWhere } from './grouping/sales-source';
 import { ReportsCustomerMetricsService } from './reports-customer-metrics.service';
+import { ReportsFreeTextLinesService } from './reports-free-text-lines.service';
 
 type GroupedOptions = ReportOptions & { groupBy: ReportDimension };
 
@@ -21,7 +22,8 @@ type GroupedOptions = ReportOptions & { groupBy: ReportDimension };
 export class ReportsSalesService {
   constructor(
     private readonly groupedReport: GroupedReportService,
-    private readonly customerMetrics: ReportsCustomerMetricsService
+    private readonly customerMetrics: ReportsCustomerMetricsService,
+    private readonly freeTextLines: ReportsFreeTextLinesService
   ) {}
 
   async build(
@@ -37,7 +39,33 @@ export class ReportsSalesService {
       );
     }
 
-    const output = await this.groupedReport.build({
+    const [output, freeTextLines] = await Promise.all([
+      this.buildGrouped(tenantId, period, options, filters, hasCustomerMetrics),
+      options.groupBy === ReportDimension.PRODUCT
+        ? this.freeTextLines.list(tenantId, period, filters)
+        : undefined,
+    ]);
+
+    return {
+      type: ReportType.SALES,
+      options,
+      comparisonPeriod: output.comparisonPeriod,
+      totals: hasCustomerMetrics ? withCustomerTotals(output.totals, output.rows) : output.totals,
+      previousTotals: output.previousTotals,
+      rows: output.rows,
+      hasCustomerMetrics,
+      freeTextLines,
+    };
+  }
+
+  private buildGrouped(
+    tenantId: string,
+    period: ReportPeriod,
+    options: GroupedOptions,
+    filters: ReportAppliedFilters,
+    hasCustomerMetrics: boolean
+  ) {
+    return this.groupedReport.build({
       period,
       options,
       ops: SALES_METRICS_OPS,
@@ -53,16 +81,6 @@ export class ReportsSalesService {
         ? (rows) => this.customerMetrics.enrich(tenantId, period, filters, rows)
         : undefined,
     });
-
-    return {
-      type: ReportType.SALES,
-      options,
-      comparisonPeriod: output.comparisonPeriod,
-      totals: hasCustomerMetrics ? withCustomerTotals(output.totals, output.rows) : output.totals,
-      previousTotals: output.previousTotals,
-      rows: output.rows,
-      hasCustomerMetrics,
-    };
   }
 }
 

@@ -13,3 +13,9 @@ export const AGING_BUCKET_LABELS: Record<ReceivableAgingBucket, string> = {
   [ReceivableAgingBucket.DAYS_61_90]: '61-90 días',
   [ReceivableAgingBucket.OVER_90]: 'Más de 90 días',
 };
+
+/** Max invoice lines listed under the "Sin artículo" row (preview and Excel). */
+export const REPORT_FREE_TEXT_LINE_LIMIT = 500;
+
+/** Group key of the "Sin artículo" row (lines without a catalog product). */
+export const REPORT_FREE_TEXT_PRODUCT_KEY = '__free__';
