@@ -40,6 +40,10 @@ interface GroupedReportTableProps<M> {
   maxRows?: number;
   /** Optional per-group "dig deeper" action (e.g. "Ver qué compra"). */
   getRowAction?: (row: ReportGroupRow<M>) => GroupedRowAction | undefined;
+  /** Custom content shown when a group row is expanded (instead of / besides its breakdown). */
+  renderRowDetail?: (row: ReportGroupRow<M>) => React.ReactNode | undefined;
+  /** Short note next to a group label (e.g. lines attributed by description). */
+  getRowNote?: (row: ReportGroupRow<M>) => string | undefined;
 }
 
 const DEFAULT_MAX_ROWS = 50;
@@ -53,6 +57,8 @@ export function GroupedReportTable<M>({
   columns,
   maxRows = DEFAULT_MAX_ROWS,
   getRowAction,
+  renderRowDetail,
+  getRowNote,
 }: GroupedReportTableProps<M>) {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const hasComparison = previousTotals !== undefined;
@@ -60,6 +66,10 @@ export function GroupedReportTable<M>({
   const hasBreakdown = rows.some((row) => row.children?.length);
   const hasActions = getRowAction !== undefined;
   const actionPlaceholder = hasActions ? <TableCell /> : null;
+  const columnCount =
+    1 +
+    columns.reduce((count, column) => count + (hasComparison && column.isCompared ? 2 : 1), 0) +
+    (hasActions ? 1 : 0);
 
   function toggle(key: string) {
     setExpandedKeys((current) => {
@@ -106,7 +116,8 @@ export function GroupedReportTable<M>({
           <TableBody>
             {visibleRows.map((row) => {
               const isExpanded = expandedKeys.has(row.key);
-              const canExpand = Boolean(row.children?.length);
+              const detail = renderRowDetail?.(row);
+              const canExpand = Boolean(row.children?.length) || detail !== undefined;
               return (
                 <Fragment key={row.key}>
                   <TableRow
@@ -118,7 +129,12 @@ export function GroupedReportTable<M>({
                     aria-expanded={canExpand ? isExpanded : undefined}
                   >
                     <TableCell>
-                      <RowLabel row={row} canExpand={canExpand} isExpanded={isExpanded} />
+                      <RowLabel
+                        row={row}
+                        canExpand={canExpand}
+                        isExpanded={isExpanded}
+                        note={getRowNote?.(row)}
+                      />
                     </TableCell>
                     <MetricCells row={row} columns={columns} hasComparison={hasComparison} />
                     {hasActions && (
@@ -137,6 +153,13 @@ export function GroupedReportTable<M>({
                         {actionPlaceholder}
                       </TableRow>
                     ))}
+                  {isExpanded && detail !== undefined && (
+                    <TableRow className="bg-muted/40 hover:bg-muted/40">
+                      <TableCell colSpan={columnCount} className="p-0">
+                        {detail}
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </Fragment>
               );
             })}
@@ -167,9 +190,10 @@ interface RowLabelProps<M> {
   row: ReportGroupRow<M>;
   canExpand?: boolean;
   isExpanded?: boolean;
+  note?: string;
 }
 
-function RowLabel<M>({ row, canExpand, isExpanded }: RowLabelProps<M>) {
+function RowLabel<M>({ row, canExpand, isExpanded, note }: RowLabelProps<M>) {
   return (
     <span className="flex items-center gap-1.5">
       {canExpand && (
@@ -181,6 +205,14 @@ function RowLabel<M>({ row, canExpand, isExpanded }: RowLabelProps<M>) {
       <span className="truncate">{row.label}</span>
       {row.sublabel && (
         <span className="shrink-0 text-xs text-muted-foreground">{row.sublabel}</span>
+      )}
+      {note && (
+        <span
+          className="shrink-0 rounded-full border border-amber-300 bg-amber-50 px-1.5 text-[10px] text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+          title={note}
+        >
+          {note}
+        </span>
       )}
     </span>
   );

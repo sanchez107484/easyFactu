@@ -2,7 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ReportHistoryEntry, ReportRequest } from '@easyfactura/shared-types';
+import { ProductAliasInput, ReportHistoryEntry, ReportRequest } from '@easyfactura/shared-types';
 import { reportApi } from '@/lib/api/report-api';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { triggerBlobDownload } from '@/lib/blob-download';
@@ -57,6 +57,32 @@ export function useDownloadHistoryReport() {
   return useMutation({
     mutationFn: (entry: ReportHistoryEntry) => reportApi.downloadFromHistory(entry),
     onSuccess: ({ blob, filename }) => triggerBlobDownload(blob, filename),
+    onError: (error) => toast.error(getApiErrorMessage(error)),
+  });
+}
+
+/** Connects a free-text description to a catalog product, with a one-click undo. */
+export function useLinkProductAlias() {
+  const queryClient = useQueryClient();
+  const refreshReports = () => queryClient.invalidateQueries({ queryKey: [...reportKeys.all, 'preview'] });
+
+  return useMutation({
+    mutationFn: (input: ProductAliasInput) => reportApi.linkProductAlias(input),
+    onSuccess: (alias) => {
+      refreshReports();
+      toast.success(`Conectado con «${alias.productName}»`, {
+        description: 'Las líneas con este concepto cuentan ahora para ese artículo.',
+        action: {
+          label: 'Deshacer',
+          onClick: () => {
+            reportApi
+              .deleteProductAlias(alias.id)
+              .then(refreshReports)
+              .catch((error: unknown) => toast.error(getApiErrorMessage(error)));
+          },
+        },
+      });
+    },
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
 }

@@ -18,6 +18,7 @@ import {
   variationRatio,
 } from './report-workbook.helpers';
 import { dimensionLabel, sublabelHeader } from './report-labels';
+import { writeFreeTextSheet } from './free-text-sheet';
 
 interface MetricColumn<M> {
   header: string;
@@ -66,6 +67,14 @@ const CUSTOMER_COLUMNS: MetricColumn<SalesMetrics>[] = [
   },
 ];
 
+/** Lines without a product attributed by description — so the user can review them. */
+const MATCHED_LINES_COLUMN: MetricColumn<SalesMetrics> = {
+  header: 'Líneas asignadas por descripción',
+  format: 'integer',
+  width: 30,
+  value: (m) => m.matchedLines,
+};
+
 const EXPENSE_COLUMNS: MetricColumn<ExpenseMetrics>[] = [
   { header: 'Importe', format: 'currency', value: (m) => m.amount, isCompared: true },
   { header: 'Nº gastos', format: 'integer', value: (m) => m.count },
@@ -87,10 +96,14 @@ export function writeSalesSheets(
   header: ReportSheetHeader,
   report: SalesReport
 ) {
-  const metricColumns = report.hasCustomerMetrics
-    ? [...SALES_COLUMNS, ...CUSTOMER_COLUMNS]
-    : SALES_COLUMNS;
+  const hasMatchedLines = report.rows.some((row) => row.metrics.matchedLines);
+  const metricColumns = [
+    ...SALES_COLUMNS,
+    ...(report.hasCustomerMetrics ? CUSTOMER_COLUMNS : []),
+    ...(hasMatchedLines ? [MATCHED_LINES_COLUMN] : []),
+  ];
   writeGroupedSheets(wb, header, { ...report, metricColumns });
+  if (report.freeTextLines?.length) writeFreeTextSheet(wb, header, report.freeTextLines);
 }
 
 export function writeExpensesSheets(

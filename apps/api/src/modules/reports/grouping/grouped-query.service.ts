@@ -68,7 +68,8 @@ export class GroupedQueryService {
           ${second.key} AS k2, ${second.label} AS l2, ${second.sublabel} AS s2,
           ${source.rowId} AS row_id,
           ${source.units} AS units,
-          ${source.amount} AS amount
+          ${source.amount} AS amount,
+          ${source.flag ?? Prisma.sql`false`} AS flag
         ${source.from}
         WHERE ${where}
       )
@@ -77,6 +78,7 @@ export class GroupedQueryService {
         SUM(amount)::text       AS amount,
         SUM(units)::text        AS units,
         COUNT(DISTINCT row_id)  AS cnt,
+        COUNT(*) FILTER (WHERE flag) AS flagged,
         GROUPING(k1)::int       AS g1,
         ${secondGrouping}::int  AS g2
       FROM base

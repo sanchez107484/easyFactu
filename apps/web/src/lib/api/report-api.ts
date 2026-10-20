@@ -3,6 +3,8 @@ import { apiClient } from '../api-client';
 import { unwrapApiResponse, ApiResponse } from '../api-response';
 import {
   PaginatedResponse,
+  ProductAlias,
+  ProductAliasInput,
   ReportData,
   ReportHistoryEntry,
   ReportRequest,
@@ -34,6 +36,14 @@ async function rethrowBlobError(error: unknown): Promise<never> {
 }
 
 export const reportApi = {
+  linkProductAlias: (input: ProductAliasInput): Promise<ProductAlias> =>
+    apiClient
+      .post<ApiResponse<ProductAlias>>('/reports/product-aliases', input)
+      .then(unwrapApiResponse),
+
+  deleteProductAlias: (id: string): Promise<void> =>
+    apiClient.delete(`/reports/product-aliases/${id}`).then(() => undefined),
+
   preview: (request: ReportRequest): Promise<ReportData> =>
     apiClient.post<ApiResponse<ReportData>>('/reports/preview', request).then(unwrapApiResponse),
 

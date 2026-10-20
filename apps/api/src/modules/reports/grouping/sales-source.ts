@@ -5,13 +5,19 @@ import {
   ReportTimeGrouping,
   SalesMetrics,
 } from '@easyfactura/shared-types';
+import { REPORT_FREE_TEXT_PRODUCT_KEY } from '@easyfactura/shared-constants';
 import { buildRevenueInvoiceFilter } from '../../invoices/invoice-revenue-filter';
 import { ReportPeriod, PERIOD_KEY_SQL_FORMAT } from '../report-period.helpers';
 import { LINE_NET_BASE_SQL, sqlInList, toAmount, toCount } from '../report-sql.helpers';
 import { DimensionSql, GroupedSource, NULL_TEXT_SQL } from './grouped-source';
 import { MetricsOps } from './grouped-rows.builder';
+import {
+  EFFECTIVE_PRODUCT_ID_SQL,
+  IS_MATCHED_LINE_SQL,
+  MATCHED_PRODUCT_LATERAL_SQL,
+} from './product-match.sql';
 
-export const FREE_TEXT_PRODUCT_KEY = '__free__';
+export const FREE_TEXT_PRODUCT_KEY = REPORT_FREE_TEXT_PRODUCT_KEY;
 const FREE_TEXT_PRODUCT_LABEL = 'Sin artículo (concepto libre)';
 
 function salesDimension(dimension: ReportDimension, grouping: ReportTimeGrouping): DimensionSql {
@@ -20,7 +26,7 @@ function salesDimension(dimension: ReportDimension, grouping: ReportTimeGrouping
       return { key: Prisma.sql`c.id`, label: Prisma.sql`c.name`, sublabel: Prisma.sql`c.nif` };
     case ReportDimension.PRODUCT:
       return {
-        key: Prisma.sql`COALESCE(l.product_id, ${FREE_TEXT_PRODUCT_KEY})`,
+        key: Prisma.sql`COALESCE(${EFFECTIVE_PRODUCT_ID_SQL}, ${FREE_TEXT_PRODUCT_KEY})`,
         label: Prisma.sql`COALESCE(p.name, ${FREE_TEXT_PRODUCT_LABEL})`,
         sublabel: Prisma.sql`p.reference`,
       };
@@ -33,18 +39,23 @@ function salesDimension(dimension: ReportDimension, grouping: ReportTimeGrouping
   }
 }
 
-/** Invoice lines of revenue-counting invoices (rectificatives included algebraically). */
+/**
+ * Invoice lines of revenue-counting invoices (rectificatives included algebraically).
+ * Lines without a product count for the catalog product their description matches.
+ */
 export const SALES_SOURCE: GroupedSource = {
   from: Prisma.sql`
     FROM invoice_lines l
     JOIN invoices i ON i.id = l.invoice_id AND i.tenant_id = l.tenant_id
     JOIN customers c ON c.id = i.customer_id
     JOIN invoice_series s ON s.id = i.series_id
-    LEFT JOIN products p ON p.id = l.product_id AND p.tenant_id = l.tenant_id
+    ${MATCHED_PRODUCT_LATERAL_SQL}
+    LEFT JOIN products p ON p.id = ${EFFECTIVE_PRODUCT_ID_SQL} AND p.tenant_id = l.tenant_id
   `,
   rowId: Prisma.sql`i.id`,
   units: Prisma.sql`l.quantity`,
   amount: LINE_NET_BASE_SQL,
+  flag: IS_MATCHED_LINE_SQL,
   dimension: salesDimension,
 };
 
@@ -84,7 +95,9 @@ export function buildSalesWhere(
     ...buildSalesInvoiceConditions(tenantId, period, filters),
   ];
   if (filters.products) {
-    conditions.push(Prisma.sql`l.product_id IN (${sqlInList(filters.products.map((p) => p.id))})`);
+    conditions.push(
+      Prisma.sql`${EFFECTIVE_PRODUCT_ID_SQL} IN (${sqlInList(filters.products.map((p) => p.id))})`
+    );
   }
   if (filters.productType) {
     conditions.push(Prisma.sql`p.type::text = ${filters.productType}`);
@@ -107,6 +120,7 @@ export const SALES_METRICS_OPS: MetricsOps<SalesMetrics> = {
       invoiced: toAmount(raw.amount),
       units: toAmount(raw.units),
       invoicesCount: toCount(raw.cnt),
+      matchedLines: toCount(raw.flagged) || undefined,
     }),
   zero: () => ({ invoiced: 0, units: 0, invoicesCount: 0, averagePrice: 0 }),
   add: (a, b) =>
@@ -118,5 +132,6 @@ export const SALES_METRICS_OPS: MetricsOps<SalesMetrics> = {
       margin: addOptional(a.margin, b.margin),
       collectedGross: addOptional(a.collectedGross, b.collectedGross),
       pendingGross: addOptional(a.pendingGross, b.pendingGross),
+      matchedLines: (a.matchedLines ?? 0) + (b.matchedLines ?? 0) || undefined,
     }),
 };

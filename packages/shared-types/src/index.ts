@@ -2050,6 +2050,19 @@ export interface ReportParameters {
   filters: ReportAppliedFilters;
 }
 
+/** Saved equivalence "this free-text description = this catalog product". */
+export interface ProductAliasInput {
+  description: string;
+  productId: string;
+}
+
+export interface ProductAlias {
+  id: string;
+  description: string;
+  productId: string;
+  productName: string;
+}
+
 export interface ReportDateRange {
   fromDate: string;
   toDate: string;
@@ -2105,6 +2118,25 @@ export interface SalesMetrics {
   /** Invoice totals incl. taxes — cash, not tax base. Customer-level only. */
   collectedGross?: number;
   pendingGross?: number;
+  /** Lines without a catalog product attributed to this one because their description matches. */
+  matchedLines?: number;
+}
+
+/** An invoice line that has no catalog product and no description match. */
+export interface FreeTextSalesLine {
+  invoiceId: string;
+  invoiceNumber: string | null;
+  issueDate: string;
+  customerName: string;
+  description: string;
+  quantity: number;
+  /** Price and VAT as typed on the line — used to prefill "Crear artículo". */
+  unitPrice: number;
+  taxRate: number;
+  /** Tax base, invoice discount prorated. */
+  amount: number;
+  /** Closest catalog product when it is similar but below the auto-assign threshold. */
+  suggestedProduct: { id: string; name: string; similarity: number } | null;
 }
 
 export interface ExpenseMetrics {
@@ -2122,6 +2154,8 @@ export interface SalesReport extends ReportBase {
    * customer without a product breakdown or product filters (those are invoice-level).
    */
   hasCustomerMetrics: boolean;
+  /** Present when grouping by product: the lines behind the "Sin artículo" row (capped). */
+  freeTextLines?: FreeTextSalesLine[];
 }
 
 export interface ExpensesReport extends ReportBase {

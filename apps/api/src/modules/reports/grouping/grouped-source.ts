@@ -19,6 +19,8 @@ export interface GroupedSource {
   rowId: Prisma.Sql;
   units: Prisma.Sql;
   amount: Prisma.Sql;
+  /** Optional boolean expression; rows where it holds are counted as `flagged`. */
+  flag?: Prisma.Sql;
   dimension(dimension: ReportDimension, grouping: ReportTimeGrouping): DimensionSql;
 }
 
@@ -40,6 +42,7 @@ export interface RawGroupedRow {
   amount: string | null;
   units: string | null;
   cnt: bigint;
+  flagged: bigint | null;
   g1: number;
   g2: number;
 }
