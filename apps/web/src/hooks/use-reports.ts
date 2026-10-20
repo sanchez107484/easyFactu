@@ -2,7 +2,11 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ProductAliasInput, ReportHistoryEntry, ReportRequest } from '@easyfactura/shared-types';
+import {
+  ProductAliasInput,
+  ReportHistoryEntry,
+  ReportRequest,
+} from '@easyfactura/shared-types';
 import { reportApi } from '@/lib/api/report-api';
 import { getApiErrorMessage } from '@/lib/api-error';
 import { triggerBlobDownload } from '@/lib/blob-download';
@@ -64,7 +68,8 @@ export function useDownloadHistoryReport() {
 /** Connects a free-text description to a catalog product, with a one-click undo. */
 export function useLinkProductAlias() {
   const queryClient = useQueryClient();
-  const refreshReports = () => queryClient.invalidateQueries({ queryKey: [...reportKeys.all, 'preview'] });
+  const refreshReports = () =>
+    queryClient.invalidateQueries({ queryKey: [...reportKeys.all, 'preview'] });
 
   return useMutation({
     mutationFn: (input: ProductAliasInput) => reportApi.linkProductAlias(input),

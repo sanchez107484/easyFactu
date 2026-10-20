@@ -626,6 +626,8 @@ describe('free-text lines and description matches', () => {
           customerName: 'ACME',
           description: 'Asesoramiento puntual',
           quantity: 1,
+          unitPrice: 100,
+          taxRate: 21,
           amount: 100,
           suggestedProduct: { id: 'p1', name: 'Consultoría', similarity: 0.45 },
         },
