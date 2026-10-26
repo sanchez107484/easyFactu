@@ -25,11 +25,12 @@ export const novafacturaBrandConfig = {
     sameAs: [
       'https://www.linkedin.com/company/novafactura',
       'https://www.instagram.com/nova.factura',
+      'https://www.nafactura.es',
     ],
   },
   logos: {
-    main: '/brand/novafactura/logo.png',
-    icon: '/brand/novafactura/logo-icon.png',
+    main: '/brand/novafactura/logo.webp', // 400px WebP for UI; logo.png kept as source
+    icon: '/brand/novafactura/logo-icon-192.png', // 192px; logo-icon.png (535px+) kept for PWA
     white: '/brand/novafactura/logo-white.png',
     email: '/brand/novafactura/logo-email.png',
     favicon: '/brand/novafactura/favicon.ico',
@@ -85,16 +86,16 @@ export const novafacturaPlazasConfig = {
 
 export const novafacturaPricing = {
   starter: {
-    monthly: 15.9,
-    annualMonthly: 12.9,
-    annualTotal: 154.8,
-    annualSaving: 36,
+    monthly: 8.9,
+    annualMonthly: 7.42,
+    annualTotal: 89,
+    annualSaving: 17.8,
   },
   pro: {
-    monthly: 29.9,
-    annualMonthly: 24.9,
-    annualTotal: 298.8,
-    annualSaving: 60,
+    monthly: 12.9,
+    annualMonthly: 10.75,
+    annualTotal: 129,
+    annualSaving: 25.8,
   },
   freePeriodMonths: 6,
   freePeriodSlots: 5000,

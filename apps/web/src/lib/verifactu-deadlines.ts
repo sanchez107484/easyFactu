@@ -5,11 +5,12 @@
  * hardcode dates in prose. Internal contradictions in legal/fiscal content
  * degrade quality rankings and erode user trust.
  *
- * Canonical table: software adaptado 29-jul-2025 · sociedades 1-ene-2027 ·
- * autónomos 1-jul-2027.
+ * Canonical status (updated 2026-10-26): software adaptado 29-jul-2025 ·
+ * obligación para empresas y autónomos aplazada a octubre de 2028 según la
+ * nota de Hacienda del 5-oct-2026, pendiente de publicación en el BOE.
  */
 export interface VerifactuDeadline {
-  /** ISO date, used in <time dateTime> */
+  /** ISO date or month, used in <time dateTime> */
   iso: string;
   /** Human-readable Spanish date */
   label: string;
@@ -18,6 +19,20 @@ export interface VerifactuDeadline {
   /** What becomes mandatory on that date */
   description: string;
 }
+
+/** Date this calendar was last reviewed; shown as "Actualizado" on legal pages. */
+export const VERIFACTU_CALENDAR_UPDATED_AT = { iso: '2026-10-26', label: '26 de octubre de 2026' };
+
+export const VERIFACTU_ANNOUNCED_DEADLINE = {
+  iso: '2028-10',
+  label: 'octubre de 2028',
+  /** Short sentence reused across pages. */
+  summary: 'Hacienda ha anunciado octubre de 2028 (pendiente de BOE)',
+  source: {
+    name: 'Nota informativa del Ministerio de Hacienda (5 de octubre de 2026)',
+    url: 'https://www.hacienda.gob.es/sgt/gabsehacienda/nota-informativa-verifactu.pdf',
+  },
+} as const;
 
 export const VERIFACTU_DEADLINES: readonly VerifactuDeadline[] = [
   {
@@ -28,16 +43,11 @@ export const VERIFACTU_DEADLINES: readonly VerifactuDeadline[] = [
       'El software de facturación solo puede comercializarse adaptado al Reglamento VeriFactu.',
   },
   {
-    iso: '2027-01-01',
-    label: '1 de enero de 2027',
-    audience: 'Sociedades (SL, SA y demás personas jurídicas)',
-    description: 'Obligación de emitir facturas con software adaptado a VeriFactu.',
-  },
-  {
-    iso: '2027-07-01',
-    label: '1 de julio de 2027',
-    audience: 'Autónomos (persona física en estimación directa)',
-    description: 'Obligación de emitir facturas con software adaptado a VeriFactu.',
+    iso: VERIFACTU_ANNOUNCED_DEADLINE.iso,
+    label: 'Octubre de 2028 (anunciado)',
+    audience: 'Sociedades y autónomos',
+    description:
+      'Hacienda ha anunciado el aplazamiento de la obligación de facturar con software adaptado a VeriFactu hasta octubre de 2028, para que coincida con la factura electrónica obligatoria. Pendiente de publicación en el BOE.',
   },
 ];
 
@@ -56,7 +66,7 @@ export const VERIFACTU_LEGISLATION: readonly VerifactuLaw[] = [
     url: 'https://www.boe.es/eli/es/rd/2023/12/05/1007',
   },
   {
-    name: 'Real Decreto 254/2025, de 1 de abril (plazos de aplicación)',
-    url: 'https://www.boe.es/eli/es/rd/2025/04/01/254',
+    name: 'Real Decreto-ley 15/2025, de 2 de diciembre (plazos vigentes en el BOE)',
+    url: 'https://www.boe.es/eli/es/rdl/2025/12/02/15',
   },
 ];

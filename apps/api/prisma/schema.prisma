@@ -162,6 +162,15 @@ model User {
   updatedAt                DateTime                 @updatedAt @map("updated_at")
   accountActivationExpires DateTime?                @map("account_activation_expires")
   accountActivationToken   String?                  @map("account_activation_token")
+  signupLandingUrl         String?                  @map("signup_landing_url")
+  signupLandingPath        String?                  @map("signup_landing_path")
+  signupReferrer           String?                  @map("signup_referrer")
+  signupUtmSource          String?                  @map("signup_utm_source")
+  signupUtmMedium          String?                  @map("signup_utm_medium")
+  signupUtmCampaign        String?                  @map("signup_utm_campaign")
+  signupUtmTerm            String?                  @map("signup_utm_term")
+  signupUtmContent         String?                  @map("signup_utm_content")
+  signupFirstVisitAt       DateTime?                @map("signup_first_visit_at")
   agencyExportLogs         AgencyExportLog[]        @relation("AgencyExportLogUser")
   impersonationLogs        AgencyImpersonationLog[] @relation("ImpersonationActor")
   expensesCreated          Expense[]                @relation("ExpenseCreatedBy")
@@ -172,6 +181,7 @@ model User {
   reportsGenerated         ReportHistory[]          @relation("ReportGeneratedBy")
   tenantUsers              TenantUser[]
 
+  @@index([signupLandingPath])
   @@map("users")
 }
 

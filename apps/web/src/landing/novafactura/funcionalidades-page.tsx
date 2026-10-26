@@ -4,7 +4,6 @@ import {
   Shield,
   Zap,
   Download,
-  CheckCircle2,
   Clock,
   Users,
   Lock,
@@ -12,57 +11,38 @@ import {
   ArrowRight,
   Sparkles,
   CreditCard,
-  FileText,
-  Send,
   BadgeCheck,
-  TrendingUp,
-  Headphones,
-  LayoutDashboard,
-  Package,
-  Receipt,
-  UserCircle,
-  Palette,
-  Building2,
-  QrCode,
-  FilePen,
+  Calculator,
   ClipboardList,
   BarChart3,
   RefreshCcw,
   Globe,
+  Palette,
+  UserCircle,
+  Wallet,
+  FileX,
 } from 'lucide-react';
-import { brandConfig, PRICING, PLAZAS_CONFIG } from '@easyfactura/brand-config';
+import { brandConfig, PRICING } from '@easyfactura/brand-config';
+import { freeSlotsLabel, getSignupSlots } from '@/lib/signup-slots';
 import SiteHeader from '@/components/site-header';
 import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
+import {
+  FeatureBlockCta,
+  FeatureShowcase,
+  type FeatureShowcaseItem,
+} from '@/components/marketing/feature-showcase';
+
+const PAGE_TITLE = `Funcionalidades del programa de facturación, una a una | ${brandConfig.app.name}`;
+const PAGE_DESCRIPTION = `Qué hace ${brandConfig.app.name}, función a función: facturas en 60 segundos, IVA e IRPF, presupuestos, recurrentes, cobros, móvil, PDF con tu logo y VeriFactu.`;
 
 export const novafacturaFuncionalidadesMetadata: Metadata = {
-  title: `Funcionalidades — Todo lo que incluye el software de facturación | ${brandConfig.app.name}`,
-  description: `Descubre todas las funcionalidades de ${brandConfig.app.name}: facturación VeriFactu automática, gestión de clientes, presupuestos, dashboard, generación de PDF, plantillas personalizables y más. Software de facturación para autónomos y pymes con cumplimiento AEAT incluido.`,
-  keywords: [
-    'funcionalidades software facturación autónomos',
-    'características programa facturación',
-    'verifactu funcionalidades',
-    'software facturación electrónica características',
-    'programa facturación qué incluye',
-    'gestión facturas y clientes online',
-    'generar factura pdf online gratis',
-    'software presupuestos y facturas autónomos',
-    'programa facturación con verifactu integrado',
-    'facturación electrónica obligatoria 2025 software',
-    'alternativa holded funcionalidades',
-    'software facturación hash encadenado aeat',
-    'mejor programa facturación autónomo',
-    'cómo funciona software facturación verifactu',
-    'qué es el hash encadenado facturación',
-    'programa facturación cumplimiento ley antifraude',
-    'software facturación sin tarjeta gratis',
-    'gestión clientes facturas presupuestos pyme',
-    'dashboard facturación autónomo',
-  ],
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
   alternates: { canonical: `${brandConfig.app.url}/funcionalidades` },
   openGraph: {
-    title: `Funcionalidades de ${brandConfig.app.name} — Software de facturación VeriFactu`,
-    description: `Todas las herramientas que necesitas para facturar correctamente: VeriFactu automático, gestión de clientes, presupuestos, PDF profesionales, dashboard y más. Gratis hasta 2027.`,
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
     url: `${brandConfig.app.url}/funcionalidades`,
     type: 'website',
     siteName: brandConfig.app.name,
@@ -72,18 +52,245 @@ export const novafacturaFuncionalidadesMetadata: Metadata = {
         url: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
         width: 1200,
         height: 630,
-        alt: `${brandConfig.app.name} — Funcionalidades del software de facturación VeriFactu`,
+        alt: `${brandConfig.app.name} — Funcionalidades del programa de facturación`,
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: `Funcionalidades de ${brandConfig.app.name} — Facturación VeriFactu`,
-    description: `Descubre todo lo que incluye ${brandConfig.app.name}: VeriFactu, clientes, presupuestos, PDF, dashboard y más. Gratis hasta 2027.`,
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   robots: { index: true, follow: true },
 };
+
+interface FeatureBlock {
+  id: string;
+  label: string;
+  title: string;
+  ctaText: string;
+  features: FeatureShowcaseItem[];
+}
+
+// Screenshots: drop real captures in /public/capturas/funcionalidades/<id>.webp
+// (1200×750) and add `screenshot: { src, alt }` to the matching feature.
+// VeriFactu is intentionally the last feature of the last block.
+const featureBlocks: FeatureBlock[] = [
+  {
+    id: 'facturar',
+    label: 'Facturar',
+    title: 'Hacer facturas sin errores',
+    ctaText: 'Haz tu primera factura en menos de un minuto.',
+    features: [
+      {
+        id: 'facturas-60-segundos',
+        icon: Zap,
+        title: 'Facturas en 60 segundos',
+        description:
+          'Eliges el cliente, añades los conceptos y la factura está lista. Sin plantillas que copiar ni datos que volver a teclear.',
+        points: [
+          'Datos del cliente y del producto rellenados automáticamente',
+          'Numeración correlativa por series (A-2026, R-2026…)',
+          'Envío del PDF por email desde el propio programa',
+        ],
+        guide: { href: '/facturas/como-hacer-una-factura', label: 'Guía: cómo hacer una factura' },
+      },
+      {
+        id: 'iva-irpf',
+        icon: Calculator,
+        title: 'IVA e IRPF calculados solos',
+        description:
+          'El programa aplica el tipo de IVA de cada línea y la retención de IRPF que te corresponde, y cuadra los totales.',
+        points: [
+          'IVA del 21 %, 10 %, 4 % y operaciones exentas',
+          'Retención del 7 % (nuevos autónomos) o del 15 %',
+          'Resumen trimestral para preparar el modelo 303',
+        ],
+        guide: { href: '/facturas/con-irpf', label: 'Guía: factura con IRPF' },
+      },
+      {
+        id: 'rectificativas',
+        icon: FileX,
+        title: 'Facturas rectificativas',
+        description:
+          '¿Te equivocaste en una factura emitida? Crea la rectificativa desde la original, con su serie propia y la referencia correcta.',
+        points: [
+          'Rectificativa generada a partir de la factura original',
+          'Serie de rectificativas separada y correlativa',
+          'La factura original nunca se modifica',
+        ],
+        guide: { href: '/facturas/rectificativa', label: 'Guía: factura rectificativa' },
+      },
+      {
+        id: 'intracomunitarias',
+        icon: Globe,
+        title: 'Clientes de la UE y del extranjero',
+        description:
+          'Factura a clientes intracomunitarios con la mención de inversión del sujeto pasivo y sin IVA cuando corresponde.',
+        points: [
+          'Clientes nacionales, intracomunitarios y extracomunitarios',
+          'Mención legal de inversión del sujeto pasivo',
+          'NIF-IVA del cliente en la factura',
+        ],
+        guide: { href: '/facturas/intracomunitaria', label: 'Guía: factura intracomunitaria' },
+      },
+    ],
+  },
+  {
+    id: 'vender-y-cobrar',
+    label: 'Vender y cobrar',
+    title: 'Del presupuesto al cobro',
+    ctaText: 'Deja de perseguir cobros con una hoja de Excel.',
+    features: [
+      {
+        id: 'presupuestos',
+        icon: ClipboardList,
+        title: 'Presupuestos que pasan a factura',
+        description:
+          'Envía el presupuesto y, cuando el cliente lo acepte, conviértelo en factura o en proforma con un clic.',
+        points: [
+          'Estado de cada presupuesto: enviado, aceptado o rechazado',
+          'Conversión a factura o proforma sin volver a escribir',
+          'Facturas proforma para anticipos',
+        ],
+        guide: { href: '/facturas/proforma', label: 'Guía: factura proforma' },
+      },
+      {
+        id: 'recurrentes',
+        icon: RefreshCcw,
+        title: 'Facturas recurrentes',
+        description:
+          'Configura una vez las cuotas que se repiten y el programa genera cada factura en su fecha.',
+        points: [
+          'Frecuencia mensual, trimestral, semestral o anual',
+          'Confirmación automática opcional',
+          'Pausa y reanuda cuando cambie el contrato',
+        ],
+        guide: {
+          href: '/facturacion-online#recurrentes',
+          label: 'Cómo funcionan las facturas recurrentes',
+        },
+      },
+      {
+        id: 'cobros',
+        icon: Wallet,
+        title: 'Control de cobros',
+        description:
+          'Cada factura sabe si está cobrada. Registra pagos completos o parciales y ve de un vistazo quién te debe.',
+        points: [
+          'Estados: pendiente, cobrada parcialmente o cobrada',
+          'Pagos con fecha y método (transferencia, tarjeta, efectivo…)',
+          'Facturas vencidas destacadas',
+        ],
+        guide: { href: '/facturacion-online#cobros', label: 'Control de cobros para autónomos' },
+      },
+      {
+        id: 'clientes-productos',
+        icon: UserCircle,
+        title: 'Clientes y catálogo de productos',
+        description:
+          'Guarda tus clientes con sus datos fiscales y tus servicios con precio e IVA. Los reutilizas en cada factura.',
+        points: [
+          'Directorio de clientes con NIF/CIF validado',
+          'Historial de facturas e importe pendiente por cliente',
+          'Catálogo de productos y servicios con su tipo de IVA',
+        ],
+        guide: {
+          href: '/facturas/como-hacer-una-factura',
+          label: 'Datos obligatorios de una factura',
+        },
+      },
+    ],
+  },
+  {
+    id: 'organizar',
+    label: 'Organizar tu negocio',
+    title: 'Tu negocio, en orden y en cualquier sitio',
+    ctaText: 'Lleva tu facturación en el bolsillo.',
+    features: [
+      {
+        id: 'panel',
+        icon: BarChart3,
+        title: 'Panel de ingresos',
+        description:
+          'Ingresos, facturas pendientes y cobradas y evolución mensual nada más entrar.',
+        points: [
+          'Facturado, cobrado y pendiente del periodo',
+          'Evolución mensual de ingresos',
+          'Clientes que más facturan',
+        ],
+        guide: { href: '/facturas', label: 'Todos los tipos de facturas' },
+      },
+      {
+        id: 'pdf-personalizable',
+        icon: Palette,
+        title: 'PDF con tu logo',
+        description:
+          'Facturas con tu imagen: logo, color principal, IBAN y pie de página con tus condiciones.',
+        points: [
+          'Logo en JPG, PNG o SVG',
+          'Color y plantilla de diseño a elegir',
+          'IBAN y condiciones de pago en cada factura',
+        ],
+        guide: {
+          href: '/factura-electronica/ejemplos',
+          label: 'Ejemplos de factura en PDF y XML',
+        },
+      },
+      {
+        id: 'movil',
+        icon: Smartphone,
+        title: 'Desde el móvil',
+        description:
+          'Funciona en el navegador del móvil y puedes añadirlo a la pantalla de inicio como una app.',
+        points: [
+          'Sin descargar nada de la tienda',
+          'Mismos datos en el móvil y en el ordenador',
+          'Envía la factura al terminar el trabajo',
+        ],
+        guide: { href: '/facturacion-online#movil', label: 'Facturar desde el móvil' },
+      },
+      {
+        id: 'migracion',
+        icon: Download,
+        title: 'Importación desde Excel',
+        description:
+          'Trae tus clientes y tus facturas anteriores desde Excel, CSV o Holded. Te ayudamos sin coste.',
+        points: [
+          'Importación de clientes y productos',
+          'Historial de facturas disponible en tu cuenta',
+          'Migración asistida y gratuita',
+        ],
+        guide: {
+          href: '/blog/excel-dejara-de-ser-valido-con-verifactu',
+          label: '¿Excel seguirá valiendo para facturar?',
+        },
+      },
+    ],
+  },
+  {
+    id: 'preparado-para-el-futuro',
+    label: 'Preparado para el futuro',
+    title: 'Listo para VeriFactu cuando sea obligatorio',
+    ctaText: 'Empieza hoy y no tendrás que cambiar de programa en 2028.',
+    features: [
+      {
+        id: 'verifactu',
+        icon: Shield,
+        title: 'VeriFactu',
+        description:
+          'Cada factura lleva el hash encadenado y el código QR que exige el Reglamento, y el registro puede enviarse a la AEAT.',
+        points: [
+          'Hash encadenado SHA-256 y QR verificable',
+          'Envío del registro a la AEAT',
+          'Adaptado mediante declaración responsable del fabricante',
+        ],
+        guide: { href: '/verifactu', label: 'Guía completa de VeriFactu' },
+      },
+    ],
+  },
+];
 
 const softwareAppJsonLd = {
   '@context': 'https://schema.org',
@@ -92,7 +299,7 @@ const softwareAppJsonLd = {
   applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web, iOS, Android',
   description: brandConfig.app.description,
-  url: brandConfig.app.url,
+  url: `${brandConfig.app.url}/funcionalidades`,
   offers: {
     '@type': 'Offer',
     price: '0',
@@ -100,24 +307,7 @@ const softwareAppJsonLd = {
     description: `Gratis hasta 2027 para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscripciones.`,
     availability: 'https://schema.org/LimitedAvailability',
   },
-  featureList: [
-    'Facturación VeriFactu automática',
-    'Hash encadenado conforme a Ley Antifraude 11/2021',
-    'Envío automático a la AEAT',
-    'Código QR normativo en cada factura',
-    'Firma electrónica cualificada',
-    'Gestión de clientes y directorio',
-    'Creación y gestión de presupuestos',
-    'Catálogo de productos y servicios',
-    'Generación de PDF profesional',
-    'Plantilla de factura personalizable',
-    'Dashboard con KPIs e informes',
-    'Acceso multiplataforma (web, móvil, tablet)',
-    'Migración desde Excel, CSV y Holded',
-    'Soporte en español en menos de 2 horas',
-    'Cumplimiento RGPD y servidores europeos',
-    'Cifrado SSL de 256 bits',
-  ],
+  featureList: featureBlocks.flatMap((block) => block.features.map((feature) => feature.title)),
   publisher: { '@type': 'Organization', name: brandConfig.app.name, url: brandConfig.app.url },
 };
 
@@ -135,229 +325,38 @@ const breadcrumbJsonLd = {
   ],
 };
 
-const mainFeatures = [
-  {
-    icon: Shield,
-    title: 'VeriFactu 100% automático',
-    description:
-      'Hash encadenado, envío a la AEAT y código QR generados sin que tengas que hacer nada. Cumplimiento íntegro de la Ley Antifraude 11/2021.',
-    highlight: true,
-    badge: 'Requerido por ley',
-  },
-  {
-    icon: Zap,
-    title: 'Facturación en 60 segundos',
-    description:
-      'Interfaz diseñada para profesionales sin conocimientos contables. Sin menús complejos ni configuraciones técnicas.',
-    highlight: false,
-  },
-  {
-    icon: UserCircle,
-    title: 'Gestión de clientes',
-    description:
-      'Directorio completo de clientes con NIF/CIF, datos de contacto, historial de facturas e importes acumulados.',
-    highlight: false,
-  },
-  {
-    icon: ClipboardList,
-    title: 'Presupuestos profesionales',
-    description:
-      'Crea presupuestos, envíalos por email y conviértelos en factura con un solo clic cuando el cliente acepte.',
-    highlight: false,
-  },
-  {
-    icon: Package,
-    title: 'Catálogo de productos',
-    description:
-      'Define tu catálogo de productos y servicios con precio, tipo de IVA y descripción. Reutilízalos en cada factura.',
-    highlight: false,
-  },
-  {
-    icon: BarChart3,
-    title: 'Dashboard e informes',
-    description:
-      'Vista rápida de ingresos, facturas pendientes, cobradas y vencidas. KPIs actualizados en tiempo real.',
-    highlight: false,
-  },
-  {
-    icon: FileText,
-    title: 'PDF profesional',
-    description:
-      'Genera PDFs con tu logo, datos de empresa y código QR VeriFactu. Apariencia profesional desde el primer día.',
-    highlight: false,
-  },
-  {
-    icon: Palette,
-    title: 'Plantilla personalizable',
-    description:
-      'Adapta la plantilla de factura a tu imagen corporativa: logo, colores, número de cuenta y más.',
-    highlight: false,
-  },
-  {
-    icon: Download,
-    title: 'Migración sin esfuerzo',
-    description:
-      'Importa clientes y facturas desde Excel, CSV o Holded. Migración gratuita y asistida.',
-    highlight: false,
-  },
-  {
-    icon: Lock,
-    title: 'Seguridad certificada',
-    description:
-      'Servidores en la Unión Europea, cifrado SSL de 256 bits y cumplimiento pleno del RGPD.',
-    highlight: false,
-  },
-  {
-    icon: Smartphone,
-    title: 'Acceso multiplataforma',
-    description:
-      'Usa el software desde cualquier dispositivo: ordenador, tablet o móvil. Sin instalaciones.',
-    highlight: false,
-  },
-  {
-    icon: Headphones,
-    title: 'Soporte profesional',
-    description:
-      'Atención personalizada en español. Respuesta garantizada en menos de 2 horas hábiles.',
-    highlight: false,
-  },
-];
-
-const detailedSections = [
-  {
-    id: 'verifactu',
-    label: 'Cumplimiento legal',
-    title: 'VeriFactu integrado: cumple con Hacienda sin esfuerzo',
-    description:
-      'La Ley Antifraude 11/2021 obliga a todos los autónomos y empresas a usar un software garante que asegure la trazabilidad e integridad de cada factura. Con nosotros, todo ocurre automáticamente.',
-    items: [
-      { icon: QrCode, text: 'Código QR normativo generado en cada factura' },
-      { icon: Shield, text: 'Hash encadenado conforme al Reglamento de facturación' },
-      { icon: Send, text: 'Envío automático a la AEAT sin configuraciones' },
-      { icon: FilePen, text: 'Firma electrónica cualificada incluida' },
-      { icon: BadgeCheck, text: 'Sistema homologado y auditado por la AEAT' },
-      { icon: RefreshCcw, text: 'Registro inmutable e inalterable de todos los registros' },
-    ],
-    bg: 'bg-blue-50',
-    accent: 'text-blue-600',
-    border: 'border-blue-200',
-  },
-  {
-    id: 'facturacion',
-    label: 'Facturación',
-    title: 'Crea facturas legales en menos de un minuto',
-    description:
-      'Selecciona el cliente, añade los conceptos y pulsa enviar. El software se encarga del resto: cálculo de IVA e IRPF, numeración automática, PDF y envío a Hacienda.',
-    items: [
-      { icon: Zap, text: 'Proceso de creación guiado en 3 pasos simples' },
-      { icon: Receipt, text: 'Cálculo automático de IVA, IRPF y totales' },
-      { icon: FileText, text: 'Numeración secuencial automática por series' },
-      { icon: CreditCard, text: 'Registro de pagos y cobros parciales' },
-      { icon: RefreshCcw, text: 'Facturas recurrentes y plantillas guardadas' },
-      { icon: Send, text: 'Envío por email directamente desde la plataforma' },
-    ],
-    bg: 'bg-slate-50',
-    accent: 'text-slate-700',
-    border: 'border-slate-200',
-  },
-  {
-    id: 'clientes',
-    label: 'Clientes y presupuestos',
-    title: 'Gestiona clientes y convierte presupuestos en facturas',
-    description:
-      'Mantén un directorio organizado de clientes con toda su información fiscal. Crea presupuestos profesionales y transfórmalos en facturas cuando el cliente confirme.',
-    items: [
-      { icon: UserCircle, text: 'Directorio de clientes con datos fiscales completos' },
-      { icon: TrendingUp, text: 'Historial de facturación y saldo pendiente por cliente' },
-      { icon: ClipboardList, text: 'Presupuestos con fecha de expiración configurable' },
-      { icon: ArrowRight, text: 'Conversión de presupuesto a factura con un clic' },
-      { icon: Globe, text: 'Soporte para clientes nacionales e intracomunitarios' },
-      { icon: Building2, text: 'Gestión de autónomos, empresas y particulares' },
-    ],
-    bg: 'bg-slate-50',
-    accent: 'text-slate-700',
-    border: 'border-slate-200',
-  },
-  {
-    id: 'dashboard',
-    label: 'Dashboard y análisis',
-    title: 'Tu negocio de un vistazo con el dashboard inteligente',
-    description:
-      'Visualiza tus ingresos, facturas pendientes de cobro y métricas clave desde la pantalla de inicio. Toma decisiones informadas con datos actualizados en tiempo real.',
-    items: [
-      { icon: BarChart3, text: 'KPIs de facturación: ingresos, pendiente, cobrado' },
-      { icon: TrendingUp, text: 'Evolución mensual de ingresos en gráficas claras' },
-      { icon: Receipt, text: 'Alertas de facturas vencidas y presupuestos expirados' },
-      { icon: Users, text: 'Ranking de clientes por volumen de facturación' },
-      { icon: Clock, text: 'Actividad reciente y acciones rápidas' },
-      { icon: LayoutDashboard, text: 'Vista unificada de todo tu negocio' },
-    ],
-    bg: 'bg-blue-50',
-    accent: 'text-blue-600',
-    border: 'border-blue-200',
-  },
-];
-
-const comparisonRows = [
-  { feature: 'VeriFactu automático (Ley Antifraude 11/2021)', competitors: false, us: true },
-  { feature: 'Hash encadenado en cada factura', competitors: false, us: true },
-  { feature: 'Envío directo a la AEAT integrado', competitors: false, us: true },
-  { feature: 'Código QR normativo', competitors: false, us: true },
-  {
-    feature: `${PRICING.freePeriodMonths} meses completamente gratuitos`,
-    competitors: false,
-    us: true,
-  },
-  { feature: 'Sin tarjeta al registrarte', competitors: false, us: true },
-  { feature: 'Migración desde otros programas', competitors: 'Coste adicional', us: true },
-  { feature: 'Soporte técnico incluido', competitors: 'Coste adicional', us: true },
-  { feature: 'Plantilla de factura personalizable', competitors: true, us: true },
-  { feature: 'App móvil y tablet', competitors: true, us: true },
-];
-
-// Machine-readable version of the comparison table below — the visual cells
-// use icons, so crawlers get this plus the sr-only text in each cell.
-const comparisonTableJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Table',
-  name: `Comparativa de funcionalidades: ${brandConfig.app.name} frente a otros programas`,
-  about:
-    'Comparativa de funcionalidades de software de facturación: VeriFactu automático, hash encadenado, envío a la AEAT, código QR, periodo gratuito, migración, soporte, plantillas y app móvil.',
-  description: `${brandConfig.app.name} incluye VeriFactu automático conforme a la Ley Antifraude 11/2021, hash encadenado en cada factura, envío directo a la AEAT y código QR normativo de serie. La mayoría de programas no lo incluyen y cobran aparte la migración y el soporte técnico.`,
-};
-
 const faqs = [
   {
-    q: '¿Qué es VeriFactu y por qué es obligatorio para autónomos?',
-    a: 'VeriFactu es el sistema de verificación de facturas de la AEAT creado por la Ley Antifraude 11/2021. Es obligatorio porque elimina el fraude del "software de doble uso" que permitía llevar dos contabilidades paralelas. Cada factura lleva un hash SHA-256 encadenado con la anterior y se transmite en tiempo real a la Agencia Tributaria. Para autónomos persona física, la obligación arranca el 1 de julio de 2027; para sociedades (SL, SA), el 1 de enero de 2027. Las sanciones por incumplimiento pueden alcanzar los 50.000€ por ejercicio.',
-  },
-  {
-    q: '¿Necesito conocimientos de contabilidad o fiscal para usar el software?',
-    a: 'No. La plataforma está diseñada para profesionales sin formación contable. Introduces el cliente, el concepto y el importe — el software calcula el IVA (21%, 10% o 4%), aplica la retención de IRPF si procede (7% los primeros 3 años, 15% después), genera el PDF con el QR VeriFactu y lo registra en la AEAT automáticamente. También puedes ver un resumen de tus ingresos y del IVA pendiente para preparar el modelo 303 trimestral.',
+    q: '¿Necesito conocimientos de contabilidad o fiscal para usar el programa?',
+    a: 'No. Introduces el cliente, el concepto y el importe — el programa calcula el IVA (21 %, 10 % o 4 %), aplica la retención de IRPF si procede (7 % los primeros años, 15 % después) y genera el PDF listo para enviar. También ves un resumen de tus ingresos y del IVA para preparar el modelo 303 trimestral.',
   },
   {
     q: '¿Qué incluye el acceso gratuito hasta 2027?',
-    a: 'Acceso completo sin restricciones: facturación con VeriFactu, gestión de clientes y productos, presupuestos, facturas proforma, facturas recurrentes, dashboard de ingresos, generación de PDF, QR verificable, plantilla personalizable con tu logo y colores, y soporte técnico. Sin límite de facturas, sin funciones bloqueadas ni letra pequeña. El acceso gratuito es por tiempo limitado para las primeras plazas disponibles.',
-  },
-  {
-    q: '¿Puedo migrar mis datos desde otro programa de facturación?',
-    a: 'Sí. Puedes importar clientes y facturas desde Excel, CSV o directamente desde Holded. El proceso es sencillo: exportas tus datos del programa anterior, los subes a NovaFactura y en minutos tienes todo disponible. El historial de facturas importadas queda en tu cuenta para consulta. La migración es gratuita y nuestro equipo te asiste en el proceso.',
-  },
-  {
-    q: '¿Qué pasa con mis datos si cancelo la suscripción?',
-    a: 'Tus datos son tuyos. Puedes exportar todas tus facturas, clientes y productos en cualquier momento en formato PDF, Excel o CSV. Los datos quedan almacenados 90 días adicionales tras la cancelación por si quieres recuperarlos. No eliminamos registros fiscales sin tu confirmación explícita, dado que la normativa obliga a conservarlos entre 4 y 6 años.',
-  },
-  {
-    q: '¿El software cumple con el RGPD?',
-    a: 'Sí. Los servidores están ubicados en la Unión Europea, los datos se cifran con TLS 1.3 en tránsito y AES-256 en reposo, y cumplimos íntegramente el RGPD. Nunca cedemos datos a terceros para fines comerciales. Puedes ejercer tu derecho de acceso, rectificación y portabilidad desde tu cuenta.',
-  },
-  {
-    q: '¿Puedo personalizar las facturas con mi logo y marca?',
-    a: 'Sí. Puedes subir tu logo (JPG, PNG o SVG), elegir el color principal de la plantilla, añadir el número de cuenta IBAN para domiciliación, incluir un pie de página personalizado con tus condiciones o datos de contacto, y elegir entre varias plantillas de diseño. Todas las facturas incluyen automáticamente el QR VeriFactu y el hash encadenado requerido por la AEAT.',
+    a: 'Acceso completo sin restricciones: facturas, clientes y productos, presupuestos, proformas, recurrentes, control de cobros, panel de ingresos, PDF personalizable y VeriFactu. Sin límite de facturas ni funciones bloqueadas. El acceso gratuito es para las primeras plazas disponibles.',
   },
   {
     q: '¿Es posible configurar facturas recurrentes automáticas?',
-    a: 'Sí. Puedes configurar facturas recurrentes para clientes con contratos fijos (mensual, trimestral, anual). El software genera y registra automáticamente cada factura en la fecha indicada, la incluye en la cadena VeriFactu y te notifica por email. Es especialmente útil para autónomos con clientes de tarifa plana o servicios de mantenimiento.',
+    a: 'Sí. Para clientes con cuotas fijas puedes programar facturas mensuales, trimestrales, semestrales o anuales. El programa genera cada factura en la fecha indicada y, si lo activas, la confirma automáticamente.',
+  },
+  {
+    q: '¿Puedo personalizar las facturas con mi logo y marca?',
+    a: 'Sí. Puedes subir tu logo (JPG, PNG o SVG), elegir el color principal y la plantilla, añadir tu IBAN e incluir un pie de página con tus condiciones de pago.',
+  },
+  {
+    q: '¿Puedo migrar mis datos desde otro programa de facturación?',
+    a: `Sí. Puedes importar clientes y facturas desde Excel, CSV o directamente desde Holded. El historial queda en tu cuenta para consulta. La migración es gratuita y el equipo de ${brandConfig.app.name} te ayuda en el proceso.`,
+  },
+  {
+    q: '¿Qué pasa con mis datos si cancelo la suscripción?',
+    a: 'Tus datos son tuyos. Puedes exportar facturas, clientes y productos en cualquier momento. Los datos se conservan 90 días tras la cancelación por si quieres recuperarlos, y no eliminamos registros fiscales sin tu confirmación, ya que la normativa obliga a conservarlos entre 4 y 6 años.',
+  },
+  {
+    q: '¿El programa cumple con el RGPD?',
+    a: 'Sí. Los servidores están en la Unión Europea, los datos se cifran con TLS 1.3 en tránsito y AES-256 en reposo, y nunca cedemos datos a terceros con fines comerciales.',
+  },
+  {
+    q: '¿Qué es VeriFactu y cuándo será obligatorio?',
+    a: 'VeriFactu es el sistema de la Ley Antifraude 11/2021 que obliga a que el programa de facturación genere un registro inalterable de cada factura, con hash encadenado y código QR. Hacienda ha anunciado octubre de 2028 (pendiente de BOE), a la vez que la factura electrónica obligatoria. Con este programa ya lo cumples hoy.',
   },
 ];
 
@@ -371,7 +370,67 @@ const faqJsonLd = {
   })),
 };
 
-export function NovafacturaFuncionalidadesPage(): React.JSX.Element {
+const trustBadges = [
+  { icon: CreditCard, text: 'Sin tarjeta al registrarte' },
+  { icon: Clock, text: 'Activación inmediata' },
+  { icon: Shield, text: 'Adaptado a VeriFactu' },
+  { icon: Lock, text: 'RGPD compliant' },
+];
+
+function FeatureIndex() {
+  return (
+    <nav aria-label="Índice de funcionalidades" className="mx-auto mt-10 max-w-4xl">
+      <ul className="flex flex-wrap justify-center gap-2">
+        {featureBlocks.flatMap((block) =>
+          block.features.map((feature) => (
+            <li key={feature.id}>
+              <a
+                href={`#${feature.id}`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-blue-300 hover:text-blue-700"
+              >
+                <feature.icon className="h-3.5 w-3.5" />
+                {feature.title}
+              </a>
+            </li>
+          )),
+        )}
+      </ul>
+    </nav>
+  );
+}
+
+function FeatureBlockSection({
+  block,
+  isAlternate,
+}: {
+  block: FeatureBlock;
+  isAlternate: boolean;
+}) {
+  return (
+    <section
+      id={block.id}
+      className={`py-16 md:py-24 ${isAlternate ? 'border-y border-slate-100 bg-slate-50' : 'bg-white'}`}
+    >
+      <div className="mx-auto max-w-6xl px-4">
+        <div className="mb-14 text-center">
+          <span className="mb-4 inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+            {block.label}
+          </span>
+          <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">{block.title}</h2>
+        </div>
+        <div className="space-y-20">
+          {block.features.map((feature, i) => (
+            <FeatureShowcase key={feature.id} item={feature} isReversed={i % 2 === 1} />
+          ))}
+        </div>
+        <FeatureBlockCta text={block.ctaText} />
+      </div>
+    </section>
+  );
+}
+
+export async function NovafacturaFuncionalidadesPage(): Promise<React.JSX.Element> {
+  const slotsLabel = freeSlotsLabel(await getSignupSlots());
   return (
     <>
       <script
@@ -386,24 +445,13 @@ export function NovafacturaFuncionalidadesPage(): React.JSX.Element {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(comparisonTableJsonLd) }}
-      />
 
       <div className="flex min-h-screen flex-col bg-white text-slate-900">
         <SiteHeader />
 
         <main className="flex-1">
           {/* Hero */}
-          <section className="relative overflow-hidden py-20 md:py-28">
-            <div
-              className="pointer-events-none absolute inset-0 opacity-[0.04]"
-              style={{
-                backgroundImage:
-                  'radial-gradient(circle at 25% 50%, #3b82f6 0%, transparent 50%), radial-gradient(circle at 75% 25%, #3b82f6 0%, transparent 40%)',
-              }}
-            />
+          <section className="relative overflow-hidden py-20 md:py-24">
             <div className="relative mx-auto max-w-4xl px-4 text-center">
               <nav className="mb-6 flex justify-center" aria-label="Breadcrumb">
                 <ol className="flex items-center gap-2 text-sm text-slate-500">
@@ -418,33 +466,19 @@ export function NovafacturaFuncionalidadesPage(): React.JSX.Element {
               </nav>
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700">
                 <BadgeCheck className="h-4 w-4 text-blue-600" />
-                Certificado VeriFactu · AEAT
+                {featureBlocks.reduce((total, block) => total + block.features.length, 0)} funciones
+                explicadas
               </div>
-              <h1 data-speakable className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
-                Todo lo que necesitas para{' '}
-                <span className="relative whitespace-nowrap text-blue-600">
-                  facturar correctamente
-                  <svg
-                    className="absolute -bottom-2 left-0 w-full"
-                    viewBox="0 0 300 12"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M2 9 C75 3, 225 3, 298 9"
-                      stroke="#3b82f6"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      opacity="0.4"
-                    />
-                  </svg>
-                </span>
+              <h1
+                data-speakable
+                className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl"
+              >
+                Funcionalidades del programa de facturación,{' '}
+                <span className="text-blue-600">una a una</span>
               </h1>
               <p className="mx-auto mb-10 max-w-2xl text-lg text-slate-500 sm:text-xl">
-                {brandConfig.app.name} reúne en un solo lugar todas las herramientas que un autónomo
-                o pyme necesita: facturación con{' '}
-                <strong className="text-slate-800">VeriFactu automático</strong>, gestión de
-                clientes, presupuestos, catálogo de productos, dashboard y mucho más.
+                Mira qué hace {brandConfig.app.name} en cada paso: de la factura al cobro. Cada
+                función con su captura y una guía para sacarle partido.
               </p>
               <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Link
@@ -463,184 +497,42 @@ export function NovafacturaFuncionalidadesPage(): React.JSX.Element {
                 </Link>
               </div>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm text-slate-500">
-                {[
-                  { icon: CreditCard, text: 'Sin tarjeta al registrarte' },
-                  { icon: Clock, text: 'Activación inmediata' },
-                  { icon: Shield, text: 'Certificado AEAT' },
-                  { icon: Lock, text: 'RGPD compliant' },
-                ].map(({ icon: Icon, text }) => (
+                {trustBadges.map(({ icon: Icon, text }) => (
                   <span key={text} className="flex items-center gap-1.5">
                     <Icon className="h-4 w-4 text-blue-500" />
                     {text}
                   </span>
                 ))}
               </div>
+              <FeatureIndex />
             </div>
           </section>
 
-          {/* Feature grid */}
-          <section className="border-y border-slate-100 bg-slate-50 py-16 md:py-24">
-            <div className="mx-auto max-w-6xl px-4">
-              <div className="mb-12 text-center">
-                <span className="mb-4 inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-                  Funcionalidades completas
-                </span>
-                <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
-                  Todas las herramientas en una sola plataforma
-                </h2>
-                <p className="mx-auto mt-4 max-w-2xl text-slate-500">
-                  Sin integraciones externas, sin costes adicionales y sin sorpresas.
-                </p>
-              </div>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {mainFeatures.map((f) => (
-                  <div
-                    key={f.title}
-                    className={`rounded-xl border-2 bg-white p-6 transition-all duration-200 hover:shadow-md ${f.highlight ? 'border-blue-200 ring-1 ring-blue-100' : 'border-slate-200 hover:border-slate-300'}`}
-                  >
-                    {f.badge && (
-                      <span className="mb-3 inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
-                        <Shield className="h-3 w-3" />
-                        {f.badge}
-                      </span>
-                    )}
-                    <div
-                      className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl ${f.highlight ? 'bg-blue-100' : 'bg-slate-100'}`}
-                    >
-                      <f.icon
-                        className={`h-6 w-6 ${f.highlight ? 'text-blue-600' : 'text-slate-600'}`}
-                      />
-                    </div>
-                    <h3 className="mb-2 font-bold text-slate-900">{f.title}</h3>
-                    <p className="text-sm leading-relaxed text-slate-500">{f.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Detailed sections */}
-          {detailedSections.map((section, idx) => (
-            <section
-              key={section.id}
-              id={section.id}
-              className={`py-16 md:py-24 ${idx % 2 !== 0 ? 'bg-white' : 'border-y border-slate-100 bg-slate-50'}`}
-            >
-              <div className="mx-auto max-w-5xl px-4">
-                <div className="mb-12 text-center">
-                  <span
-                    className={`mb-4 inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${section.bg} ${section.border} ${section.accent}`}
-                  >
-                    {section.label}
-                  </span>
-                  <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
-                    {section.title}
-                  </h2>
-                  <p className="mx-auto mt-4 max-w-2xl text-slate-500">{section.description}</p>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {section.items.map(({ icon: Icon, text }) => (
-                    <div
-                      key={text}
-                      className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4"
-                    >
-                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
-                        <Icon className="h-4 w-4 text-slate-600" />
-                      </div>
-                      <p className="text-sm font-medium text-slate-700">{text}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
+          {featureBlocks.map((block, i) => (
+            <FeatureBlockSection key={block.id} block={block} isAlternate={i % 2 === 0} />
           ))}
 
-          {/* Comparison */}
-          <section className="py-16 md:py-24">
-            <div className="mx-auto max-w-4xl px-4">
-              <div className="mb-12 text-center">
-                <span className="mb-4 inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
-                  Comparativa
-                </span>
-                <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
-                  ¿Qué te ofrece {brandConfig.app.name} que otros no?
-                </h2>
-                <p className="mx-auto mt-4 max-w-2xl text-slate-500">
-                  La mayoría de los programas de facturación no incluyen VeriFactu ni cumplen con la
-                  Ley Antifraude. Nosotros sí.
-                </p>
-              </div>
-              <div className="overflow-hidden rounded-2xl border-2 border-slate-200">
-                <div className="grid grid-cols-3 bg-slate-900 px-6 py-4 text-sm font-bold text-white">
-                  <span>Funcionalidad</span>
-                  <span className="text-center text-slate-400">Otros programas</span>
-                  <span className="text-center text-blue-400">{brandConfig.app.name}</span>
-                </div>
-                {comparisonRows.map((row, i) => (
-                  <div
-                    key={row.feature}
-                    className={`grid grid-cols-3 items-center px-6 py-4 text-sm ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}
-                  >
-                    <span className="font-medium text-slate-800">{row.feature}</span>
-                    <span className="flex justify-center">
-                      {row.competitors === true ? (
-                        <>
-                          <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-slate-400" />
-                          <span className="sr-only">Sí</span>
-                        </>
-                      ) : row.competitors === false ? (
-                        <>
-                          <span
-                            aria-hidden="true"
-                            className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-red-500"
-                          >
-                            ✕
-                          </span>
-                          <span className="sr-only">No</span>
-                        </>
-                      ) : (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                          {row.competitors}
-                        </span>
-                      )}
-                    </span>
-                    <span className="flex justify-center">
-                      <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-blue-600" />
-                      <span className="sr-only">Sí</span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-slate-500">
-                En resumen: la mayoría de programas de facturación no incluyen VeriFactu ni cumplen
-                la Ley Antifraude 11/2021, y cobran aparte la migración y el soporte técnico.{' '}
-                {brandConfig.app.name} incluye el VeriFactu automático con hash encadenado, envío
-                directo a la AEAT y código QR normativo de serie — con {PRICING.freePeriodMonths}{' '}
-                meses completamente gratuitos.
-              </p>
-            </div>
-          </section>
-
-          {/* FAQ */}
           <FaqSection
             faqs={faqs}
             title="Preguntas frecuentes"
-            subtitle="Resuelve tus dudas sobre las funcionalidades y el cumplimiento legal."
+            subtitle="Resuelve tus dudas sobre las funcionalidades del programa."
           />
 
           {/* Final CTA */}
           <section className="py-16 md:py-24">
             <div className="mx-auto max-w-2xl px-4 text-center">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800">
-                <Users className="h-4 w-4" />
-                {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas gratuitas disponibles
-              </div>
+              {slotsLabel && (
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800">
+                  <Users className="h-4 w-4" />
+                  {slotsLabel}
+                </div>
+              )}
               <h2 className="mb-4 text-3xl font-extrabold text-slate-900 sm:text-4xl">
-                Empieza a facturar correctamente hoy
+                Pruébalas todas sin pagar nada
               </h2>
               <p className="mb-8 text-lg text-slate-500">
-                {PRICING.freePeriodMonths} meses con acceso completo a todas las funcionalidades,
-                sin tarjeta y sin compromisos.
+                Acceso completo a todas las funcionalidades hasta 2027, sin tarjeta y sin
+                compromisos.
               </p>
               <Link
                 href="/registro"

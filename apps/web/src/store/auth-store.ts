@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { apiClient, setAccessToken, setRefreshToken, clearTokens } from '@/lib/api-client';
 import { unwrapApiResponse } from '@/lib/api-response';
+import { readSignupAttribution } from '@/lib/signup-attribution';
 import type { User, Tenant, AccountType, AuthResponse } from '@easyfactura/shared-types';
 
 // Definir localmente hasta que se resuelva la cache de VSCode
@@ -77,7 +78,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   register: async (registerData) => {
-    const response = await apiClient.post('/auth/register', registerData);
+    const response = await apiClient.post('/auth/register', {
+      ...registerData,
+      attribution: readSignupAttribution(),
+    });
     const authData = unwrapApiResponse<AuthResponse & { autoLinkedClient?: { businessName: string } }>(response);
 
     if (!authData.accessToken || !authData.refreshToken) {

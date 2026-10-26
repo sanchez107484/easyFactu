@@ -15,6 +15,7 @@ import {
   Building2,
   ChevronDown,
   Clock,
+  Cloud,
   FileCheck,
   FileText,
   Globe,
@@ -45,20 +46,26 @@ const verifactuItems = [
     icon: Clock,
   },
   {
-    href: '/verifactu/software-garante',
-    label: 'Software garante AEAT',
-    description: 'Requisitos y certificación',
+    href: '/blog/como-saber-si-tu-software-cumple-con-verifactu',
+    label: '¿Tu software cumple?',
+    description: 'Checklist y prueba gratis',
     icon: FileCheck,
   },
   {
     href: '/verifactu/sanciones',
     label: 'Sanciones por incumplimiento',
-    description: 'Multas de hasta 50.000€',
+    description: 'Qué dice la ley y a quién afecta',
     icon: AlertTriangle,
   },
 ];
 
 const recursosItems = [
+  {
+    href: '/facturacion-online',
+    label: 'Programa para autónomos',
+    description: 'Presupuestos, recurrentes y cobros, también en el móvil',
+    icon: Cloud,
+  },
   {
     href: '/factura-electronica',
     label: 'Factura electrónica',
@@ -276,33 +283,33 @@ export default function SiteHeader() {
                   />
                 </button>
 
-                {navarraOpen && (
-                  <div className="absolute left-1/2 top-full -translate-x-1/2 pt-2">
-                    <div className="w-72 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-lg">
-                      {nafacturaNavarraItems.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={() => setNavarraOpen(false)}
-                            className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 ${
-                              pathname === item.href ? 'bg-red-50' : ''
-                            }`}
-                          >
-                            <div className="mt-0.5 flex-shrink-0 rounded-md bg-red-50 p-1.5">
-                              <Icon className="h-4 w-4 text-red-600" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-neutral-900">{item.label}</p>
-                              <p className="text-xs text-neutral-500">{item.description}</p>
-                            </div>
-                          </Link>
-                        );
-                      })}
-                    </div>
+                <div
+                  className={`absolute left-1/2 top-full -translate-x-1/2 pt-2 ${navarraOpen ? '' : 'hidden'}`}
+                >
+                  <div className="w-72 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-lg">
+                    {nafacturaNavarraItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setNavarraOpen(false)}
+                          className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 ${
+                            pathname === item.href ? 'bg-red-50' : ''
+                          }`}
+                        >
+                          <div className="mt-0.5 flex-shrink-0 rounded-md bg-red-50 p-1.5">
+                            <Icon className="h-4 w-4 text-red-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-neutral-900">{item.label}</p>
+                            <p className="text-xs text-neutral-500">{item.description}</p>
+                          </div>
+                        </Link>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
               </div>
 
               <Link
@@ -337,73 +344,73 @@ export default function SiteHeader() {
                   />
                 </button>
 
-                {asesoriasOpen && (
-                  <div className="absolute left-1/2 top-full -translate-x-1/2 pt-2">
-                    <div className="w-80 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-lg">
-                      <Link
-                        href="/asesoria"
-                        onClick={() => setAsesoriasOpen(false)}
-                        className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 border-b border-neutral-100 ${
-                          pathname === '/asesoria' ? 'bg-[var(--brand-highlight-bg)]' : ''
-                        }`}
-                      >
-                        <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
-                          <LayoutDashboard className="h-4 w-4 text-[var(--brand-highlight)]" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-neutral-900">
-                            Landing para asesorías
-                          </p>
-                          <p className="text-xs text-neutral-500">
-                            Cómo NaFactura ayuda a gestorías y asesorías navarras
-                          </p>
-                        </div>
-                      </Link>
-                      <Link
-                        href="/software-para-asesorias"
-                        onClick={() => setAsesoriasOpen(false)}
-                        className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 border-b border-neutral-100 ${
-                          pathname === '/software-para-asesorias'
-                            ? 'bg-[var(--brand-highlight-bg)]'
-                            : ''
-                        }`}
-                      >
-                        <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
-                          <Building2 className="h-4 w-4 text-[var(--brand-highlight)]" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-neutral-900">
-                            Software para asesorías
-                          </p>
-                          <p className="text-xs text-neutral-500">
-                            Panel multi-cliente con NaTicket y exportación CSV/PDF
-                          </p>
-                        </div>
-                      </Link>
-                      <Link
-                        href="/asesoria-facturas-clientes"
-                        onClick={() => setAsesoriasOpen(false)}
-                        className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 ${
-                          pathname === '/asesoria-facturas-clientes'
-                            ? 'bg-[var(--brand-highlight-bg)]'
-                            : ''
-                        }`}
-                      >
-                        <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
-                          <FileText className="h-4 w-4 text-[var(--brand-highlight)]" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-neutral-900">
-                            Haces las facturas de tus clientes
-                          </p>
-                          <p className="text-xs text-neutral-500">
-                            Gestiona la facturación de todos tus clientes en un solo lugar
-                          </p>
-                        </div>
-                      </Link>
-                    </div>
+                <div
+                  className={`absolute left-1/2 top-full -translate-x-1/2 pt-2 ${asesoriasOpen ? '' : 'hidden'}`}
+                >
+                  <div className="w-80 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-lg">
+                    <Link
+                      href="/asesoria"
+                      onClick={() => setAsesoriasOpen(false)}
+                      className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 border-b border-neutral-100 ${
+                        pathname === '/asesoria' ? 'bg-[var(--brand-highlight-bg)]' : ''
+                      }`}
+                    >
+                      <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
+                        <LayoutDashboard className="h-4 w-4 text-[var(--brand-highlight)]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-neutral-900">
+                          Landing para asesorías
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          Cómo NaFactura ayuda a gestorías y asesorías navarras
+                        </p>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/software-para-asesorias"
+                      onClick={() => setAsesoriasOpen(false)}
+                      className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 border-b border-neutral-100 ${
+                        pathname === '/software-para-asesorias'
+                          ? 'bg-[var(--brand-highlight-bg)]'
+                          : ''
+                      }`}
+                    >
+                      <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
+                        <Building2 className="h-4 w-4 text-[var(--brand-highlight)]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-neutral-900">
+                          Software para asesorías
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          Panel multi-cliente con NaTicket y exportación CSV/PDF
+                        </p>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/asesoria-facturas-clientes"
+                      onClick={() => setAsesoriasOpen(false)}
+                      className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 ${
+                        pathname === '/asesoria-facturas-clientes'
+                          ? 'bg-[var(--brand-highlight-bg)]'
+                          : ''
+                      }`}
+                    >
+                      <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
+                        <FileText className="h-4 w-4 text-[var(--brand-highlight)]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-neutral-900">
+                          Haces las facturas de tus clientes
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          Gestiona la facturación de todos tus clientes en un solo lugar
+                        </p>
+                      </div>
+                    </Link>
                   </div>
-                )}
+                </div>
               </div>
 
               <Link
@@ -462,33 +469,33 @@ export default function SiteHeader() {
                   />
                 </button>
 
-                {verifactuOpen && (
-                  <div className="absolute left-1/2 top-full -translate-x-1/2 pt-2">
-                    <div className="w-72 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-lg">
-                      {verifactuItems.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={() => setVerifactuOpen(false)}
-                            className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 ${
-                              pathname === item.href ? 'bg-blue-50' : ''
-                            }`}
-                          >
-                            <div className="mt-0.5 flex-shrink-0 rounded-md bg-blue-50 p-1.5">
-                              <Icon className="h-4 w-4 text-blue-600" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-neutral-900">{item.label}</p>
-                              <p className="text-xs text-neutral-500">{item.description}</p>
-                            </div>
-                          </Link>
-                        );
-                      })}
-                    </div>
+                <div
+                  className={`absolute left-1/2 top-full -translate-x-1/2 pt-2 ${verifactuOpen ? '' : 'hidden'}`}
+                >
+                  <div className="w-72 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-lg">
+                    {verifactuItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setVerifactuOpen(false)}
+                          className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 ${
+                            pathname === item.href ? 'bg-blue-50' : ''
+                          }`}
+                        >
+                          <div className="mt-0.5 flex-shrink-0 rounded-md bg-blue-50 p-1.5">
+                            <Icon className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-neutral-900">{item.label}</p>
+                            <p className="text-xs text-neutral-500">{item.description}</p>
+                          </div>
+                        </Link>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Asesorías dropdown — NovaFactura only */}
@@ -512,73 +519,73 @@ export default function SiteHeader() {
                   />
                 </button>
 
-                {asesoriasOpen && (
-                  <div className="absolute left-1/2 top-full -translate-x-1/2 pt-2">
-                    <div className="w-80 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-lg">
-                      <Link
-                        href="/asesoria"
-                        onClick={() => setAsesoriasOpen(false)}
-                        className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 border-b border-neutral-100 ${
-                          pathname === '/asesoria' ? 'bg-[var(--brand-highlight-bg)]' : ''
-                        }`}
-                      >
-                        <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
-                          <LayoutDashboard className="h-4 w-4 text-[var(--brand-highlight)]" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-neutral-900">
-                            Landing para asesorías
-                          </p>
-                          <p className="text-xs text-neutral-500">
-                            Cómo NovaFactura ayuda a gestorías y asesorías
-                          </p>
-                        </div>
-                      </Link>
-                      <Link
-                        href="/software-para-asesorias"
-                        onClick={() => setAsesoriasOpen(false)}
-                        className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 border-b border-neutral-100 ${
-                          pathname === '/software-para-asesorias'
-                            ? 'bg-[var(--brand-highlight-bg)]'
-                            : ''
-                        }`}
-                      >
-                        <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
-                          <Building2 className="h-4 w-4 text-[var(--brand-highlight)]" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-neutral-900">
-                            Software para asesorías
-                          </p>
-                          <p className="text-xs text-neutral-500">
-                            Panel multi-cliente con VeriFactu y exportación contable
-                          </p>
-                        </div>
-                      </Link>
-                      <Link
-                        href="/asesoria-facturas-clientes"
-                        onClick={() => setAsesoriasOpen(false)}
-                        className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 ${
-                          pathname === '/asesoria-facturas-clientes'
-                            ? 'bg-[var(--brand-highlight-bg)]'
-                            : ''
-                        }`}
-                      >
-                        <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
-                          <FileText className="h-4 w-4 text-[var(--brand-highlight)]" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-neutral-900">
-                            Haces las facturas de tus clientes
-                          </p>
-                          <p className="text-xs text-neutral-500">
-                            Gestiona la facturación de todos tus autónomos en un solo lugar
-                          </p>
-                        </div>
-                      </Link>
-                    </div>
+                <div
+                  className={`absolute left-1/2 top-full -translate-x-1/2 pt-2 ${asesoriasOpen ? '' : 'hidden'}`}
+                >
+                  <div className="w-80 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-lg">
+                    <Link
+                      href="/asesoria"
+                      onClick={() => setAsesoriasOpen(false)}
+                      className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 border-b border-neutral-100 ${
+                        pathname === '/asesoria' ? 'bg-[var(--brand-highlight-bg)]' : ''
+                      }`}
+                    >
+                      <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
+                        <LayoutDashboard className="h-4 w-4 text-[var(--brand-highlight)]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-neutral-900">
+                          Landing para asesorías
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          Cómo NovaFactura ayuda a gestorías y asesorías
+                        </p>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/software-para-asesorias"
+                      onClick={() => setAsesoriasOpen(false)}
+                      className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 border-b border-neutral-100 ${
+                        pathname === '/software-para-asesorias'
+                          ? 'bg-[var(--brand-highlight-bg)]'
+                          : ''
+                      }`}
+                    >
+                      <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
+                        <Building2 className="h-4 w-4 text-[var(--brand-highlight)]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-neutral-900">
+                          Software para asesorías
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          Panel multi-cliente con VeriFactu y exportación contable
+                        </p>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/asesoria-facturas-clientes"
+                      onClick={() => setAsesoriasOpen(false)}
+                      className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 ${
+                        pathname === '/asesoria-facturas-clientes'
+                          ? 'bg-[var(--brand-highlight-bg)]'
+                          : ''
+                      }`}
+                    >
+                      <div className="mt-0.5 flex-shrink-0 rounded-md bg-[var(--brand-highlight-bg)] p-1.5">
+                        <FileText className="h-4 w-4 text-[var(--brand-highlight)]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-neutral-900">
+                          Haces las facturas de tus clientes
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          Gestiona la facturación de todos tus autónomos en un solo lugar
+                        </p>
+                      </div>
+                    </Link>
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Recursos dropdown — NovaFactura only */}
@@ -602,33 +609,33 @@ export default function SiteHeader() {
                   />
                 </button>
 
-                {recursosOpen && (
-                  <div className="absolute left-1/2 top-full -translate-x-1/2 pt-2">
-                    <div className="w-72 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-lg">
-                      {recursosItems.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={() => setRecursosOpen(false)}
-                            className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 ${
-                              pathname === item.href ? 'bg-emerald-50' : ''
-                            }`}
-                          >
-                            <div className="mt-0.5 flex-shrink-0 rounded-md bg-emerald-50 p-1.5">
-                              <Icon className="h-4 w-4 text-emerald-600" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-neutral-900">{item.label}</p>
-                              <p className="text-xs text-neutral-500">{item.description}</p>
-                            </div>
-                          </Link>
-                        );
-                      })}
-                    </div>
+                <div
+                  className={`absolute left-1/2 top-full -translate-x-1/2 pt-2 ${recursosOpen ? '' : 'hidden'}`}
+                >
+                  <div className="w-72 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-lg">
+                    {recursosItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setRecursosOpen(false)}
+                          className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 ${
+                            pathname === item.href ? 'bg-emerald-50' : ''
+                          }`}
+                        >
+                          <div className="mt-0.5 flex-shrink-0 rounded-md bg-emerald-50 p-1.5">
+                            <Icon className="h-4 w-4 text-emerald-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-neutral-900">{item.label}</p>
+                            <p className="text-xs text-neutral-500">{item.description}</p>
+                          </div>
+                        </Link>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
               </div>
 
               {navLinks.map((link) => (

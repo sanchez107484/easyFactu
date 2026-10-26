@@ -58,7 +58,7 @@ export function AuthSidePanel({ variant = 'login' }: AuthSidePanelProps) {
         <div className="mt-6">
           <Badge className="border-white/20 bg-white/10 text-white hover:bg-white/20">
             <BadgeCheck className="mr-1.5 h-3.5 w-3.5" />
-            Certificado VeriFactu
+            Adaptado a VeriFactu
           </Badge>
         </div>
 

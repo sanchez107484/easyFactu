@@ -15,7 +15,8 @@ import {
   FileText,
   Headphones,
 } from 'lucide-react';
-import { brandConfig, PLAZAS_CONFIG } from '@easyfactura/brand-config';
+import { brandConfig, PRICING } from '@easyfactura/brand-config';
+import { formatCount, freeSlotsLabel, getSignupSlots } from '@/lib/signup-slots';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
 import { ContactoForm, ContactoFaqItems } from './contacto-client';
@@ -161,7 +162,9 @@ const contactPageJsonLd = {
 // -----------------------------------------------------------------------------
 // Page Component (Server Component)
 // -----------------------------------------------------------------------------
-export default function ContactoPage() {
+export default async function ContactoPage() {
+  const slots = await getSignupSlots();
+  const slotsLabel = freeSlotsLabel(slots);
   return (
     <div className="flex min-h-screen flex-col bg-white text-slate-900">
       {/* JSON-LD – ContactPage + BreadcrumbList */}
@@ -304,22 +307,11 @@ export default function ContactoPage() {
                   <p className="mb-4 text-sm text-blue-100">
                     Sin tarjeta al registrarte. Añádela cuando quieras continuar.
                   </p>
-                  <div className="mb-4 rounded-xl bg-white/15 p-3">
-                    <div className="mb-1.5 flex justify-between text-xs font-semibold text-blue-100">
-                      <span className="flex items-center gap-1">
-                        <Users className="h-3 w-3" /> Plazas ocupadas
-                      </span>
-                      <span>51%</span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-blue-900/40">
-                      <div className="h-full w-[51%] rounded-full bg-amber-400" />
-                    </div>
-                    <p className="mt-1.5 text-center text-xs text-blue-200">
-                      <strong className="text-white">
-                        {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas restantes
-                      </strong>
+                  {slotsLabel && (
+                    <p className="mb-4 rounded-xl bg-white/15 p-3 text-center text-xs font-bold text-white">
+                      {slotsLabel}
                     </p>
-                  </div>
+                  )}
                   <Link
                     href="/registro"
                     className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white text-sm font-bold text-blue-700 transition-all hover:bg-blue-50"
@@ -387,7 +379,7 @@ export default function ContactoPage() {
                   <h3 className="mb-3 font-bold text-slate-900">Por qué confiar en nosotros</h3>
                   <div className="space-y-2.5">
                     {[
-                      { icon: Shield, text: 'Software certificado por la AEAT' },
+                      { icon: Shield, text: 'Adaptado a VeriFactu (declaración responsable)' },
                       { icon: Star, text: '4.9/5 en valoraciones de clientes' },
                       { icon: Users, text: '+2.500 autónomos y pymes activos' },
                       { icon: CheckCircle2, text: 'RGPD compliant · Servidores UE' },
@@ -434,7 +426,7 @@ export default function ContactoPage() {
             </h2>
             <p className="mx-auto mb-8 max-w-lg text-lg text-slate-500">
               Regístrate gratis y explora NovaFactura sin compromiso. Gratis hasta 2027 para los
-              primeros 5.000.
+              primeros {formatCount(PRICING.freePeriodSlots)}.
             </p>
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link

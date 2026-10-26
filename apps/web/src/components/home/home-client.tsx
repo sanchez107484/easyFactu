@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { brandConfig, PLAZAS_CONFIG } from '@easyfactura/brand-config';
+import { brandConfig } from '@easyfactura/brand-config';
+import { freeSlotsLabel, type SignupSlots } from '@/lib/signup-slots';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HomeStickyCtaBanner — appears after 500px scroll on mobile
 // ─────────────────────────────────────────────────────────────────────────────
-export function HomeStickyCtaBanner() {
+export function HomeStickyCtaBanner({ slots }: { slots: SignupSlots | null }) {
+  const slotsLabel = freeSlotsLabel(slots);
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -29,10 +31,13 @@ export function HomeStickyCtaBanner() {
         <ArrowRight className="h-4 w-4" />
       </Link>
       <p className="mt-2 text-center text-xs text-slate-400">
-        <span className="font-bold text-amber-600">
-          {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas restantes
-        </span>
-        {' · '}Gratis hasta 2027 · Sin tarjeta al registrarte
+        {slotsLabel && (
+          <>
+            <span className="font-bold text-amber-600">{slotsLabel}</span>
+            {' · '}
+          </>
+        )}
+        Gratis hasta 2027 · Sin tarjeta al registrarte
       </p>
     </div>
   );
@@ -41,13 +46,13 @@ export function HomeStickyCtaBanner() {
 // ─────────────────────────────────────────────────────────────────────────────
 // HomeAnimatedStats — Section 2: animated counters on IntersectionObserver
 // ─────────────────────────────────────────────────────────────────────────────
-export function HomeAnimatedStats() {
+export function HomeAnimatedStats({ slots }: { slots: SignupSlots | null }) {
+  const registeredUsers = slots?.occupied ?? 0;
   // Initialize with real values so the server-rendered HTML (and bots) see the
   // correct numbers. The client-side animation starts from 0 on scroll.
   const [counters, setCounters] = useState({
     facturas: 10420,
-    usuarios: PLAZAS_CONFIG.ocupadas,
-    ahorro: 50000,
+    usuarios: registeredUsers,
   });
 
   const statsRef = useRef<HTMLDivElement>(null);
@@ -59,7 +64,7 @@ export function HomeAnimatedStats() {
         if (entry.isIntersecting && !hasAnimated.current) {
           hasAnimated.current = true;
           const duration = 2000;
-          const targets = { facturas: 10420, usuarios: PLAZAS_CONFIG.ocupadas, ahorro: 50000 };
+          const targets = { facturas: 10420, usuarios: registeredUsers };
           const start = Date.now();
           const tick = () => {
             const elapsed = Date.now() - start;
@@ -68,7 +73,6 @@ export function HomeAnimatedStats() {
             setCounters({
               facturas: Math.floor(ease * targets.facturas),
               usuarios: Math.floor(ease * targets.usuarios),
-              ahorro: Math.floor(ease * targets.ahorro),
             });
             if (progress < 1) requestAnimationFrame(tick);
           };
@@ -79,26 +83,21 @@ export function HomeAnimatedStats() {
     );
     if (statsRef.current) observer.observe(statsRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [registeredUsers]);
+
+  const stats = [
+    { value: `${counters.facturas.toLocaleString('es-ES')}+`, label: 'Facturas procesadas' },
+    ...(slots
+      ? [{ value: counters.usuarios.toLocaleString('es-ES'), label: 'Profesionales inscritos' }]
+      : []),
+    { value: '0 €', label: 'Hasta 2027 · sin tarjeta' },
+  ];
 
   return (
     <section ref={statsRef} className="border-y border-slate-100 bg-slate-50 py-12">
       <div className="mx-auto max-w-4xl px-4">
         <div className="grid gap-8 sm:grid-cols-3">
-          {[
-            {
-              value: `${counters.facturas.toLocaleString('es-ES')}+`,
-              label: 'Facturas procesadas',
-            },
-            {
-              value: `${counters.usuarios.toLocaleString('es-ES')}+`,
-              label: 'Profesionales inscritos',
-            },
-            {
-              value: `${counters.ahorro.toLocaleString('es-ES')}€`,
-              label: 'En sanciones evitadas',
-            },
-          ].map(({ value, label }) => (
+          {stats.map(({ value, label }) => (
             <div key={label} className="text-center">
               <div className="text-4xl font-extrabold tabular-nums text-slate-900">{value}</div>
               <p className="mt-1 text-sm text-slate-500">{label}</p>

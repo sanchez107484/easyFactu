@@ -10,7 +10,7 @@ import {
   useSetPreferredPlan,
 } from '@/hooks/use-subscription';
 import { PlanTier, PlanCycle, Plan } from '@easyfactura/shared-types';
-import { PRICING } from '@easyfactura/brand-config';
+import { formatPrice, PRICING } from '@easyfactura/brand-config';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +43,13 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  ALL_PLAN_FEATURES,
+  BASIC_PLAN_FEATURES,
+  PLAN_DESCRIPTIONS,
+  PLAN_NAMES,
+  PRO_ONLY_FEATURES,
+} from '@/lib/plan-features';
 import { BillingCycleToggle, BillingCycle } from '@/components/ui/billing-cycle-toggle';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -59,27 +66,6 @@ const TIER_LABELS: Record<PlanTier, string> = {
   [PlanTier.BASIC]: 'Básico',
   [PlanTier.PROFESSIONAL]: 'PRO',
 };
-
-const ALL_FEATURES = [
-  'VeriFactu',
-  'Facturas ilimitadas',
-  'Clientes y productos ilimitados',
-  'Presupuestos y proformas',
-  'Rectificativas y abonos',
-  'Facturación recurrente',
-  'Plantillas personalizadas',
-  'Tu asesor tiene tus facturas siempre al día',
-  'Gestión avanzada de gastos',
-  'Análisis de rentabilidad',
-  'Lectura inteligente de gastos (pronto)',
-  'Gestión de proveedores',
-  'Automatizaciones con IA (pronto)',
-  'Informes profesionales en segundos',
-  'Soporte prioritario',
-];
-
-const BASIC_FEATURES = ALL_FEATURES.slice(0, 8);
-const PRO_FEATURES = ALL_FEATURES.slice(8);
 
 interface PlanDisplayProps {
   name: string;
@@ -118,9 +104,9 @@ function PlanDisplay({
   onSelectPreference,
   loading,
 }: PlanDisplayProps) {
-  const isPro = name === 'PRO';
-  const features = isPro ? ALL_FEATURES : BASIC_FEATURES;
-  const excludedFeatures = isPro ? [] : PRO_FEATURES;
+  const isPro = name === PLAN_NAMES.pro;
+  const features: readonly string[] = isPro ? ALL_PLAN_FEATURES : BASIC_PLAN_FEATURES;
+  const excludedFeatures: readonly string[] = isPro ? [] : PRO_ONLY_FEATURES;
 
   const isCurrentMonthly = isCurrent && currentCycle === PlanCycle.MONTHLY;
   const isCurrentAnnual = isCurrent && currentCycle === PlanCycle.YEARLY;
@@ -587,7 +573,7 @@ export default function AjustesPlanPage() {
 
       {/* Toggle de ciclo de facturación */}
       <div className="flex justify-center">
-        <BillingCycleToggle value={cycle} onChange={setCycle} annualBadge="Ahorra hasta 60€" />
+        <BillingCycleToggle value={cycle} onChange={setCycle} annualBadge={`Ahorra hasta ${formatPrice(PRO.annualSaving)}€`} />
       </div>
 
       {/* Comparativa de planes */}
@@ -601,8 +587,8 @@ export default function AjustesPlanPage() {
           {/* BÁSICO */}
           {basicMonthly && basicAnnual && (
             <PlanDisplay
-              name="Básico"
-              description="Para empezar a facturar sin complicaciones."
+              name={PLAN_NAMES.basic}
+              description={PLAN_DESCRIPTIONS.basic}
               cycle={cycle}
               monthlyPrice={BASIC_MONTHLY_PRICE}
               annualMonthlyPrice={BASIC_ANNUAL_PRICE}
@@ -624,7 +610,7 @@ export default function AjustesPlanPage() {
           {/* PRO */}
           {proMonthly && proAnnual && (
             <PlanDisplay
-              name="PRO"
+              name={PLAN_NAMES.pro}
               highlighted
               cycle={cycle}
               monthlyPrice={PRO_MONTHLY_PRICE}

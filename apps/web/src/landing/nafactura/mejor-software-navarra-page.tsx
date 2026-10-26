@@ -12,7 +12,7 @@ import {
   Star,
   HelpCircle,
 } from 'lucide-react';
-import { brandConfig, PRICING } from '@easyfactura/brand-config';
+import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
@@ -23,18 +23,6 @@ import FooterLanding from '@/components/FooterLanding';
 export const nafacturaMejorSoftwareMetadata: Metadata = {
   title: `Mejor software de facturación para autónomos navarros 2027 | ${brandConfig.app.name}`,
   description: `Comparativa de los mejores programas de facturación para autónomos y pymes de Navarra en 2027. VeriFactu, Hacienda Foral, precio y soporte. ${brandConfig.app.name} gratis hasta 2027.`,
-  keywords: [
-    'mejor software facturación navarra',
-    'mejor programa facturación autónomos navarra',
-    'comparativa software facturación navarra',
-    'programa facturación navarra 2027',
-    'software facturación hacienda foral navarra',
-    'mejor software facturación verifactu navarra',
-    'top programas facturación navarra',
-    'software facturación gratis navarra',
-    'mejor alternativa software facturación autónomo navarro',
-    'comparativa programas facturar navarra',
-  ],
   alternates: { canonical: `${brandConfig.app.url}/mejor-software-facturacion-navarra` },
   openGraph: {
     title: `Mejor software de facturación para autónomos navarros 2027 | ${brandConfig.app.name}`,
@@ -120,7 +108,7 @@ const SOFTWARE_LIST = [
     rank: 1,
     name: brandConfig.app.name,
     tagline: 'El único diseñado exclusivamente para Navarra',
-    price: `Gratis hasta 2027, luego desde ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes`,
+    price: `Gratis hasta 2027, luego desde ${formatPrice(PRICING.starter.monthly)}€/mes`,
     scores: [true, true, true, true, true, true, true, true],
     highlight: true,
     pros: [
@@ -184,7 +172,7 @@ const FAQS = [
   },
   {
     q: '¿Hay algún software de facturación gratuito para autónomos navarros?',
-    a: `Sí. ${brandConfig.app.name} es completamente gratuito para autónomos navarros hasta finales de 2027. Sin tarjeta, sin límites de facturas, sin trampa. Incluye VeriFactu, preparación para NaTicket y soporte en español. A partir de 2028, desde ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes sin permanencia.`,
+    a: `Sí. ${brandConfig.app.name} es completamente gratuito para autónomos navarros hasta finales de 2027. Sin tarjeta, sin límites de facturas, sin trampa. Incluye VeriFactu, preparación para NaTicket y soporte en español. A partir de 2028, desde ${formatPrice(PRICING.starter.monthly)}€/mes sin permanencia.`,
   },
   {
     q: '¿Qué diferencia hay entre VeriFactu y NaTicket para autónomos navarros?',

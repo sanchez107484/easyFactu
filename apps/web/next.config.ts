@@ -47,6 +47,16 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts', 'date-fns'],
   },
+  async redirects() {
+    return [
+      // HU-15: the software-garante guide was merged into this blog post.
+      {
+        source: '/verifactu/software-garante',
+        destination: '/blog/como-saber-si-tu-software-cumple-con-verifactu',
+        statusCode: 301,
+      },
+    ];
+  },
   async headers() {
     return [
       {

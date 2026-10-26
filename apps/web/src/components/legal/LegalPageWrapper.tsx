@@ -1,7 +1,10 @@
 import { brandConfig } from '@easyfactura/brand-config';
+import { breadcrumbJsonLd } from '@/lib/structured-data';
 
 interface LegalPageWrapperProps {
   title: string;
+  /** Route of the page, e.g. '/aviso-legal' — used for the BreadcrumbList schema. */
+  path: string;
   subtitle?: string;
   lastUpdated: string;
   children: React.ReactNode;
@@ -9,12 +12,19 @@ interface LegalPageWrapperProps {
 
 export function LegalPageWrapper({
   title,
+  path,
   subtitle,
   lastUpdated,
   children,
 }: LegalPageWrapperProps) {
   return (
     <main className="min-h-screen bg-white py-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbJsonLd([{ name: title, path }])),
+        }}
+      />
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <div className="mb-10 border-b border-neutral-200 pb-8">
           <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary-600">

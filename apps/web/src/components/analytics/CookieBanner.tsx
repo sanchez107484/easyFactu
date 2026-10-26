@@ -44,7 +44,7 @@ export default function CookieBanner() {
         <p className="text-sm text-muted-foreground">
           Usamos cookies analíticas propias para mejorar tu experiencia. No compartimos datos con
           terceros con fines publicitarios.{' '}
-          <a href="/privacidad" className="underline underline-offset-2 hover:text-foreground">
+          <a href="/politica-privacidad" className="underline underline-offset-2 hover:text-foreground">
             Política de privacidad
           </a>
         </p>

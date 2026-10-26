@@ -3,7 +3,9 @@ import Link from 'next/link';
 import SiteHeader from '@/components/site-header';
 import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
-import { brandConfig } from '@easyfactura/brand-config';
+import { PricingGuideLink } from '@/components/marketing/pricing-guide-link';
+import { ReagypCalculatorSection, ReagypInvoiceExampleSection } from './reagyp-example-sections';
+import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
 import {
   ArrowRight,
   CheckCircle2,
@@ -16,6 +18,10 @@ import {
 } from 'lucide-react';
 
 const faqs = [
+  {
+    q: '¿Cómo se calcula la compensación REAGYP?',
+    a: 'Se multiplica el precio de venta por el 12 % si la explotación es agrícola o forestal, o por el 10,5 % si es ganadera o pesquera. Por ejemplo, en una venta de 4.500 € de almendra la compensación es 540 € y el comprador paga 5.040 €. No se cobra IVA.',
+  },
   {
     q: '¿Los agricultores autónomos tienen que usar VeriFactu?',
     a: 'No. Los autónomos acogidos al Régimen Especial Agrario (REAGYP) están exentos de la obligación de VeriFactu según la Ley Antifraude 11/2021. Sin embargo, sí están obligados a emitir facturas legales y a conservarlas durante al menos 4 años ante posibles requerimientos de Hacienda.',
@@ -46,7 +52,7 @@ const faqs = [
   },
   {
     q: '¿Cuánto cuesta NovaFactura para autónomos agrícolas?',
-    a: `Es gratuito hasta 2027 para todos los inscritos en el periodo de lanzamiento. No necesitas tarjeta de crédito para registrarte. A partir de 2027, el Plan Starter tiene un precio de ${brandConfig.app.name === 'NovaFactura' ? '9,90€' : '9,90€'}/mes con VeriFactu incluido (aunque no lo necesites ahora, lo tendrás disponible si cambia tu situación fiscal).`,
+    a: `Es gratuito hasta 2027 para todos los inscritos en el periodo de lanzamiento. No necesitas tarjeta de crédito para registrarte. A partir de 2027, el Plan Básico tiene un precio de ${formatPrice(PRICING.starter.monthly)}€/mes, con facturas ilimitadas y VeriFactu incluido (aunque no lo necesites ahora, lo tendrás disponible si cambia tu situación fiscal).`,
   },
 ];
 
@@ -173,37 +179,17 @@ const serviceJsonLd = {
   },
 };
 
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqs.map(({ q, a }) => ({
-    '@type': 'Question',
-    name: q,
-    acceptedAnswer: { '@type': 'Answer', text: a },
-  })),
-};
+const PAGE_TITLE = 'Factura de agricultor REAGYP: ejemplo y cálculo de la compensación';
+const PAGE_DESCRIPTION =
+  'Ejemplo de factura de agricultor o ganadero en REAGYP, descargable en Excel y PDF, y calculadora de la compensación del 12 % (agrícola) y 10,5 % (ganadero o pesquero). Software gratis hasta 2027.';
 
 export const novafacturaReagypMetadata: Metadata = {
-  title: `Facturación para autónomos agrícolas y ganaderos | ${brandConfig.app.name}`,
-  description:
-    'Programa de facturación para autónomos del sector agrario (REAGYP): agricultores, ganaderos y pescadores. Gestiona los tipos de IVA del régimen agrario. Gratis hasta 2027.',
-  keywords: [
-    'facturación autónomo agrícola',
-    'programa facturación agricultor',
-    'software facturas ganadero',
-    'facturar como autónomo agricultor',
-    'iva autónomo agricultor',
-    'facturación reagyp',
-    'autónomo campo facturación',
-    'verifactu agricultor exento',
-    'facturación sector primario',
-    'programa facturas autónomo campo gratis',
-  ],
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
   alternates: { canonical: `${brandConfig.app.url}/facturacion-autonomo-agricola` },
   openGraph: {
-    title: `Facturación para autónomos agrícolas y ganaderos | ${brandConfig.app.name}`,
-    description:
-      'Programa de facturación para autónomos del REAGYP. IVA agrario gestionado, facturas legales y registro siempre listo para Hacienda. Gratis hasta 2027.',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
     url: `${brandConfig.app.url}/facturacion-autonomo-agricola`,
     type: 'website',
     siteName: brandConfig.app.name,
@@ -213,15 +199,14 @@ export const novafacturaReagypMetadata: Metadata = {
         url: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
         width: 1200,
         height: 630,
-        alt: `${brandConfig.app.name} — Facturación para autónomos agrícolas`,
+        alt: `${brandConfig.app.name} — Factura de agricultor REAGYP`,
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: `Facturación para autónomos agrícolas | ${brandConfig.app.name}`,
-    description:
-      'Gestiona el IVA agrario y emite facturas legales aunque estés exento de VeriFactu. Gratis hasta 2027.',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
@@ -240,10 +225,6 @@ export function NovafacturaReagypPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
 
       <div className="flex min-h-screen flex-col bg-white dark:bg-gray-950">
@@ -346,6 +327,9 @@ export function NovafacturaReagypPage() {
           </div>
         </section>
 
+        <ReagypInvoiceExampleSection />
+        <ReagypCalculatorSection />
+
         {/* IVA AGRARIO */}
         <section className="py-20 md:py-28">
           <div className="mx-auto max-w-5xl px-6">
@@ -358,8 +342,8 @@ export function NovafacturaReagypPage() {
               ¿Qué IVA aplica un autónomo agrícola?
             </h2>
             <p className="mx-auto mb-12 max-w-2xl text-center text-gray-500 dark:text-gray-400">
-              El tipo de IVA depende del producto o servicio. {brandConfig.app.name} los gestiona
-              todos automáticamente.
+              Dentro del REAGYP no cobras IVA, sino la compensación. Para las operaciones que quedan
+              fuera del régimen, el tipo de IVA depende del producto o servicio.
             </p>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {TAX_TYPES.map((tax) => (
@@ -487,12 +471,20 @@ export function NovafacturaReagypPage() {
                 Crear cuenta gratis
                 <ArrowRight className="h-4 w-4" />
               </Link>
+              <p className="mt-4 text-sm text-green-100">
+                ¿También facturas fuera del REAGYP?{' '}
+                <Link href="/facturacion-online" className="font-semibold text-white underline">
+                  Así funciona el programa de facturación para autónomos
+                </Link>
+              </p>
             </div>
           </div>
         </section>
 
         {/* FAQ */}
         <FaqSection faqs={faqs} title="Preguntas frecuentes sobre facturación agraria" />
+
+        <PricingGuideLink />
 
         <FooterLanding />
       </div>

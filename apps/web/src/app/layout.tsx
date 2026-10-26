@@ -9,36 +9,14 @@ import { Toaster } from 'sonner';
 import { brandConfig, themeConfig } from '@easyfactura/brand-config';
 import Analytics from '@/components/analytics/Analytics';
 import CookieBanner from '@/components/analytics/CookieBanner';
+import { SignupAttributionTracker } from '@/components/analytics/signup-attribution-tracker';
 import { NavigationProgress } from '@/components/navigation-progress';
+import { organizationJsonLd } from '@/lib/structured-data';
 import './globals.css';
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID ?? 'GTM-T8W799T4';
 
-const organizationJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: brandConfig.app.name,
-  url: brandConfig.app.url,
-  logo: `${brandConfig.app.url}${brandConfig.logos.main}`,
-  description: brandConfig.app.description,
-  foundingDate: '2025',
-  areaServed: {
-    '@type': 'Country',
-    name: 'España',
-  },
-  knowsLanguage: 'es',
-  contactPoint: {
-    '@type': 'ContactPoint',
-    email: brandConfig.app.supportEmail,
-    contactType: 'customer support',
-    availableLanguage: 'Spanish',
-  },
-  sameAs: brandConfig.app.sameAs,
-};
-
-// WebSite schema enables Google Sitelinks Searchbox and signals the canonical
-// home URL to the Knowledge Graph. The SearchAction tells Google that the site
-// has an internal search (the app's dashboard) and helps with entity resolution.
+// WebSite schema signals the canonical home URL and site name to the Knowledge Graph.
 // SpeakableSpecification tells LLMs which content is most important to cite.
 const websiteJsonLd = {
   '@context': 'https://schema.org',
@@ -47,71 +25,12 @@ const websiteJsonLd = {
   url: brandConfig.app.url,
   description: brandConfig.app.description,
   inLanguage: 'es',
-  publisher: {
-    '@type': 'Organization',
-    name: brandConfig.app.name,
-    url: brandConfig.app.url,
-  },
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: {
-      '@type': 'EntryPoint',
-      urlTemplate: `${brandConfig.app.url}/blog?q={search_term_string}`,
-    },
-    'query-input': 'required name=search_term_string',
-  },
+  publisher: { '@id': organizationJsonLd['@id'] },
   speakable: {
     '@type': 'SpeakableSpecification',
     cssSelector: ['h1', '[data-speakable]'],
     xpath: ['/html/head/title', '/html/head/meta[@name="description"]/@content'],
   },
-};
-
-// SoftwareApplication schema — helps Google understand the product and may trigger
-// rich results for software searches. Signals free tier, platform support, and category.
-const softwareApplicationJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
-  name: brandConfig.app.name,
-  applicationCategory: 'BusinessApplication',
-  applicationSubCategory: 'FinanceApplication',
-  operatingSystem: 'Web, iOS, Android',
-  description: brandConfig.app.description,
-  url: brandConfig.app.url,
-  offers: {
-    '@type': 'Offer',
-    price: '0',
-    priceCurrency: 'EUR',
-    description: 'Gratis hasta 2027. Sin tarjeta de crédito requerida.',
-    availability: 'https://schema.org/InStock',
-    validThrough: '2027-12-31',
-  },
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.9',
-    reviewCount: '214',
-    bestRating: '5',
-    worstRating: '1',
-  },
-  author: {
-    '@type': 'Organization',
-    name: brandConfig.app.name,
-  },
-  provider: {
-    '@type': 'Organization',
-    name: brandConfig.app.legalEntity,
-  },
-  screenshot: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
-  softwareVersion: '2.0',
-  releaseNotes: 'Versión con VeriFactu integrado y facturación automática',
-  featureList: [
-    'Facturación electrónica VeriFactu',
-    'Envío automático a AEAT',
-    'Gestión de clientes y productos',
-    'Facturas recurrentes',
-    'Múltiples series de facturación',
-    'Informes fiscales',
-  ],
 };
 
 // Consent Mode v2: set defaults synchronously before GTM loads.
@@ -140,6 +59,8 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-jetbrains-mono',
   display: 'swap',
+  // Only used in blog code blocks and the dashboard — don't preload it on every page.
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -150,26 +71,6 @@ export const metadata: Metadata = {
     template: `%s`,
   },
   description: `Tú haces tu factura, nosotros nos encargamos de VeriFactu. Software de facturación para autónomos y pymes. 100% Gratis hasta 2027. Sin tarjeta. Sin complicaciones.`,
-  keywords: [
-    // Keywords de alta conversión (lo que REALMENTE buscan)
-    'programa facturación autónomos',
-    'software facturación gratis',
-    'facturación electrónica autónomos',
-    'programa hacer facturas',
-    'verifactu software',
-    'programa facturación verifactu gratis',
-    'facturación electrónica obligatoria 2025',
-    'evitar multas verifactu',
-    'facturar sin saber contabilidad',
-    'alternativa holded',
-    'software facturación sin tarjeta',
-    // Keywords técnicas (para SEO de autoridad)
-    'verifactu',
-    'ley antifraude',
-    'aeat',
-    'facturación electrónica',
-    'sistema garante',
-  ],
   authors: [{ name: brandConfig.app.legalEntity }],
   creator: brandConfig.app.legalEntity,
   publisher: brandConfig.app.legalEntity,
@@ -262,16 +163,12 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
-        {/* WebSite structured data — enables Sitelinks Searchbox + entity resolution */}
+        {/* WebSite structured data — entity resolution for the site name */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
-        {/* SoftwareApplication structured data — signals product category and free tier */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareApplicationJsonLd) }}
-        />
+        {/* SoftwareApplication is emitted only on product pages (Home, /precios, /software-para-asesorias). */}
         {/* Consent Mode v2 defaults — must run before GTM */}
         <script dangerouslySetInnerHTML={{ __html: CONSENT_INIT_SCRIPT }} />
         {/* Theme CSS variables — generated from theme.config.ts at build time */}
@@ -300,11 +197,13 @@ export default function RootLayout({
             {children}
             <Analytics />
             <CookieBanner />
+            <SignupAttributionTracker />
             <Toaster richColors position="top-right" />
           </QueryProvider>
         </ThemeProvider>
-        {/* GTM script — loads after hydration, Consent Mode v2 controls firing */}
-        <Script id="gtm" strategy="afterInteractive">
+        {/* GTM loads when the browser is idle after onload so it never competes with
+            LCP/INP. Consent Mode v2 defaults above still apply before it runs. */}
+        <Script id="gtm" strategy="lazyOnload">
           {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${GTM_ID}');`}
         </Script>
       </body>

@@ -24,93 +24,19 @@ import {
   AlertTriangle,
   Receipt,
 } from 'lucide-react';
-import { brandConfig, PRICING, PLAZAS_CONFIG } from '@easyfactura/brand-config';
+import { brandConfig, PRICING, PLAZAS_CONFIG, formatPrice } from '@easyfactura/brand-config';
 import SiteHeader from '@/components/site-header';
+import { breadcrumbJsonLd, softwareApplicationJsonLd } from '@/lib/structured-data';
 
 const STARTER = PRICING.starter;
 const PRO = PRICING.pro;
 
-const priceValidUntil = new Date(new Date().getFullYear() + 1, new Date().getMonth(), 1)
-  .toISOString()
-  .split('T')[0];
+const preciosSoftwareJsonLd = softwareApplicationJsonLd({ path: '/precios' });
+const preciosBreadcrumbJsonLd = breadcrumbJsonLd([{ name: 'Precios', path: '/precios' }]);
 
 const schemaData = {
   '@context': 'https://schema.org',
   '@graph': [
-    {
-      '@type': 'Product',
-      name: `${brandConfig.app.name} — Plan Starter`,
-      description: `Software de facturación para autónomos navarros. Gratis hasta 2027, luego ${PRICING.starter.monthly}€/mes o ${PRICING.starter.annualMonthly}€/mes con pago anual. Sin tarjeta al registrarte. Hasta 60 facturas al año.`,
-      brand: { '@type': 'Brand', name: brandConfig.app.name },
-      offers: [
-        {
-          '@type': 'Offer',
-          name: `Plan Starter — Gratis hasta 2027`,
-          price: '0',
-          priceCurrency: 'EUR',
-          priceValidUntil,
-          availability: 'https://schema.org/LimitedAvailability',
-          url: `${brandConfig.app.url}/precios`,
-        },
-        {
-          '@type': 'Offer',
-          name: 'Plan Starter — Mensual',
-          price: String(PRICING.starter.monthly),
-          priceCurrency: 'EUR',
-          availability: 'https://schema.org/InStock',
-          url: `${brandConfig.app.url}/precios`,
-        },
-        {
-          '@type': 'Offer',
-          name: 'Plan Starter — Anual',
-          price: String(PRICING.starter.annualTotal),
-          priceCurrency: 'EUR',
-          description: `Facturado anualmente. Equivale a ${PRICING.starter.annualMonthly}€/mes. Ahorra ${PRICING.starter.annualSaving}€ al año.`,
-          availability: 'https://schema.org/InStock',
-          url: `${brandConfig.app.url}/precios`,
-        },
-      ],
-    },
-    {
-      '@type': 'Product',
-      name: `${brandConfig.app.name} — Plan PRO`,
-      description: `Software de facturación para autónomos navarros. Gratis hasta 2027, luego ${PRICING.pro.monthly}€/mes o ${PRICING.pro.annualMonthly}€/mes con pago anual.`,
-      brand: { '@type': 'Brand', name: brandConfig.app.name },
-      offers: [
-        {
-          '@type': 'Offer',
-          name: `Plan PRO — Gratis hasta 2027`,
-          price: '0',
-          priceCurrency: 'EUR',
-          priceValidUntil,
-          availability: 'https://schema.org/LimitedAvailability',
-          url: `${brandConfig.app.url}/precios`,
-        },
-        {
-          '@type': 'Offer',
-          name: 'Plan PRO — Mensual',
-          price: String(PRICING.pro.monthly),
-          priceCurrency: 'EUR',
-          availability: 'https://schema.org/InStock',
-          url: `${brandConfig.app.url}/precios`,
-        },
-        {
-          '@type': 'Offer',
-          name: 'Plan PRO — Anual',
-          price: String(PRICING.pro.annualTotal),
-          priceCurrency: 'EUR',
-          description: `Facturado anualmente. Equivale a ${PRICING.pro.annualMonthly}€/mes. Ahorra ${PRICING.pro.annualSaving}€ al año.`,
-          availability: 'https://schema.org/InStock',
-          url: `${brandConfig.app.url}/precios`,
-        },
-      ],
-      aggregateRating: {
-        '@type': 'AggregateRating',
-        ratingValue: '4.9',
-        reviewCount: '47',
-        bestRating: '5',
-      },
-    },
     {
       '@type': 'FAQPage',
       mainEntity: [
@@ -119,7 +45,7 @@ const schemaData = {
           name: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
           acceptedAnswer: {
             '@type': 'Answer',
-            text: `Tienes dos planes: Plan Starter a ${PRICING.starter.monthly}€/mes con hasta 60 facturas al año, y Plan PRO a ${PRICING.pro.monthly}€/mes con facturas ilimitadas. Sin permanencia.`,
+            text: `Tienes dos planes: Plan Starter a ${formatPrice(PRICING.starter.monthly)}€/mes con hasta 60 facturas al año, y Plan PRO a ${formatPrice(PRICING.pro.monthly)}€/mes con facturas ilimitadas. Sin permanencia.`,
           },
         },
         {
@@ -205,7 +131,7 @@ const testimonials = [
     name: 'Patricia Gurrea',
     role: 'Consultora de negocio',
     location: 'Pamplona',
-    text: 'El precio de 24,90€ al mes (anual) me parece muy justo para todo lo que incluye. Y que sea gratis hasta 2027 me convenció para probarlo sin ningún riesgo.',
+    text: `El precio de ${formatPrice(PRICING.pro.annualMonthly)}€ al mes (anual) me parece muy justo para todo lo que incluye. Y que sea gratis hasta 2027 me convenció para probarlo sin ningún riesgo.`,
     stars: 5,
     initials: 'PG',
     saving: 'ROI positivo en 1 mes',
@@ -215,7 +141,7 @@ const testimonials = [
 const faqs = [
   {
     q: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
-    a: `Tienes dos planes: Plan Starter a ${PRICING.starter.monthly}€/mes (${PRICING.starter.annualMonthly}€/mes anual) con hasta 60 facturas al año, y Plan PRO a ${PRICING.pro.monthly}€/mes (${PRICING.pro.annualMonthly}€/mes anual) con facturas ilimitadas. Sin permanencia.`,
+    a: `Tienes dos planes: Plan Starter a ${formatPrice(PRICING.starter.monthly)}€/mes (${formatPrice(PRICING.starter.annualMonthly)}€/mes anual) con hasta 60 facturas al año, y Plan PRO a ${formatPrice(PRICING.pro.monthly)}€/mes (${formatPrice(PRICING.pro.annualMonthly)}€/mes anual) con facturas ilimitadas. Sin permanencia.`,
   },
   {
     q: '¿Funciona para autónomos navarros con Hacienda Foral?',
@@ -239,7 +165,7 @@ const faqs = [
   },
   {
     q: '¿Cuánto ahorro eligiendo el plan anual?',
-    a: `Con Plan Starter anual ahorras ${PRICING.starter.annualSaving}€. Con Plan PRO anual ahorras ${PRICING.pro.annualSaving}€. En ambos casos, más de 2 meses gratis respecto al mensual.`,
+    a: `Con Plan Starter anual ahorras ${formatPrice(PRICING.starter.annualSaving)}€. Con Plan PRO anual ahorras ${formatPrice(PRICING.pro.annualSaving)}€. En ambos casos, 2 meses gratis respecto al mensual.`,
   },
   {
     q: '¿Puedo migrar mis facturas actuales?',
@@ -359,6 +285,14 @@ export function NafacturaPreciosPage(): React.JSX.Element {
       />
       <script
         type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(preciosSoftwareJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(preciosBreadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(comparisonTableJsonLd) }}
       />
       <div className="flex min-h-screen flex-col bg-white text-slate-900">
@@ -367,26 +301,10 @@ export function NafacturaPreciosPage(): React.JSX.Element {
           {/* HERO */}
           <section className="pb-0 pt-16 md:pt-24">
             <div className="mx-auto max-w-4xl px-4 text-center">
-              <div
-                className="mb-5 inline-flex items-center gap-2.5 rounded-full px-5 py-2 text-sm font-semibold text-white shadow-sm"
-                style={{
-                  backgroundColor: brandConfig.colors.highlight,
-                  border: `1px solid ${brandConfig.colors.highlightBorder}`,
-                }}
+              <h1
+                data-speakable
+                className="mb-5 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl"
               >
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
-                </span>
-                <Users className="h-4 w-4" />
-                Solo quedan{' '}
-                <strong>
-                  {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas gratuitas
-                </strong>{' '}
-                de {PLAZAS_CONFIG.total.toLocaleString('es-ES')}
-              </div>
-
-              <h1 data-speakable className="mb-5 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
                 <span className="block text-slate-500 text-2xl font-semibold mb-2 sm:text-3xl">
                   Precio de {brandConfig.app.name} para Navarra
                 </span>
@@ -407,7 +325,9 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                     />
                   </svg>
                 </span>{' '}
-                <span className="text-slate-900">Luego, desde 12,90€/mes.</span>
+                <span className="text-slate-900">
+                  Luego, desde {formatPrice(PRICING.starter.annualMonthly)}€/mes.
+                </span>
               </h1>
 
               <p className="mx-auto mb-8 max-w-2xl text-lg text-slate-500 sm:text-xl leading-relaxed">
@@ -475,8 +395,8 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-5xl font-black text-slate-800 tabular-nums leading-none">
                           {annual
-                            ? `${STARTER.annualMonthly.toFixed(2).replace('.', ',')}€`
-                            : `${STARTER.monthly.toFixed(2).replace('.', ',')}€`}
+                            ? `${formatPrice(STARTER.annualMonthly)}€`
+                            : `${formatPrice(STARTER.monthly)}€`}
                         </span>
                         <span className="text-base text-slate-400 font-medium">/ mes</span>
                       </div>
@@ -485,12 +405,12 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                           <p className="text-xs text-slate-500">
                             Facturado anualmente ·{' '}
                             <strong className="text-slate-700">
-                              {STARTER.annualTotal.toFixed(2).replace('.', ',')}€/año
+                              {formatPrice(STARTER.annualTotal)}€/año
                             </strong>
                           </p>
                           <p className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700">
                             <CheckCircle2 className="h-3 w-3" />
-                            Ahorras {STARTER.annualSaving}€ al año
+                            Ahorras {formatPrice(STARTER.annualSaving)}€ al año
                           </p>
                         </div>
                       ) : (
@@ -500,7 +420,7 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                             className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700 hover:bg-green-200 transition-colors"
                           >
                             <TrendingUp className="h-3 w-3" />
-                            Paga anual y ahorra {STARTER.annualSaving}€
+                            Paga anual y ahorra {formatPrice(STARTER.annualSaving)}€
                           </button>
                         </div>
                       )}
@@ -554,8 +474,8 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-5xl font-black text-red-600 tabular-nums leading-none">
                           {annual
-                            ? `${PRO.annualMonthly.toFixed(2).replace('.', ',')}€`
-                            : `${PRO.monthly.toFixed(2).replace('.', ',')}€`}
+                            ? `${formatPrice(PRO.annualMonthly)}€`
+                            : `${formatPrice(PRO.monthly)}€`}
                         </span>
                         <span className="text-base text-slate-400 font-medium">/ mes</span>
                       </div>
@@ -564,12 +484,12 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                           <p className="text-xs text-slate-500">
                             Facturado anualmente ·{' '}
                             <strong className="text-slate-700">
-                              {PRO.annualTotal.toFixed(2).replace('.', ',')}€/año
+                              {formatPrice(PRO.annualTotal)}€/año
                             </strong>
                           </p>
                           <p className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700">
                             <CheckCircle2 className="h-3 w-3" />
-                            Ahorras {PRO.annualSaving}€ al año
+                            Ahorras {formatPrice(PRO.annualSaving)}€ al año
                           </p>
                         </div>
                       ) : (
@@ -579,7 +499,7 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                             className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700 hover:bg-green-200 transition-colors"
                           >
                             <TrendingUp className="h-3 w-3" />
-                            Paga anual y ahorra {PRO.annualSaving}€
+                            Paga anual y ahorra {formatPrice(PRO.annualSaving)}€
                           </button>
                         </div>
                       )}
@@ -616,7 +536,9 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                       ))}
                       <div className="flex items-center gap-2.5 py-0.5 pt-2 border-t border-red-100 mt-2">
                         <Receipt className="h-4 w-4 shrink-0 text-red-500" />
-                        <span className="text-sm font-semibold text-red-700">Gestión de gastos</span>
+                        <span className="text-sm font-semibold text-red-700">
+                          Gestión de gastos
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -683,14 +605,14 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                   <div className="mb-1 flex items-baseline gap-1">
                     <span className="text-3xl font-black text-slate-800">
                       {annual
-                        ? `${STARTER.annualMonthly.toFixed(2).replace('.', ',')}€`
-                        : `${STARTER.monthly.toFixed(2).replace('.', ',')}€`}
+                        ? `${formatPrice(STARTER.annualMonthly)}€`
+                        : `${formatPrice(STARTER.monthly)}€`}
                     </span>
                     <span className="text-xs text-slate-400">/mes</span>
                   </div>
                   <p className="mb-4 text-xs text-slate-500">
                     {annual
-                      ? `Facturado anualmente · ${STARTER.annualTotal.toFixed(2).replace('.', ',')}€/año`
+                      ? `Facturado anualmente · ${formatPrice(STARTER.annualTotal)}€/año`
                       : 'Sin permanencia'}
                   </p>
                   <ul className="space-y-2 text-sm text-slate-600">
@@ -720,14 +642,14 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                   <div className="mb-1 flex items-baseline gap-1">
                     <span className="text-3xl font-black text-red-700">
                       {annual
-                        ? `${PRO.annualMonthly.toFixed(2).replace('.', ',')}€`
-                        : `${PRO.monthly.toFixed(2).replace('.', ',')}€`}
+                        ? `${formatPrice(PRO.annualMonthly)}€`
+                        : `${formatPrice(PRO.monthly)}€`}
                     </span>
                     <span className="text-xs text-slate-400">/mes</span>
                   </div>
                   <p className="mb-4 text-xs text-slate-500">
                     {annual
-                      ? `Facturado anualmente · ${PRO.annualTotal.toFixed(2).replace('.', ',')}€/año`
+                      ? `Facturado anualmente · ${formatPrice(PRO.annualTotal)}€/año`
                       : 'Sin permanencia'}
                   </p>
                   <ul className="space-y-2 text-sm text-slate-700">
@@ -765,7 +687,7 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                 </span>
               </div>
               <h2 className="mb-4 text-center text-3xl font-extrabold text-slate-900 sm:text-4xl">
-                Desde 12,90€/mes es lo que cuesta{' '}
+                Desde {formatPrice(PRICING.starter.annualMonthly)}€/mes es lo que cuesta{' '}
                 <span className="text-red-600">no tener problemas con Hacienda</span>
               </h2>
               <p className="mx-auto mb-12 max-w-2xl text-center text-slate-500">
@@ -795,8 +717,8 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                     color: 'red',
                     label: `${brandConfig.app.name} al mes`,
                     value: annual
-                      ? `desde ${STARTER.annualMonthly.toFixed(2).replace('.', ',')}€`
-                      : `desde ${STARTER.monthly.toFixed(2).replace('.', ',')}€`,
+                      ? `desde ${formatPrice(STARTER.annualMonthly)}€`
+                      : `desde ${formatPrice(STARTER.monthly)}€`,
                     sub: 'Plan Starter · Todo incluido · Sin permanencia',
                     negative: false,
                   },
@@ -1060,14 +982,6 @@ export function NafacturaPreciosPage(): React.JSX.Element {
             <div className="pointer-events-none absolute -left-20 top-10 h-80 w-80 rounded-full bg-red-100 opacity-20 blur-3xl" />
             <div className="pointer-events-none absolute -right-20 bottom-10 h-80 w-80 rounded-full bg-orange-100 opacity-20 blur-3xl" />
             <div className="relative mx-auto max-w-3xl px-4 text-center">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-5 py-2 text-sm font-semibold text-amber-800">
-                <Users className="h-4 w-4" />
-                Solo{' '}
-                <strong>
-                  {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas gratuitas
-                </strong>{' '}
-                restantes
-              </div>
               <h2 className="mb-4 text-4xl font-extrabold text-slate-900 sm:text-5xl leading-tight">
                 Empieza gratis hoy.
                 <br />
@@ -1078,16 +992,14 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                 <strong className="text-slate-800">
                   Starter desde{' '}
                   {annual
-                    ? `${STARTER.annualMonthly.toFixed(2).replace('.', ',')}€`
-                    : `${STARTER.monthly.toFixed(2).replace('.', ',')}€`}
+                    ? `${formatPrice(STARTER.annualMonthly)}€`
+                    : `${formatPrice(STARTER.monthly)}€`}
                   /mes
                 </strong>{' '}
                 o plan{' '}
                 <strong className="text-slate-800">
                   PRO desde{' '}
-                  {annual
-                    ? `${PRO.annualMonthly.toFixed(2).replace('.', ',')}€`
-                    : `${PRO.monthly.toFixed(2).replace('.', ',')}€`}
+                  {annual ? `${formatPrice(PRO.annualMonthly)}€` : `${formatPrice(PRO.monthly)}€`}
                   /mes
                 </strong>
                 . Sin compromisos.
@@ -1140,15 +1052,15 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                       <p className="text-xs font-semibold text-slate-700">Starter</p>
                       <p className="text-xs text-slate-400">
                         {annual
-                          ? `${STARTER.annualTotal}€/año · Hasta 60 facturas/año`
+                          ? `${formatPrice(STARTER.annualTotal)}€/año · Hasta 60 facturas/año`
                           : 'Sin permanencia'}
                       </p>
                     </div>
                     <div className="text-right">
                       <span className="text-lg font-black text-slate-700">
                         {annual
-                          ? `${STARTER.annualMonthly.toFixed(2).replace('.', ',')}€`
-                          : `${STARTER.monthly.toFixed(2).replace('.', ',')}€`}
+                          ? `${formatPrice(STARTER.annualMonthly)}€`
+                          : `${formatPrice(STARTER.monthly)}€`}
                       </span>
                       <span className="text-xs text-slate-400">/mes</span>
                     </div>
@@ -1162,14 +1074,16 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                         </span>
                       </p>
                       <p className="text-xs text-slate-400">
-                        {annual ? `${PRO.annualTotal}€/año · Sin permanencia` : 'Sin permanencia'}
+                        {annual
+                          ? `${formatPrice(PRO.annualTotal)}€/año · Sin permanencia`
+                          : 'Sin permanencia'}
                       </p>
                     </div>
                     <div className="text-right">
                       <span className="text-xl font-black text-slate-800">
                         {annual
-                          ? `${PRO.annualMonthly.toFixed(2).replace('.', ',')}€`
-                          : `${PRO.monthly.toFixed(2).replace('.', ',')}€`}
+                          ? `${formatPrice(PRO.annualMonthly)}€`
+                          : `${formatPrice(PRO.monthly)}€`}
                       </span>
                       <span className="text-xs text-slate-400">/mes</span>
                     </div>

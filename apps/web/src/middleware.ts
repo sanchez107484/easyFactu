@@ -28,6 +28,17 @@ const PUBLIC_ROUTES = [
 
 const PROTECTED_PATHS = ['/dashboard', '/setup'] as const;
 
+// Old public URLs → their current location. Resolved together with the
+// host/protocol canonicalisation so every legacy hit is a single 301 hop.
+const LEGACY_REDIRECTS: Readonly<Record<string, string>> = {
+  '/asesorias': '/asesoria',
+  '/factura-con-irpf': '/facturas/con-irpf',
+  '/factura-rectificativa': '/facturas/rectificativa',
+  '/factura-proforma': '/facturas/proforma',
+  '/privacidad': '/politica-privacidad',
+  '/terminos': '/terminos-uso',
+};
+
 const canonicalHost = brandConfig.app.url.replace(/^https?:\/\//, '').toLowerCase();
 
 function getRequestHost(request: NextRequest): string {
@@ -48,24 +59,32 @@ function isLocalhostHost(host: string): boolean {
   return host === 'localhost' || host === '127.0.0.1' || host === '::1';
 }
 
-export function middleware(request: NextRequest) {
-  const { pathname, search } = request.nextUrl;
-  const requestHost = getRequestHost(request);
+function isLocalRequest(host: string): boolean {
+  return isLocalhostHost(host) || process.env.NODE_ENV === 'development';
+}
 
-  if (isLocalhostHost(requestHost) || process.env.NODE_ENV === 'development') {
-    return NextResponse.next();
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const requestHost = getRequestHost(request);
+  const isLocal = isLocalRequest(requestHost);
+  const legacyTarget = LEGACY_REDIRECTS[pathname];
+
+  const isCanonicalOrigin =
+    isLocal || (requestHost === canonicalHost && getRequestProtocol(request) === 'https');
+
+  if (legacyTarget || !isCanonicalOrigin) {
+    const destination = request.nextUrl.clone();
+    if (legacyTarget) destination.pathname = legacyTarget;
+    if (!isLocal) {
+      destination.protocol = 'https:';
+      destination.host = canonicalHost;
+      destination.port = '';
+    }
+    return NextResponse.redirect(destination, 301);
   }
 
-  const requestProtocol = getRequestProtocol(request);
-  const isCanonicalHost = requestHost === canonicalHost;
-  const isHttps = requestProtocol === 'https';
-
-  if (!isCanonicalHost || !isHttps) {
-    const destination = new URL(request.url);
-    destination.protocol = 'https:';
-    destination.host = canonicalHost;
-    destination.search = search;
-    return NextResponse.redirect(destination, 301);
+  if (isLocal) {
+    return NextResponse.next();
   }
 
   if (PUBLIC_ROUTES.some((route) => pathname === route)) {

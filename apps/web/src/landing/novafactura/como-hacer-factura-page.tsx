@@ -8,23 +8,12 @@ import SiteHeader from '@/components/site-header';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
+import { PricingGuideLink } from '@/components/marketing/pricing-guide-link';
 
 export const novafacturaComoHacerFacturaMetadata: Metadata = {
   title: `Cómo hacer una factura en España — Guía paso a paso 2026 | ${brandConfig.app.name}`,
   description:
     'Aprende a hacer una factura correcta: qué datos son obligatorios, cómo numerar las series, cómo calcular IVA e IRPF y qué hacer si te equivocas. Guía actualizada 2026.',
-  keywords: [
-    'como hacer una factura',
-    'como hacer una factura en españa',
-    'como rellenar una factura',
-    'datos obligatorios factura',
-    'como hacer una factura autonomo',
-    'partes de una factura',
-    'numeracion facturas',
-    'calcular iva factura',
-    'como hacer factura correcta',
-    'factura bien hecha',
-  ],
   alternates: { canonical: `${brandConfig.app.url}/facturas/como-hacer-una-factura` },
   openGraph: {
     title: `Cómo hacer una factura paso a paso 2026 | ${brandConfig.app.name}`,
@@ -172,7 +161,7 @@ const requiredFields = [
   { field: 'Total factura', detail: 'Base imponible + cuota IVA − retención IRPF (si aplica).' },
   {
     field: 'Hash SHA-256 + QR VeriFactu',
-    detail: 'Obligatorio desde julio 2025 en software certificado.',
+    detail: 'Lo genera el software adaptado a VeriFactu. Hacienda ha anunciado octubre de 2028 (pendiente de BOE).',
     new: true,
   },
 ];
@@ -341,7 +330,7 @@ const commonMistakes = [
   },
   {
     mistake: 'No usar software VeriFactu',
-    consequence: 'Multas de hasta 50.000€. Autónomos y pymes obligados desde julio 2027.',
+    consequence: 'Cuando VeriFactu sea obligatorio tendrás que cambiar de programa con prisas. Hacienda ha anunciado octubre de 2028 (pendiente de BOE).',
   },
 ];
 
@@ -352,7 +341,7 @@ const faqs = [
   },
   {
     q: '¿Puedo hacer una factura a mano en papel?',
-    a: 'Sí, las facturas en papel siguen siendo válidas legalmente cuando el receptor las acepta. Sin embargo, desde julio 2025, el registro de cada factura debe realizarse con software VeriFactu certificado aunque la factura se imprima en papel. El software genera el hash encadenado y el código QR que debe imprimirse en la factura. Sin ese QR VeriFactu, la factura impresa no es válida fiscalmente a partir de los plazos establecidos.',
+    a: 'Sí, las facturas en papel siguen siendo válidas legalmente cuando el receptor las acepta. Cuando VeriFactu sea obligatorio (Hacienda ha anunciado octubre de 2028 (pendiente de BOE)), quien facture con un programa informático deberá usar uno adaptado, que genera el hash encadenado y el código QR que se imprime en la factura.',
   },
   {
     q: '¿Puedo facturar a clientes de fuera de España?',
@@ -512,7 +501,7 @@ export function NovafacturaComoHacerFacturaPage(): React.JSX.Element {
             },
             { href: '/facturas/proforma', label: 'Factura proforma — qué es y para qué sirve' },
             { href: '/verifactu', label: 'VeriFactu — el hash obligatorio en tus facturas' },
-            { href: '/facturacion-online', label: 'Software de facturación online gratuito' },
+            { href: '/facturacion-online', label: 'Programa de facturación para autónomos' },
           ]}
         />
 
@@ -522,6 +511,8 @@ export function NovafacturaComoHacerFacturaPage(): React.JSX.Element {
           ctaText="Empezar gratis — hasta 2027 sin coste"
           showArrow
         />
+
+        <PricingGuideLink />
 
         <FooterLanding />
       </div>

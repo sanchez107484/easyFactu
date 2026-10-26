@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: `Crear cuenta gratis | ${brandConfig.app.name}`,
   description: `Regístrate gratis en ${brandConfig.app.name}. Gratis hasta 2027, sin tarjeta de crédito. Software de facturación VeriFactu para autónomos y pymes.`,
   robots: {
-    index: true,
+    index: false,
     follow: true,
   },
   alternates: {

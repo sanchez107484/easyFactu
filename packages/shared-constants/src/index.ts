@@ -7,3 +7,4 @@ export * from './units';
 export * from './frequencies';
 export * from './reports';
 export * from './agency';
+export * from './legal-notes';

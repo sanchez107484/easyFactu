@@ -7,7 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
+import { PricingGuideLink } from '@/components/marketing/pricing-guide-link';
 import { ArticleBody } from '@/components/blog/ArticleBody';
+import {
+  VERIFACTU_SOFTWARE_POST_SLUG,
+  VerifactuSoftwareChecklist,
+} from '@/components/blog/verifactu-software-checklist';
 import { sanityClient } from '@/sanity/lib/client';
 import { POST_QUERY, POSTS_SLUGS_QUERY } from '@/sanity/lib/queries';
 import type { SanityBlogPost, SanityPostSlug } from '@/sanity/lib/queries';
@@ -324,6 +329,9 @@ export default async function BlogPostPage({ params }: PageProps) {
 
               {/* Body */}
               <ArticleBody body={post.body} />
+              {slugify(post.slug) === VERIFACTU_SOFTWARE_POST_SLUG && (
+                <VerifactuSoftwareChecklist />
+              )}
 
               {/* CTA bottom */}
               <div className="mt-14 rounded-2xl bg-gradient-to-br from-primary/8 to-primary/3 border border-primary/15 p-8">
@@ -389,6 +397,8 @@ export default async function BlogPostPage({ params }: PageProps) {
           <div className="pb-20" />
         </div>
       </main>
+
+      <PricingGuideLink />
 
       <FooterLanding />
     </>

@@ -15,40 +15,23 @@ import {
   Info,
   Zap,
 } from 'lucide-react';
-import { brandConfig, PRICING } from '@easyfactura/brand-config';
+import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
 import SiteHeader from '@/components/site-header';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
+import { PricingGuideLink } from '@/components/marketing/pricing-guide-link';
 import { VerifactuDeadlines } from '@/components/verifactu-deadlines';
 
 export const novafacturaVerifactuMetadata: Metadata = {
-  title: `¿Qué es VeriFactu? Guía completa para autónomos 2027 | ${brandConfig.app.name}`,
+  title: `¿Qué es VeriFactu? Guía completa para autónomos y pymes | ${brandConfig.app.name}`,
   description:
-    'VeriFactu es el sistema de verificación de facturas de la AEAT: obligatorio para sociedades desde el 1 de enero de 2027 y para autónomos desde el 1 de julio de 2027. Qué es, a quién afecta, sanciones y cómo cumplir automáticamente.',
-  keywords: [
-    'qué es verifactu',
-    'verifactu obligatorio',
-    'verifactu autónomos',
-    'verifactu 2025 2026',
-    'sistema verifactu aeat',
-    'verifactu ley antifraude',
-    'software verifactu',
-    'facturación verifactu',
-    'hash encadenado factura',
-    'factura verificable aeat',
-    'obligación verifactu autónomos',
-    'sanción verifactu',
-    'qué necesito para verifactu',
-    'software garante verifactu',
-    'cumplir con verifactu',
-    'verifactu qr factura',
-  ],
+    'VeriFactu es el sistema de verificación de facturas de la AEAT. Hacienda ha anunciado octubre de 2028 (pendiente de BOE) como fecha de obligación para empresas y autónomos. Qué es, a quién afecta y cómo cumplir automáticamente.',
   alternates: { canonical: `${brandConfig.app.url}/verifactu` },
   openGraph: {
-    title: `¿Qué es VeriFactu? Guía completa para autónomos 2027 | ${brandConfig.app.name}`,
+    title: `¿Qué es VeriFactu? Guía completa para autónomos y pymes | ${brandConfig.app.name}`,
     description:
-      'Todo lo que necesitas saber sobre VeriFactu: qué es, a quién afecta, fechas obligatorias, sanciones y cómo tu software puede hacerlo automático.',
+      'Todo lo que necesitas saber sobre VeriFactu: qué es, a quién afecta, fechas y cómo tu software puede hacerlo automático.',
     url: `${brandConfig.app.url}/verifactu`,
     type: 'website',
     siteName: brandConfig.app.name,
@@ -64,7 +47,7 @@ export const novafacturaVerifactuMetadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `¿Qué es VeriFactu? Guía completa 2027 | ${brandConfig.app.name}`,
+    title: `¿Qué es VeriFactu? Guía completa | ${brandConfig.app.name}`,
     description:
       'VeriFactu es obligatorio para autónomos y empresas. Descubre qué es, cuándo entra en vigor y cómo cumplir sin complicaciones.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
@@ -74,9 +57,9 @@ export const novafacturaVerifactuMetadata: Metadata = {
 const articleJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline: '¿Qué es VeriFactu? Guía completa para autónomos y pymes 2027',
+  headline: '¿Qué es VeriFactu? Guía completa para autónomos y pymes',
   description:
-    'VeriFactu es el sistema de verificación de facturas de la Agencia Tributaria española: obligatorio para sociedades desde el 1 de enero de 2027 y para autónomos desde el 1 de julio de 2027.',
+    'VeriFactu es el sistema de verificación de facturas de la AEAT. Hacienda ha anunciado octubre de 2028 (pendiente de BOE) como fecha de obligación para empresas y autónomos. Qué es, a quién afecta y cómo cumplir automáticamente.',
   url: `${brandConfig.app.url}/verifactu`,
   datePublished: '2026-01-01',
   dateModified: '2026-05-11',
@@ -132,15 +115,15 @@ const faqJsonLd = {
       name: '¿Cuándo es obligatorio VeriFactu?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Los plazos oficiales son: el software de facturación solo puede comercializarse adaptado desde el 29 de julio de 2025; las sociedades (SL, SA) deben usar software VeriFactu desde el 1 de enero de 2027; y los autónomos persona física en estimación directa, desde el 1 de julio de 2027 (Real Decreto 1007/2023 y Real Decreto 254/2025).',
+        text: 'Hacienda ha anunciado octubre de 2028 (pendiente de BOE). El Ministerio de Hacienda aplazará las obligaciones pendientes del Reglamento VeriFactu para que coincidan con la factura electrónica obligatoria.',
       },
     },
     {
       '@type': 'Question',
-      name: '¿Cuáles son las sanciones por no usar VeriFactu?',
+      name: '¿Qué sanciones prevé la ley?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Las sanciones pueden llegar hasta 50.000€ por ejercicio fiscal. El uso de software no homologado puede considerarse infracción tributaria grave.',
+        text: 'El artículo 201 bis de la Ley General Tributaria prevé una multa fija de 50.000 € por ejercicio a quien tenga un sistema de facturación que no cumpla los requisitos o que haya sido alterado. Solo se aplica cuando el uso de un sistema adaptado ya es obligatorio.',
       },
     },
     {
@@ -148,7 +131,7 @@ const faqJsonLd = {
       name: `¿Cómo puedo cumplir con VeriFactu sin complicaciones?`,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `Usando un software garante certificado por la AEAT como ${brandConfig.app.name}. Genera automáticamente el hash encadenado, el código QR y envía cada factura a la AEAT en tiempo real.`,
+        text: `Usando un software adaptado a VeriFactu (declaración responsable del fabricante) como ${brandConfig.app.name}. Genera automáticamente el hash encadenado, el código QR y puede enviar cada registro a la AEAT.`,
       },
     },
   ],
@@ -173,7 +156,7 @@ const howToJsonLd = {
   '@type': 'HowTo',
   name: 'Cómo emitir facturas con VeriFactu paso a paso',
   description:
-    'Pasos para emitir facturas que cumplan con el sistema VeriFactu de la AEAT usando un software garante certificado.',
+    'Pasos para emitir facturas que cumplan con el sistema VeriFactu de la AEAT usando un software adaptado.',
   totalTime: 'PT1M',
   step: [
     {
@@ -213,27 +196,19 @@ const TIMELINE = [
     done: true,
   },
   {
-    date: '1 julio 2025',
-    datetime: '2025-07-01',
-    event: 'Solo software homologado en el mercado',
+    date: '29 julio 2025',
+    datetime: '2025-07-29',
+    event: 'Software adaptado en el mercado',
     detail:
-      'Los fabricantes de software solo pueden comercializar programas certificados. Nuevos contribuyentes deben usar software garante desde el primer día.',
+      'Los fabricantes solo pueden comercializar programas adaptados al Reglamento VeriFactu, acreditados con su declaración responsable del fabricante.',
     done: true,
   },
   {
-    date: '1 enero 2027',
-    datetime: '2027-01-01',
-    event: 'Obligatorio para sociedades (SL, SA)',
+    date: 'Octubre 2028 (anunciado)',
+    datetime: '2028-10',
+    event: 'Obligatorio para empresas y autónomos',
     detail:
-      'Todas las sociedades limitadas, anónimas y otras personas jurídicas deben emitir y enviar facturas verificables en tiempo real.',
-    done: false,
-  },
-  {
-    date: '1 julio 2027',
-    datetime: '2027-07-01',
-    event: 'Obligatorio para autónomos',
-    detail:
-      'Los autónomos persona física que tributen en estimación directa deben usar exclusivamente software garante para emitir facturas.',
+      'Hacienda ha anunciado octubre de 2028 (pendiente de BOE): el Ministerio de Hacienda prevé hacerlo coincidir con la factura electrónica obligatoria.',
     done: false,
   },
 ];
@@ -271,22 +246,16 @@ const HOW_IT_WORKS = [
 
 const PENALTIES = [
   {
-    type: 'Infracción leve',
-    amount: 'Hasta 3.000€',
-    cause: 'Incumplimientos formales sin ocultación de ingresos',
+    type: 'Quien factura',
+    amount: '50.000 € por ejercicio',
+    cause: 'Tener un sistema que no cumpla los requisitos o que se haya alterado, cuando ya sea obligatorio',
     color: 'yellow',
   },
   {
-    type: 'Infracción grave',
-    amount: 'Hasta 50.000€',
-    cause: 'Uso de software no homologado o con doble registro por ejercicio fiscal',
+    type: 'Fabricantes de software',
+    amount: '150.000 € por ejercicio',
+    cause: 'Producir o vender programas que permitan alterar registros o no cumplan los requisitos',
     color: 'orange',
-  },
-  {
-    type: 'Infracción muy grave',
-    amount: '+ Posible delito fiscal',
-    cause: 'Alteración deliberada de registros de facturación con fraude probado',
-    color: 'red',
   },
 ];
 
@@ -307,15 +276,15 @@ const FAQS = [
   },
   {
     q: '¿Cuándo es obligatorio VeriFactu en España?',
-    a: 'Los plazos oficiales son escalonados: el software de facturación solo puede comercializarse adaptado al Reglamento VeriFactu desde el 29 de julio de 2025; las sociedades (SL, SA, cooperativas y demás personas jurídicas) deben facturar con software VeriFactu desde el 1 de enero de 2027; y los autónomos persona física en estimación directa, desde el 1 de julio de 2027. Estas fechas están fijadas por el Real Decreto 1007/2023 y el Real Decreto 254/2025 y son definitivas.',
+    a: 'Hacienda ha anunciado octubre de 2028 (pendiente de BOE). El 5 de octubre de 2026 el Ministerio de Hacienda comunicó que aplazará las obligaciones pendientes del Reglamento VeriFactu hasta octubre de 2028, para que coincidan con la factura electrónica obligatoria. Mientras no se publique en el BOE, el texto vigente mantiene el 1 de enero de 2027 para sociedades y el 1 de julio de 2027 para el resto.',
   },
   {
-    q: '¿Cuáles son las sanciones concretas por no cumplir con VeriFactu?',
-    a: 'Las sanciones oscilan entre 1.000€ por incidente aislado y 50.000€ por ejercicio fiscal si la conducta es reiterada o grave. El uso de software que permita modificar o eliminar facturas —lo que la ley denomina "software de doble uso"— puede tipificarse como infracción muy grave con multas proporcionales al volumen de negocio oculto. Además, la AEAT puede reclamar las cuotas de IVA e IRPF no declaradas con sus correspondientes recargos e intereses de demora.',
+    q: '¿Qué sanciones prevé la ley?',
+    a: 'El artículo 201 bis de la Ley General Tributaria prevé una multa fija de 50.000 € por ejercicio a quien tenga un sistema de facturación que no cumpla los requisitos o que haya sido alterado, y de 150.000 € a quien fabrique o venda ese software. Solo se aplica cuando el uso de un sistema adaptado ya es obligatorio.',
   },
   {
     q: '¿Puedo seguir usando Excel o Word para emitir facturas?',
-    a: 'No. Excel, Word y cualquier software no certificado como "software garante" dejan de ser válidos legalmente a partir de los plazos establecidos. La razón es técnica: Excel permite modificar o borrar filas sin dejar rastro, lo que es incompatible con el requisito de inalterabilidad del registro. Tampoco puede generar el hash encadenado SHA-256 ni conectarse a la API de la AEAT. Usar Excel después del plazo puede derivar en sanciones de hasta 50.000€.',
+    a: 'Hoy sí. Cuando VeriFactu sea obligatorio (Hacienda ha anunciado octubre de 2028 (pendiente de BOE)), quien facture con un programa informático deberá usar uno adaptado: Excel o Word permiten modificar o borrar filas sin dejar rastro y no generan el hash encadenado ni los registros de facturación.',
   },
   {
     q: '¿Qué es el hash encadenado SHA-256 de VeriFactu?',
@@ -330,8 +299,8 @@ const FAQS = [
     a: 'El código QR incluye el número de la factura, el NIF del emisor, la fecha, el importe total y el hash encadenado. Cualquier persona — tus clientes, la AEAT o un inspector — puede escanearlo para verificar que la factura está registrada correctamente en el sistema de la Agencia Tributaria. Si el QR no encuentra el registro, la factura puede considerarse inválida y tu cliente podría denunciarlo.',
   },
   {
-    q: `¿${brandConfig.app.name} es software garante certificado por la AEAT?`,
-    a: `Sí. ${brandConfig.app.name} está certificado como software garante VeriFactu por la Agencia Tributaria. Genera automáticamente el hash encadenado SHA-256, el código QR verificable y transmite cada factura al registro de la AEAT en tiempo real, cumpliendo íntegramente el Reglamento VeriFactu (Real Decreto 1007/2023). No necesitas configurar ningún parámetro técnico: el cumplimiento es automático desde la primera factura que emites.`,
+    q: `¿${brandConfig.app.name} está adaptado a VeriFactu?`,
+    a: `Sí. ${brandConfig.app.name} está adaptado a VeriFactu (declaración responsable del fabricante). La AEAT no homologa ni certifica programas: cada fabricante declara que su software cumple el Reglamento. Genera automáticamente el hash encadenado SHA-256, el código QR verificable y puede enviar cada registro a la AEAT.`,
   },
 ];
 
@@ -372,9 +341,9 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
               ¿Qué es <span className="text-blue-600">VeriFactu</span>?
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-500">
-              El sistema de verificación de facturas de la AEAT que obliga a autónomos y empresas a
-              usar software certificado para emitir facturas. Te explicamos todo lo que necesitas
-              saber — y cómo cumplir sin complicaciones.
+              El sistema de verificación de facturas de la AEAT que obligará a autónomos y empresas a
+              usar software adaptado para emitir facturas. Hacienda ha anunciado octubre de 2028 (pendiente de BOE). Te explicamos todo lo
+              que necesitas saber, sin prisas.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
@@ -413,8 +382,8 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
                 >
                   Ley Antifraude 11/2021
                 </a>{' '}
-                que obliga a los contribuyentes españoles a usar software de facturación certificado
-                por la Agencia Tributaria (AEAT).
+                que obligará a los contribuyentes españoles a facturar con software adaptado a los
+                requisitos de la Agencia Tributaria (AEAT).
               </p>
               <p>
                 Antes de VeriFactu, era técnicamente posible emitir una factura, cobrarla, y después
@@ -451,8 +420,8 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
               {[
                 {
                   icon: Shield,
-                  title: 'Cero riesgo de sanción',
-                  desc: 'Al enviar cada factura en tiempo real a la AEAT, tu cumplimiento queda acreditado automáticamente. Sanciones de hasta 50.000€ que dejan de ser un riesgo.',
+                  title: 'Cumplimiento sin esfuerzo',
+                  desc: 'El programa genera los registros y puede enviarlos a la AEAT automáticamente. No tienes que revisar nada a mano.',
                 },
                 {
                   icon: Clock,
@@ -551,12 +520,10 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
                 <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-orange-500" />
                 <div>
                   <p className="font-semibold text-orange-900">
-                    ¿Empezaste actividad antes de julio 2025?
+                    ¿Cuándo tengo que cambiar de programa?
                   </p>
                   <p className="mt-1 text-sm text-orange-700">
-                    Tienes hasta el <strong>1 de enero de 2027</strong> si eres una sociedad (SL,
-                    SA), o hasta el <strong>1 de julio de 2027</strong> si eres autónomo, para
-                    migrar a software garante. No esperes al último momento.
+                    Hacienda ha anunciado octubre de 2028 (pendiente de BOE). Tienes tiempo para elegir un programa adaptado con calma.
                   </p>
                 </div>
               </div>
@@ -605,8 +572,12 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
         <section id="sanciones" className="border-y border-slate-100 bg-slate-50 py-16 md:py-24">
           <div className="mx-auto max-w-4xl px-6">
             <h2 className="mb-8 text-3xl font-bold text-slate-900">
-              Sanciones por no cumplir con VeriFactu
+              Qué sanciones prevé la ley
             </h2>
+            <p className="-mt-4 mb-8 text-slate-600">
+              Artículo 201 bis de la Ley General Tributaria. Solo se aplican cuando el uso de un
+              sistema adaptado ya es obligatorio.
+            </p>
             <div className="space-y-4">
               {PENALTIES.map(({ type, amount, cause, color }) => (
                 <div
@@ -664,8 +635,8 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
                 },
                 {
                   icon: BadgeCheck,
-                  title: 'Homologado por la Agencia Tributaria',
-                  desc: `${brandConfig.app.name} está certificado como software garante. Cumplimiento garantizado con la Ley Antifraude 11/2021.`,
+                  title: 'Adaptado a VeriFactu',
+                  desc: `${brandConfig.app.name} cumple el Reglamento VeriFactu (declaración responsable del fabricante).`,
                 },
               ].map(({ icon: Icon, title, desc }) => (
                 <div
@@ -712,12 +683,12 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
                   label: '¿Cuándo es obligatorio VeriFactu?',
                 },
                 {
-                  href: '/verifactu/software-garante',
-                  label: 'Requisitos del software garante AEAT',
+                  href: '/blog/como-saber-si-tu-software-cumple-con-verifactu',
+                  label: '¿Cómo saber si tu software cumple VeriFactu?',
                 },
                 {
                   href: '/verifactu/sanciones',
-                  label: 'Sanciones por incumplimiento — hasta 50.000€',
+                  label: 'Sanciones de VeriFactu: qué dice la ley',
                 },
               ].map((l) => (
                 <Link
@@ -744,7 +715,7 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
             {
               href: '/precios',
               label: 'Planes y precios',
-              description: `Desde ${PRICING.starter.monthly}€/mes. Gratis hasta 2027 para empezar.`,
+              description: `Desde ${formatPrice(PRICING.starter.monthly)}€/mes. Gratis hasta 2027 para empezar.`,
             },
             {
               href: '/asesoria',
@@ -753,6 +724,8 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
             },
           ]}
         />
+
+        <PricingGuideLink />
 
         <FooterLanding />
       </div>

@@ -136,6 +136,7 @@ lib/
   api-response.ts         # Response unwrapper (unwrapApiResponse)
   utils.ts                # cn() and generic helpers
   math.ts                 # Client-side math helpers
+  structured-data.ts      # Shared JSON-LD builders (Organization, BreadcrumbList, SoftwareApplication) — no aggregateRating without real reviews
 store/
   auth-store.ts           # Zustand: user, currentTenant, tenants[], isAuthenticated
   ui-store.ts             # Zustand: UI state (sidebar, modals, etc.)

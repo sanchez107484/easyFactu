@@ -1,22 +1,13 @@
 ﻿import type { Metadata } from 'next';
-import { brandConfig, PRICING } from '@easyfactura/brand-config';
+import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
 
 export const novafacturaPreciosMetadata: Metadata = {
-  title: `Precios ${brandConfig.app.name}: Gratis hasta 2027. Luego desde ${PRICING.starter.monthly}€/mes.`,
-  description: `Gratis hasta 2027 para los primeros ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscritos. Plan Starter desde ${PRICING.starter.monthly}€/mes o Plan PRO desde ${PRICING.pro.monthly}€/mes. VeriFactu incluido en todos los planes. Regístrate gratis hasta 2027 sin tarjeta.`,
-  keywords: [
-    'precio software facturación',
-    'verifactu precio',
-    'programa facturación autónomos precio',
-    'software facturación pymes precio',
-    'factura electrónica precio',
-    'verifactu gratis',
-    `${brandConfig.app.name} precio`,
-  ],
+  title: `Precio del programa VeriFactu: gratis hasta 2027 | ${brandConfig.app.name}`,
+  description: `¿Cuánto cuesta un programa VeriFactu? ${brandConfig.app.name}: gratis hasta 2027 y después desde ${formatPrice(PRICING.starter.annualMonthly)}€/mes, con facturas ilimitadas y VeriFactu incluido. Sin tarjeta.`,
   alternates: { canonical: `${brandConfig.app.url}/precios` },
   openGraph: {
-    title: `Precios ${brandConfig.app.name}: Gratis hasta 2027.`,
-    description: `Gratis hasta 2027. Plan Starter desde ${PRICING.starter.monthly}€/mes o Plan PRO desde ${PRICING.pro.monthly}€/mes. VeriFactu incluido en todos los planes. Regístrate gratis hasta 2027 sin tarjeta.`,
+    title: `Precio del programa VeriFactu: gratis hasta 2027 | ${brandConfig.app.name}`,
+    description: `Gratis hasta 2027. Plan Starter desde ${formatPrice(PRICING.starter.monthly)}€/mes o Plan PRO desde ${formatPrice(PRICING.pro.monthly)}€/mes. VeriFactu incluido en todos los planes. Regístrate gratis hasta 2027 sin tarjeta.`,
 
     url: `${brandConfig.app.url}/precios`,
     type: 'website',
@@ -27,7 +18,7 @@ export const novafacturaPreciosMetadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: `Precios | ${brandConfig.app.name}`,
-    description: `Software VeriFactu gratis hasta 2027. Desde ${PRICING.starter.monthly}€/mes.`,
+    description: `Software VeriFactu gratis hasta 2027. Desde ${formatPrice(PRICING.starter.monthly)}€/mes.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   robots: { index: true, follow: true },

@@ -87,16 +87,6 @@ export const nafacturaAsesoriaFacturasMetadata: Metadata = {
   title: `Asesoría que hace facturas a sus clientes en Navarra | ${brandConfig.app.name}`,
   description:
     '¿Tu asesoría hace las facturas de tus clientes navarros? Gestiona todos sus NIFs desde un solo panel con NaTicket automático. Gratis para asesorías. Sin que tus clientes toquen nada.',
-  keywords: [
-    'asesoría hace facturas por sus clientes Navarra',
-    'empresa hace facturas autónomo asesoría Navarra',
-    'programa hacer facturas clientes autónomos Navarra',
-    'gestión facturas múltiples clientes asesoría Pamplona',
-    'asesoría emite facturas NaTicket clientes',
-    'software asesoría facturación por terceros Navarra',
-    'hacer facturas clientes desde asesoría Navarra',
-    'panel multi-nif asesoría Hacienda Foral',
-  ],
   alternates: {
     canonical: `${brandConfig.app.url}/asesoria-facturas-clientes`,
   },

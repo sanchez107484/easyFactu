@@ -7,9 +7,10 @@ const PRIVATE_DISALLOW = [
   '/setup/',
   '/partner',
   '/invitacion/',
-  '/login',
+  // /login and /registro are NOT disallowed: they carry `noindex, follow`, and
+  // Google must be able to crawl them to read that directive.
   '/recuperar-password',
-  '/nueva-password',
+  '/nueva-contrasena',
   '/verificar-email',
   '/studio/',
 ];

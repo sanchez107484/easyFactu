@@ -14,6 +14,7 @@ export default function TratamientoDatosPage() {
 
   return (
     <LegalPageWrapper
+      path="/tratamiento-datos"
       title="Contrato de Tratamiento de Datos"
       subtitle="Acuerdo de encargo de tratamiento (DPA) conforme al artículo 28 del RGPD."
       lastUpdated="14 de abril de 2026"

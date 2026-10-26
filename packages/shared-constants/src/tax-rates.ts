@@ -69,3 +69,12 @@ export const EQUIVALENCE_SURCHARGE_RATES: Record<number, number> = {
   4: 0.5,
   0: 0,
 } as const;
+
+/**
+ * REAGYP flat-rate compensation percentages (art. 130 Ley 37/1992 del IVA).
+ * Applied on the sale price instead of charging IVA.
+ */
+export const REAGYP_COMPENSATION_RATES = {
+  AGRICULTURE: 12, // Explotaciones agrícolas y forestales
+  LIVESTOCK_FISHING: 10.5, // Explotaciones ganaderas y pesqueras
+} as const;

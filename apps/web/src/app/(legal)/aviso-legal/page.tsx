@@ -14,6 +14,7 @@ export default function AvisoLegalPage() {
 
   return (
     <LegalPageWrapper
+      path="/aviso-legal"
       title="Aviso Legal"
       subtitle="Información general y condiciones de acceso al sitio web."
       lastUpdated="14 de abril de 2026"

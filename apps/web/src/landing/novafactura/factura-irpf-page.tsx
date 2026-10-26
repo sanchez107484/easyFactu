@@ -7,23 +7,12 @@ import SiteHeader from '@/components/site-header';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
+import { PricingGuideLink } from '@/components/marketing/pricing-guide-link';
 
 export const novafacturaFacturaIrpfMetadata: Metadata = {
   title: `Factura con IRPF: Retención del 7% y 15% | ${brandConfig.app.name}`,
   description:
     'Guía completa sobre el IRPF en las facturas de autónomos: quién está obligado, porcentajes (7% o 15%), cómo calcular la retención y cómo rellenar la factura.',
-  keywords: [
-    'factura con irpf',
-    'como aplicar irpf en una factura',
-    'retencion irpf autonomo',
-    'irpf factura autonomo profesional',
-    'porcentaje irpf factura',
-    'cuando se aplica irpf en factura',
-    'irpf 7% autonomo nuevo',
-    'irpf 15% autonomo',
-    'calculo retencion irpf factura',
-    'factura con irpf ejemplo',
-  ],
   alternates: { canonical: `${brandConfig.app.url}/facturas/con-irpf` },
   openGraph: {
     title: `Factura con IRPF: Retención del 7% y 15% | ${brandConfig.app.name}`,
@@ -380,7 +369,7 @@ export function NovafacturaFacturaIrpfPage(): React.JSX.Element {
             { href: '/facturas/como-hacer-una-factura', label: 'Cómo hacer una factura completa' },
             { href: '/facturas/rectificativa', label: 'Factura rectificativa' },
             { href: '/facturas', label: 'Todos los tipos de facturas' },
-            { href: '/facturacion-online', label: 'Software que calcula el IRPF automáticamente' },
+            { href: '/facturacion-online', label: 'Programa de facturación que calcula el IRPF solo' },
           ]}
         />
 
@@ -388,6 +377,8 @@ export function NovafacturaFacturaIrpfPage(): React.JSX.Element {
           title="NovaFactura calcula el IRPF solo"
           description="Configuras si eres profesional y cuántos años llevas. El software aplica el 7% o el 15% automáticamente en cada factura."
         />
+
+        <PricingGuideLink />
 
         <FooterLanding />
       </div>

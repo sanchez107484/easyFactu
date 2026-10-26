@@ -73,3 +73,10 @@ export function getAppUrl(): string {
 export function getBrandConfig(): BrandConfig {
   return brandConfig;
 }
+
+/**
+ * Spanish price formatting for marketing copy: 8.9 → "8,90", 17.8 → "17,80", 89 → "89".
+ */
+export function formatPrice(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace('.', ',');
+}

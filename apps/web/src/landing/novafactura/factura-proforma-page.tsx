@@ -7,23 +7,12 @@ import SiteHeader from '@/components/site-header';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
+import { PricingGuideLink } from '@/components/marketing/pricing-guide-link';
 
 export const novafacturaFacturaProformaMetadata: Metadata = {
   title: `Factura proforma — Qué es y para qué sirve 2026 | ${brandConfig.app.name}`,
   description:
     'La factura proforma no tiene valor fiscal ni devenga IVA. Te explicamos cuándo usarla y sus diferencias con el presupuesto.',
-  keywords: [
-    'factura proforma',
-    'que es una factura proforma',
-    'factura proforma ejemplo',
-    'diferencia factura proforma y factura',
-    'cuando usar factura proforma',
-    'factura proforma validez legal',
-    'factura proforma vs presupuesto',
-    'como hacer una factura proforma',
-    'factura proforma tiene valor fiscal',
-    'factura proforma exportacion',
-  ],
   alternates: { canonical: `${brandConfig.app.url}/facturas/proforma` },
   openGraph: {
     title: `Factura proforma — Qué es y para qué sirve | ${brandConfig.app.name}`,
@@ -309,7 +298,7 @@ export function NovafacturaFacturaProformaPage(): React.JSX.Element {
             { href: '/facturas/rectificativa', label: 'Factura rectificativa' },
             { href: '/facturas/simplificada', label: 'Factura simplificada (tícket)' },
             { href: '/facturas', label: 'Todos los tipos de facturas' },
-            { href: '/facturacion-online', label: 'Software para convertir proformas en facturas' },
+            { href: '/facturacion-online#presupuestos', label: 'Presupuestos y proformas que pasan a factura' },
           ]}
         />
 
@@ -317,6 +306,8 @@ export function NovafacturaFacturaProformaPage(): React.JSX.Element {
           title="Proformas y facturas desde la misma app"
           description="NovaFactura te permite crear proformas con un clic y convertirlas en facturas definitivas cuando llegue el momento."
         />
+
+        <PricingGuideLink />
 
         <FooterLanding />
       </div>

@@ -14,6 +14,7 @@ export default function CookiesPage() {
 
   return (
     <LegalPageWrapper
+      path="/cookies"
       title="Política de Cookies"
       subtitle="Información sobre el uso de cookies en nuestro sitio web."
       lastUpdated="14 de abril de 2026"

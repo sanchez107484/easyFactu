@@ -327,11 +327,11 @@ export default function RegisterPage() {
                 {/* Terms notice */}
                 <p className="text-xs text-muted-foreground">
                   Al crear tu cuenta, aceptas nuestros{' '}
-                  <Link href="/terminos" className="text-primary hover:underline">
+                  <Link href="/terminos-uso" className="text-primary hover:underline">
                     términos de servicio
                   </Link>{' '}
                   y{' '}
-                  <Link href="/privacidad" className="text-primary hover:underline">
+                  <Link href="/politica-privacidad" className="text-primary hover:underline">
                     política de privacidad
                   </Link>
                   .

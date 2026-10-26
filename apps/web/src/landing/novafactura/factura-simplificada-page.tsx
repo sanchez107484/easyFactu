@@ -7,23 +7,12 @@ import SiteHeader from '@/components/site-header';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
+import { PricingGuideLink } from '@/components/marketing/pricing-guide-link';
 
 export const novafacturaFacturaSimplificadaMetadata: Metadata = {
   title: `Factura simplificada (tícket) — Cuándo es válida en España 2026 | ${brandConfig.app.name}`,
   description:
     'Qué es la factura simplificada, cuándo puede usarse en lugar de la factura completa, qué datos debe incluir, sus límites legales y diferencias con el tícket de caja.',
-  keywords: [
-    'factura simplificada',
-    'que es factura simplificada',
-    'ticket factura simplificada',
-    'cuando se puede usar factura simplificada',
-    'factura simplificada limite',
-    'factura simplificada datos obligatorios',
-    'diferencia factura simplificada factura completa',
-    'factura simplificada iva incluido',
-    'factura simplificada comercio minorista',
-    'factura simplificada hosteleria',
-  ],
   alternates: { canonical: `${brandConfig.app.url}/facturas/simplificada` },
   openGraph: {
     title: `Factura simplificada — Tícket válido para B2C | ${brandConfig.app.name}`,
@@ -152,7 +141,7 @@ const faqs = [
   },
   {
     q: '¿La factura simplificada también necesita VeriFactu desde 2025?',
-    a: 'Sí. Las facturas simplificadas están sujetas a los mismos requisitos VeriFactu que las facturas completas: hash encadenado, código QR y transmisión a la AEAT. No hay ninguna excepción por el formato de la factura. Un software de facturación certificado aplica VeriFactu automáticamente a todos los tipos de factura que emite.',
+    a: 'Sí. Las facturas simplificadas están sujetas a los mismos requisitos VeriFactu que las facturas completas: hash encadenado, código QR y transmisión a la AEAT. No hay ninguna excepción por el formato de la factura. Un software de facturación adaptado aplica VeriFactu automáticamente a todos los tipos de factura que emite.',
   },
   {
     q: '¿En qué se diferencia la factura simplificada del tique de caja?',
@@ -311,7 +300,7 @@ export function NovafacturaFacturaSimplificadaPage(): React.JSX.Element {
             { href: '/facturas/con-irpf', label: 'Factura con IRPF' },
             { href: '/facturas/proforma', label: 'Factura proforma' },
             { href: '/facturas', label: 'Todos los tipos de facturas' },
-            { href: '/facturacion-online', label: 'Software de facturación simplificada' },
+            { href: '/facturacion-online#movil', label: 'Facturar desde el móvil' },
           ]}
         />
 
@@ -319,6 +308,8 @@ export function NovafacturaFacturaSimplificadaPage(): React.JSX.Element {
           title="NovaFactura emite ambos tipos automáticamente"
           description="Factura completa o simplificada según el cliente. El software elige el formato correcto."
         />
+
+        <PricingGuideLink />
 
         <FooterLanding />
       </div>

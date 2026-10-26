@@ -15,7 +15,7 @@ import {
   Info,
   Zap,
 } from 'lucide-react';
-import { brandConfig, PRICING } from '@easyfactura/brand-config';
+import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
@@ -25,24 +25,6 @@ export const nafacturaVerifactuMetadata: Metadata = {
   title: `Cumplimiento fiscal para autónomos navarros — Guía 2027 | ${brandConfig.app.name}`,
   description:
     'Guía completa sobre las obligaciones de facturación para autónomos y pymes en Navarra. Hacienda Foral de Navarra, VeriFactu, fechas clave y cómo cumplir sin complicaciones.',
-  keywords: [
-    'facturación navarra',
-    'hacienda foral navarra autónomos',
-    'verifactu navarra',
-    'software facturación navarra',
-    'obligacion factura navarra',
-    'autónomo navarra hacienda',
-    'cumplimiento fiscal navarra',
-    'software garante navarra',
-    'factura electronica navarra',
-    'ley antifraude navarra',
-    'programa facturación navarra',
-    'hacienda navarra irpf autónomo',
-    'registro factura navarra',
-    'naticket navarra',
-    'naticket verifactu diferencia',
-    'qué es naticket navarra',
-  ],
   alternates: { canonical: `${brandConfig.app.url}/verifactu` },
   openGraph: {
     title: `Cumplimiento fiscal para autónomos navarros — Guía 2027 | ${brandConfig.app.name}`,
@@ -800,7 +782,7 @@ export function NafacturaVerifactuPage(): React.JSX.Element {
             {
               href: '/precios',
               label: 'Planes y precios',
-              description: `Desde ${PRICING.starter.monthly}€/mes. Gratis hasta 2027.`,
+              description: `Desde ${formatPrice(PRICING.starter.monthly)}€/mes. Gratis hasta 2027.`,
             },
             {
               href: '/asesoria',

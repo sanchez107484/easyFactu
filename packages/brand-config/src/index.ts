@@ -17,4 +17,5 @@ export {
   getSupportEmail,
   getAppUrl,
   getBrandConfig,
+  formatPrice,
 } from './helpers';

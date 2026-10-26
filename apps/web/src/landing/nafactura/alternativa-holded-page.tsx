@@ -17,7 +17,7 @@ import {
   Download,
   HelpCircle,
 } from 'lucide-react';
-import { brandConfig, PRICING } from '@easyfactura/brand-config';
+import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
@@ -28,18 +28,6 @@ import FooterLanding from '@/components/FooterLanding';
 export const nafacturaHoldedMetadata: Metadata = {
   title: `Alternativa a Holded para autónomos navarros — ${brandConfig.app.name}`,
   description: `¿Por qué los autónomos navarros prefieren ${brandConfig.app.name} a Holded? Comparativa completa: cumplimiento Hacienda Navarra, precio, funcionalidades y soporte. Gratis hasta 2027.`,
-  keywords: [
-    'alternativa holded navarra',
-    'holded navarra autónomos',
-    'mejor alternativa holded autónomos navarra',
-    'nafactura vs holded',
-    'programa facturación navarra holded',
-    'software facturación navarra alternativa holded',
-    'holded hacienda foral navarra',
-    'comparativa software facturación navarra',
-    'alternativa holded gratis',
-    'software navarra verifactu hacienda',
-  ],
   alternates: { canonical: `${brandConfig.app.url}/alternativa-holded-navarra` },
   openGraph: {
     title: `Alternativa a Holded para autónomos navarros | ${brandConfig.app.name}`,
@@ -116,7 +104,7 @@ const faqJsonLd = {
       name: '¿Cuánto cuesta NaFactura comparado con Holded?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `NaFactura es completamente gratuito hasta finales de 2027. A partir de 2028, el plan de autónomo comienza desde ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes sin permanencia. Holded tiene planes de pago desde 14€/mes, sin período gratuito, y orientados a empresas con módulos de CRM, RRHH e inventario que los autónomos navarros no suelen necesitar.`,
+        text: `NaFactura es completamente gratuito hasta finales de 2027. A partir de 2028, el plan de autónomo comienza desde ${formatPrice(PRICING.starter.monthly)}€/mes sin permanencia. Holded tiene planes de pago desde 14€/mes, sin período gratuito, y orientados a empresas con módulos de CRM, RRHH e inventario que los autónomos navarros no suelen necesitar.`,
       },
     },
     {
@@ -151,7 +139,7 @@ const COMPARISON = [
   { feature: 'Sin tarjeta al registrarte', nafactura: true, holded: false },
   {
     feature: 'Precio desde',
-    nafactura: `${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes`,
+    nafactura: `${formatPrice(PRICING.starter.monthly)}€/mes`,
     holded: 'Desde 14€/mes',
   },
   { feature: 'Migración desde Holded', nafactura: true, holded: false },
@@ -461,7 +449,7 @@ export function NafacturaHoldedPage(): React.JSX.Element {
                 },
                 {
                   q: '¿Cuánto cuesta NaFactura comparado con Holded?',
-                  a: `NaFactura es completamente gratuito hasta finales de 2027. Después, desde ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes sin permanencia. Holded parte desde 14€/mes con módulos de CRM y RRHH que los autónomos navarros no necesitan.`,
+                  a: `NaFactura es completamente gratuito hasta finales de 2027. Después, desde ${formatPrice(PRICING.starter.monthly)}€/mes sin permanencia. Holded parte desde 14€/mes con módulos de CRM y RRHH que los autónomos navarros no necesitan.`,
                 },
                 {
                   q: '¿NaFactura está preparado para NaTicket?',

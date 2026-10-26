@@ -11,7 +11,7 @@ const novafacturaFooterColumns = [
   {
     title: 'Producto',
     links: [
-      { href: '/facturacion-online', label: 'Software de facturación' },
+      { href: '/facturacion-online', label: 'Programa para autónomos' },
       { href: '/funcionalidades', label: 'Funcionalidades' },
       { href: '/verifactu', label: 'VeriFactu' },
       { href: '/precios', label: 'Precios' },
@@ -107,7 +107,7 @@ export default function FooterLanding(): JSX.Element {
               </div>
               <Badge variant="outline" className="text-xs mb-3">
                 <BadgeCheck className="mr-1 h-3 w-3" />
-                VeriFactu certificado
+                Adaptado a VeriFactu
               </Badge>
               <p className="text-xs text-muted-foreground leading-relaxed mt-2">
                 Software de facturación con VeriFactu automático para autónomos y pymes. Gratis
@@ -164,8 +164,8 @@ export default function FooterLanding(): JSX.Element {
           </div>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            Software de facturación certificado según la Ley Antifraude 11/2021 · Compatible con
-            VeriFactu AEAT · Cumplimiento RGPD · Servidores en la Unión Europea
+            Software de facturación adaptado a VeriFactu (declaración responsable del fabricante) ·
+            Cumplimiento RGPD · Servidores en la Unión Europea
           </p>
         </div>
       </div>

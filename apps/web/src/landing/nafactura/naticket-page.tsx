@@ -19,7 +19,7 @@ import {
   BarChart3,
   Layers,
 } from 'lucide-react';
-import { brandConfig, PRICING } from '@easyfactura/brand-config';
+import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
@@ -32,26 +32,6 @@ export const nafacturaNavicketMetadata: Metadata = {
   title: `NaTicket Navarra 2027: qué es y cuándo será obligatorio | ${brandConfig.app.name}`,
   description:
     'Guía actualizada de NaTicket, el sistema de Hacienda Foral de Navarra: qué es, a quién obliga, calendario previsto y diferencias con VeriFactu y TicketBAI.',
-  keywords: [
-    'NaTicket',
-    'NaTicket Navarra',
-    'qué es NaTicket',
-    'NaTicket software compatible',
-    'NaTicket autónomos Navarra',
-    'NaTicket cuándo obligatorio',
-    'NaTicket vs VeriFactu',
-    'NaTicket TicketBAI diferencia',
-    'NaTicket Hacienda Navarra',
-    'facturación electrónica Navarra',
-    'sistema facturación foral Navarra',
-    'TicketBAI Navarra autónomos',
-    'VeriFactu Navarra autónomos',
-    'software facturación Navarra NaTicket',
-    'Hacienda Foral Navarra factura electrónica',
-    'naticket software',
-    'naticket navarra 2027',
-    'programa facturación naticket',
-  ],
   alternates: { canonical: `${brandConfig.app.url}/naticket` },
   openGraph: {
     title: `NaTicket Navarra 2027: qué es y cuándo será obligatorio | ${brandConfig.app.name}`,
@@ -890,7 +870,7 @@ export function NafacturaNavicketPage(): React.JSX.Element {
             {
               href: '/precios',
               label: 'Planes y precios',
-              description: `Gratis hasta 2027. Desde ${PRICING.starter.monthly}€/mes después.`,
+              description: `Gratis hasta 2027. Desde ${formatPrice(PRICING.starter.monthly)}€/mes después.`,
             },
           ]}
         />

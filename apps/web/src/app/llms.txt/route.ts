@@ -1,4 +1,4 @@
-import { brandConfig, PRICING } from '@easyfactura/brand-config';
+import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
 import { NextResponse } from 'next/server';
 
 // Force static generation at build time — brand is determined by NEXT_PUBLIC_BRAND
@@ -7,10 +7,10 @@ export const revalidate = 86400; // 24h
 
 const BRAND = process.env.NEXT_PUBLIC_BRAND ?? 'novafactura';
 const BASE = brandConfig.app.url;
-const STARTER_MONTHLY = PRICING.starter.monthly.toFixed(2).replace('.', ',');
-const STARTER_ANNUAL = PRICING.starter.annualMonthly.toFixed(2).replace('.', ',');
-const PRO_MONTHLY = PRICING.pro.monthly.toFixed(2).replace('.', ',');
-const PRO_ANNUAL = PRICING.pro.annualMonthly.toFixed(2).replace('.', ',');
+const STARTER_MONTHLY = formatPrice(PRICING.starter.monthly);
+const STARTER_ANNUAL = formatPrice(PRICING.starter.annualMonthly);
+const PRO_MONTHLY = formatPrice(PRICING.pro.monthly);
+const PRO_ANNUAL = formatPrice(PRICING.pro.annualMonthly);
 const FREE_SLOTS = PRICING.freePeriodSlots.toLocaleString('es-ES');
 
 function buildNafacturaContent(): string {
@@ -90,7 +90,7 @@ El Convenio Económico establece el régimen tributario especial de Navarra. Los
 function buildNovafacturaContent(): string {
   return `# NovaFactura — Software de facturación VeriFactu para autónomos y pymes en España
 
-> Software de facturación VeriFactu certificado por la AEAT. Cumplimiento automático con la Ley Antifraude 11/2021. Completamente gratuito hasta 2027 para autónomos y pymes. Gratis para siempre para asesorías y gestorías.
+> Software de facturación adaptado a VeriFactu (declaración responsable del fabricante). Cumplimiento automático con la Ley Antifraude 11/2021. Completamente gratuito hasta 2027 para autónomos y pymes. Gratis para siempre para asesorías y gestorías.
 
 NovaFactura es el software de facturación nativo VeriFactu para autónomos, pymes y asesorías en España. Automatiza el hash encadenado SHA-256, la firma electrónica, el código QR y el envío directo al endpoint de la AEAT.
 
@@ -100,12 +100,12 @@ NovaFactura es el software de facturación nativo VeriFactu para autónomos, pym
 - **Tipo**: SaaS de facturación electrónica VeriFactu
 - **Mercado**: España (autónomos, pymes, asesorías, gestorías)
 - **Normativa**: Ley Antifraude 11/2021, Reglamento VeriFactu, AEAT
-- **Precio autónomos/pymes**: Gratis hasta 2027 (${FREE_SLOTS} plazas). Después Plan Starter desde ${STARTER_MONTHLY}€/mes (mensual) o ${STARTER_ANNUAL}€/mes (anual) y Plan PRO desde ${PRO_MONTHLY}€/mes (mensual) o ${PRO_ANNUAL}€/mes (anual). Sin permanencia.
+- **Precio autónomos/pymes**: Gratis hasta 2027 (${FREE_SLOTS} plazas). Después Plan Básico desde ${STARTER_MONTHLY}€/mes (mensual) o ${STARTER_ANNUAL}€/mes (anual) y Plan PRO desde ${PRO_MONTHLY}€/mes (mensual) o ${PRO_ANNUAL}€/mes (anual). Los dos planes tienen facturas ilimitadas y VeriFactu; se diferencian por funcionalidades: el PRO añade gestión avanzada de gastos, proveedores, análisis de rentabilidad, informes profesionales y soporte prioritario. Sin permanencia.
 - **Precio asesorías**: Gratis para siempre
 
 ## Para autónomos y pymes
 
-NovaFactura permite crear facturas legales con VeriFactu en menos de 60 segundos. El software genera automáticamente el hash encadenado, la firma electrónica cualificada, el código QR verificable y envía el registro a la Agencia Tributaria. Cumplimiento 100% garantizado con la Ley Antifraude 11/2021.
+NovaFactura permite crear facturas legales con VeriFactu en menos de 60 segundos. El software genera automáticamente el hash encadenado, la firma electrónica cualificada, el código QR verificable y envía el registro a la Agencia Tributaria.
 
 ## Para asesorías y gestorías
 
@@ -113,12 +113,12 @@ Panel centralizado para gestionar la facturación VeriFactu de múltiples client
 
 ## ¿Qué es VeriFactu?
 
-VeriFactu es el sistema de verificación de facturas de la Agencia Tributaria española, obligatorio para autónomos y empresas bajo la Ley Antifraude 11/2021. Obliga a que cada factura incluya un hash encadenado SHA-256, un código QR verificable y sea transmitida en tiempo real a la AEAT. El uso de Excel, Word o software no homologado deja de ser legal. Las sanciones por incumplimiento llegan hasta 50.000€.
+VeriFactu es el sistema de verificación de facturas de la Agencia Tributaria española, creado por la Ley Antifraude 11/2021. Exige que cada factura emitida con un programa informático incluya un hash encadenado SHA-256 y un código QR verificable, y que sus registros puedan enviarse a la AEAT. Fecha de obligación: Hacienda ha anunciado octubre de 2028 (pendiente de BOE) — nota informativa del Ministerio de Hacienda del 5 de octubre de 2026 (https://www.hacienda.gob.es/sgt/gabsehacienda/nota-informativa-verifactu.pdf). La AEAT no homologa ni certifica programas: cada fabricante emite una declaración responsable.
 
 ## Funcionalidades principales
 
 - Facturación VeriFactu 100% automática (hash encadenado, código QR, firma, envío AEAT)
-- Software garante certificado por la Agencia Tributaria
+- Adaptado a VeriFactu (declaración responsable del fabricante)
 - Gestión de facturas, presupuestos, clientes y productos
 - Facturas recurrentes y cobros parciales
 - Panel de gestión para asesorías y gestorías (gratis para siempre)
@@ -129,8 +129,8 @@ VeriFactu es el sistema de verificación de facturas de la Agencia Tributaria es
 ## Páginas de referencia
 
 - [Inicio](${BASE}): Software de facturación VeriFactu para autónomos y pymes
-- [Software de facturación online](${BASE}/facturacion-online): Programa de facturación con VeriFactu automático, gratis hasta 2027
-- [Funcionalidades](${BASE}/funcionalidades): Todas las funcionalidades del software
+- [Programa de facturación para autónomos](${BASE}/facturacion-online): Presupuestos que pasan a factura, facturas recurrentes, control de cobros y uso desde el móvil
+- [Funcionalidades](${BASE}/funcionalidades): Cada función del programa explicada una a una, con enlace a su guía
 - [VeriFactu — qué es y cómo funciona](${BASE}/verifactu): Guía completa sobre el sistema de verificación de facturas de la AEAT
 - [Precios](${BASE}/precios): Planes y precios de NovaFactura
 - [Para asesorías y gestorías](${BASE}/asesoria): Panel centralizado para gestionar múltiples clientes, gratis para siempre
@@ -140,9 +140,9 @@ VeriFactu es el sistema de verificación de facturas de la Agencia Tributaria es
 
 ## Páginas VeriFactu
 
-- [¿Cuándo es obligatorio VeriFactu?](${BASE}/verifactu/cuando-es-obligatorio): Plazos por perfil según el Real Decreto 1007/2023 y el Real Decreto 254/2025: software (29 julio 2025), sociedades (1 enero 2027), autónomos (1 julio 2027)
-- [Software garante VeriFactu](${BASE}/verifactu/software-garante): Qué es un software garante, cómo se certifica y cómo verificar si tu software cumple con la AEAT
-- [Sanciones por no cumplir VeriFactu](${BASE}/verifactu/sanciones): Multas de hasta 50.000€ por incumplimiento de la Ley Antifraude 11/2021
+- [¿Cuándo es obligatorio VeriFactu?](${BASE}/verifactu/cuando-es-obligatorio): Hacienda ha anunciado octubre de 2028 (pendiente de BOE), con fuente oficial y calendario actualizado
+- [Cómo saber si tu software cumple VeriFactu](${BASE}/blog/como-saber-si-tu-software-cumple-con-verifactu): Checklist actualizada al calendario de 2028 y prueba gratuita de un programa adaptado
+- [Sanciones de VeriFactu](${BASE}/verifactu/sanciones): Qué dice el artículo 201 bis de la Ley General Tributaria y cuándo se aplica
 
 ## Guías de facturación
 
@@ -152,15 +152,17 @@ VeriFactu es el sistema de verificación de facturas de la Agencia Tributaria es
 - [Factura rectificativa](${BASE}/facturas/rectificativa): Cómo corregir o anular una factura incorrecta según la normativa española
 - [Factura proforma](${BASE}/facturas/proforma): Qué es, para qué sirve y diferencias con la factura ordinaria
 - [Factura simplificada](${BASE}/facturas/simplificada): Cuándo se puede emitir, límites de importe y requisitos legales
-- [Factura intracomunitaria](${BASE}/facturas/intracomunitaria): Cómo facturar a empresas de la UE, exención de IVA y ROI
-- [Factura electrónica](${BASE}/factura-electronica): Diferencias entre factura electrónica y VeriFactu, obligaciones y plazos
+- [Factura intracomunitaria](${BASE}/facturas/intracomunitaria): Modelo gratis en Excel, Word y PDF, ejemplos con y sin IVA, mención de inversión del sujeto pasivo y VIES
+- [Factura electrónica](${BASE}/factura-electronica): Qué es, calendario (octubre de 2028 para empresas de menos de 8 M€) y test para saber si te afecta
+- [Qué es Facturae](${BASE}/factura-electronica/facturae): Formato XML oficial, firma, FACe y códigos DIR3
+- [Ejemplos de factura electrónica](${BASE}/factura-electronica/ejemplos): La misma factura en PDF y en XML Facturae
 
 ## Artículos del blog
 
 - [Qué debe tener una factura válida con VeriFactu](${BASE}/blog/que-debe-tener-una-factura-valida-con-verifactu) — Requisitos obligatorios: QR, hash encadenado, trazabilidad y comunicación a la AEAT.
-- [¿Cómo saber si tu software cumple con VeriFactu?](${BASE}/blog/como-saber-si-tu-software-cumple-con-verifactu) — Cómo comprobar si tu programa de facturación está homologado por la AEAT.
-- [¿Excel dejará de ser válido con VeriFactu?](${BASE}/blog/excel-dejara-de-ser-valido-con-verifactu) — Por qué Excel deja de ser legal para facturar y qué alternativas existen.
-- [Multas y sanciones de VeriFactu: lo que puedes llegar a pagar si no cumples](${BASE}/blog/multas-y-sanciones-de-verifactu-lo-que-puedes-llegar-a-pagar-si-no-cumples) — Sanciones de hasta 50.000€ al año por incumplimiento de la Ley Antifraude 11/2021.
+- [¿Cómo saber si tu software cumple con VeriFactu?](${BASE}/blog/como-saber-si-tu-software-cumple-con-verifactu) — Cómo comprobar si tu programa de facturación está adaptado a VeriFactu.
+- [¿Excel dejará de ser válido con VeriFactu?](${BASE}/blog/excel-dejara-de-ser-valido-con-verifactu) — Qué pasará con Excel cuando VeriFactu sea obligatorio y qué alternativas existen.
+- [Multas y sanciones de VeriFactu: lo que puedes llegar a pagar si no cumples](${BASE}/blog/multas-y-sanciones-de-verifactu-lo-que-puedes-llegar-a-pagar-si-no-cumples) — Qué sanciones prevé la ley y cuándo se aplican.
 - [VeriFactu en 2026: lo que nadie te está explicando (y cómo prepararte sin complicarte)](${BASE}/blog/verifactu-en-2026-lo-que-nadie-te-esta-explicando-y-como-prepararte-sin-complicarte) — Guía práctica para autónomos y pymes sobre los cambios de VeriFactu en 2026.
 `;
 }

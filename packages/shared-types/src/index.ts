@@ -299,6 +299,18 @@ export interface UpdateUserInput {
 
 // ==================== AUTH ====================
 
+/** First-touch attribution stored on the visitor's first page view. */
+export interface SignupAttribution {
+  landingUrl?: string;
+  referrer?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmTerm?: string;
+  utmContent?: string;
+  firstVisitAt?: string;
+}
+
 export interface RegisterInput {
   email: string;
   password: string;
@@ -307,6 +319,7 @@ export interface RegisterInput {
   businessName: string;
   nif: string;
   accountType: AccountType;
+  attribution?: SignupAttribution;
 }
 
 export interface LoginInput {

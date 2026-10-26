@@ -20,6 +20,7 @@ import { LoginDto } from './dto/login.dto';
 import { SwitchTenantDto } from './dto/switch-tenant.dto';
 import { ActivateAccountDto } from './dto/activate-account.dto';
 import { JwtValidationCacheService } from './jwt-validation-cache.service';
+import { toSignupAttributionColumns } from './signup-attribution.mapper';
 
 @Injectable()
 export class AuthService {
@@ -85,6 +86,7 @@ export class AuthService {
           lastName: dto.lastName,
           emailVerifyToken,
           lastActiveTenantId: tenant.id,
+          ...toSignupAttributionColumns(dto.attribution),
         },
       });
 

@@ -12,7 +12,7 @@ import {
   Star,
   HelpCircle,
 } from 'lucide-react';
-import { brandConfig, PRICING } from '@easyfactura/brand-config';
+import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
@@ -23,18 +23,6 @@ import FooterLanding from '@/components/FooterLanding';
 export const nafacturaPamplonaMetadata: Metadata = {
   title: `Software de facturación para autónomos en Pamplona | ${brandConfig.app.name}`,
   description: `El programa de facturación para autónomos y pymes de Pamplona adaptado a Hacienda Foral de Navarra. VeriFactu, NaTicket preparado, gratis hasta 2027. Cumplimiento fiscal navarro garantizado.`,
-  keywords: [
-    'software facturación Pamplona',
-    'programa facturación autónomo Pamplona',
-    'facturación electrónica Pamplona',
-    'software facturación autónomos Navarra Pamplona',
-    'programa facturación Pamplona Hacienda Foral',
-    'facturar autónomo Pamplona',
-    'facturación verifactu Pamplona',
-    'software facturas Pamplona navarra',
-    'mejor software facturación Pamplona',
-    'facturación electrónica autónomo Pamplona 2027',
-  ],
   alternates: { canonical: `${brandConfig.app.url}/software-facturacion-pamplona` },
   openGraph: {
     title: `Software de facturación para autónomos en Pamplona | ${brandConfig.app.name}`,
@@ -193,7 +181,7 @@ const FAQS = [
   },
   {
     q: '¿Existe un software de facturación gratuito para autónomos en Pamplona?',
-    a: `Sí. ${brandConfig.app.name} es completamente gratuito para los autónomos de Pamplona durante 2025, 2026 y 2027. Sin tarjeta, sin límites de facturas. Después, desde ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes sin permanencia.`,
+    a: `Sí. ${brandConfig.app.name} es completamente gratuito para los autónomos de Pamplona durante 2025, 2026 y 2027. Sin tarjeta, sin límites de facturas. Después, desde ${formatPrice(PRICING.starter.monthly)}€/mes sin permanencia.`,
   },
   {
     q: '¿NaFactura cubre el régimen fiscal de Hacienda Foral de Navarra para Pamplona?',
@@ -393,7 +381,7 @@ export function NafacturaPamplonaPage(): React.JSX.Element {
             <p className="text-slate-500 mb-8 max-w-2xl mx-auto">
               Durante 2025, 2026 y todo 2027: {brandConfig.app.name} es completamente gratuito para
               los autónomos de Pamplona. Sin tarjeta, sin límites de facturas, sin trampa. Después,
-              desde {PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes, sin permanencia.
+              desde {formatPrice(PRICING.starter.monthly)}€/mes, sin permanencia.
             </p>
             <Link
               href="/registro"

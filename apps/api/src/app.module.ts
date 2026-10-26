@@ -26,6 +26,7 @@ import { RecurringExpensesModule } from './modules/recurring-expenses/recurring-
 import { ActivitySummaryModule } from './modules/activity-summary/activity-summary.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { SignupStatsModule } from './modules/signup-stats/signup-stats.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { ReportsModule } from './modules/reports/reports.module';
     ActivitySummaryModule,
     SubscriptionsModule,
     ReportsModule,
+    SignupStatsModule,
   ],
   controllers: [],
   providers: [

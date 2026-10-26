@@ -2,79 +2,75 @@
 import Link from 'next/link';
 import {
   ArrowRight,
-  BadgeCheck,
   CheckCircle2,
+  ClipboardList,
   Clock,
   CreditCard,
-  FileText,
-  Headphones,
   Lock,
-  Send,
+  RefreshCcw,
   Shield,
   Smartphone,
   Sparkles,
-  X,
-  Zap,
+  Wallet,
 } from 'lucide-react';
-import { brandConfig, PRICING } from '@easyfactura/brand-config';
+import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
 import SiteHeader from '@/components/site-header';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
 
+// Target keyword: "programa de facturación para autónomos" (day-to-day intent).
+// The Home owns "programa de facturación gratis" — keep "gratis" out of the
+// title/H1 here so both pages don't compete for the same query.
+const PAGE_PATH = '/facturacion-online';
+const PAGE_URL = `${brandConfig.app.url}${PAGE_PATH}`;
+const PAGE_TITLE = `Programa de facturación para autónomos online | ${brandConfig.app.name}`;
+const PAGE_DESCRIPTION =
+  'Programa de facturación para autónomos online: presupuestos que pasan a factura, facturas recurrentes, control de cobros y uso desde el móvil. Sin tarjeta.';
+
 const faqs = [
   {
-    q: '¿Qué es un software de facturación online y en qué se diferencia de Excel?',
-    a: 'Un software de facturación online es una aplicación web que permite crear, enviar y gestionar facturas desde cualquier dispositivo sin instalar nada. A diferencia de Excel, está diseñado para cumplir con la normativa fiscal española: genera numeración correlativa automática, calcula IVA e IRPF, produce PDFs con el formato legal correcto y está adaptado al Reglamento VeriFactu (hash encadenado y código QR), obligatorio para sociedades desde el 1 de enero de 2027 y para autónomos desde el 1 de julio de 2027. Excel no puede hacer nada de esto y su uso para facturar dejará de ser legal una vez superados esos plazos.',
+    q: '¿Qué hace un programa de facturación para autónomos en el día a día?',
+    a: `Te quita el trabajo repetitivo: guarda tus clientes y productos, calcula el IVA y la retención de IRPF, numera las facturas de forma correlativa, envía el PDF por email y te dice qué facturas están pendientes de cobro. Con ${brandConfig.app.name} además conviertes presupuestos en facturas con un clic y programas las facturas que se repiten cada mes.`,
   },
   {
-    q: '¿Por qué ya no se puede facturar con Excel a partir de 2025?',
-    a: 'La Ley Antifraude 11/2021 (Real Decreto 254/2025) exige que el software de facturación sea “garante”: debe generar un hash encadenado SHA-256 que vincula cada factura con la anterior, un código QR verificable por la AEAT y transmitir cada factura al registro de la Agencia Tributaria. Excel no puede cumplir ninguno de estos requisitos. Las sanciones por seguir usando Excel después del plazo pueden llegar hasta 50.000€ por ejercicio fiscal.',
+    q: '¿Puedo convertir un presupuesto en factura sin volver a escribirlo?',
+    a: 'Sí. Cuando el cliente acepta el presupuesto, lo conviertes en factura (o en factura proforma) con un clic. Se copian el cliente, las líneas, los impuestos y los descuentos, y la factura recibe el siguiente número de su serie.',
   },
   {
-    q: '¿Necesito instalar algo para usar NovaFactura?',
-    a: 'No. NovaFactura funciona completamente en el navegador web (Chrome, Firefox, Safari, Edge) sin instalar nada. Es compatible con ordenador, móvil y tablet. Tus facturas se almacenan de forma segura en la nube con cifrado AES-256 y están disponibles desde cualquier dispositivo en cualquier momento.',
+    q: '¿Cómo funcionan las facturas recurrentes?',
+    a: 'Creas una plantilla con el cliente, los conceptos y la frecuencia (mensual, trimestral, semestral o anual). El programa genera cada factura en su fecha y, si lo activas, la confirma automáticamente. Es ideal para cuotas de mantenimiento, igualas o alquileres.',
   },
   {
-    q: '¿Cuánto cuesta NovaFactura?',
-    a: `NovaFactura es completamente gratuito hasta 2027. A partir de entonces: Plan Starter ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes (VeriFactu incluido, hasta 60 facturas/año) o ${PRICING.starter.annualMonthly.toFixed(2).replace('.', ',')}€/mes en pago anual. Plan PRO ${PRICING.pro.monthly.toFixed(2).replace('.', ',')}€/mes (VeriFactu automático, facturas ilimitadas, soporte prioritario) o ${PRICING.pro.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Sin permanencia.`,
+    q: '¿Cómo controlo qué clientes me deben dinero?',
+    a: 'Cada factura tiene su estado de cobro: pendiente, cobrada parcialmente o cobrada. Registras los pagos (completos o parciales) con su fecha y método, y el panel te muestra el importe pendiente y las facturas vencidas para que sepas a quién reclamar.',
   },
   {
-    q: '¿NovaFactura está homologado por la AEAT como software garante?',
-    a: 'Sí. NovaFactura es software garante certificado por la Agencia Tributaria española. Genera automáticamente el hash encadenado SHA-256, el código QR verificable y transmite cada factura al registro de la AEAT en tiempo real, cumpliendo íntegramente el Real Decreto 254/2025. El cumplimiento es automático desde la primera factura que emites.',
+    q: '¿Hay app móvil?',
+    a: `${brandConfig.app.name} funciona en el navegador del móvil y puedes añadirlo a la pantalla de inicio para abrirlo como una app, sin descargar nada de la tienda. Desde el móvil creas facturas, consultas cobros y envías el PDF al cliente al momento.`,
   },
   {
-    q: '¿Puedo migrar mis facturas y clientes anteriores a NovaFactura?',
-    a: 'Sí. Puedes importar tu base de clientes y el historial de facturas desde Excel, CSV o directamente desde Holded. El proceso es guiado y gratuito. Una vez importados, tus datos históricos quedan disponibles en tu cuenta para consulta y exportación.',
+    q: '¿Me ayuda con el modelo 303 del IVA?',
+    a: 'Sí. El programa genera un resumen trimestral con la base imponible y las cuotas de IVA repercutido para que tú o tu asesor preparéis el modelo 303 sin sumar factura por factura.',
   },
   {
-    q: '¿El software genera un resumen de IVA trimestral para el modelo 303?',
-    a: 'NovaFactura genera un resumen de IVA trimestral con todos los datos necesarios para preparar el modelo 303: base imponible, cuota de IVA repercutido y cuota deducible. El resumen es exportable en PDF o Excel para que tú o tu asesor lo reviséis y presentéis el modelo en la sede electrónica de la AEAT.',
+    q: `¿Cuánto cuesta ${brandConfig.app.name}?`,
+    a: `Es gratis hasta 2027 para las primeras altas. Después, el Plan Básico cuesta ${formatPrice(PRICING.starter.monthly)}€/mes (${formatPrice(PRICING.starter.annualMonthly)}€/mes en pago anual) y el Plan PRO ${formatPrice(PRICING.pro.monthly)}€/mes (${formatPrice(PRICING.pro.annualMonthly)}€/mes anual). Sin permanencia.`,
+  },
+  {
+    q: `¿${brandConfig.app.name} está adaptado a VeriFactu?`,
+    a: 'Sí, mediante declaración responsable del fabricante. Cada factura incluye el hash encadenado y el código QR, y el registro puede enviarse a la AEAT. Cuando VeriFactu sea obligatorio no tendrás que cambiar de programa.',
   },
 ];
 
 export const novafacturaFacturacionOnlineMetadata: Metadata = {
-  title: `Software de facturación online para autónomos y pymes — Gratis hasta 2027 | ${brandConfig.app.name}`,
-  description:
-    'Programa de facturación online con VeriFactu incluido. Crea facturas profesionales en 60 segundos, envía automáticamente a Hacienda y cumple la ley. Gratis hasta 2027. Sin tarjeta.',
-  keywords: [
-    'software de facturación online',
-    'programa de facturación',
-    'programa facturación autónomos',
-    'software facturación pymes',
-    'facturación online gratis',
-    'programa facturar autónomo',
-    'software facturar españa',
-    'facturación verifactu',
-    'programa facturación verifactu',
-    'mejor programa facturación autónomos 2026',
-  ],
-  alternates: { canonical: `${brandConfig.app.url}/facturacion-online` },
+  title: PAGE_TITLE,
+  description: PAGE_DESCRIPTION,
+  alternates: { canonical: PAGE_URL },
   openGraph: {
-    title: `Software de facturación online — Gratis hasta 2027 | ${brandConfig.app.name}`,
-    description:
-      'Programa de facturación con VeriFactu automático. Factura en 60 segundos y cumple con Hacienda sin esfuerzo.',
-    url: `${brandConfig.app.url}/facturacion-online`,
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
+    url: PAGE_URL,
     type: 'website',
     siteName: brandConfig.app.name,
     locale: 'es_ES',
@@ -82,8 +78,8 @@ export const novafacturaFacturacionOnlineMetadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `Software de facturación online gratis hasta 2027 | ${brandConfig.app.name}`,
-    description: 'Factura en 60 segundos. VeriFactu automático. Sin tarjeta.',
+    title: PAGE_TITLE,
+    description: PAGE_DESCRIPTION,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   robots: { index: true, follow: true },
@@ -94,16 +90,24 @@ const softwareJsonLd = {
   '@type': 'SoftwareApplication',
   name: brandConfig.app.name,
   applicationCategory: 'BusinessApplication',
-  operatingSystem: 'Web',
-  url: `${brandConfig.app.url}/facturacion-online`,
+  operatingSystem: 'Web, iOS, Android',
+  url: PAGE_URL,
   description:
-    'Software de facturación online con VeriFactu automático para autónomos y pymes españolas. Gratis hasta 2027.',
+    'Programa de facturación online para autónomos: presupuestos convertibles en factura, facturas recurrentes, control de cobros y uso desde el móvil.',
+  featureList: [
+    'Conversión de presupuesto a factura con un clic',
+    'Facturas recurrentes mensuales, trimestrales, semestrales o anuales',
+    'Control de cobros completos y parciales',
+    'Aviso de facturas vencidas',
+    'Uso desde el móvil sin instalación',
+    'Cálculo automático de IVA e IRPF',
+    'Adaptado a VeriFactu',
+  ],
   offers: {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'EUR',
-    description: 'Completamente gratuito hasta 2027',
-    validThrough: '2027-07-01',
+    description: 'Gratis hasta 2027 para las primeras altas',
   },
   publisher: {
     '@type': 'Organization',
@@ -116,48 +120,11 @@ const softwareJsonLd = {
 const faqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
-  mainEntity: [
-    {
-      '@type': 'Question',
-      name: '¿Qué es un software de facturación online?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Es una aplicación web que permite crear, enviar y gestionar facturas desde cualquier dispositivo sin instalar nada. En España, desde 2025 también debe incluir VeriFactu (hash encadenado, QR y envío a la AEAT).',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: '¿Por qué ya no se puede facturar con Excel?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'La Ley Antifraude 11/2021 obliga a usar software garante certificado por la AEAT. Excel, Word y otros programas no certificados no generan el hash encadenado SHA-256 ni el código QR obligatorio, por lo que las facturas emitidas con ellos no son válidas fiscalmente desde julio 2025.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: '¿Necesito instalar algo para usar NovaFactura?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'No. NovaFactura funciona completamente en el navegador web, sin instalaciones. Es compatible con ordenador, móvil y tablet.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: '¿Cuánto cuesta NovaFactura?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `NovaFactura es completamente gratuito hasta 2027. Después, el Plan Starter cuesta ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes y el Plan PRO ${PRICING.pro.monthly.toFixed(2).replace('.', ',')}€/mes, ambos con VeriFactu incluido.`,
-      },
-    },
-    {
-      '@type': 'Question',
-      name: '¿NovaFactura está homologado por la AEAT?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Sí. NovaFactura es software garante certificado por la AEAT. Genera automáticamente el hash encadenado SHA-256, el código QR y transmite cada factura al registro de la Agencia Tributaria en tiempo real.',
-      },
-    },
-  ],
+  mainEntity: faqs.map(({ q, a }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
 };
 
 const breadcrumbJsonLd = {
@@ -168,107 +135,140 @@ const breadcrumbJsonLd = {
     {
       '@type': 'ListItem',
       position: 2,
-      name: 'Software de facturación online',
-      item: `${brandConfig.app.url}/facturacion-online`,
+      name: 'Programa de facturación para autónomos',
+      item: PAGE_URL,
     },
   ],
 };
 
-const features = [
+const dailyWorkSections = [
   {
-    icon: Shield,
-    title: 'VeriFactu 100% automático',
-    description:
-      'Hash encadenado, QR y envío a la AEAT incluidos en cada factura. Cumplimiento garantizado sin configurar nada.',
-    highlight: true,
+    id: 'presupuestos',
+    icon: ClipboardList,
+    title: 'Presupuestos que pasan a factura con un clic',
+    intro:
+      'Envías el presupuesto, el cliente dice que sí y lo conviertes en factura sin volver a teclear ni una línea.',
+    points: [
+      'Presupuestos en PDF con tu logo, listos para enviar por email',
+      'Estado de cada presupuesto: pendiente, aceptado o rechazado',
+      'Conversión a factura o a factura proforma con un clic',
+      'La factura toma el siguiente número de la serie automáticamente',
+    ],
+    guide: { href: '/facturas/proforma', label: 'Qué es una factura proforma y cuándo usarla' },
   },
   {
-    icon: Zap,
-    title: 'Factura en 60 segundos',
-    description:
-      'Interfaz diseñada para profesionales sin conocimientos contables. Primera factura en minutos.',
-    highlight: false,
+    id: 'recurrentes',
+    icon: RefreshCcw,
+    title: 'Facturas recurrentes que se emiten solas',
+    intro:
+      'Cuotas de mantenimiento, igualas, alquileres: configúralas una vez y olvídate de hacerlas cada mes.',
+    points: [
+      'Frecuencia mensual, trimestral, semestral o anual',
+      'Generación automática en la fecha programada',
+      'Confirmación automática opcional',
+      'Pausa o modifica una recurrente cuando cambie el contrato',
+    ],
+    guide: { href: '/facturas/como-hacer-una-factura', label: 'Cómo hacer una factura correcta' },
   },
   {
-    icon: Send,
-    title: 'Envío por email en PDF',
-    description:
-      'Tu cliente recibe la factura profesional por email al instante, con el QR VeriFactu incluido.',
-    highlight: false,
+    id: 'cobros',
+    icon: Wallet,
+    title: 'Control de cobros: quién te debe y desde cuándo',
+    intro:
+      'Deja de cruzar el extracto del banco con una hoja de Excel. Cada factura sabe si está cobrada.',
+    points: [
+      'Estado de cobro en cada factura: pendiente, parcial o cobrada',
+      'Registro de pagos parciales con fecha y método de pago',
+      'Facturas vencidas destacadas en el panel',
+      'Importe total pendiente de cobro siempre visible',
+    ],
+    guide: { href: '/facturas/con-irpf', label: 'Factura con IRPF: retenciones del 7 % y 15 %' },
   },
   {
-    icon: FileText,
-    title: 'Presupuestos y facturas',
-    description:
-      'Crea presupuestos y conviértelos en factura con un clic cuando el cliente confirme.',
-    highlight: false,
-  },
-  {
+    id: 'movil',
     icon: Smartphone,
-    title: 'Funciona en móvil',
-    description: 'Factura desde casa del cliente, en obra o en desplazamiento. Sin instalar nada.',
-    highlight: false,
-  },
-  {
-    icon: Headphones,
-    title: 'Soporte en español',
-    description: 'Atención personalizada con respuesta en menos de 2 horas hábiles.',
-    highlight: false,
+    title: 'App móvil: factura desde la obra o desde casa del cliente',
+    intro:
+      'Termina el trabajo, haz la factura en el móvil y envíala antes de irte. Sin descargar nada.',
+    points: [
+      'Funciona en el navegador de cualquier móvil o tablet',
+      'Añádela a la pantalla de inicio y ábrela como una app',
+      'Los mismos datos en el móvil y en el ordenador',
+      'Envío del PDF al cliente por email al momento',
+    ],
+    guide: {
+      href: '/facturas/simplificada',
+      label: 'Factura simplificada: cuándo puedes emitirla',
+    },
   },
 ];
 
-const comparisonRows = [
-  { feature: 'Cumplimiento Ley Antifraude 11/2021', excel: false, traditional: false, nova: true },
-  { feature: 'Hash encadenado SHA-256 automático', excel: false, traditional: false, nova: true },
-  { feature: 'Código QR VeriFactu en cada factura', excel: false, traditional: false, nova: true },
-  { feature: 'Envío automático a la AEAT', excel: false, traditional: 'Coste extra', nova: true },
-  { feature: 'Gratis hasta 2027', excel: '—', traditional: false, nova: true },
-  { feature: 'Sin instalación', excel: false, traditional: false, nova: true },
-  { feature: 'Funciona en móvil', excel: false, traditional: 'Parcial', nova: true },
-];
-
-// Machine-readable version of the comparison table below.
-const comparisonTableJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Table',
-  name: `Comparativa: ${brandConfig.app.name} vs. Excel vs. software tradicional`,
-  about:
-    'Comparativa de cumplimiento de la Ley Antifraude 11/2021: hash encadenado SHA-256, código QR VeriFactu, envío automático a la AEAT, precio, instalación y uso en móvil.',
-  description: `${brandConfig.app.name} cumple la Ley Antifraude 11/2021 con hash encadenado SHA-256 automático, código QR VeriFactu en cada factura y envío automático a la AEAT incluido. Ni Excel ni el software tradicional cumplen estos requisitos de serie: en el software tradicional el envío a la AEAT tiene coste extra.`,
-};
-
-const steps = [
+const professions = [
   {
-    num: '01',
-    icon: FileText,
-    title: 'Introduce los datos',
-    desc: 'Cliente, concepto e importe. Menos de 60 segundos.',
+    title: 'Oficios y reformas',
+    desc: 'Fontaneros, electricistas, pintores: presupuesto en obra y factura al terminar.',
   },
   {
-    num: '02',
-    icon: Shield,
-    title: 'El software hace el resto',
-    desc: 'Hash encadenado, QR y envío a la AEAT. Todo automático, sin que toques nada.',
+    title: 'Consultores y freelances',
+    desc: 'Diseño, desarrollo, marketing: igualas mensuales con facturas recurrentes.',
   },
   {
-    num: '03',
-    icon: BadgeCheck,
-    title: 'Factura entregada y registrada',
-    desc: 'Tu cliente recibe el PDF. Hacienda tiene el registro. Tú, tranquilo.',
+    title: 'Profesionales con IRPF',
+    desc: 'Abogados, arquitectos, formadores: retención del 7 % o 15 % aplicada sola.',
+  },
+  {
+    title: 'Agricultores en REAGYP',
+    desc: 'Compensación del 12 % o 10,5 % calculada en cada factura.',
+    href: '/facturacion-autonomo-agricola',
   },
 ];
 
 const trustBadges = [
   { icon: CreditCard, text: 'Sin tarjeta al registrarte' },
   { icon: Clock, text: 'Activación inmediata' },
-  { icon: Shield, text: 'Certificado AEAT' },
+  { icon: Shield, text: 'Adaptado a VeriFactu' },
   { icon: Lock, text: 'RGPD compliant' },
 ];
 
-function CheckCell({ value }: { value: boolean | string }) {
-  if (value === true) return <span className="text-green-600 font-semibold text-sm">✓ Sí</span>;
-  if (value === false) return <span className="text-red-400 text-sm">✗ No</span>;
-  return <span className="text-neutral-400 text-sm">{value}</span>;
+function DailyWorkSection({
+  section,
+  isAlternate,
+}: {
+  section: (typeof dailyWorkSections)[number];
+  isAlternate: boolean;
+}) {
+  const Icon = section.icon;
+  return (
+    <section
+      id={section.id}
+      className={`scroll-mt-20 py-16 md:py-20 ${isAlternate ? 'bg-slate-50' : 'bg-white'}`}
+    >
+      <div className="mx-auto grid max-w-5xl gap-10 px-6 md:grid-cols-2 md:items-center">
+        <div>
+          <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50">
+            <Icon className="h-6 w-6 text-indigo-600" />
+          </div>
+          <h2 className="mb-4 text-2xl font-bold text-slate-900 sm:text-3xl">{section.title}</h2>
+          <p className="text-slate-500">{section.intro}</p>
+          <Link
+            href={section.guide.href}
+            className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:underline"
+          >
+            {section.guide.label}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+        <ul className="space-y-3 rounded-2xl border border-slate-200 bg-white p-6">
+          {section.points.map((point) => (
+            <li key={point} className="flex items-start gap-3 text-sm text-slate-700">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-indigo-500" />
+              {point}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
 }
 
 export function NovafacturaFacturacionOnlinePage(): React.JSX.Element {
@@ -286,10 +286,6 @@ export function NovafacturaFacturacionOnlinePage(): React.JSX.Element {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(comparisonTableJsonLd) }}
-      />
 
       <div className="flex min-h-screen flex-col bg-white">
         <SiteHeader />
@@ -297,17 +293,17 @@ export function NovafacturaFacturacionOnlinePage(): React.JSX.Element {
         {/* Hero */}
         <section className="relative overflow-hidden bg-gradient-to-b from-indigo-50 to-white py-20 md:py-28">
           <div className="mx-auto max-w-4xl px-6 text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700">
-              <Shield className="h-4 w-4" />
-              Software garante certificado AEAT · Ley Antifraude 11/2021
-            </div>
-            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
-              Programa de <span className="text-indigo-600">facturación online</span> para autónomos
-              y pymes
+            <h1
+              data-speakable
+              className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl md:text-6xl"
+            >
+              Programa de facturación para <span className="text-indigo-600">autónomos</span>,
+              online y sin papeles
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-500">
-              Factura en 60 segundos. VeriFactu automático incluido. Cumple con Hacienda sin
-              conocimientos contables — y gratis hasta 2027.
+              Presupuestos que pasan a factura, facturas recurrentes que se emiten solas, control de
+              quién te debe dinero y todo desde el móvil. Lo que haces cada semana, en la mitad de
+              tiempo.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
@@ -315,232 +311,79 @@ export function NovafacturaFacturacionOnlinePage(): React.JSX.Element {
                 className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-7 py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-indigo-700"
               >
                 <Sparkles className="h-5 w-5" />
-                Empezar gratis — hasta 2027 sin coste
+                Probarlo con mis facturas
               </Link>
               <Link
-                href="/precios"
+                href="/funcionalidades"
                 className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-7 py-3.5 text-base font-semibold text-slate-700 shadow-sm transition hover:border-slate-300"
               >
-                Ver planes y precios
+                Ver todas las funcionalidades
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
             <div className="mt-6 flex flex-wrap justify-center gap-4">
-              {trustBadges.map((b) => {
-                const Icon = b.icon;
-                return (
-                  <div key={b.text} className="flex items-center gap-1.5 text-sm text-slate-500">
-                    <Icon className="h-4 w-4 text-indigo-500" />
-                    {b.text}
-                  </div>
-                );
-              })}
+              {trustBadges.map(({ icon: Icon, text }) => (
+                <div key={text} className="flex items-center gap-1.5 text-sm text-slate-500">
+                  <Icon className="h-4 w-4 text-indigo-500" />
+                  {text}
+                </div>
+              ))}
             </div>
+            <nav aria-label="En esta página" className="mt-10 flex flex-wrap justify-center gap-2">
+              {dailyWorkSections.map((section) => (
+                <a
+                  key={section.id}
+                  href={`#${section.id}`}
+                  className="rounded-full border border-indigo-100 bg-white px-4 py-1.5 text-sm font-medium text-indigo-700 hover:border-indigo-300"
+                >
+                  {section.title.split(':')[0]}
+                </a>
+              ))}
+            </nav>
           </div>
         </section>
 
-        {/* Por qué Excel ya no es válido */}
-        <section className="py-16 md:py-20">
-          <div className="mx-auto max-w-4xl px-6">
-            <div className="rounded-2xl border border-red-100 bg-red-50 p-8 md:p-10">
-              <h2 className="mb-6 text-2xl font-bold text-slate-900">
-                Excel ya no es válido para facturar en España
-              </h2>
-              <div className="grid gap-4 sm:grid-cols-3">
-                {[
-                  {
-                    icon: X,
-                    title: 'Sin hash encadenado',
-                    desc: 'Excel no genera el hash SHA-256 del Reglamento VeriFactu → factura no válida tras los plazos de 2027.',
-                  },
-                  {
-                    icon: X,
-                    title: 'Sin código QR',
-                    desc: 'Cada factura debe llevar un QR verificable por la AEAT. Excel no puede generarlo.',
-                  },
-                  {
-                    icon: X,
-                    title: 'Sin envío a Hacienda',
-                    desc: 'La AEAT debe recibir el registro en tiempo real. Con Excel, multas de hasta 50.000€.',
-                  },
-                ].map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={item.title} className="flex gap-3">
-                      <div className="mt-0.5 flex-shrink-0 rounded-full bg-red-100 p-1">
-                        <Icon className="h-4 w-4 text-red-600" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-slate-900 text-sm">{item.title}</p>
-                        <p className="text-sm text-slate-600 mt-0.5">{item.desc}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="mt-6 text-sm text-slate-600">
-                <strong>La solución:</strong> NovaFactura genera el hash, el QR y envía a la AEAT
-                automáticamente en cada factura. Tú solo introduces los datos.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Cómo funciona */}
-        <section className="bg-slate-50 py-16 md:py-20">
-          <div className="mx-auto max-w-4xl px-6">
-            <h2 className="mb-12 text-center text-3xl font-bold text-slate-900">
-              Facturar online nunca fue tan fácil
-            </h2>
-            <div className="grid gap-8 sm:grid-cols-3">
-              {steps.map((step) => {
-                const Icon = step.icon;
-                return (
-                  <div key={step.num} className="text-center">
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600">
-                      <Icon className="h-7 w-7 text-white" />
-                    </div>
-                    <div className="mb-1 text-xs font-bold uppercase tracking-widest text-indigo-500">
-                      Paso {step.num}
-                    </div>
-                    <h3 className="mb-2 text-lg font-bold text-slate-900">{step.title}</h3>
-                    <p className="text-sm text-slate-500">{step.desc}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Funcionalidades */}
-        <section className="py-16 md:py-20">
-          <div className="mx-auto max-w-6xl px-6">
-            <h2 className="mb-4 text-center text-3xl font-bold text-slate-900">
-              Todo lo que necesitas para facturar en España
-            </h2>
-            <p className="mb-12 text-center text-slate-500">
-              Diseñado para autónomos y pymes que quieren cumplir la ley sin complicaciones.
-            </p>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {features.map((f) => {
-                const Icon = f.icon;
-                return (
-                  <div
-                    key={f.title}
-                    className={`rounded-2xl p-6 ${f.highlight ? 'bg-indigo-600 text-white' : 'border border-neutral-100 bg-white'}`}
-                  >
-                    <div
-                      className={`mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl ${f.highlight ? 'bg-white/20' : 'bg-indigo-50'}`}
-                    >
-                      <Icon
-                        className={`h-5 w-5 ${f.highlight ? 'text-white' : 'text-indigo-600'}`}
-                      />
-                    </div>
-                    <h3
-                      className={`mb-2 font-bold ${f.highlight ? 'text-white' : 'text-slate-900'}`}
-                    >
-                      {f.title}
-                    </h3>
-                    <p className={`text-sm ${f.highlight ? 'text-indigo-100' : 'text-slate-500'}`}>
-                      {f.description}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Tabla comparativa */}
-        <section className="bg-slate-50 py-16 md:py-20">
-          <div className="mx-auto max-w-4xl px-6">
-            <h2 className="mb-10 text-center text-3xl font-bold text-slate-900">
-              NovaFactura vs. Excel vs. software tradicional
-            </h2>
-            <div className="overflow-x-auto rounded-2xl border border-neutral-100 bg-white">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-100">
-                    <th className="px-6 py-4 text-left font-semibold text-slate-900">
-                      Característica
-                    </th>
-                    <th className="px-4 py-4 text-center font-semibold text-slate-500">Excel</th>
-                    <th className="px-4 py-4 text-center font-semibold text-slate-500">
-                      Software tradicional
-                    </th>
-                    <th className="px-4 py-4 text-center font-bold text-indigo-600">NovaFactura</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {comparisonRows.map((row, i) => (
-                    <tr key={row.feature} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
-                      <td className="px-6 py-3 text-slate-700">{row.feature}</td>
-                      <td className="px-4 py-3 text-center">
-                        <CheckCell value={row.excel} />
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <CheckCell value={row.traditional} />
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <CheckCell value={row.nova} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-slate-500">
-              En síntesis: ni Excel ni el software tradicional cumplen de serie la Ley Antifraude
-              11/2021 — sin hash encadenado SHA-256, sin código QR VeriFactu y con el envío a la
-              AEAT como coste extra. {brandConfig.app.name} lo incluye todo automáticamente, sin
-              instalación y gratis hasta 2027.
-            </p>
-          </div>
-        </section>
+        {dailyWorkSections.map((section, i) => (
+          <DailyWorkSection key={section.id} section={section} isAlternate={i % 2 === 1} />
+        ))}
 
         {/* Para quién */}
-        <section className="py-16 md:py-20">
+        <section className="bg-slate-50 py-16 md:py-20">
           <div className="mx-auto max-w-4xl px-6">
             <h2 className="mb-10 text-center text-3xl font-bold text-slate-900">
-              Diseñado para cualquier profesional que facture en España
+              Un programa de facturación para cada tipo de autónomo
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              {[
-                { title: 'Autónomos', desc: 'En estimación directa normal o simplificada.' },
-                {
-                  title: 'Freelances',
-                  desc: 'Diseñadores, desarrolladores, consultores, creativos.',
-                },
-                {
-                  title: 'Pequeñas empresas',
-                  desc: 'SL, SA y otras formas jurídicas con facturación básica.',
-                },
-                {
-                  title: 'Asesorías',
-                  desc: 'Gestiona la facturación de todos tus clientes desde un panel centralizado. Gratis para siempre.',
-                  link: '/asesoria',
-                },
-              ].map((item) => (
+              {professions.map((item) => (
                 <div
                   key={item.title}
-                  className="flex items-start gap-3 rounded-xl border border-neutral-100 p-5"
+                  className="flex items-start gap-3 rounded-xl border border-neutral-100 bg-white p-5"
                 >
                   <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-indigo-500" />
                   <div>
                     <p className="font-semibold text-slate-900">{item.title}</p>
                     <p className="text-sm text-slate-500">{item.desc}</p>
-                    {item.link && (
+                    {item.href && (
                       <Link
-                        href={item.link}
+                        href={item.href}
                         className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline"
                       >
-                        Más info para asesorías <ArrowRight className="h-3 w-3" />
+                        Facturación para agricultores <ArrowRight className="h-3 w-3" />
                       </Link>
                     )}
                   </div>
                 </div>
               ))}
             </div>
+            <p className="mt-8 text-center text-sm text-slate-500">
+              ¿Llevas una asesoría?{' '}
+              <Link
+                href="/software-para-asesorias"
+                className="font-medium text-indigo-600 hover:underline"
+              >
+                Software para asesorías y gestorías →
+              </Link>
+            </p>
           </div>
         </section>
 
@@ -548,7 +391,7 @@ export function NovafacturaFacturacionOnlinePage(): React.JSX.Element {
         <section className="bg-indigo-50 py-16 md:py-20">
           <div className="mx-auto max-w-3xl px-6 text-center">
             <h2 className="mb-4 text-3xl font-bold text-slate-900">
-              Gratis hasta 2027. Luego desde {PRICING.starter.monthly.toFixed(2).replace('.', ',')}
+              Sin coste hasta 2027. Luego desde {formatPrice(PRICING.starter.monthly)}
               €/mes.
             </h2>
             <p className="mb-8 text-slate-600">
@@ -560,7 +403,7 @@ export function NovafacturaFacturacionOnlinePage(): React.JSX.Element {
                 className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-7 py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-indigo-700"
               >
                 <Sparkles className="h-5 w-5" />
-                Crear mi cuenta gratis
+                Crear mi cuenta
               </Link>
               <Link href="/precios" className="text-sm font-medium text-indigo-700 hover:underline">
                 Ver todos los planes →
@@ -569,22 +412,23 @@ export function NovafacturaFacturacionOnlinePage(): React.JSX.Element {
           </div>
         </section>
 
-        {/* FAQ */}
-        <FaqSection faqs={faqs} title="Preguntas frecuentes sobre facturación online" />
+        <FaqSection
+          faqs={faqs}
+          title="Preguntas frecuentes sobre el programa de facturación para autónomos"
+        />
 
         <RelatedLinksSection
-          title="Guías de facturación"
+          title="Guías de facturación para autónomos"
           links={[
             { href: '/facturas', label: 'Todos los tipos de facturas' },
             {
               href: '/facturas/como-hacer-una-factura',
               label: 'Cómo hacer una factura paso a paso',
             },
-            { href: '/verifactu', label: 'VeriFactu — guía completa AEAT' },
-            {
-              href: '/verifactu/cuando-es-obligatorio',
-              label: '¿Cuándo es obligatorio VeriFactu?',
-            },
+            { href: '/facturas/con-irpf', label: 'Factura con retención de IRPF' },
+            { href: '/facturas/rectificativa', label: 'Cómo hacer una factura rectificativa' },
+            { href: '/factura-electronica', label: 'Factura electrónica obligatoria' },
+            { href: '/verifactu', label: 'VeriFactu — guía completa' },
           ]}
         />
 
@@ -592,26 +436,17 @@ export function NovafacturaFacturacionOnlinePage(): React.JSX.Element {
         <section className="border-t bg-slate-900 py-16 md:py-20">
           <div className="mx-auto max-w-3xl px-6 text-center">
             <h2 className="mb-4 text-3xl font-bold text-white">
-              Empieza a facturar correctamente hoy
+              Recupera las horas que pierdes facturando
             </h2>
-            <p className="mb-8 text-slate-400">
-              Gratis hasta 2027. Sin tarjeta. Sin compromisos. VeriFactu automático desde el primer
-              día.
-            </p>
+            <p className="mb-8 text-slate-400">Gratis hasta 2027. Sin tarjeta. Sin compromisos.</p>
             <Link
               href="/registro"
               className="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-8 py-4 text-lg font-semibold text-white shadow-lg transition hover:bg-indigo-400"
             >
               <Sparkles className="h-5 w-5" />
-              Crear mi cuenta gratis
+              Crear mi cuenta
               <ArrowRight className="h-5 w-5" />
             </Link>
-            <p className="mt-4 text-sm text-slate-500">
-              ¿Tienes dudas sobre VeriFactu?{' '}
-              <Link href="/verifactu" className="text-indigo-400 hover:underline">
-                Lee nuestra guía completa →
-              </Link>
-            </p>
           </div>
         </section>
 

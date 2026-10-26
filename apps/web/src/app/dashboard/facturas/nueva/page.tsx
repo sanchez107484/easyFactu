@@ -56,6 +56,7 @@ import { useCreateRecurringInvoice } from '@/hooks/use-recurring-invoices';
 import { SaveAsDefaultBanner } from '@/components/facturas/SaveAsDefaultBanner';
 import { useInvoiceFormKeyDown } from '@/hooks/use-invoice-form-key-down';
 import { useDebounce } from '@/hooks/use-debounce';
+import { useIntracommunityLegalNotes } from '@/hooks/use-intracommunity-legal-notes';
 import { InvoiceFormHeader } from './_components/invoice-form-header';
 import { InvoiceGeneralDataCard } from './_components/invoice-general-data-card';
 import { DiscountsSectionGeneral } from '@/components/facturas/DiscountsSectionGeneral';
@@ -259,7 +260,16 @@ function InvoiceForm({
   const selectedSeries = availableSeries.find((s) => s.id === effectiveSeriesId) ?? null;
   const selectedCustomer =
     customers.find((c) => c.id === watchedValues.customerId) ??
-    (editDraftId ? sourceCustomer ?? undefined : undefined);
+    (editDraftId ? (sourceCustomer ?? undefined) : undefined);
+
+  const hasIntracommunityNote = useIntracommunityLegalNotes(
+    selectedCustomer?.type,
+    (watchedValues.lines ?? []).map((line) => line._mode),
+    {
+      getNotes: () => form.getValues('notes'),
+      setNotes: (notes) => form.setValue('notes', notes, { shouldDirty: true }),
+    },
+  );
 
   // Auto-populate compensacionPercent when the customer or tenant changes.
   // This sets the sensible default but leaves the user free to override it.
@@ -778,13 +788,28 @@ function InvoiceForm({
                   {showCompensacion ? (
                     <DiscountsSectionReagyp
                       discountPercentProps={form.register('discountPercent', {
-                        setValueAs: (v) => (v === '' ? undefined : isNaN(Number(v)) ? undefined : Math.max(0, Number(v))),
+                        setValueAs: (v) =>
+                          v === ''
+                            ? undefined
+                            : isNaN(Number(v))
+                              ? undefined
+                              : Math.max(0, Number(v)),
                       })}
                       compensacionPercentProps={form.register('compensacionPercent', {
-                        setValueAs: (v) => (v === '' ? undefined : isNaN(Number(v)) ? undefined : Math.max(0, Number(v))),
+                        setValueAs: (v) =>
+                          v === ''
+                            ? undefined
+                            : isNaN(Number(v))
+                              ? undefined
+                              : Math.max(0, Number(v)),
                       })}
                       irpfPercentProps={form.register('irpfPercent', {
-                        setValueAs: (v) => (v === '' ? undefined : isNaN(Number(v)) ? undefined : Math.max(0, Number(v))),
+                        setValueAs: (v) =>
+                          v === ''
+                            ? undefined
+                            : isNaN(Number(v))
+                              ? undefined
+                              : Math.max(0, Number(v)),
                       })}
                       isCustomerReagyp={selectedCustomer?.isReagyp ?? false}
                       onFocus={() => setActiveSection('discountPercent')}
@@ -792,10 +817,20 @@ function InvoiceForm({
                   ) : (
                     <DiscountsSectionGeneral
                       discountPercentProps={form.register('discountPercent', {
-                        setValueAs: (v) => (v === '' ? undefined : isNaN(Number(v)) ? undefined : Math.max(0, Number(v))),
+                        setValueAs: (v) =>
+                          v === ''
+                            ? undefined
+                            : isNaN(Number(v))
+                              ? undefined
+                              : Math.max(0, Number(v)),
                       })}
                       irpfPercentProps={form.register('irpfPercent', {
-                        setValueAs: (v) => (v === '' ? undefined : isNaN(Number(v)) ? undefined : Math.max(0, Number(v))),
+                        setValueAs: (v) =>
+                          v === ''
+                            ? undefined
+                            : isNaN(Number(v))
+                              ? undefined
+                              : Math.max(0, Number(v)),
                       })}
                       showEquivalenceSurchargeInfo={equivalenceSurchargeRates != null}
                       onFocus={() => setActiveSection('discountPercent')}
@@ -838,6 +873,13 @@ function InvoiceForm({
                       placeholder="Información adicional para el cliente..."
                       rows={3}
                     />
+                    {hasIntracommunityNote && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Cliente intracomunitario: hemos añadido la mención legal obligatoria
+                        (entrega de bienes o inversión del sujeto pasivo). Revísala antes de
+                        confirmar.
+                      </p>
+                    )}
                   </section>
                 </CardContent>
               </Card>

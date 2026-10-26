@@ -345,7 +345,7 @@ export function ContactoForm() {
               <span className="text-sm text-slate-600">
                 He leído y acepto la{' '}
                 <Link
-                  href="/privacidad"
+                  href="/politica-privacidad"
                   className="text-blue-600 underline underline-offset-2 hover:no-underline"
                 >
                   política de privacidad

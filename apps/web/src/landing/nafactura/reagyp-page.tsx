@@ -183,18 +183,6 @@ export const nafacturaReagypMetadata: Metadata = {
   title: `Facturación para autónomos agrícolas en Navarra | ${brandConfig.app.name}`,
   description:
     'Programa de facturación para autónomos del sector agrario navarro: agricultores, ganaderos y pescadores. Adaptado a Hacienda Foral de Navarra. IVA agrario gestionado. Gratis hasta 2027.',
-  keywords: [
-    'facturación autónomo agrícola Navarra',
-    'programa facturación agricultor Navarra',
-    'software facturas ganadero Navarra',
-    'facturar autónomo agricultor Navarra',
-    'iva autónomo agricultor Navarra',
-    'hacienda foral agricultura autónomos',
-    'régimen agrario Navarra facturación',
-    'autónomo campo Navarra facturación',
-    'naticket agricultor exento',
-    'facturación sector primario Navarra',
-  ],
   alternates: { canonical: `${brandConfig.app.url}/facturacion-autonomo-agricola` },
   openGraph: {
     title: `Facturación para autónomos agrícolas en Navarra | ${brandConfig.app.name}`,

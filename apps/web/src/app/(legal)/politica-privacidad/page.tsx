@@ -14,6 +14,7 @@ export default function PoliticaPrivacidadPage() {
 
   return (
     <LegalPageWrapper
+      path="/politica-privacidad"
       title="Política de Privacidad"
       subtitle="Cómo recopilamos, usamos y protegemos tus datos personales."
       lastUpdated="14 de abril de 2026"

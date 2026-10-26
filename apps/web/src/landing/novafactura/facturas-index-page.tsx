@@ -4,6 +4,7 @@ import { ArrowRight, BookOpen, FileText, Sparkles } from 'lucide-react';
 import { brandConfig } from '@easyfactura/brand-config';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
+import { PricingGuideLink } from '@/components/marketing/pricing-guide-link';
 import FaqSection from '@/components/FaqSection';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 
@@ -11,18 +12,6 @@ export const novafacturaFacturasIndexMetadata: Metadata = {
   title: `Guías de facturación en España — Tipos de facturas y cómo hacerlas | ${brandConfig.app.name}`,
   description:
     'Todo sobre facturación en España: cómo hacer una factura, facturas con IRPF, rectificativas, proforma, simplificadas, intracomunitarias. Guías prácticas y gratuitas.',
-  keywords: [
-    'tipos de facturas en españa',
-    'guia facturacion españa',
-    'como hacer una factura',
-    'tipos de facturas autonomos',
-    'factura con irpf',
-    'factura rectificativa',
-    'factura proforma',
-    'factura simplificada',
-    'factura intracomunitaria',
-    'facturacion autónomos españa',
-  ],
   alternates: { canonical: `${brandConfig.app.url}/facturas` },
   openGraph: {
     title: `Guías de facturación en España | ${brandConfig.app.name}`,
@@ -81,7 +70,7 @@ const faqs = [
   },
   {
     q: '¿Todas las facturas necesitan VeriFactu?',
-    a: 'Sí, una vez superado el plazo que corresponda: el software de facturación solo puede comercializarse adaptado desde el 29 de julio de 2025; las sociedades deben facturar con software VeriFactu desde el 1 de enero de 2027; y los autónomos, desde el 1 de julio de 2027. Todos los tipos de factura — ordinarias, rectificativas, simplificadas, intracomunitarias — deben cumplir los requisitos VeriFactu una vez entre en vigor el plazo correspondiente.',
+    a: 'Sí, cuando entre en vigor la obligación (Hacienda ha anunciado octubre de 2028 (pendiente de BOE)). Todos los tipos de factura — ordinarias, rectificativas, simplificadas, intracomunitarias — deben cumplir los requisitos VeriFactu una vez entre en vigor el plazo correspondiente.',
   },
 ];
 
@@ -278,6 +267,11 @@ export function NovafacturaFacturasIndexPage(): React.JSX.Element {
               label: 'VeriFactu AEAT',
               description: 'El hash encadenado del Reglamento VeriFactu. Qué es y cómo cumplirlo.',
             },
+            {
+              href: '/facturacion-online',
+              label: 'Programa de facturación para autónomos',
+              description: 'Presupuestos, recurrentes y control de cobros desde el móvil.',
+            },
           ]}
         />
 
@@ -302,6 +296,8 @@ export function NovafacturaFacturasIndexPage(): React.JSX.Element {
         </section>
 
         <FaqSection faqs={faqs} title="Preguntas frecuentes sobre facturas" />
+
+        <PricingGuideLink />
 
         <FooterLanding />
       </div>

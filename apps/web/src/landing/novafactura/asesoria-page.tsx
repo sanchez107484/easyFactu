@@ -51,8 +51,8 @@ const faqs = [
     a: 'Sí. Si tienes una lista de clientes en Excel o CSV con su nombre, NIF y datos de contacto, puedes importarla directamente al panel. En cuestión de minutos tienes toda tu cartera cargada sin introducir nada a mano.',
   },
   {
-    q: '¿NovaFactura está certificado por la AEAT?',
-    a: 'NovaFactura cumple íntegramente el Real Decreto 254/2025. Como productor del sistema, emitimos la declaración responsable correspondiente, generando automáticamente el hash SHA-256, el código QR verificable y transmitiendo cada factura al registro de la AEAT en tiempo real.',
+    q: '¿NovaFactura está adaptado a VeriFactu?',
+    a: 'Sí. NovaFactura está adaptado a VeriFactu (declaración responsable del fabricante): la AEAT no homologa ni certifica programas, sino que cada fabricante declara que cumple el Reglamento (Real Decreto 1007/2023). El sistema funciona generando automáticamente el hash SHA-256, el código QR verificable y transmitiendo cada factura al registro de la AEAT en tiempo real.',
   },
   {
     q: '¿Hay un límite de facturas que puedo emitir al mes?',
@@ -64,15 +64,6 @@ export const novafacturaAsesoriaMetadata: Metadata = {
   title: `VeriFactu para asesorías y gestorías | ${brandConfig.app.name}`,
   description:
     'Cumple con VeriFactu en tu asesoría sin que tus clientes tengan que aprender a facturar. Panel centralizado, gratuito y preparado para el RD 254/2025.',
-  keywords: [
-    'verifactu para asesorías',
-    'verifactu asesoría',
-    'verifactu gestorías',
-    'cumplimiento verifactu asesoría',
-    'software garante verifactu',
-    'rd 254/2025 asesorías',
-    'declaración responsable software facturación',
-  ],
   alternates: {
     canonical: `${brandConfig.app.url}/asesoria`,
   },
@@ -372,13 +363,13 @@ export function NovafacturaAsesoriaPage() {
                 <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
                 <div>
                   <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                    La normativa de facturación cambia en julio de 2027.
+                    Hacienda ha anunciado octubre de 2028 (pendiente de BOE).
                   </p>
                   <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
-                    Desde esa fecha, los sistemas informáticos de facturación deben cumplir el RD
-                    254/2025. Si tu asesoría hace las facturas de sus clientes, necesitas un sistema
-                    que cumpla por ti y evite errores manuales. NovaFactura está preparado para esa
-                    fecha.
+                    A partir de entonces, los sistemas informáticos de facturación deberán cumplir el
+                    Reglamento VeriFactu. Si tu asesoría hace las facturas de sus clientes, necesitas
+                    un sistema que cumpla por ti y evite errores manuales. NovaFactura ya está
+                    adaptado.
                   </p>
                 </div>
               </div>

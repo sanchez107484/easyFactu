@@ -1,4 +1,8 @@
-import { VERIFACTU_DEADLINES, VERIFACTU_LEGISLATION } from '@/lib/verifactu-deadlines';
+import {
+  VERIFACTU_ANNOUNCED_DEADLINE,
+  VERIFACTU_DEADLINES,
+  VERIFACTU_LEGISLATION,
+} from '@/lib/verifactu-deadlines';
 
 /**
  * Canonical VeriFactu deadline table with BOE source links.
@@ -29,7 +33,19 @@ export function VerifactuDeadlines() {
         ))}
       </dl>
       <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-relaxed text-slate-500 dark:border-gray-800 dark:text-gray-400">
-        Fuentes oficiales (BOE):{' '}
+        Anuncio del aplazamiento:{' '}
+        <a
+          href={VERIFACTU_ANNOUNCED_DEADLINE.source.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline decoration-slate-300 underline-offset-2 transition-colors hover:text-slate-800 dark:decoration-gray-600 dark:hover:text-gray-200"
+        >
+          {VERIFACTU_ANNOUNCED_DEADLINE.source.name}
+        </a>
+        .
+      </p>
+      <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-gray-400">
+        Normativa (BOE):{' '}
         {VERIFACTU_LEGISLATION.map((law, index) => (
           <span key={law.url}>
             {index > 0 && ' · '}

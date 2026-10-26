@@ -4,15 +4,6 @@ import { brandConfig } from '@easyfactura/brand-config';
 export const metadata: Metadata = {
   title: `Contacto — Habla con nuestro equipo de soporte`,
   description: `¿Tienes dudas sobre ${brandConfig.app.name}? Contacta con nuestro equipo de soporte en español. Tiempo de respuesta inferior a 2 horas. Ayuda con VeriFactu, migraciones, planes y facturación electrónica.`,
-  keywords: [
-    'contacto software facturación',
-    'soporte facturación electrónica',
-    'ayuda verifactu',
-    'soporte novafactura',
-    'consulta facturación autónomos',
-    'migración software facturación',
-    'soporte español facturación',
-  ],
   alternates: {
     canonical: `${brandConfig.app.url}/contacto`,
   },

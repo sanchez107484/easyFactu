@@ -16,6 +16,7 @@ import {
   Clock,
   UserPlus,
 } from 'lucide-react';
+import { softwareApplicationJsonLd } from '@/lib/structured-data';
 
 const PAGE_URL = `${brandConfig.app.url}/software-para-asesorias`;
 
@@ -50,15 +51,6 @@ export const novafacturaSoftwareParaAsesoriasMetadata: Metadata = {
   title: `Software para Asesorías y Gestorías | ${brandConfig.app.name}`,
   description:
     'Software de facturación para asesorías y gestorías. Gestiona la facturación de múltiples clientes, cumple con VeriFactu y exporta a tu contable. Gratis para despachos.',
-  keywords: [
-    'software para asesorías',
-    'software para gestorías',
-    'programa para asesorías',
-    'programa de facturación para asesorías',
-    'software facturación asesorías',
-    'software multi cliente asesorías',
-    'software para despachos profesionales',
-  ],
   alternates: { canonical: PAGE_URL },
   openGraph: {
     title: `Software para Asesorías y Gestorías | ${brandConfig.app.name}`,
@@ -87,23 +79,11 @@ export const novafacturaSoftwareParaAsesoriasMetadata: Metadata = {
 };
 
 // --- SCHEMAS ---
-const softwareJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
-  name: `${brandConfig.app.name} — Software para asesorías`,
-  applicationCategory: 'BusinessApplication',
-  operatingSystem: 'Web',
-  url: PAGE_URL,
+const softwareJsonLd = softwareApplicationJsonLd({
+  path: '/software-para-asesorias',
   description:
     'Software de facturación para asesorías y gestorías que gestionan la facturación de sus clientes desde un único panel.',
-  offers: {
-    '@type': 'Offer',
-    price: '0',
-    priceCurrency: 'EUR',
-    description: 'Panel de asesoría gratuito',
-  },
-  publisher: { '@type': 'Organization', name: brandConfig.app.name, url: brandConfig.app.url },
-};
+});
 
 const breadcrumbJsonLd = {
   '@context': 'https://schema.org',

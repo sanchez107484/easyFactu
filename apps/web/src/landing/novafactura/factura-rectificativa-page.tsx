@@ -7,23 +7,12 @@ import SiteHeader from '@/components/site-header';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import FaqSection from '@/components/FaqSection';
 import FooterLanding from '@/components/FooterLanding';
+import { PricingGuideLink } from '@/components/marketing/pricing-guide-link';
 
 export const novafacturaFacturaRectificativaMetadata: Metadata = {
   title: `Factura rectificativa — Qué es y cómo hacerla 2026 | ${brandConfig.app.name}`,
   description:
     'Guía sobre la factura rectificativa: qué es, cuándo se emite, qué datos debe incluir, cómo afecta al IVA y cómo hacerla correctamente según la normativa española.',
-  keywords: [
-    'factura rectificativa',
-    'que es una factura rectificativa',
-    'como hacer una factura rectificativa',
-    'factura rectificativa ejemplo',
-    'cuando emitir factura rectificativa',
-    'rectificar factura emitida',
-    'factura rectificativa iva',
-    'nota de credito factura',
-    'factura rectificativa modelo',
-    'corregir una factura',
-  ],
   alternates: { canonical: `${brandConfig.app.url}/facturas/rectificativa` },
   openGraph: {
     title: `Factura rectificativa — Cómo corregir una factura 2026 | ${brandConfig.app.name}`,
@@ -272,7 +261,7 @@ export function NovafacturaFacturaRectificativaPage(): React.JSX.Element {
             { href: '/facturas/con-irpf', label: 'Factura con IRPF' },
             { href: '/facturas/proforma', label: 'Factura proforma' },
             { href: '/facturas', label: 'Todos los tipos de facturas' },
-            { href: '/facturacion-online', label: 'Software para emitir rectificativas' },
+            { href: '/facturacion-online', label: 'Programa de facturación para autónomos online' },
           ]}
         />
 
@@ -280,6 +269,8 @@ export function NovafacturaFacturaRectificativaPage(): React.JSX.Element {
           title="NovaFactura gestiona las rectificativas automáticamente"
           description="Con un clic genera la rectificativa referenciando la original, con su serie R- y el QR VeriFactu correcto."
         />
+
+        <PricingGuideLink />
 
         <FooterLanding />
       </div>

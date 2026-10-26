@@ -14,6 +14,7 @@ export default function TerminosUsoPage() {
 
   return (
     <LegalPageWrapper
+      path="/terminos-uso"
       title="Términos de Uso"
       subtitle="Condiciones generales para el acceso y uso del servicio."
       lastUpdated="14 de abril de 2026"

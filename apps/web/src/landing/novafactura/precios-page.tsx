@@ -6,205 +6,41 @@ import {
   CheckCircle2,
   ArrowRight,
   Sparkles,
-  Shield,
   Zap,
-  Users,
   Clock,
   CreditCard,
   Star,
   BadgeCheck,
-  Headphones,
   Lock,
-  Smartphone,
-  FileText,
-  Send,
   ChevronDown,
   X,
   TrendingUp,
-  AlertTriangle,
-  Receipt,
 } from 'lucide-react';
-import { brandConfig, PRICING, PLAZAS_CONFIG } from '@easyfactura/brand-config';
+import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
+import { FreeOfferEndedNotice } from '@/components/marketing/free-slots-meter';
+import { formatCount, type SignupSlots } from '@/lib/signup-slots';
+import { PlanFeatureList } from '@/components/marketing/plan-feature-list';
+import {
+  ALL_PLAN_FEATURES,
+  BASIC_PLAN_FEATURES,
+  PLAN_DESCRIPTIONS,
+  PLAN_NAMES,
+  PRO_ONLY_AVAILABLE_FEATURES,
+  PRO_ONLY_FEATURES,
+} from '@/lib/plan-features';
 import SiteHeader from '@/components/site-header';
+import { VerifactuMarketPrices } from '@/components/marketing/verifactu-market-prices';
+import { breadcrumbJsonLd, softwareApplicationJsonLd } from '@/lib/structured-data';
+import { VERIFACTU_MARKET_PRICES } from '@/lib/verifactu-market-prices';
 
 const STARTER = PRICING.starter;
 const PRO = PRICING.pro;
 
-const priceValidUntil = new Date(new Date().getFullYear() + 1, new Date().getMonth(), 1)
-  .toISOString()
-  .split('T')[0];
-
-const schemaData = {
-  '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type': 'Product',
-      name: `${brandConfig.app.name} — Plan Starter`,
-      description: `Software de facturación con VeriFactu incluido para autónomos y pymes. Gratis hasta 2027, luego ${PRICING.starter.monthly}€/mes o ${PRICING.starter.annualMonthly}€/mes con pago anual. Sin tarjeta al registrarte. Hasta 60 facturas al año.`,
-      brand: { '@type': 'Brand', name: brandConfig.app.name },
-      offers: [
-        {
-          '@type': 'Offer',
-          name: `Plan Starter — Gratis hasta 2027`,
-          price: '0',
-          priceCurrency: 'EUR',
-          priceValidUntil,
-          availability: 'https://schema.org/LimitedAvailability',
-          url: `${brandConfig.app.url}/precios`,
-        },
-        {
-          '@type': 'Offer',
-          name: 'Plan Starter — Mensual',
-          price: String(PRICING.starter.monthly),
-          priceCurrency: 'EUR',
-          availability: 'https://schema.org/InStock',
-          url: `${brandConfig.app.url}/precios`,
-        },
-        {
-          '@type': 'Offer',
-          name: 'Plan Starter — Anual',
-          price: String(PRICING.starter.annualTotal),
-          priceCurrency: 'EUR',
-          description: `Facturado anualmente. Equivale a ${PRICING.starter.annualMonthly}€/mes. Ahorra ${PRICING.starter.annualSaving}€ al año.`,
-          availability: 'https://schema.org/InStock',
-          url: `${brandConfig.app.url}/precios`,
-        },
-      ],
-    },
-    {
-      '@type': 'Product',
-      name: `${brandConfig.app.name} — Plan PRO`,
-      description: `Software de facturación VeriFactu para autónomos y pymes. Gratis hasta 2027, luego ${PRICING.pro.monthly}€/mes o ${PRICING.pro.annualMonthly}€/mes con pago anual.`,
-      brand: { '@type': 'Brand', name: brandConfig.app.name },
-      offers: [
-        {
-          '@type': 'Offer',
-          name: `Plan PRO — Gratis hasta 2027`,
-          price: '0',
-          priceCurrency: 'EUR',
-          priceValidUntil,
-          availability: 'https://schema.org/LimitedAvailability',
-          url: `${brandConfig.app.url}/precios`,
-        },
-        {
-          '@type': 'Offer',
-          name: 'Plan PRO — Mensual',
-          price: String(PRICING.pro.monthly),
-          priceCurrency: 'EUR',
-          availability: 'https://schema.org/InStock',
-          url: `${brandConfig.app.url}/precios`,
-        },
-        {
-          '@type': 'Offer',
-          name: 'Plan PRO — Anual',
-          price: String(PRICING.pro.annualTotal),
-          priceCurrency: 'EUR',
-          description: `Facturado anualmente. Equivale a ${PRICING.pro.annualMonthly}€/mes. Ahorra ${PRICING.pro.annualSaving}€ al año.`,
-          availability: 'https://schema.org/InStock',
-          url: `${brandConfig.app.url}/precios`,
-        },
-      ],
-      aggregateRating: {
-        '@type': 'AggregateRating',
-        ratingValue: '4.9',
-        reviewCount: '214',
-        bestRating: '5',
-      },
-    },
-    {
-      '@type': 'FAQPage',
-      mainEntity: [
-        {
-          '@type': 'Question',
-          name: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: `Tienes dos planes: Plan Starter a ${PRICING.starter.monthly}€/mes (${PRICING.starter.annualMonthly}€/mes anual) con VeriFactu incluido y hasta 60 facturas al año, y Plan PRO a ${PRICING.pro.monthly}€/mes (${PRICING.pro.annualMonthly}€/mes anual) con facturas ilimitadas. Sin permanencia.`,
-          },
-        },
-        {
-          '@type': 'Question',
-          name: '¿Cuál es la diferencia entre Plan Starter y Plan PRO?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: `Ambos planes incluyen VeriFactu automático, hash encadenado, código QR y envío directo a la AEAT. La diferencia es el límite de facturas: Starter hasta 60 al año, PRO ilimitadas.`,
-          },
-        },
-        {
-          '@type': 'Question',
-          name: `¿Qué incluye el acceso gratuito hasta 2027?`,
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: `Acceso completo al plan que elijas — sin restricciones ni versión reducida. Todas las funcionalidades, VeriFactu incluido, sin poner tarjeta.`,
-          },
-        },
-        {
-          '@type': 'Question',
-          name: '¿Puedo cambiar de Starter a PRO más adelante?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: 'Sí. Upgrade en cualquier momento desde el panel de ajustes con un clic. El cambio es inmediato.',
-          },
-        },
-        {
-          '@type': 'Question',
-          name: '¿Necesito tarjeta de crédito para registrarme?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: `No. Solo necesitas tu email. No pedimos datos de pago hasta 2027.`,
-          },
-        },
-        {
-          '@type': 'Question',
-          name: '¿Cuánto ahorro eligiendo el plan anual?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: `Con Plan Starter anual ahorras ${PRICING.starter.annualSaving}€. Con Plan PRO anual ahorras ${PRICING.pro.annualSaving}€. En ambos casos, más de 2 meses gratis respecto al mensual.`,
-          },
-        },
-        {
-          '@type': 'Question',
-          name: '¿Puedo cancelar en cualquier momento?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: 'Sí, sin permanencia mínima ni letra pequeña. Cancelas desde el panel en menos de un minuto.',
-          },
-        },
-        {
-          '@type': 'Question',
-          name: '¿Puedo migrar mis facturas actuales?',
-          acceptedAnswer: {
-            '@type': 'Answer',
-            text: `Sí. Importación gratuita desde Excel, CSV o Holded. El equipo de ${brandConfig.app.name} te ayuda sin coste adicional.`,
-          },
-        },
-      ],
-    },
-  ],
-};
-
-const sharedFeatures = [
-  { text: 'Clientes ilimitados', icon: Users },
-  { text: 'PDF profesional personalizable', icon: FileText },
-  { text: 'Presupuestos y proformas', icon: CheckCircle2 },
-  { text: 'Facturas recurrentes automáticas', icon: Zap },
-  { text: 'VeriFactu automático (hash + QR)', icon: Shield },
-  { text: 'Envío directo a la AEAT', icon: Send },
-  { text: 'App web + móvil', icon: Smartphone },
-  { text: 'Seguridad y cifrado RGPD', icon: Lock },
-  { text: 'Homologado por la AEAT', icon: BadgeCheck },
-  { text: 'Soporte en español', icon: Headphones },
-];
+const preciosSoftwareJsonLd = softwareApplicationJsonLd({ path: '/precios' });
+const preciosBreadcrumbJsonLd = breadcrumbJsonLd([{ name: 'Precios', path: '/precios' }]);
 
 const comparisonRows = [
-  { label: 'Facturas ilimitadas', starter: false, pro: true, excel: true, otros: true },
-  {
-    label: 'Hasta 60 facturas/año (Starter)',
-    starter: true,
-    pro: false,
-    excel: false,
-    otros: false,
-  },
+  { label: 'Facturas ilimitadas', starter: true, pro: true, excel: true, otros: true },
   { label: 'Clientes ilimitados', starter: true, pro: true, excel: true, otros: true },
   { label: 'PDF profesional', starter: true, pro: true, excel: false, otros: true },
   { label: 'Presupuestos / proformas', starter: true, pro: true, excel: false, otros: '€€ extra' },
@@ -212,7 +48,13 @@ const comparisonRows = [
   { label: 'VeriFactu automático', starter: true, pro: true, excel: false, otros: false },
   { label: 'Hash encadenado + QR', starter: true, pro: true, excel: false, otros: '€€ extra' },
   { label: 'Envío AEAT integrado', starter: true, pro: true, excel: false, otros: '€€ extra' },
-  { label: 'Gestión de gastos (PRO)', starter: false, pro: true, excel: false, otros: false },
+  ...PRO_ONLY_AVAILABLE_FEATURES.map((label) => ({
+    label,
+    starter: false,
+    pro: true,
+    excel: false,
+    otros: false,
+  })),
   { label: 'Gratis hasta 2027', starter: true, pro: true, excel: false, otros: false },
   { label: 'Sin tarjeta al registrarte', starter: true, pro: true, excel: true, otros: false },
   { label: 'Soporte en español', starter: true, pro: true, excel: false, otros: '€€ extra' },
@@ -224,10 +66,10 @@ const comparisonRows = [
 const comparisonTableJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Table',
-  name: `Comparativa de planes y alternativas: ${brandConfig.app.name} Starter, PRO, Excel y otros software`,
+  name: `Comparativa de planes y alternativas: ${brandConfig.app.name} Básico, PRO, Excel y otros software`,
   about:
-    'Comparativa de funcionalidades y precio: límite de facturas, clientes, PDF, presupuestos, facturas recurrentes, VeriFactu, hash encadenado con QR, envío AEAT y permanencia.',
-  description: `Los planes Starter y PRO de ${brandConfig.app.name} incluyen VeriFactu automático, hash encadenado con QR y envío a la AEAT sin coste adicional; la única diferencia entre ellos es el límite de 60 facturas al año del plan Starter. Excel/Word no cumple la Ley Antifraude y la mayoría de otros software cobran el VeriFactu aparte.`,
+    'Comparativa de funcionalidades y precio: facturas, clientes, PDF, presupuestos, facturas recurrentes, VeriFactu, hash encadenado con QR, envío AEAT y permanencia.',
+  description: `Los dos planes tienen facturas ilimitadas y VeriFactu incluido. Se diferencian en las funcionalidades: el Básico cubre toda la facturación (presupuestos, proformas, rectificativas, recurrentes y plantillas) y el PRO añade gestión avanzada de gastos, proveedores, análisis de rentabilidad, informes profesionales y soporte prioritario.`,
 };
 
 const testimonials = [
@@ -235,7 +77,7 @@ const testimonials = [
     name: 'Laura García',
     role: 'Diseñadora freelance',
     location: 'Madrid',
-    text: 'Conseguí una de las plazas gratuitas y llevo 4 meses sin preocuparme por Hacienda. Cuando pase 2027 pagaré los 24,90€ del plan anual encantada, porque el ahorro en tiempo y nervios es brutal.',
+    text: `Conseguí una de las plazas gratuitas y llevo 4 meses sin preocuparme por Hacienda. Cuando pase 2027 pagaré los ${formatPrice(PRICING.pro.annualMonthly)}€ del plan anual encantada, porque el ahorro en tiempo y nervios es brutal.`,
     stars: 5,
     initials: 'LG',
     saving: 'Ahorra ~3h/semana',
@@ -253,7 +95,7 @@ const testimonials = [
     name: 'Patricia Gurrea',
     role: 'Consultora de negocio',
     location: 'Pamplona',
-    text: 'El precio de 24,90€ al mes (anual) me parece muy justo para todo lo que incluye. Y que sea gratis hasta 2027 me convenció para probarlo sin ningún riesgo.',
+    text: `El precio de ${formatPrice(PRICING.pro.annualMonthly)}€ al mes (anual) me parece muy justo para todo lo que incluye. Y que sea gratis hasta 2027 me convenció para probarlo sin ningún riesgo.`,
     stars: 5,
     initials: 'PG',
     saving: 'ROI positivo en 1 mes',
@@ -263,18 +105,26 @@ const testimonials = [
 const faqs = [
   {
     q: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
-    a: `Tienes dos planes: Plan Starter a ${PRICING.starter.monthly}€/mes (${PRICING.starter.annualMonthly}€/mes anual) con VeriFactu incluido y hasta 60 facturas al año, y Plan PRO a ${PRICING.pro.monthly}€/mes (${PRICING.pro.annualMonthly}€/mes anual) con facturas ilimitadas. Sin permanencia.`,
+    a: `Tienes dos planes, los dos con facturas ilimitadas y VeriFactu: Plan Básico a ${formatPrice(PRICING.starter.monthly)}€/mes (${formatPrice(PRICING.starter.annualMonthly)}€/mes anual) y Plan PRO a ${formatPrice(PRICING.pro.monthly)}€/mes (${formatPrice(PRICING.pro.annualMonthly)}€/mes anual), que añade gastos, proveedores, rentabilidad e informes. Sin permanencia.`,
   },
   {
-    q: '¿Cuál es la diferencia entre Plan Starter y Plan PRO?',
-    a: `Ambos planes incluyen VeriFactu automático, hash encadenado, código QR y envío directo a la AEAT. La diferencia es el límite de facturas: Starter hasta 60 al año, PRO ilimitadas.`,
+    q: '¿Cuánto cuesta implementar VeriFactu?',
+    a: `Para un autónomo o una pyme, implementar VeriFactu es usar un programa de facturación adaptado: no hace falta instalar equipos ni contratar a un técnico. El coste es la cuota del programa, que en el mercado va ${VERIFACTU_MARKET_PRICES.overallRange} en pago anual (${VERIFACTU_MARKET_PRICES.checkedAt.label}). Con ${brandConfig.app.name} es 0 € hasta 2027 y después desde ${formatPrice(PRICING.starter.annualMonthly)} €/mes. Si ya tienes certificado digital (el de persona física de la FNMT es gratuito), no hay más costes.`,
+  },
+  {
+    q: '¿Qué pasa al acabar el periodo gratuito?',
+    a: `Te avisamos por email antes de que termine. Como no pedimos tarjeta al registrarte, nunca te cobramos nada automáticamente: eliges el Plan Básico (${formatPrice(PRICING.starter.monthly)} €/mes) o el PRO (${formatPrice(PRICING.pro.monthly)} €/mes) y sigues con todas tus facturas y clientes. Si decides no continuar, puedes descargar antes el PDF de tus facturas.`,
+  },
+  {
+    q: '¿Cuál es la diferencia entre el Plan Básico y el Plan PRO?',
+    a: `Los dos planes tienen facturas ilimitadas y VeriFactu incluido. Se diferencian en las funcionalidades: el Básico cubre toda la facturación (presupuestos, proformas, rectificativas, recurrentes y plantillas) y el PRO añade gestión avanzada de gastos, proveedores, análisis de rentabilidad, informes profesionales y soporte prioritario.`,
   },
   {
     q: `¿Qué incluye el acceso gratuito hasta 2027?`,
     a: `Acceso completo al plan que elijas — sin restricciones ni versión reducida.`,
   },
   {
-    q: '¿Puedo cambiar de Starter a PRO más adelante?',
+    q: '¿Puedo cambiar del Básico al PRO más adelante?',
     a: 'Sí. Upgrade en cualquier momento desde el panel de ajustes con un clic.',
   },
   {
@@ -283,7 +133,7 @@ const faqs = [
   },
   {
     q: '¿Cuánto ahorro eligiendo el plan anual?',
-    a: `Con Plan Starter anual ahorras ${PRICING.starter.annualSaving}€. Con Plan PRO anual ahorras ${PRICING.pro.annualSaving}€. En ambos casos, más de 2 meses gratis respecto al mensual.`,
+    a: `Con Plan Básico anual ahorras ${formatPrice(PRICING.starter.annualSaving)}€. Con Plan PRO anual ahorras ${formatPrice(PRICING.pro.annualSaving)}€. En ambos casos, 2 meses gratis respecto al mensual.`,
   },
   {
     q: '¿Puedo cancelar en cualquier momento?',
@@ -294,6 +144,17 @@ const faqs = [
     a: `Sí. Importación gratuita desde Excel, CSV o Holded. El equipo de ${brandConfig.app.name} te ayuda sin coste adicional.`,
   },
 ];
+
+// Built from `faqs` so the structured data always matches the visible answers.
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map(({ q, a }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
+};
 
 function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
   const [open, setOpen] = useState(false);
@@ -375,14 +236,18 @@ function BillingToggle({ annual, onChange }: { annual: boolean; onChange: (v: bo
   );
 }
 
-export function NovafacturaPreciosPage(): React.JSX.Element {
+export function NovafacturaPreciosPage({
+  slots,
+}: {
+  slots: SignupSlots | null;
+}): React.JSX.Element {
   const [annual, setAnnual] = useState(true);
   const [statsVisible, setStatsVisible] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
   const hasAnimated = useRef(false);
 
   const hours = useCounter(156, 1800, statsVisible);
-  const users = useCounter(PLAZAS_CONFIG.ocupadas, 1800, statsVisible);
+  const users = useCounter(slots?.occupied ?? 0, 1800, statsVisible);
   const months = useCounter(6, 1200, statsVisible);
 
   useEffect(() => {
@@ -403,7 +268,15 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(preciosSoftwareJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(preciosBreadcrumbJsonLd) }}
       />
       <script
         type="application/ld+json"
@@ -425,20 +298,16 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
             <div className="pointer-events-none absolute -right-32 top-20 h-96 w-96 rounded-full bg-indigo-100 opacity-20 blur-3xl" />
 
             <div className="relative mx-auto max-w-4xl px-4 text-center">
-              <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-2 text-sm font-semibold text-amber-800 shadow-sm">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
-                </span>
-                <Users className="h-4 w-4" />
-                Solo quedan{' '}
-                <strong>
-                  {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas gratuitas
-                </strong>{' '}
-                de {PLAZAS_CONFIG.total.toLocaleString('es-ES')}
-              </div>
+              {slots?.isSoldOut && (
+                <div className="mx-auto mb-5 max-w-md">
+                  <FreeOfferEndedNotice total={slots.total} />
+                </div>
+              )}
 
-              <h1 data-speakable className="mb-5 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
+              <h1
+                data-speakable
+                className="mb-5 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl"
+              >
                 <span className="block text-slate-500 text-2xl font-semibold mb-2 sm:text-3xl">
                   Precio de {brandConfig.app.name}
                 </span>
@@ -459,7 +328,9 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                     />
                   </svg>
                 </span>{' '}
-                <span className="text-slate-900">Luego, desde 12,90€/mes.</span>
+                <span className="text-slate-900">
+                  Luego, desde {formatPrice(PRICING.starter.annualMonthly)}€/mes.
+                </span>
               </h1>
 
               <p className="mx-auto mb-8 max-w-2xl text-lg text-slate-500 sm:text-xl leading-relaxed">
@@ -488,9 +359,8 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                 {[
                   { icon: CreditCard, text: 'Sin tarjeta al registrarte' },
                   { icon: Clock, text: 'Activación en 2 minutos' },
-                  { icon: Shield, text: 'Certificado AEAT' },
                   { icon: Lock, text: 'RGPD compliant' },
-                  { icon: BadgeCheck, text: 'VeriFactu homologado' },
+                  { icon: BadgeCheck, text: 'Adaptado a VeriFactu' },
                 ].map(({ icon: Icon, text }) => (
                   <span key={text} className="flex items-center gap-1.5">
                     <Icon className="h-4 w-4 text-blue-500" />
@@ -506,28 +376,30 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                 <BillingToggle annual={annual} onChange={setAnnual} />
               </div>
               <div className="grid gap-6 lg:grid-cols-2 items-start">
-                {/* STARTER CARD */}
+                {/* BASIC CARD */}
                 <div className="relative overflow-hidden rounded-3xl border-2 border-slate-200 bg-white shadow-sm">
                   <div className="p-8">
                     <div className="mb-6">
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
                         Para empezar
                       </span>
-                      <h3 className="mt-3 text-2xl font-extrabold text-slate-900">Plan Starter</h3>
+                      <h3 className="mt-3 text-2xl font-extrabold text-slate-900">
+                        Plan {PLAN_NAMES.basic}
+                      </h3>
                       <p className="mt-1 text-sm text-slate-500 leading-snug">
-                        VeriFactu incluido. Perfecto para autónomos con actividad moderada.
+                        {PLAN_DESCRIPTIONS.basic}
                       </p>
                       <div className="mt-3 inline-flex items-center gap-2 rounded-xl border-2 border-slate-800 bg-slate-900 px-3 py-1.5">
-                        <span className="text-sm font-black text-white">Hasta 60 facturas/año</span>
-                        <span className="text-xs text-slate-400">— única limitación</span>
+                        <span className="text-sm font-black text-white">Facturas ilimitadas</span>
+                        <span className="text-xs text-slate-400">— VeriFactu incluido</span>
                       </div>
                     </div>
                     <div className="mb-6">
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-5xl font-black text-slate-800 tabular-nums leading-none">
                           {annual
-                            ? `${STARTER.annualMonthly.toFixed(2).replace('.', ',')}€`
-                            : `${STARTER.monthly.toFixed(2).replace('.', ',')}€`}
+                            ? `${formatPrice(STARTER.annualMonthly)}€`
+                            : `${formatPrice(STARTER.monthly)}€`}
                         </span>
                         <span className="text-base text-slate-400 font-medium">/ mes</span>
                       </div>
@@ -536,12 +408,12 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                           <p className="text-xs text-slate-500">
                             Facturado anualmente ·{' '}
                             <strong className="text-slate-700">
-                              {STARTER.annualTotal.toFixed(2).replace('.', ',')}€/año
+                              {formatPrice(STARTER.annualTotal)}€/año
                             </strong>
                           </p>
                           <p className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700">
                             <CheckCircle2 className="h-3 w-3" />
-                            Ahorras {STARTER.annualSaving}€ al año
+                            Ahorras {formatPrice(STARTER.annualSaving)}€ al año
                           </p>
                         </div>
                       ) : (
@@ -551,7 +423,7 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                             className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700 hover:bg-green-200 transition-colors"
                           >
                             <TrendingUp className="h-3 w-3" />
-                            Paga anual y ahorra {STARTER.annualSaving}€
+                            Paga anual y ahorra {formatPrice(STARTER.annualSaving)}€
                           </button>
                         </div>
                       )}
@@ -560,25 +432,17 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                       href="/registro?plan=starter"
                       className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-slate-800 bg-white text-sm font-bold text-slate-800 transition-all hover:bg-slate-900 hover:text-white hover:border-slate-900 mb-3"
                     >
-                      Empezar con Starter
+                      Empezar con el {PLAN_NAMES.basic}
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                     <p className="mb-6 text-center text-xs text-slate-400">
                       Gratis hasta 2027 · Sin tarjeta al registrarte
                     </p>
-                    <div className="border-t border-slate-100 pt-5 space-y-2">
-                      <div className="flex items-center justify-between rounded-xl border-2 border-slate-200 bg-slate-50 px-3 py-2.5 mb-4">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Facturas al año
-                        </span>
-                        <span className="text-sm font-black text-slate-900">Hasta 60</span>
-                      </div>
-                      {sharedFeatures.map(({ text, icon: Icon }) => (
-                        <div key={text} className="flex items-center gap-2.5 py-0.5">
-                          <Icon className="h-4 w-4 shrink-0 text-slate-400" />
-                          <span className="text-sm text-slate-600">{text}</span>
-                        </div>
-                      ))}
+                    <div className="border-t border-slate-100 pt-5">
+                      <PlanFeatureList
+                        included={BASIC_PLAN_FEATURES}
+                        excluded={PRO_ONLY_FEATURES}
+                      />
                     </div>
                   </div>
                 </div>
@@ -593,20 +457,19 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                     <div className="mb-6">
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
                         <Zap className="h-3.5 w-3.5" />
-                        Facturas ilimitadas · Todo incluido
+                        Todo incluido
                       </span>
                       <h3 className="mt-3 text-2xl font-extrabold text-slate-900">Plan PRO</h3>
                       <p className="mt-1 text-sm text-slate-500 leading-snug">
-                        Facturas ilimitadas con VeriFactu automático y tranquilidad fiscal total
-                        desde el primer día.
+                        {PLAN_DESCRIPTIONS.pro}
                       </p>
                     </div>
                     <div className="mb-6">
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-5xl font-black text-blue-600 tabular-nums leading-none">
                           {annual
-                            ? `${PRO.annualMonthly.toFixed(2).replace('.', ',')}€`
-                            : `${PRO.monthly.toFixed(2).replace('.', ',')}€`}
+                            ? `${formatPrice(PRO.annualMonthly)}€`
+                            : `${formatPrice(PRO.monthly)}€`}
                         </span>
                         <span className="text-base text-slate-400 font-medium">/ mes</span>
                       </div>
@@ -615,12 +478,12 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                           <p className="text-xs text-slate-500">
                             Facturado anualmente ·{' '}
                             <strong className="text-slate-700">
-                              {PRO.annualTotal.toFixed(2).replace('.', ',')}€/año
+                              {formatPrice(PRO.annualTotal)}€/año
                             </strong>
                           </p>
                           <p className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700">
                             <CheckCircle2 className="h-3 w-3" />
-                            Ahorras {PRO.annualSaving}€ al año
+                            Ahorras {formatPrice(PRO.annualSaving)}€ al año
                           </p>
                         </div>
                       ) : (
@@ -630,7 +493,7 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                             className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-bold text-green-700 hover:bg-green-200 transition-colors"
                           >
                             <TrendingUp className="h-3 w-3" />
-                            Paga anual y ahorra {PRO.annualSaving}€
+                            Paga anual y ahorra {formatPrice(PRO.annualSaving)}€
                           </button>
                         </div>
                       )}
@@ -646,23 +509,8 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                     <p className="mb-6 text-center text-xs text-slate-400">
                       Gratis hasta 2027 · Sin tarjeta al registrarte
                     </p>
-                    <div className="border-t border-blue-100 pt-5 space-y-2">
-                      <div className="flex items-center justify-between rounded-xl bg-blue-600 px-3 py-2.5 mb-4">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-blue-200">
-                          Facturas al año
-                        </span>
-                        <span className="text-sm font-black text-white">Ilimitadas</span>
-                      </div>
-                      {sharedFeatures.map(({ text, icon: Icon }) => (
-                        <div key={text} className="flex items-center gap-2.5 py-0.5">
-                          <Icon className="h-4 w-4 shrink-0 text-blue-400" />
-                          <span className="text-sm text-slate-700">{text}</span>
-                        </div>
-                      ))}
-                      <div className="flex items-center gap-2.5 py-0.5 pt-2 border-t border-blue-100 mt-2">
-                        <Receipt className="h-4 w-4 shrink-0 text-blue-500" />
-                        <span className="text-sm font-semibold text-blue-700">Gestión de gastos</span>
-                      </div>
+                    <div className="border-t border-blue-100 pt-5">
+                      <PlanFeatureList included={ALL_PLAN_FEATURES} />
                     </div>
                   </div>
                 </div>
@@ -682,15 +530,21 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                   <p className="mt-1.5 font-semibold text-slate-700">
                     Hasta 2027 completamente gratis
                   </p>
-                  <p className="text-sm text-slate-400">Para las primeras 5.000 inscripciones</p>
+                  <p className="text-sm text-slate-400">
+                    Para las primeras {formatCount(PRICING.freePeriodSlots)} inscripciones
+                  </p>
                 </div>
-                <div>
-                  <div className="text-5xl font-black text-slate-900 tabular-nums">
-                    {users.toLocaleString('es-ES')}+
+                {slots && (
+                  <div>
+                    <div className="text-5xl font-black text-slate-900 tabular-nums">
+                      {formatCount(users)}
+                    </div>
+                    <p className="mt-1.5 font-semibold text-slate-700">
+                      profesionales ya inscritos
+                    </p>
+                    <p className="text-sm text-slate-400">Autónomos y pymes de toda España</p>
                   </div>
-                  <p className="mt-1.5 font-semibold text-slate-700">profesionales ya inscritos</p>
-                  <p className="text-sm text-slate-400">Autónomos y pymes de toda España</p>
-                </div>
+                )}
                 <div>
                   <div className="text-5xl font-black text-green-600 tabular-nums">{hours}h</div>
                   <p className="mt-1.5 font-semibold text-slate-700">
@@ -702,55 +556,42 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
             </div>
           </section>
 
-          {/* PLAN COMPARISON STARTER vs PRO */}
+          {/* PLAN COMPARISON BASIC vs PRO */}
           <section className="py-16 md:py-24">
             <div className="mx-auto max-w-3xl px-4">
               <div className="mb-3 text-center">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                  Starter vs PRO
+                  {PLAN_NAMES.basic} vs {PLAN_NAMES.pro}
                 </span>
               </div>
               <h2 className="mb-4 text-center text-3xl font-extrabold text-slate-900 sm:text-4xl">
                 ¿Cuál plan es para ti?
               </h2>
               <p className="mx-auto mb-10 max-w-xl text-center text-slate-500">
-                Ambos planes incluyen{' '}
-                <strong className="text-slate-700">VeriFactu automático</strong> y envío AEAT. La
-                única diferencia es el número de facturas al año.
+                Los dos tienen <strong className="text-slate-700">facturas ilimitadas</strong> y
+                VeriFactu. Elige según las funcionalidades de gestión que necesites.
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl border-2 border-slate-200 bg-white p-6">
                   <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-slate-400">
-                    Starter
+                    {PLAN_NAMES.basic}
                   </p>
                   <div className="mb-1 flex items-baseline gap-1">
                     <span className="text-3xl font-black text-slate-800">
                       {annual
-                        ? `${STARTER.annualMonthly.toFixed(2).replace('.', ',')}€`
-                        : `${STARTER.monthly.toFixed(2).replace('.', ',')}€`}
+                        ? `${formatPrice(STARTER.annualMonthly)}€`
+                        : `${formatPrice(STARTER.monthly)}€`}
                     </span>
                     <span className="text-xs text-slate-400">/mes</span>
                   </div>
                   <p className="mb-4 text-xs text-slate-500">
                     {annual
-                      ? `Facturado anualmente · ${STARTER.annualTotal.toFixed(2).replace('.', ',')}€/año`
+                      ? `Facturado anualmente · ${formatPrice(STARTER.annualTotal)}€/año`
                       : 'Sin permanencia'}
                   </p>
-                  <ul className="space-y-2 text-sm text-slate-600">
-                    {[
-                      'Hasta 60 facturas al año · Clientes ilimitados',
-                      'PDF profesional + presupuestos',
-                      'Facturas recurrentes automáticas',
-                      'VeriFactu + envío AEAT incluido',
-                    ].map((t) => (
-                      <li key={t} className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 shrink-0 text-slate-400" />
-                        {t}
-                      </li>
-                    ))}
-                  </ul>
+                  <PlanFeatureList included={BASIC_PLAN_FEATURES} />
                   <p className="mt-4 rounded-lg bg-slate-50 p-2.5 text-xs text-slate-500 text-center">
-                    Ideal para autónomos con actividad moderada
+                    {PLAN_DESCRIPTIONS.basic}
                   </p>
                 </div>
                 <div className="relative rounded-2xl border-2 border-blue-300 bg-blue-50 p-6">
@@ -763,37 +604,27 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                   <div className="mb-1 flex items-baseline gap-1">
                     <span className="text-3xl font-black text-blue-700">
                       {annual
-                        ? `${PRO.annualMonthly.toFixed(2).replace('.', ',')}€`
-                        : `${PRO.monthly.toFixed(2).replace('.', ',')}€`}
+                        ? `${formatPrice(PRO.annualMonthly)}€`
+                        : `${formatPrice(PRO.monthly)}€`}
                     </span>
                     <span className="text-xs text-slate-400">/mes</span>
                   </div>
                   <p className="mb-4 text-xs text-slate-500">
                     {annual
-                      ? `Facturado anualmente · ${PRO.annualTotal.toFixed(2).replace('.', ',')}€/año`
+                      ? `Facturado anualmente · ${formatPrice(PRO.annualTotal)}€/año`
                       : 'Sin permanencia'}
                   </p>
-                  <ul className="space-y-2 text-sm text-slate-700">
-                    {[
-                      'Todo lo del plan Starter incluido',
-                      'Facturas ilimitadas al año',
-                      'Gestión de gastos',
-                      'Sin tope — crece sin restricciones',
-                      'Ideal para alta facturación',
-                    ].map((t, i) => (
-                      <li key={t} className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-500" />
-                        {i === 1 ? <strong>{t}</strong> : t}
-                      </li>
-                    ))}
-                  </ul>
+                  <PlanFeatureList
+                    included={[`Todo lo del plan ${PLAN_NAMES.basic}`, ...PRO_ONLY_FEATURES]}
+                  />
                   <p className="mt-4 rounded-lg bg-blue-100 p-2.5 text-xs text-blue-700 text-center font-semibold">
-                    Sin límite de facturas · Para negocios en crecimiento
+                    {PLAN_DESCRIPTIONS.pro}
                   </p>
                 </div>
               </div>
               <p className="mt-6 text-center text-xs text-slate-400">
-                Puedes cambiar de Starter a PRO en cualquier momento, con un clic desde Ajustes.
+                Puedes cambiar del {PLAN_NAMES.basic} al {PLAN_NAMES.pro} en cualquier momento, con
+                un clic desde Ajustes.
               </p>
             </div>
           </section>
@@ -808,29 +639,21 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                 </span>
               </div>
               <h2 className="mb-4 text-center text-3xl font-extrabold text-slate-900 sm:text-4xl">
-                Desde 12,90€/mes es lo que cuesta{' '}
-                <span className="text-blue-600">no tener problemas con Hacienda</span>
+                Desde {formatPrice(PRICING.starter.annualMonthly)}€/mes es lo que cuesta{' '}
+                <span className="text-blue-600">olvidarte del papeleo de facturar</span>
               </h2>
               <p className="mx-auto mb-12 max-w-2xl text-center text-slate-500">
-                Compara el precio de {brandConfig.app.name} con el coste real de no cumplir con
-                VeriFactu.
+                Compara el precio de {brandConfig.app.name} con el tiempo que dedicas hoy a facturar
+                a mano.
               </p>
-              <div className="grid gap-6 sm:grid-cols-3">
+              <div className="grid gap-6 sm:grid-cols-2">
                 {[
-                  {
-                    icon: AlertTriangle,
-                    color: 'red',
-                    label: 'Multa por incumplimiento',
-                    value: 'hasta 50.000€',
-                    sub: 'Ley Antifraude 11/2021 · Ley General Tributaria',
-                    negative: true,
-                  },
                   {
                     icon: Clock,
                     color: 'amber',
                     label: 'Tiempo perdido en burocracia',
                     value: '~3h/semana',
-                    sub: 'Con software no homologado o Excel',
+                    sub: 'Facturando con Excel o Word',
                     negative: true,
                   },
                   {
@@ -838,9 +661,9 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                     color: 'blue',
                     label: `${brandConfig.app.name} al mes`,
                     value: annual
-                      ? `desde ${STARTER.annualMonthly.toFixed(2).replace('.', ',')}€`
-                      : `desde ${STARTER.monthly.toFixed(2).replace('.', ',')}€`,
-                    sub: 'Plan Starter · Todo incluido · Sin permanencia',
+                      ? `desde ${formatPrice(STARTER.annualMonthly)}€`
+                      : `desde ${formatPrice(STARTER.monthly)}€`,
+                    sub: `Plan ${PLAN_NAMES.basic} · Facturas ilimitadas · Sin permanencia`,
                     negative: false,
                   },
                 ].map((item) => (
@@ -905,7 +728,7 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                         Característica
                       </th>
                       <th className="px-3 py-4 text-center font-semibold text-slate-500">
-                        Starter
+                        {PLAN_NAMES.basic}
                       </th>
                       <th className="bg-blue-50 px-3 py-4 text-center font-bold text-blue-700">
                         PRO
@@ -1001,10 +824,8 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                 </table>
               </div>
               <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-slate-500">
-                En resumen: ni Excel/Word ni la mayoría de programas incluyen el VeriFactu automático
-                — lo cobran aparte o directamente no cumplen la Ley Antifraude. Con{' '}
-                {brandConfig.app.name} lo tienes todo incluido tanto en Starter (hasta 60
-                facturas/año) como en PRO (facturas ilimitadas), gratis hasta 2027 y sin
+                En resumen: los dos planes tienen facturas ilimitadas y VeriFactu incluido. El PRO
+                añade gastos, proveedores, rentabilidad e informes. Gratis hasta 2027 y sin
                 permanencia.
               </p>
               <p className="mt-4 text-center text-xs text-slate-400">
@@ -1012,6 +833,8 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
               </p>
             </div>
           </section>
+
+          <VerifactuMarketPrices />
 
           {/* TESTIMONIALS */}
           <section className="border-y border-slate-100 bg-slate-50 py-16 md:py-24">
@@ -1026,8 +849,9 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                 Lo que dicen quienes ya lo usan
               </h2>
               <p className="mx-auto mb-12 max-w-xl text-center text-slate-500">
-                Más de {PLAZAS_CONFIG.ocupadas.toLocaleString('es-ES')} autónomos confían en{' '}
-                {brandConfig.app.name}
+                {slots
+                  ? `${formatCount(slots.occupied)} autónomos ya facturan con ${brandConfig.app.name}`
+                  : `Autónomos de toda España ya facturan con ${brandConfig.app.name}`}
               </p>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {testimonials.map((t) => (
@@ -1103,14 +927,11 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
             <div className="pointer-events-none absolute -left-20 top-10 h-80 w-80 rounded-full bg-blue-100 opacity-20 blur-3xl" />
             <div className="pointer-events-none absolute -right-20 bottom-10 h-80 w-80 rounded-full bg-indigo-100 opacity-20 blur-3xl" />
             <div className="relative mx-auto max-w-3xl px-4 text-center">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-5 py-2 text-sm font-semibold text-amber-800">
-                <Users className="h-4 w-4" />
-                Solo{' '}
-                <strong>
-                  {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas gratuitas
-                </strong>{' '}
-                restantes
-              </div>
+              {slots?.isSoldOut && (
+                <div className="mx-auto mb-6 max-w-md">
+                  <FreeOfferEndedNotice total={slots.total} />
+                </div>
+              )}
               <h2 className="mb-4 text-4xl font-extrabold text-slate-900 sm:text-5xl leading-tight">
                 Empieza gratis hoy.
                 <br />
@@ -1119,18 +940,16 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
               <p className="mx-auto mb-8 max-w-xl text-lg text-slate-500">
                 0€ hasta 2027. Luego, plan{' '}
                 <strong className="text-slate-800">
-                  Starter desde{' '}
+                  {PLAN_NAMES.basic} desde{' '}
                   {annual
-                    ? `${STARTER.annualMonthly.toFixed(2).replace('.', ',')}€`
-                    : `${STARTER.monthly.toFixed(2).replace('.', ',')}€`}
+                    ? `${formatPrice(STARTER.annualMonthly)}€`
+                    : `${formatPrice(STARTER.monthly)}€`}
                   /mes
                 </strong>{' '}
                 o plan{' '}
                 <strong className="text-slate-800">
                   PRO desde{' '}
-                  {annual
-                    ? `${PRO.annualMonthly.toFixed(2).replace('.', ',')}€`
-                    : `${PRO.monthly.toFixed(2).replace('.', ',')}€`}
+                  {annual ? `${formatPrice(PRO.annualMonthly)}€` : `${formatPrice(PRO.monthly)}€`}
                   /mes
                 </strong>
                 . Sin compromisos.
@@ -1180,18 +999,18 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
                     <div className="text-left">
-                      <p className="text-xs font-semibold text-slate-700">Starter</p>
+                      <p className="text-xs font-semibold text-slate-700">{PLAN_NAMES.basic}</p>
                       <p className="text-xs text-slate-400">
                         {annual
-                          ? `${STARTER.annualTotal}€/año · Hasta 60 facturas/año`
+                          ? `${formatPrice(STARTER.annualTotal)}€/año · Facturas ilimitadas`
                           : 'VeriFactu incluido · Sin permanencia'}
                       </p>
                     </div>
                     <div className="text-right">
                       <span className="text-lg font-black text-slate-700">
                         {annual
-                          ? `${STARTER.annualMonthly.toFixed(2).replace('.', ',')}€`
-                          : `${STARTER.monthly.toFixed(2).replace('.', ',')}€`}
+                          ? `${formatPrice(STARTER.annualMonthly)}€`
+                          : `${formatPrice(STARTER.monthly)}€`}
                       </span>
                       <span className="text-xs text-slate-400">/mes</span>
                     </div>
@@ -1205,14 +1024,16 @@ export function NovafacturaPreciosPage(): React.JSX.Element {
                         </span>
                       </p>
                       <p className="text-xs text-slate-400">
-                        {annual ? `${PRO.annualTotal}€/año · Sin permanencia` : 'Sin permanencia'}
+                        {annual
+                          ? `${formatPrice(PRO.annualTotal)}€/año · Sin permanencia`
+                          : 'Sin permanencia'}
                       </p>
                     </div>
                     <div className="text-right">
                       <span className="text-xl font-black text-slate-800">
                         {annual
-                          ? `${PRO.annualMonthly.toFixed(2).replace('.', ',')}€`
-                          : `${PRO.monthly.toFixed(2).replace('.', ',')}€`}
+                          ? `${formatPrice(PRO.annualMonthly)}€`
+                          : `${formatPrice(PRO.monthly)}€`}
                       </span>
                       <span className="text-xs text-slate-400">/mes</span>
                     </div>

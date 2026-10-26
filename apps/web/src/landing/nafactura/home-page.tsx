@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
-  Users,
   Lock,
   Smartphone,
   ArrowRight,
@@ -23,11 +22,12 @@ import {
   Building2,
   Layers,
 } from 'lucide-react';
-import { brandConfig, PLAZAS_CONFIG, PRICING } from '@easyfactura/brand-config';
+import { brandConfig, PLAZAS_CONFIG, PRICING, formatPrice } from '@easyfactura/brand-config';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
 import { VerifactuDeadlines } from '@/components/verifactu-deadlines';
+import { buildSignupSlots } from '@/lib/signup-slots';
 import {
   HomeStickyCtaBanner,
   HomeAnimatedStats,
@@ -149,8 +149,8 @@ const comparisonTableJsonLd = {
 
 const faqs = [
   {
-    q: '¿Cuántas plazas gratuitas quedan disponibles?',
-    a: `Ofrecemos acceso gratuito hasta 2027 a las primeras ${PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones. Actualmente quedan ${PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas disponibles. Una vez alcanzado el límite, el período gratuito dejará de estar disponible para nuevos usuarios.`,
+    q: '¿El acceso gratuito tiene plazas limitadas?',
+    a: `Sí. Ofrecemos acceso gratuito hasta 2027 a las primeras ${PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones. Una vez alcanzado el límite, el período gratuito dejará de estar disponible para nuevos usuarios.`,
   },
   {
     q: '¿Qué obligaciones fiscales tienen los autónomos en Navarra?',
@@ -158,7 +158,7 @@ const faqs = [
   },
   {
     q: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
-    a: `Plan Starter (hasta 60 facturas/año): ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.starter.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Plan PRO con cumplimiento foral automático: ${PRICING.pro.monthly.toFixed(2).replace('.', ',')}€/mes o ${PRICING.pro.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Sin permanencia.`,
+    a: `Plan Starter (hasta 60 facturas/año): ${formatPrice(PRICING.starter.monthly)}€/mes o ${formatPrice(PRICING.starter.annualMonthly)}€/mes anual. Plan PRO con cumplimiento foral automático: ${formatPrice(PRICING.pro.monthly)}€/mes o ${formatPrice(PRICING.pro.annualMonthly)}€/mes anual. Sin permanencia.`,
   },
   {
     q: '¿Qué sanciones existen por no usar software certificado en Navarra?',
@@ -206,10 +206,10 @@ const homepageFaqJsonLd = {
   mainEntity: [
     {
       '@type': 'Question',
-      name: '¿Cuántas plazas gratuitas quedan disponibles?',
+      name: '¿El acceso gratuito tiene plazas limitadas?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `Ofrecemos acceso gratuito hasta 2027 a las primeras ${PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones. Actualmente quedan ${PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas disponibles.`,
+        text: `Sí. Ofrecemos acceso gratuito hasta 2027 a las primeras ${PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones. Una vez alcanzado el límite, el período gratuito dejará de estar disponible para nuevos usuarios.`,
       },
     },
     {
@@ -225,7 +225,7 @@ const homepageFaqJsonLd = {
       name: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `Plan Starter: ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes. Plan PRO con cumplimiento foral automático: ${PRICING.pro.monthly.toFixed(2).replace('.', ',')}€/mes. Sin permanencia.`,
+        text: `Plan Starter: ${formatPrice(PRICING.starter.monthly)}€/mes. Plan PRO con cumplimiento foral automático: ${formatPrice(PRICING.pro.monthly)}€/mes. Sin permanencia.`,
       },
     },
     {
@@ -352,39 +352,6 @@ const homepageSoftwareJsonLd = {
       url: `${brandConfig.app.url}/precios`,
     },
   ],
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.9',
-    reviewCount: '47',
-    bestRating: '5',
-    worstRating: '1',
-  },
-  review: [
-    {
-      '@type': 'Review',
-      author: { '@type': 'Person', name: 'Mikel Iraizoz' },
-      reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
-      reviewBody:
-        'Llevaba tiempo preocupado por cumplir con Hacienda Navarra. Con NaFactura me despreocupé en minutos. Envío automático, sin complicaciones. Y encima gratis hasta 2027.',
-      datePublished: '2026-03-15',
-    },
-    {
-      '@type': 'Review',
-      author: { '@type': 'Person', name: 'Ana Barricarte' },
-      reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
-      reviewBody:
-        'Perfecta para autónomos navarros. Fácil, rápida y adaptada a la Hacienda Foral. En 60 segundos tengo la factura lista, firmada y enviada.',
-      datePublished: '2026-04-02',
-    },
-    {
-      '@type': 'Review',
-      author: { '@type': 'Person', name: 'Jon Elizondo' },
-      reviewRating: { '@type': 'Rating', ratingValue: '5', bestRating: '5' },
-      reviewBody:
-        'Con NaFactura creo la factura y se envía a Hacienda Navarra automáticamente. Sin configuraciones, sin dolores de cabeza.',
-      datePublished: '2026-04-18',
-    },
-  ],
   featureList: [
     'Cumplimiento Hacienda Foral de Navarra automático',
     'Hash encadenado en cada factura',
@@ -405,26 +372,6 @@ const homepageSoftwareJsonLd = {
 export const nafacturaHomeMetadata: Metadata = {
   title: `Software de facturación Navarra 2027 | Gratis | ${brandConfig.app.name}`,
   description: `Programa de facturación para autónomos navarros adaptado a Hacienda Foral de Navarra: VeriFactu, hash encadenado y preparado para NaTicket. Gratis hasta 2027, sin tarjeta.`,
-  keywords: [
-    'software facturación navarra',
-    'programa facturación autónomos navarra',
-    'hacienda foral navarra facturación',
-    'facturación electrónica navarra',
-    'software garante navarra',
-    'software garante hacienda foral navarra',
-    'verifactu navarra autónomos',
-    'naticket navarra',
-    'naticket software',
-    'qué es naticket',
-    'software facturación pamplona',
-    'facturar autónomo navarra',
-    'programa facturación gratis navarra',
-    'facturación hacienda navarra 2027',
-    'factura electrónica autónomo navarra',
-    'alternativa holded navarra',
-    'convenio económico navarra facturación',
-    'cuándo obligatorio verifactu navarra',
-  ],
   alternates: {
     canonical: brandConfig.app.url,
   },
@@ -465,6 +412,9 @@ function Card({ children, className = '' }: { children: React.ReactNode; classNa
 // ─────────────────────────────────────────────────────────────────────────────
 // Page Component
 // ─────────────────────────────────────────────────────────────────────────────
+// NaFactura keeps its own launch counter from brand config (out of scope of the real counter).
+const launchSlots = buildSignupSlots(PLAZAS_CONFIG.ocupadas);
+
 export function NafacturaHomePage() {
   return (
     <div className="flex min-h-screen flex-col bg-white text-slate-900">
@@ -540,39 +490,10 @@ export function NafacturaHomePage() {
                   border: `1px solid ${brandConfig.colors.highlightBorder}`,
                 }}
               >
-                <div className="mb-4 flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                   <Sparkles className="h-5 w-5 text-white" />
                   <span className="text-base font-bold text-white">Gratis hasta 2027</span>
                 </div>
-                <div
-                  className="mb-1.5 flex items-center justify-between text-xs font-medium"
-                  style={{ color: 'rgba(255,255,255,0.75)' }}
-                >
-                  <span className="flex items-center gap-1.5">
-                    <Users className="h-3.5 w-3.5" />
-                    Plazas ocupadas
-                  </span>
-                  <span className="font-bold text-white">{PLAZAS_CONFIG.porcentaje}%</span>
-                </div>
-                <div
-                  className="h-2.5 overflow-hidden rounded-full"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
-                >
-                  <div
-                    className="h-full rounded-full bg-white transition-all duration-1000"
-                    style={{ width: `${PLAZAS_CONFIG.porcentaje}%` }}
-                  />
-                </div>
-                <p className="mt-2 text-center text-xs" style={{ color: 'rgba(255,255,255,0.75)' }}>
-                  <span className="font-semibold text-white">
-                    {PLAZAS_CONFIG.ocupadas.toLocaleString('es-ES')} inscritos
-                  </span>{' '}
-                  ·{' '}
-                  <span className="font-bold text-white">
-                    {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas restantes
-                  </span>{' '}
-                  de {PLAZAS_CONFIG.total.toLocaleString('es-ES')}
-                </p>
               </div>
 
               <div className="mb-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -643,7 +564,7 @@ export function NafacturaHomePage() {
         </div>
 
         {/* ══ SECTION 2 — STATS ══ */}
-        <HomeAnimatedStats />
+        <HomeAnimatedStats slots={launchSlots} />
 
         {/* ══ SECTION 3 — PROBLEM ══ */}
         <section className="py-16 md:py-24">
@@ -890,34 +811,15 @@ export function NafacturaHomePage() {
                   Accede a todas las funcionalidades sin coste. Reservado para los primeros{' '}
                   {PLAZAS_CONFIG.total.toLocaleString('es-ES')} profesionales navarros.
                 </p>
-                <div className="mx-auto mb-8 max-w-md rounded-xl border border-slate-200 bg-white p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      <Users className="h-4 w-4 text-red-600" />
-                      Plazas ocupadas
-                    </span>
-                    <span className="text-2xl font-extrabold text-red-600">
-                      {PLAZAS_CONFIG.porcentaje}%
-                    </span>
-                  </div>
-                  <div className="mb-2 h-3 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-red-500 to-red-400 transition-all duration-500"
-                      style={{ width: `${PLAZAS_CONFIG.porcentaje}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-slate-400">
-                    <span>{PLAZAS_CONFIG.ocupadas.toLocaleString('es-ES')} inscritos</span>
-                    <span className="font-bold text-amber-600">
-                      {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} restantes
-                    </span>
-                  </div>
-                </div>
                 <div className="mb-8 grid gap-4 sm:grid-cols-3">
                   {[
                     { icon: Clock, value: 'Hasta 2027', label: 'Acceso completo' },
                     { icon: CreditCard, value: '0€', label: 'Sin tarjeta al registrarte' },
-                    { icon: TrendingUp, value: 'desde 9,90€', label: 'Starter o PRO · por mes' },
+                    {
+                      icon: TrendingUp,
+                      value: `desde ${formatPrice(PRICING.starter.annualMonthly)}€`,
+                      label: 'Starter o PRO · por mes (pago anual)',
+                    },
                   ].map(({ icon: Icon, value, label }) => (
                     <div
                       key={label}
@@ -934,7 +836,7 @@ export function NafacturaHomePage() {
                     <div className="mb-3 flex items-center justify-between">
                       <p className="text-sm font-bold text-slate-800">Plan Starter</p>
                       <span className="text-base font-extrabold text-slate-700">
-                        {PRICING.starter.monthly.toFixed(2).replace('.', ',')}€
+                        {formatPrice(PRICING.starter.monthly)}€
                         <span className="text-xs font-normal text-slate-400">/mes</span>
                       </span>
                     </div>
@@ -965,7 +867,7 @@ export function NafacturaHomePage() {
                         </span>
                       </div>
                       <span className="text-base font-extrabold text-slate-700">
-                        {PRICING.pro.monthly.toFixed(2).replace('.', ',')}€
+                        {formatPrice(PRICING.pro.monthly)}€
                         <span className="text-xs font-normal text-slate-400">/mes</span>
                       </span>
                     </div>
@@ -1147,10 +1049,6 @@ export function NafacturaHomePage() {
         {/* ══ SECTION 11 — FINAL CTA ══ */}
         <section className="py-16 md:py-24">
           <div className="mx-auto max-w-2xl px-4 text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800">
-              <Users className="h-4 w-4" />
-              Solo {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas gratuitas restantes
-            </div>
             <h2 className="mb-4 text-3xl font-extrabold text-slate-900 sm:text-4xl">
               Reserva tu acceso gratuito ahora
             </h2>
@@ -1221,7 +1119,7 @@ export function NafacturaHomePage() {
       />
 
       <FooterLanding />
-      <HomeStickyCtaBanner />
+      <HomeStickyCtaBanner slots={launchSlots} />
     </div>
   );
 }

@@ -5,42 +5,46 @@ import {
   Zap,
   Download,
   CheckCircle2,
-  AlertTriangle,
   Clock,
   Users,
   Lock,
   Smartphone,
   ArrowRight,
   Star,
-  Sparkles,
   CreditCard,
-  X,
   FileText,
   Send,
-  BadgeCheck,
+  Calculator,
   TrendingUp,
-  Headphones,
-  Building2,
+  Wallet,
+  ClipboardList,
+  MonitorSmartphone,
 } from 'lucide-react';
-import { brandConfig, PLAZAS_CONFIG, PRICING } from '@easyfactura/brand-config';
+import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
-import { HomeStickyCtaBanner, HomeAnimatedStats } from '@/components/home/home-client';
+import { HomeStickyCtaBanner } from '@/components/home/home-client';
+import { ExcelComparison, excelComparisonTableJsonLd } from '@/components/home/excel-comparison';
+import { AgencyCallout } from '@/components/home/agency-callout';
+import { CustomerStoryLink } from '@/components/home/customer-story-link';
 import FaqSection from '@/components/FaqSection';
 import { VerifactuDeadlines } from '@/components/verifactu-deadlines';
+import { FreeOfferEndedNotice } from '@/components/marketing/free-slots-meter';
+import { VERIFACTU_ANNOUNCED_DEADLINE } from '@/lib/verifactu-deadlines';
+import { formatCount, freeSlotsLabel, getSignupSlots } from '@/lib/signup-slots';
+import { PlanFeatureList } from '@/components/marketing/plan-feature-list';
+import { softwareApplicationJsonLd } from '@/lib/structured-data';
+import {
+  BASIC_PLAN_FEATURES,
+  PLAN_DESCRIPTIONS,
+  PLAN_NAMES,
+  PRO_ONLY_FEATURES,
+} from '@/lib/plan-features';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data
 // ─────────────────────────────────────────────────────────────────────────────
 const testimonials = [
-  {
-    name: 'Laura García',
-    role: 'Diseñadora freelance',
-    location: 'Madrid',
-    text: `Llevaba meses preocupada por las multas de Hacienda. Con ${brandConfig.app.name} me despreocupé en 10 minutos. Lo mejor es que conseguí una de las plazas gratuitas.`,
-    stars: 5,
-    initials: 'LG',
-  },
   {
     name: 'Carlos Martínez',
     role: 'Fontanero autónomo',
@@ -62,121 +66,102 @@ const testimonials = [
 const steps = [
   {
     num: '01',
-    title: 'Crea tu factura',
-    desc: 'Introduce los datos básicos: cliente, concepto e importe. Menos de 60 segundos.',
+    title: 'Elige cliente y concepto',
+    desc: 'Los datos del cliente y del producto se rellenan solos. Solo indicas cantidad y precio.',
     icon: FileText,
   },
   {
     num: '02',
-    title: 'Procesamiento automático',
-    desc: 'Hash encadenado, firma electrónica, código QR y envío a la AEAT. Todo automático.',
-    icon: Send,
+    title: 'El programa calcula todo',
+    desc: 'IVA, retención de IRPF, totales y número de factura correlativo, sin fórmulas.',
+    icon: Calculator,
   },
   {
     num: '03',
-    title: 'Factura entregada',
-    desc: 'Tu cliente recibe el PDF. Tú tienes el registro verificado en Hacienda.',
-    icon: BadgeCheck,
+    title: 'Envía y cobra',
+    desc: 'Tu cliente recibe el PDF por email y tú ves en el panel si ya te ha pagado.',
+    icon: Send,
   },
 ];
 
+// Ordered by what a freelancer leaving Excel values most; VeriFactu closes the list.
 const features = [
   {
-    icon: Shield,
-    title: 'VeriFactu 100% automático',
-    description:
-      'Hash encadenado, envío a AEAT y código QR generados automáticamente. Cumplimiento garantizado.',
-    highlight: true,
-  },
-  {
     icon: Zap,
-    title: 'Facturación en 60 segundos',
-    description: 'Interfaz diseñada para profesionales sin conocimientos contables.',
-    highlight: false,
+    title: 'Facturas en 60 segundos',
+    description: 'Sin plantillas que copiar: eliges cliente y concepto y la factura está lista.',
   },
   {
-    icon: Download,
-    title: 'Migración simplificada',
-    description: 'Importa clientes y facturas desde Excel, CSV o Holded con un solo clic.',
-    highlight: false,
+    icon: Calculator,
+    title: 'IVA e IRPF automáticos',
+    description: 'Tipos de IVA del 21 %, 10 % y 4 % y retención del 7 % o 15 % aplicados solos.',
   },
   {
-    icon: Lock,
-    title: 'Seguridad certificada',
-    description: 'Servidores europeos, cifrado SSL de 256 bits, cumplimiento RGPD.',
-    highlight: false,
+    icon: ClipboardList,
+    title: 'Presupuestos y recurrentes',
+    description: 'Convierte un presupuesto en factura con un clic y programa las cuotas mensuales.',
+  },
+  {
+    icon: Wallet,
+    title: 'Control de cobros',
+    description: 'Facturas pendientes, cobradas y vencidas de un vistazo, con cobros parciales.',
   },
   {
     icon: Smartphone,
-    title: 'Acceso multiplataforma',
-    description: 'Compatible con web, móvil y tablet. Sin instalaciones.',
-    highlight: false,
+    title: 'Desde el móvil',
+    description: 'Factura en la obra o en casa del cliente. Sin instalar nada.',
   },
   {
-    icon: Headphones,
-    title: 'Soporte profesional',
-    description: 'Atención personalizada en español. Respuesta en menos de 2 horas.',
-    highlight: false,
+    icon: Download,
+    title: 'Adiós a Excel en minutos',
+    description: 'Importa clientes y facturas desde Excel, CSV o Holded con ayuda del equipo.',
+  },
+  {
+    icon: Shield,
+    title: 'Preparado para VeriFactu',
+    description: 'Hash encadenado, QR y registro en la AEAT incluidos para cuando sea obligatorio.',
   },
 ];
-
-const comparisonRows = [
-  { feature: 'Cumplimiento Ley Antifraude 11/2021', them: false, us: true },
-  { feature: 'Hash encadenado automático', them: false, us: true },
-  { feature: 'Envío a AEAT integrado', them: false, us: true },
-  { feature: 'Código QR normativo', them: false, us: true },
-  { feature: 'Gratis hasta 2027 (plazas limitadas)', them: false, us: true },
-  { feature: 'Sin instalación requerida', them: false, us: true },
-  { feature: 'Migración desde otros programas', them: false, us: true },
-  { feature: 'Soporte técnico incluido', them: 'Coste adicional', us: true },
-];
-
-// Machine-readable version of the comparison table — the visual cells use
-// icons, so crawlers get this plus the sr-only text in each cell.
-const comparisonTableJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Table',
-  name: `Comparativa: ${brandConfig.app.name} frente a software tradicional`,
-  about:
-    'Comparativa de cumplimiento VeriFactu y Ley Antifraude 11/2021: hash encadenado, envío a la AEAT, código QR normativo, instalación, migración, soporte y precio.',
-  description: `${brandConfig.app.name} incluye cumplimiento de la Ley Antifraude 11/2021, hash encadenado automático, envío a la AEAT integrado y código QR normativo de serie, sin instalación y gratis hasta 2027. El software tradicional no los incluye y cobra el soporte técnico aparte.`,
-};
 
 const faqs = [
   {
-    q: '¿Cuándo es obligatorio VeriFactu para autónomos?',
-    a: 'Los plazos oficiales son escalonados: el software de facturación solo puede comercializarse adaptado al Reglamento VeriFactu desde el 29 de julio de 2025; las sociedades (SL, SA y demás personas jurídicas) deben facturar con software VeriFactu desde el 1 de enero de 2027; y los autónomos persona física en estimación directa, desde el 1 de julio de 2027 (Real Decreto 1007/2023 y Real Decreto 254/2025). A partir de esas fechas, emitir facturas con Excel o software no certificado puede acarrear multas de hasta 50.000€.',
+    q: `¿${brandConfig.app.name} es un programa de facturación gratis de verdad?`,
+    a: `Sí. Las primeras ${formatCount(PRICING.freePeriodSlots)} altas tienen acceso completo y gratuito hasta 2027: facturas ilimitadas, presupuestos, recurrentes, control de cobros y VeriFactu. No pedimos tarjeta al registrarte y no hay permanencia.`,
   },
   {
-    q: `¿${brandConfig.app.name} está homologado por la AEAT como software garante?`,
-    a: `Sí. ${brandConfig.app.name} está certificado como software garante VeriFactu por la Agencia Tributaria. Genera automáticamente el hash encadenado SHA-256, el código QR verificable por la AEAT y transmite cada factura al registro fiscal en tiempo real. No necesitas configurar nada: desde la primera factura, ya cumples.`,
+    q: '¿Cuánto tiempo me ahorra frente a Excel o Word?',
+    a: `Con ${brandConfig.app.name} una factura queda lista en menos de un minuto: los datos del cliente y de los productos se rellenan solos, el IVA y el IRPF se calculan automáticamente y la numeración es correlativa sin que tengas que revisarla. Además, los presupuestos se convierten en factura con un clic y las facturas recurrentes se emiten solas.`,
+  },
+  {
+    q: '¿Se necesitan conocimientos de contabilidad para usar el programa?',
+    a: 'No. Está diseñado para profesionales sin formación contable ni fiscal. Introduces los datos básicos — cliente, concepto, cantidad — y el programa calcula el IVA, aplica la retención de IRPF si corresponde y genera el PDF listo para enviar. También ves un resumen del IVA para preparar el modelo 303 trimestral.',
+  },
+  {
+    q: '¿Puedo emitir presupuestos y facturas proforma además de facturas?',
+    a: `Sí. ${brandConfig.app.name} incluye presupuestos, facturas proforma y facturas recurrentes. Un presupuesto aceptado se convierte en factura con un solo clic, y las recurrentes se generan cada mes, trimestre o año según configures.`,
+  },
+  {
+    q: '¿Es posible migrar facturas y clientes desde Excel u otro programa?',
+    a: 'Sí. Importación desde Excel, CSV o directamente desde Holded. Subes tu base de clientes en un archivo y tus facturas históricas quedan disponibles en tu cuenta. La migración es gratuita y nuestro equipo te ayuda durante el proceso.',
   },
   {
     q: '¿Cuánto cuesta después de 2027?',
-    a: `Durante el periodo gratuito (hasta 2027) tienes acceso completo sin restricciones. A partir de entonces: Plan Starter ${PRICING.starter.monthly.toFixed(2).replace('.', ',')}€/mes (hasta 60 facturas/año, con VeriFactu incluido) o ${PRICING.starter.annualMonthly.toFixed(2).replace('.', ',')}€/mes si pagas anual. Plan PRO ${PRICING.pro.monthly.toFixed(2).replace('.', ',')}€/mes (facturas ilimitadas, VeriFactu automático, soporte prioritario) o ${PRICING.pro.annualMonthly.toFixed(2).replace('.', ',')}€/mes anual. Sin permanencia.`,
+    a: `Los dos planes tienen facturas ilimitadas y VeriFactu: Plan Básico ${formatPrice(PRICING.starter.monthly)}€/mes o ${formatPrice(PRICING.starter.annualMonthly)}€/mes si pagas anual. Plan PRO ${formatPrice(PRICING.pro.monthly)}€/mes (añade gastos, proveedores, rentabilidad e informes) o ${formatPrice(PRICING.pro.annualMonthly)}€/mes anual. Sin permanencia.`,
   },
   {
-    q: '¿Qué sanciones existen por no usar software certificado VeriFactu?',
-    a: 'La Ley General Tributaria y la Ley Antifraude 11/2021 establecen multas de hasta 50.000€ por ejercicio fiscal. El uso de software que permita modificar o eliminar facturas sin rastro (como Excel) puede tipificarse como infracción tributaria grave. Además, la AEAT puede iniciar comprobaciones e inspecciones al cruzar tus declaraciones de IVA con el registro VeriFactu.',
+    q: '¿Cuándo es obligatorio VeriFactu para autónomos?',
+    a: `${VERIFACTU_ANNOUNCED_DEADLINE.summary}: el 5 de octubre de 2026 el Ministerio de Hacienda comunicó que aplazará las obligaciones pendientes del Reglamento VeriFactu hasta ${VERIFACTU_ANNOUNCED_DEADLINE.label}, para que coincidan con la factura electrónica obligatoria. Tienes tiempo para planificar el cambio sin prisas.`,
   },
   {
-    q: '¿Es posible migrar facturas y clientes desde otro software?',
-    a: 'Sí. Importación desde Excel, CSV o directamente desde Holded. Puedes subir tu base de clientes en un archivo estructurado y todas tus facturas históricas quedan disponibles en tu cuenta. La migración es gratuita y nuestro equipo te asiste durante el proceso sin coste adicional.',
-  },
-  {
-    q: '¿Se necesitan conocimientos de contabilidad para usar el software?',
-    a: 'No. La plataforma está diseñada para profesionales sin formación contable ni fiscal. Introduces los datos básicos — cliente, concepto, cantidad — y el software calcula automáticamente el IVA, aplica la retención de IRPF si corresponde, genera el PDF con el QR VeriFactu y lo registra en la AEAT. También emite recordatorios para la declaración trimestral de IVA (modelo 303).',
-  },
-  {
-    q: `¿Puedo emitir presupuestos y facturas proforma además de facturas?`,
-    a: `Sí. ${brandConfig.app.name} incluye gestión de presupuestos, facturas proforma y facturas recurrentes. Puedes convertir un presupuesto en factura con un solo clic. Las facturas recurrentes se generan y envían automáticamente cada mes, trimestre o año según configures.`,
+    q: `¿${brandConfig.app.name} está adaptado a VeriFactu?`,
+    a: `Sí. ${brandConfig.app.name} está adaptado a VeriFactu (declaración responsable del fabricante). La AEAT no homologa ni certifica programas: cada fabricante declara que su software cumple el Reglamento. Genera automáticamente el hash encadenado SHA-256, el código QR verificable y puede enviar cada registro a la AEAT.`,
   },
 ];
 
 const trustBadges = [
   { icon: CreditCard, text: 'Sin tarjeta al registrarte' },
   { icon: Clock, text: 'Activación inmediata' },
-  { icon: Shield, text: 'Certificado AEAT' },
+  { icon: MonitorSmartphone, text: 'Sin instalar nada' },
   { icon: Lock, text: 'RGPD compliant' },
 ];
 
@@ -193,69 +178,32 @@ const homepageFaqJsonLd = {
   })),
 };
 
-const homepageSoftwareJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
-  name: brandConfig.app.name,
-  applicationCategory: 'BusinessApplication',
-  applicationSubCategory: 'Accounting',
-  operatingSystem: 'Web, iOS, Android',
-  description: brandConfig.app.description,
-  url: brandConfig.app.url,
-  inLanguage: 'es',
-  offers: [
-    {
-      '@type': 'Offer',
-      name: `Plan Gratuito — ${PRICING.freePeriodMonths} meses`,
-      price: '0',
-      priceCurrency: 'EUR',
-      availability: 'https://schema.org/LimitedAvailability',
-      url: `${brandConfig.app.url}/registro`,
-    },
-    {
-      '@type': 'Offer',
-      name: 'Plan Starter',
-      price: String(PRICING.starter.monthly),
-      priceCurrency: 'EUR',
-      availability: 'https://schema.org/InStock',
-      url: `${brandConfig.app.url}/precios`,
-    },
-    {
-      '@type': 'Offer',
-      name: 'Plan PRO con VeriFactu',
-      price: String(PRICING.pro.monthly),
-      priceCurrency: 'EUR',
-      availability: 'https://schema.org/InStock',
-      url: `${brandConfig.app.url}/precios`,
-    },
-  ],
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.9',
-    reviewCount: '214',
-    bestRating: '5',
-    worstRating: '1',
-  },
+const homepageSoftwareJsonLd = softwareApplicationJsonLd({
+  path: '/',
   featureList: [
-    'VeriFactu 100% automático (Ley Antifraude 11/2021)',
-    'Hash encadenado en cada factura',
-    'Envío automático a la AEAT',
-    'Código QR normativo',
+    'Programa de facturación gratis hasta 2027',
     'Facturación en menos de 60 segundos',
-    'Gestión de clientes y presupuestos',
-    'PDF profesional personalizable',
+    'Cálculo automático de IVA e IRPF',
+    'Numeración correlativa por series',
+    'Presupuestos, proformas y facturas recurrentes',
+    'Control de cobros y facturas vencidas',
     'Acceso multiplataforma (web, móvil, tablet)',
     'Migración desde Excel, CSV y Holded',
     'Soporte en español en menos de 2 horas',
+    'Adaptado a VeriFactu: hash encadenado, QR y envío a la AEAT',
   ],
-};
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEO — Metadata
 // ─────────────────────────────────────────────────────────────────────────────
+const HOME_TITLE = `Programa de facturación gratis para autónomos | ${brandConfig.app.name}`;
+const HOME_DESCRIPTION =
+  'Programa de facturación gratis para autónomos: facturas en 60 segundos con IVA e IRPF calculados, numeración automática y control de cobros. Sin tarjeta.';
+
 export const novafacturaHomeMetadata: Metadata = {
-  title: `Software de Facturación Gratis para Autónomos 2026 | VeriFactu`,
-  description: `${brandConfig.app.name} es el software de facturación con VeriFactu integrado para autónomos y pymes. Cumplimiento automático con la Ley Antifraude 11/2021. Gratis hasta 2027. Sin tarjeta.`,
+  title: HOME_TITLE,
+  description: HOME_DESCRIPTION,
   alternates: {
     canonical: brandConfig.app.url,
   },
@@ -263,22 +211,22 @@ export const novafacturaHomeMetadata: Metadata = {
     type: 'website',
     locale: 'es_ES',
     url: brandConfig.app.url,
-    title: `Software de Facturación Gratis para Autónomos 2026 | VeriFactu`,
-    description: `Crea facturas legales con VeriFactu en 60 segundos. Hash, QR y envío a la AEAT automáticos. Gratis hasta 2027, sin tarjeta. Cumple la Ley Antifraude 11/2021.`,
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
     siteName: brandConfig.app.name,
     images: [
       {
         url: `${brandConfig.app.url}${brandConfig.app.ogImage}`,
         width: 1200,
         height: 630,
-        alt: `${brandConfig.app.name} — Software de facturación VeriFactu para autónomos`,
+        alt: `${brandConfig.app.name} — Programa de facturación gratis para autónomos`,
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: `Software de Facturación Gratis para Autónomos 2026 | VeriFactu`,
-    description: `Crea facturas legales con VeriFactu en 60 segundos. Hash, QR y envío a la AEAT automáticos. Gratis hasta 2027, sin tarjeta. Cumple la Ley Antifraude 11/2021.`,
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   robots: { index: true, follow: true },
@@ -296,7 +244,10 @@ function Card({ children, className = '' }: { children: React.ReactNode; classNa
 // ─────────────────────────────────────────────────────────────────────────────
 // Page Component
 // ─────────────────────────────────────────────────────────────────────────────
-export function NovafacturaHomePage() {
+export async function NovafacturaHomePage() {
+  const slots = await getSignupSlots();
+  const slotsLabel = freeSlotsLabel(slots);
+
   return (
     <div className="flex min-h-screen flex-col bg-white text-slate-900">
       <script
@@ -309,190 +260,71 @@ export function NovafacturaHomePage() {
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(comparisonTableJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(excelComparisonTableJsonLd) }}
       />
       <SiteHeader />
 
       <main className="flex-1">
         {/* ══ SECTION 1 — HERO ══ */}
-        <div className="flex min-h-[calc(100vh-4rem)] flex-col">
-          <section className="relative flex flex-1 items-center overflow-hidden">
-            <div
-              className="pointer-events-none absolute inset-0 opacity-[0.04]"
-              style={{
-                backgroundImage:
-                  'radial-gradient(circle at 25% 50%, #3b82f6 0%, transparent 50%), radial-gradient(circle at 75% 25%, #3b82f6 0%, transparent 40%)',
-              }}
-            />
-            <div className="relative mx-auto w-full max-w-4xl px-4 py-12 text-center">
-              <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
-                </span>
-                Plataforma nativa VeriFactu
-              </div>
-
-              <h1
-                data-speakable
-                className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl"
-              >
-                Software de facturación{' '}
-                <span className="relative whitespace-nowrap text-blue-600">
-                  VeriFactu
-                  <svg
-                    className="absolute -bottom-2 left-0 w-full"
-                    viewBox="0 0 300 12"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M2 9 C75 3, 225 3, 298 9"
-                      stroke="#3b82f6"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      opacity="0.4"
-                    />
-                  </svg>
-                </span>{' '}
-                para autónomos y pymes
-              </h1>
-
-              <p className="mx-auto mb-8 max-w-2xl text-lg text-slate-500 sm:text-xl">
-                Cumple con la <strong className="text-slate-800">Ley Antifraude 11/2021</strong> de
-                forma automática. Genera facturas legales con hash encadenado, código QR y envío
-                directo a la AEAT.
-              </p>
-
-              <div className="mx-auto mb-8 max-w-md rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 px-6 py-5">
-                <div className="mb-4 flex items-center justify-center gap-2">
-                  <Sparkles className="h-5 w-5 text-blue-600" />
-                  <span className="text-base font-bold text-slate-900">Gratis hasta 2027</span>
-                </div>
-                <div className="mb-1.5 flex items-center justify-between text-xs font-medium text-slate-600">
-                  <span className="flex items-center gap-1.5">
-                    <Users className="h-3.5 w-3.5 text-amber-600" />
-                    Plazas ocupadas
-                  </span>
-                  <span className="font-bold text-amber-600">{PLAZAS_CONFIG.porcentaje}%</span>
-                </div>
-                <div className="h-2.5 overflow-hidden rounded-full bg-amber-200">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-1000"
-                    style={{ width: `${PLAZAS_CONFIG.porcentaje}%` }}
-                  />
-                </div>
-                <p className="mt-2 text-center text-xs text-slate-500">
-                  <span className="font-semibold text-slate-700">
-                    {PLAZAS_CONFIG.ocupadas.toLocaleString('es-ES')} inscritos
-                  </span>{' '}
-                  ·{' '}
-                  <span className="font-bold text-amber-600">
-                    {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas restantes
-                  </span>{' '}
-                  de {PLAZAS_CONFIG.total.toLocaleString('es-ES')}
-                </p>
-              </div>
-
-              <div className="mb-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <Link
-                  href="/registro"
-                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 text-base font-bold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl sm:w-auto"
-                >
-                  Empezar gratis ahora
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <a
-                  href="#como-funciona"
-                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-8 text-base font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 sm:w-auto"
-                >
-                  Ver cómo funciona
-                </a>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-500">
-                {trustBadges.map(({ icon: Icon, text }) => (
-                  <span key={text} className="flex items-center gap-1.5">
-                    <Icon className="h-4 w-4 text-blue-500" />
-                    {text}
-                  </span>
-                ))}
-              </div>
+        <section className="relative flex min-h-[calc(100vh-4rem)] items-center overflow-hidden">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage:
+                'radial-gradient(circle at 25% 50%, #3b82f6 0%, transparent 50%), radial-gradient(circle at 75% 25%, #3b82f6 0%, transparent 40%)',
+            }}
+          />
+          <div className="relative mx-auto w-full max-w-4xl px-4 py-12 text-center">
+            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 shadow-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+              </span>
+              Gratis hasta 2027 · sin tarjeta
             </div>
-          </section>
 
-          {/* ══ AGENCY BANNER ══ */}
-          <section className="bg-gradient-to-r from-indigo-600 to-indigo-800 py-6">
-            <div className="mx-auto max-w-5xl px-4">
-              <div className="flex flex-col items-center justify-between gap-6 text-center md:flex-row md:text-left">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 rounded-xl bg-white/10 p-3">
-                    <Building2 className="h-7 w-7 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-indigo-300">
-                      Para asesorías y gestorías
-                    </p>
-                    <h3 className="mt-1 text-xl font-bold text-white sm:text-2xl">
-                      ¿Gestionas la facturación de varios clientes?
-                    </h3>
-                    <p className="mt-1 text-sm text-indigo-200">
-                      Panel centralizado para operar como cada uno de tus autónomos. VeriFactu
-                      automático bajo cada NIF. Completamente gratis para asesorías.
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href="/asesoria"
-                  className="inline-flex flex-shrink-0 items-center gap-2 rounded-xl bg-white px-6 py-3 text-base font-bold text-indigo-700 shadow-lg transition-all hover:bg-indigo-50 hover:shadow-xl"
-                >
-                  Ver solución para asesorías
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-          </section>
-        </div>
+            <h1
+              data-speakable
+              className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl"
+            >
+              Programa de facturación gratis:{' '}
+              <span className="text-blue-600">haz tus facturas en 60 segundos</span>
+            </h1>
 
-        {/* ══ SECTION 2 — STATS ══ */}
-        <HomeAnimatedStats />
-
-        {/* ══ SECTION 3 — PROBLEM ══ */}
-        <section className="py-16 md:py-24">
-          <div className="mx-auto max-w-3xl px-4">
-            <div className="mb-8 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50">
-                <AlertTriangle className="h-8 w-8 text-red-500" />
-              </div>
-            </div>
-            <h2 className="mb-6 text-center text-3xl font-bold text-slate-900 sm:text-4xl">
-              El uso de Excel o Word para facturar dejará de ser legal
-            </h2>
-            <div className="rounded-xl border-2 border-red-200 bg-red-50 p-6 text-center md:p-8">
-              <p className="mb-4 text-lg text-slate-700">
-                Con la <strong>Ley Antifraude 11/2021</strong> y el{' '}
-                <strong>Reglamento VeriFactu</strong>, todas las facturas deberán incluir{' '}
-                <strong>hash encadenado</strong>, <strong>código QR</strong> y{' '}
-                <strong>envío automático a la AEAT</strong>.
-              </p>
-              <div className="flex items-center justify-center gap-2 text-red-600">
-                <AlertTriangle className="h-5 w-5" />
-                <span className="text-xl font-bold">Sanción por incumplimiento: hasta 50.000€</span>
-              </div>
-            </div>
-            <div className="mt-6">
-              <VerifactuDeadlines />
-            </div>
-            <p className="mt-8 text-center text-lg text-slate-500">
-              {brandConfig.app.name} automatiza todos estos requisitos técnicos.{' '}
-              <strong className="text-slate-800">
-                Tú solo creas la factura, nosotros garantizamos el cumplimiento.
-              </strong>
+            <p className="mx-auto mb-8 max-w-2xl text-lg text-slate-500 sm:text-xl">
+              Deja la plantilla de Excel. El IVA, el IRPF y la numeración se calculan solos, envías
+              el PDF por email y ves quién te ha pagado.{' '}
+              <strong className="text-slate-800">Más rápido y sin errores.</strong>
             </p>
+
+            <div className="mb-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link
+                href="/registro"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 text-base font-bold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl sm:w-auto"
+              >
+                Crear mi cuenta gratis
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <a
+                href="#frente-a-excel"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-8 text-base font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 sm:w-auto"
+              >
+                Compararlo con Excel
+              </a>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-500">
+              {trustBadges.map(({ icon: Icon, text }) => (
+                <span key={text} className="flex items-center gap-1.5">
+                  <Icon className="h-4 w-4 text-blue-500" />
+                  {text}
+                </span>
+              ))}
+            </div>
           </div>
         </section>
 
-        {/* ══ SECTION 4 — HOW IT WORKS ══ */}
+        {/* ══ SECTION 2 — HOW IT WORKS ══ */}
         <section
           id="como-funciona"
           className="border-y border-slate-100 bg-slate-50 py-16 md:py-24"
@@ -500,14 +332,14 @@ export function NovafacturaHomePage() {
           <div className="mx-auto max-w-5xl px-4">
             <div className="mb-4 text-center">
               <span className="mb-4 inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-                Proceso simplificado
+                Cómo funciona
               </span>
               <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
-                Facturación VeriFactu en tres pasos
+                Cómo hacer una factura en 60 segundos
               </h2>
             </div>
             <p className="mx-auto mb-12 max-w-2xl text-center text-slate-500">
-              Sin conocimientos técnicos. Sin configuraciones complejas.
+              Sin conocimientos de contabilidad. Sin fórmulas. Sin instalar nada.
             </p>
             <div className="relative grid gap-8 md:grid-cols-3">
               <div
@@ -532,14 +364,14 @@ export function NovafacturaHomePage() {
                 href="/registro"
                 className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-8 py-3.5 text-base font-bold text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow-md"
               >
-                Empezar gratis ahora
+                Hacer mi primera factura gratis
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
         </section>
 
-        {/* ══ SECTION 5 — FEATURES ══ */}
+        {/* ══ SECTION 3 — FEATURES ══ */}
         <section className="py-16 md:py-24">
           <div className="mx-auto max-w-6xl px-4">
             <div className="mb-4 text-center">
@@ -547,104 +379,45 @@ export function NovafacturaHomePage() {
                 Funcionalidades
               </span>
               <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
-                Herramientas profesionales para cumplir con Hacienda
+                Todo lo que incluye el programa de facturación gratis
               </h2>
             </div>
             <p className="mx-auto mb-12 max-w-2xl text-center text-slate-500">
-              Diseñado para profesionales autónomos y pequeñas empresas.
+              Sin funciones bloqueadas ni límite de facturas durante el periodo gratuito.
             </p>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {features.map((f) => (
                 <Card
                   key={f.title}
-                  className={`border-2 p-6 transition-all duration-200 hover:shadow-md ${
-                    f.highlight
-                      ? 'border-blue-200 bg-blue-50/30 ring-1 ring-blue-100'
-                      : 'hover:border-slate-300'
-                  }`}
+                  className="border-2 p-6 transition-all duration-200 hover:border-slate-300 hover:shadow-md"
                 >
-                  <div
-                    className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl ${
-                      f.highlight ? 'bg-blue-100' : 'bg-slate-100'
-                    }`}
-                  >
-                    <f.icon
-                      className={`h-6 w-6 ${f.highlight ? 'text-blue-600' : 'text-slate-600'}`}
-                    />
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50">
+                    <f.icon className="h-6 w-6 text-blue-600" />
                   </div>
                   <h3 className="mb-2 font-bold text-slate-900">{f.title}</h3>
                   <p className="text-sm text-slate-500">{f.description}</p>
                 </Card>
               ))}
             </div>
+            <p className="mt-10 text-center text-sm text-slate-500">
+              <Link href="/funcionalidades" className="font-semibold text-blue-600 hover:underline">
+                Ver todas las funcionalidades una a una →
+              </Link>
+            </p>
           </div>
         </section>
 
-        {/* ══ SECTION 6 — WHAT IS VERIFACTU ══ */}
-        <section className="border-y border-slate-100 bg-slate-50 py-16 md:py-24">
-          <div className="mx-auto max-w-4xl px-4">
-            <div className="mb-8 text-center">
-              <span className="mb-4 inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-                Información normativa
-              </span>
-              <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
-                ¿Qué es VeriFactu y cómo afecta a los autónomos?
-              </h2>
-            </div>
-            <div className="space-y-4 text-slate-500">
-              <p>
-                <strong className="text-slate-800">VeriFactu</strong> es el sistema de verificación
-                de facturas establecido por la{' '}
-                <strong className="text-slate-800">Ley Antifraude 11/2021</strong>. Obliga a todos
-                los autónomos y empresas a utilizar un{' '}
-                <strong className="text-slate-800">software garante</strong> que asegure la{' '}
-                <strong className="text-slate-800">trazabilidad</strong>,{' '}
-                <strong className="text-slate-800">inalterabilidad</strong> e{' '}
-                <strong className="text-slate-800">integridad de los registros</strong>.
-              </p>
-              <p>
-                Cada factura debe contener un{' '}
-                <strong className="text-slate-800">hash encadenado</strong>, un{' '}
-                <strong className="text-slate-800">código QR verificable</strong> y debe
-                transmitirse automáticamente a la <strong className="text-slate-800">AEAT</strong>.
-                Esto hace inviable el uso de Excel, Word o software no homologado.
-              </p>
-              <p>
-                {brandConfig.app.name} implementa{' '}
-                <strong className="text-slate-800">firma electrónica cualificada</strong>, genera el
-                hash en cada emisión y mantiene conexión directa con la Agencia Tributaria.
-              </p>
-            </div>
-            <div className="mt-10 flex flex-wrap justify-center gap-2">
-              {[
-                'Ley 11/2021',
-                'Reglamento de facturación',
-                'Hash encadenado',
-                'Código QR',
-                'AEAT',
-                'Software garante',
-                'Firma electrónica',
-                'Facturación electrónica',
-              ].map((kw) => (
-                <span
-                  key={kw}
-                  className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600"
-                >
-                  {kw}
-                </span>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* ══ SECTION 4 — VS EXCEL ══ */}
+        <ExcelComparison />
 
-        {/* ══ SECTION 7 — OFFER ══ */}
+        {/* ══ SECTION 5 — OFFER ══ */}
         <section id="registro" className="py-16 md:py-24">
           <div className="mx-auto max-w-3xl px-4">
             <Card className="overflow-hidden border-2 border-blue-200">
               <div className="bg-gradient-to-br from-blue-50 via-white to-transparent p-8 text-center md:p-12">
                 <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800">
                   <Clock className="h-4 w-4" />
-                  Oferta limitada a {PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones
+                  Oferta limitada a {formatCount(PRICING.freePeriodSlots)} inscripciones
                 </div>
                 <h2 className="mb-2 text-3xl font-extrabold text-slate-900 sm:text-4xl">
                   Gratis hasta 2027
@@ -652,36 +425,22 @@ export function NovafacturaHomePage() {
                 <p className="mb-2 text-lg font-bold text-blue-600">Sin tarjeta al registrarte</p>
                 <p className="mb-6 text-slate-500">
                   Accede a todas las funcionalidades sin coste. Reservado para los primeros{' '}
-                  {PLAZAS_CONFIG.total.toLocaleString('es-ES')} profesionales.
+                  {formatCount(PRICING.freePeriodSlots)} profesionales.
                 </p>
-                <div className="mx-auto mb-8 max-w-md rounded-xl border border-slate-200 bg-white p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      <Users className="h-4 w-4 text-blue-600" />
-                      Plazas ocupadas
-                    </span>
-                    <span className="text-2xl font-extrabold text-blue-600">
-                      {PLAZAS_CONFIG.porcentaje}%
-                    </span>
+                {slots?.isSoldOut && (
+                  <div className="mx-auto mb-8 max-w-md">
+                    <FreeOfferEndedNotice total={slots.total} />
                   </div>
-                  <div className="mb-2 h-3 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-500"
-                      style={{ width: `${PLAZAS_CONFIG.porcentaje}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-slate-400">
-                    <span>{PLAZAS_CONFIG.ocupadas.toLocaleString('es-ES')} inscritos</span>
-                    <span className="font-bold text-amber-600">
-                      {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} restantes
-                    </span>
-                  </div>
-                </div>
+                )}
                 <div className="mb-8 grid gap-4 sm:grid-cols-3">
                   {[
                     { icon: Clock, value: 'Hasta 2027', label: 'Acceso completo' },
                     { icon: CreditCard, value: '0€', label: 'Sin tarjeta al registrarte' },
-                    { icon: TrendingUp, value: 'desde 9,90€', label: 'Starter o PRO · por mes' },
+                    {
+                      icon: TrendingUp,
+                      value: `desde ${formatPrice(PRICING.starter.annualMonthly)}€`,
+                      label: `${PLAN_NAMES.basic} o ${PLAN_NAMES.pro} · por mes (pago anual)`,
+                    },
                   ].map(({ icon: Icon, value, label }) => (
                     <div
                       key={label}
@@ -696,56 +455,32 @@ export function NovafacturaHomePage() {
                 <div className="mb-4 grid gap-3 text-left sm:grid-cols-2">
                   <div className="rounded-xl border border-slate-200 bg-white p-4">
                     <div className="mb-3 flex items-center justify-between">
-                      <p className="text-sm font-bold text-slate-800">Plan Starter</p>
+                      <p className="text-sm font-bold text-slate-800">Plan {PLAN_NAMES.basic}</p>
                       <span className="text-base font-extrabold text-slate-700">
-                        {PRICING.starter.monthly.toFixed(2).replace('.', ',')}€
+                        {formatPrice(PRICING.starter.monthly)}€
                         <span className="text-xs font-normal text-slate-400">/mes</span>
                       </span>
                     </div>
-                    <ul className="space-y-1.5">
-                      {[
-                        { text: 'Hasta 60 facturas al año', ok: true },
-                        { text: 'PDF, envío por email y app móvil', ok: true },
-                        { text: 'Importación desde Excel / CSV', ok: true },
-                        { text: 'VeriFactu / Envío AEAT incluido', ok: true },
-                      ].map(({ text, ok }) => (
-                        <li key={text} className="flex items-center gap-2 text-xs">
-                          {ok ? (
-                            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
-                          ) : (
-                            <X className="h-3.5 w-3.5 shrink-0 text-slate-300" />
-                          )}
-                          <span className={ok ? 'text-slate-600' : 'text-slate-400'}>{text}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <p className="mb-3 text-xs text-slate-500">{PLAN_DESCRIPTIONS.basic}</p>
+                    <PlanFeatureList included={BASIC_PLAN_FEATURES} />
                   </div>
                   <div className="rounded-xl border-2 border-blue-200 bg-blue-50/50 p-4">
                     <div className="mb-3 flex items-center justify-between gap-2">
                       <div>
                         <p className="text-sm font-bold text-slate-800">Plan PRO</p>
                         <span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                          Con VeriFactu
+                          Todo incluido
                         </span>
                       </div>
                       <span className="text-base font-extrabold text-slate-700">
-                        {PRICING.pro.monthly.toFixed(2).replace('.', ',')}€
+                        {formatPrice(PRICING.pro.monthly)}€
                         <span className="text-xs font-normal text-slate-400">/mes</span>
                       </span>
                     </div>
-                    <ul className="space-y-1.5">
-                      {[
-                        'Todo lo del plan Starter',
-                        'VeriFactu automático',
-                        'Envío a AEAT incluido',
-                        'Software homologado AEAT',
-                      ].map((text) => (
-                        <li key={text} className="flex items-center gap-2 text-xs">
-                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-blue-600" />
-                          <span className="text-slate-600">{text}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <p className="mb-3 text-xs text-slate-500">{PLAN_DESCRIPTIONS.pro}</p>
+                    <PlanFeatureList
+                      included={[`Todo lo del plan ${PLAN_NAMES.basic}`, ...PRO_ONLY_FEATURES]}
+                    />
                   </div>
                 </div>
                 <p className="mb-8 text-center text-xs text-slate-400">
@@ -769,84 +504,10 @@ export function NovafacturaHomePage() {
           </div>
         </section>
 
-        {/* ══ SECTION 8 — COMPARISON ══ */}
-        <section className="border-y border-slate-100 bg-slate-50 py-16 md:py-24">
-          <div className="mx-auto max-w-3xl px-4">
-            <div className="mb-4 text-center">
-              <span className="mb-4 inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-                Comparativa
-              </span>
-              <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
-                {brandConfig.app.name} frente a soluciones tradicionales
-              </h2>
-            </div>
-            <p className="mx-auto mb-10 max-w-xl text-center text-slate-500">
-              ¿Tu software actual cumple con los requisitos de la Ley Antifraude?
-            </p>
-            <Card className="overflow-hidden border-2 border-slate-200">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="px-4 py-4 text-left font-bold text-slate-700">
-                        Característica
-                      </th>
-                      <th className="px-4 py-4 text-center font-bold text-slate-400">
-                        Software tradicional
-                      </th>
-                      <th className="px-4 py-4 text-center font-bold text-blue-600">
-                        {brandConfig.app.name}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {comparisonRows.map((row, i) => (
-                      <tr
-                        key={i}
-                        className={`border-b border-slate-100 last:border-0 ${i % 2 === 0 ? '' : 'bg-slate-50/50'}`}
-                      >
-                        <td className="px-4 py-3 font-medium text-slate-700">{row.feature}</td>
-                        <td className="px-4 py-3 text-center">
-                          {typeof row.them === 'string' ? (
-                            <span className="font-medium text-amber-600">{row.them}</span>
-                          ) : row.them ? (
-                            <>
-                              <CheckCircle2
-                                aria-hidden="true"
-                                className="mx-auto h-5 w-5 text-green-500"
-                              />
-                              <span className="sr-only">Sí</span>
-                            </>
-                          ) : (
-                            <>
-                              <X aria-hidden="true" className="mx-auto h-5 w-5 text-slate-300" />
-                              <span className="sr-only">No</span>
-                            </>
-                          )}
-                        </td>
-                        <td className="bg-blue-50/30 px-4 py-3 text-center">
-                          <CheckCircle2
-                            aria-hidden="true"
-                            className="mx-auto h-5 w-5 text-blue-600"
-                          />
-                          <span className="sr-only">Sí</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-            <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-slate-500">
-              En síntesis: el software tradicional no cumple de serie con la Ley Antifraude 11/2021
-              — sin hash encadenado, sin envío automático a la AEAT y sin código QR normativo.{' '}
-              {brandConfig.app.name} lo incluye todo desde el primer día, sin instalación, con
-              migración y soporte técnico sin coste adicional, y gratis hasta 2027.
-            </p>
-          </div>
-        </section>
+        {/* ══ SECTION 6 — AGENCIES ══ */}
+        <AgencyCallout />
 
-        {/* ══ SECTION 9 — TESTIMONIALS ══ */}
+        {/* ══ SECTION 7 — SOCIAL PROOF ══ */}
         <section className="py-16 md:py-24">
           <div className="mx-auto max-w-6xl px-4">
             <div className="mb-4 text-center">
@@ -854,12 +515,13 @@ export function NovafacturaHomePage() {
                 Testimonios
               </span>
               <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
-                Profesionales que ya cumplen con VeriFactu
+                Autónomos que ya han dejado Excel
               </h2>
             </div>
             <p className="mx-auto mb-12 max-w-xl text-center text-slate-500">
-              Más de {PLAZAS_CONFIG.ocupadas.toLocaleString('es-ES')} autónomos y pymes confían en{' '}
-              {brandConfig.app.name}
+              {slots
+                ? `${formatCount(slots.occupied)} autónomos y pymes ya facturan con ${brandConfig.app.name}`
+                : `Autónomos y pymes de toda España ya facturan con ${brandConfig.app.name}`}
             </p>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {testimonials.map((t) => (
@@ -886,37 +548,78 @@ export function NovafacturaHomePage() {
                 </Card>
               ))}
             </div>
+            <CustomerStoryLink />
           </div>
         </section>
 
-        {/* ══ SECTION 10 — FAQ ══ */}
+        {/* ══ SECTION 8 — VERIFACTU (future-proof, not the headline) ══ */}
+        <section className="border-y border-slate-100 bg-slate-50 py-16 md:py-24">
+          <div className="mx-auto max-w-3xl px-4">
+            <div className="mb-8 text-center">
+              <span className="mb-4 inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                Preparado para el futuro
+              </span>
+              <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
+                VeriFactu: preparado para cuando sea obligatorio
+              </h2>
+            </div>
+            <div className="space-y-4 text-slate-500">
+              <p>
+                Con el <strong className="text-slate-800">Reglamento VeriFactu</strong>, cada
+                factura llevará un <strong className="text-slate-800">hash encadenado</strong>, un{' '}
+                <strong className="text-slate-800">código QR verificable</strong> y la opción de
+                enviar el registro a la <strong className="text-slate-800">AEAT</strong>. Excel o
+                Word no generan estos registros.{' '}
+                <strong className="text-slate-800">{VERIFACTU_ANNOUNCED_DEADLINE.summary}.</strong>
+              </p>
+              <p>
+                {brandConfig.app.name} ya lo hace en cada factura, sin coste extra: cuando llegue la
+                obligación no tendrás que cambiar de programa.{' '}
+                <Link href="/verifactu" className="font-semibold text-blue-600 hover:underline">
+                  Guía completa de VeriFactu →
+                </Link>
+              </p>
+            </div>
+            <div className="mt-6">
+              <VerifactuDeadlines />
+            </div>
+          </div>
+        </section>
+
+        {/* ══ SECTION 9 — FAQ ══ */}
         <FaqSection
           faqs={faqs}
-          title={`Dudas habituales sobre ${brandConfig.app.name} y VeriFactu`}
+          title="Preguntas frecuentes sobre el programa de facturación gratis"
           subtitle="Resolvemos las consultas más frecuentes de autónomos y pymes"
         />
 
-        {/* ══ SECTION 11 — FINAL CTA ══ */}
+        {/* ══ SECTION 10 — FINAL CTA ══ */}
         <section className="py-16 md:py-24">
           <div className="mx-auto max-w-2xl px-4 text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800">
-              <Users className="h-4 w-4" />
-              Solo {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas gratuitas restantes
-            </div>
+            {slotsLabel && (
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800">
+                <Users className="h-4 w-4" />
+                {slotsLabel}
+              </div>
+            )}
             <h2 className="mb-4 text-3xl font-extrabold text-slate-900 sm:text-4xl">
-              Reserva tu acceso gratuito ahora
+              Haz tu primera factura gratis hoy
             </h2>
             <p className="mb-8 text-lg text-slate-500">
-              Únete a más de {PLAZAS_CONFIG.ocupadas.toLocaleString('es-ES')} profesionales que ya
-              cumplen con VeriFactu.
-              <br />
+              {slots && !slots.isSoldOut && (
+                <>
+                  Únete a los {formatCount(slots.occupied)} profesionales que ya facturan con{' '}
+                  {brandConfig.app.name}.
+                  <br />
+                </>
+              )}
               Gratis hasta 2027. Sin tarjeta al registrarte. Sin compromiso.
             </p>
             <Link
               href="/registro"
               className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-10 text-base font-bold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl sm:w-auto"
             >
-              Empezar gratis ahora
+              Crear mi cuenta gratis
               <ArrowRight className="h-4 w-4" />
             </Link>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-500">
@@ -938,7 +641,7 @@ export function NovafacturaHomePage() {
       </main>
 
       <FooterLanding />
-      <HomeStickyCtaBanner />
+      <HomeStickyCtaBanner slots={slots} />
     </div>
   );
 }

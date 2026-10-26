@@ -31,27 +31,13 @@ import {
   Globe,
   Layers,
 } from 'lucide-react';
-import { brandConfig, PRICING, PLAZAS_CONFIG } from '@easyfactura/brand-config';
+import { brandConfig, PRICING } from '@easyfactura/brand-config';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
 
 export const nafacturaFuncionalidadesMetadata: Metadata = {
   title: `Funcionalidades — Software de facturación para autónomos navarros | ${brandConfig.app.name}`,
   description: `Descubre todas las funcionalidades de ${brandConfig.app.name}: facturación conforme a Hacienda Navarra, gestión de clientes, presupuestos, dashboard, PDF y más. Software de facturación para autónomos navarros.`,
-  keywords: [
-    'funcionalidades software facturación Navarra',
-    'características programa facturación autónomos Navarra',
-    'software facturación Hacienda Navarra',
-    'programa facturación Pamplona',
-    'software facturación electrónica Navarra',
-    'gestión facturas clientes Navarra online',
-    'generar factura pdf online autónomo navarro',
-    'software presupuestos facturas autónomos Navarra',
-    'programa facturación cumplimiento Hacienda Foral',
-    'software facturación sin tarjeta Navarra',
-    'gestión clientes facturas presupuestos pyme Navarra',
-    'dashboard facturación autónomo navarro',
-  ],
   alternates: { canonical: `${brandConfig.app.url}/funcionalidades` },
   openGraph: {
     title: `Funcionalidades de ${brandConfig.app.name} — Software de facturación para Navarra`,
@@ -73,7 +59,7 @@ export const nafacturaFuncionalidadesMetadata: Metadata = {
     card: 'summary_large_image',
     title: `Funcionalidades de ${brandConfig.app.name} — Facturación para Navarra`,
     description: `Descubre todo lo que incluye ${brandConfig.app.name} para autónomos navarros. Gratis hasta 2027.`,
-    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`    ],
+    images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   robots: { index: true, follow: true },
 };
@@ -405,7 +391,10 @@ export function NafacturaFuncionalidadesPage(): React.JSX.Element {
                 <BadgeCheck className="h-4 w-4 text-red-600" />
                 Adaptado a Hacienda Foral de Navarra
               </div>
-              <h1 data-speakable className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
+              <h1
+                data-speakable
+                className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl"
+              >
                 Todo lo que necesitas para{' '}
                 <span className="relative whitespace-nowrap text-red-600">
                   facturar en Navarra
@@ -646,10 +635,6 @@ export function NafacturaFuncionalidadesPage(): React.JSX.Element {
           {/* Final CTA */}
           <section className="py-16 md:py-24">
             <div className="mx-auto max-w-2xl px-4 text-center">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800">
-                <Users className="h-4 w-4" />
-                {PLAZAS_CONFIG.disponibles.toLocaleString('es-ES')} plazas gratuitas disponibles
-              </div>
               <h2 className="mb-4 text-3xl font-extrabold text-slate-900 sm:text-4xl">
                 Empieza a facturar correctamente en Navarra hoy
               </h2>

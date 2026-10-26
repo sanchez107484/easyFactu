@@ -17,7 +17,7 @@ export const nafacturaBrandConfig = {
     tagline: 'Factura sin complicaciones. Cumplimiento foral automático.',
     url: 'https://www.nafactura.es',
     domain: 'www.nafactura.es',
-    ogImage: '/brand/nafactura/og-image.png',
+    ogImage: '/brand/nafactura/og-imagen.png',
     supportEmail: 'info@nafactura.es',
     legalEntity: 'NaFactura S.L.',
     nif: '[NIF/CIF]',
@@ -26,8 +26,8 @@ export const nafacturaBrandConfig = {
     sameAs: ['https://www.linkedin.com/company/nafactura', 'https://www.instagram.com/na.factura'],
   },
   logos: {
-    main: '/brand/nafactura/logo.png',
-    icon: '/brand/nafactura/logo-icon.png',
+    main: '/brand/nafactura/logo.webp', // 400px WebP for UI; logo.png kept as source
+    icon: '/brand/nafactura/logo-icon-192.png', // 192px; logo-icon.png (535px+) kept for PWA
     white: '/brand/nafactura/logo-white.png',
     email: '/brand/nafactura/logo-email.png',
     favicon: '/brand/nafactura/favicon.ico',
@@ -83,16 +83,16 @@ export const nafacturaPlazasConfig = {
 
 export const nafacturaPricing = {
   starter: {
-    monthly: 6.9,
-    annualMonthly: 5.9,
-    annualTotal: 82.8,
-    annualSaving: 12,
+    monthly: 8.9,
+    annualMonthly: 7.42,
+    annualTotal: 89,
+    annualSaving: 17.8,
   },
   pro: {
-    monthly: 8.9,
-    annualMonthly: 7.5,
-    annualTotal: 106.8,
-    annualSaving: 16.8,
+    monthly: 12.9,
+    annualMonthly: 10.75,
+    annualTotal: 129,
+    annualSaving: 25.8,
   },
   freePeriodMonths: 6,
   freePeriodSlots: 1000,
