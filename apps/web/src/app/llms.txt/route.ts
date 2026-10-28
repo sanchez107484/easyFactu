@@ -1,5 +1,6 @@
 import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
 import { NextResponse } from 'next/server';
+import { VERIFACTU_ANNOUNCED_DEADLINE } from '@/lib/verifactu-deadlines';
 
 // Force static generation at build time — brand is determined by NEXT_PUBLIC_BRAND
 export const dynamic = 'force-static';
@@ -39,7 +40,7 @@ El software garante de facturación es el que cumple los requisitos técnicos de
 
 ## VeriFactu y NaTicket para autónomos navarros
 
-- **VeriFactu** (AEAT): Obligatorio desde julio 2027 para todos los autónomos españoles en estimación directa. Los autónomos navarros también deben cumplir con VeriFactu aunque tributen ante Hacienda Foral.
+- **VeriFactu** (AEAT): ${VERIFACTU_ANNOUNCED_DEADLINE.summary} como fecha de obligación para todos los autónomos españoles en estimación directa. Los autónomos navarros también deben cumplir con VeriFactu aunque tributen ante Hacienda Foral.
 - **NaTicket** (Hacienda Foral de Navarra): Sistema de registro de facturas en desarrollo específico para el Convenio Económico navarro. Se espera su implantación progresiva desde 2027.
 - NaFactura gestiona ambos automáticamente. La actualización a NaTicket está incluida en el plan, sin coste adicional.
 
@@ -79,7 +80,7 @@ El Convenio Económico establece el régimen tributario especial de Navarra. Los
 ## Preguntas frecuentes
 
 - **¿Qué es el software garante?** El programa que cumple los requisitos técnicos de Hacienda Foral de Navarra: hash encadenado, firma electrónica, código QR y envío automático a la administración foral.
-- **¿Cuándo es obligatorio VeriFactu para autónomos navarros?** Desde julio 2027. Los autónomos navarros deben cumplir con VeriFactu (AEAT) y además prepararse para NaTicket (Hacienda Foral).
+- **¿Cuándo es obligatorio VeriFactu para autónomos navarros?** ${VERIFACTU_ANNOUNCED_DEADLINE.summary}. Los autónomos navarros deben cumplir con VeriFactu (AEAT) y además prepararse para NaTicket (Hacienda Foral).
 - **¿Qué es NaTicket?** El sistema de registro de facturas que está desarrollando la Hacienda Foral de Navarra. NaFactura está preparado para su integración desde el primer día.
 - **¿Cuánto cuesta NaFactura?** Gratis hasta 2027 (${FREE_SLOTS} plazas). Después desde ${STARTER_MONTHLY}€/mes sin permanencia.
 - **¿Puedo migrar desde Holded?** Sí. Migración gratuita y asistida desde Holded, Excel o CSV.

@@ -27,6 +27,7 @@ import RelatedLinksSection from '@/components/RelatedLinksSection';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
 import { VerifactuDeadlines } from '@/components/verifactu-deadlines';
+import { VERIFACTU_ANNOUNCED_DEADLINE } from '@/lib/verifactu-deadlines';
 import { buildSignupSlots } from '@/lib/signup-slots';
 import {
   HomeStickyCtaBanner,
@@ -182,7 +183,7 @@ const faqs = [
   },
   {
     q: '¿Cuándo es obligatorio VeriFactu para los autónomos navarros?',
-    a: `VeriFactu (el sistema de registro de facturas de la AEAT estatal) es obligatorio para todos los autónomos en estimación directa desde julio de 2027. Los autónomos navarros deben cumplir con VeriFactu y además prepararse para NaTicket (el sistema de Hacienda Foral de Navarra). ${brandConfig.app.name} gestiona ambos automáticamente, actualizándose sin coste adicional.`,
+    a: `VeriFactu (el sistema de registro de facturas de la AEAT estatal) será obligatorio para todos los autónomos en estimación directa (${VERIFACTU_ANNOUNCED_DEADLINE.summary}). Los autónomos navarros deben cumplir con VeriFactu y además prepararse para NaTicket (el sistema de Hacienda Foral de Navarra). ${brandConfig.app.name} gestiona ambos automáticamente, actualizándose sin coste adicional.`,
   },
   {
     q: '¿Qué es NaTicket y cuándo será obligatorio en Navarra?',
@@ -273,7 +274,7 @@ const homepageFaqJsonLd = {
       name: '¿Cuándo es obligatorio VeriFactu para autónomos navarros?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `VeriFactu es obligatorio para todos los autónomos en estimación directa desde julio de 2027. Los autónomos navarros también deben cumplir con VeriFactu además de prepararse para NaTicket (el sistema de Hacienda Foral de Navarra). ${brandConfig.app.name} gestiona ambos automáticamente.`,
+        text: `VeriFactu será obligatorio para todos los autónomos en estimación directa (${VERIFACTU_ANNOUNCED_DEADLINE.summary}). Los autónomos navarros también deben cumplir con VeriFactu además de prepararse para NaTicket (el sistema de Hacienda Foral de Navarra). ${brandConfig.app.name} gestiona ambos automáticamente.`,
       },
     },
     {
@@ -743,16 +744,16 @@ export function NafacturaHomePage() {
               </div>
               <div>
                 <h3 className="mb-2 text-lg font-bold text-slate-900">
-                  VeriFactu y NaTicket: las dos obligaciones de los autónomos navarros en 2027
+                  VeriFactu y NaTicket: las dos obligaciones que vienen para los autónomos navarros
                 </h3>
                 <p className="text-sm leading-relaxed text-slate-500">
                   Los autónomos navarros en estimación directa se enfrentan a dos obligaciones
-                  fiscales en 2027: <strong className="text-slate-700">VeriFactu</strong> (el
-                  sistema de la AEAT estatal, obligatorio desde julio 2027) y{' '}
-                  <strong className="text-slate-700">NaTicket</strong> (el sistema propio de
-                  Hacienda Foral de Navarra, en desarrollo). {brandConfig.app.name} ya está
-                  preparado para ambos, actualizándose automáticamente cuando NaTicket sea
-                  obligatorio, sin coste adicional.
+                  fiscales: <strong className="text-slate-700">VeriFactu</strong> (el sistema de la
+                  AEAT estatal, obligatorio en {VERIFACTU_ANNOUNCED_DEADLINE.label} según ha
+                  anunciado Hacienda) y <strong className="text-slate-700">NaTicket</strong> (el
+                  sistema propio de Hacienda Foral de Navarra, en desarrollo).{' '}
+                  {brandConfig.app.name} ya está preparado para ambos, actualizándose
+                  automáticamente cuando NaTicket sea obligatorio, sin coste adicional.
                 </p>
               </div>
               <div>
@@ -1093,7 +1094,7 @@ export function NafacturaHomePage() {
           {
             href: '/verifactu',
             label: 'VeriFactu en Navarra',
-            description: 'Cumplimiento fiscal obligatorio para autónomos navarros desde 2027',
+            description: `Cumplimiento fiscal obligatorio para autónomos navarros desde ${VERIFACTU_ANNOUNCED_DEADLINE.label}`,
           },
           {
             href: '/alternativa-holded-navarra',

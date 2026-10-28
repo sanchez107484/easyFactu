@@ -16,6 +16,7 @@ import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
+import { VERIFACTU_ANNOUNCED_DEADLINE } from '@/lib/verifactu-deadlines';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Metadata
@@ -176,7 +177,7 @@ const FAQS = [
   },
   {
     q: '¿Qué diferencia hay entre VeriFactu y NaTicket para autónomos navarros?',
-    a: 'VeriFactu es el sistema de la AEAT (Agencia Tributaria estatal) obligatorio para todos los autónomos españoles en estimación directa desde julio de 2027. NaTicket es el sistema propio que Hacienda Foral de Navarra está desarrollando para los autónomos navarros, complementario a VeriFactu. Los autónomos navarros podrán necesitar cumplir con ambos.',
+    a: `VeriFactu es el sistema de la AEAT (Agencia Tributaria estatal) que será obligatorio para todos los autónomos españoles en estimación directa: ${VERIFACTU_ANNOUNCED_DEADLINE.summary}. NaTicket es el sistema propio que Hacienda Foral de Navarra está desarrollando para los autónomos navarros, complementario a VeriFactu. Los autónomos navarros podrán necesitar cumplir con ambos.`,
   },
   {
     q: '¿Puedo cambiar de software si ya tengo facturas con Holded o Billin?',
@@ -232,7 +233,10 @@ export function NafacturaMejorSoftwarePage(): React.JSX.Element {
               <Map className="h-4 w-4" />
               Comparativa actualizada · Mayo 2026
             </div>
-            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1
+              data-speakable
+              className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl"
+            >
               Mejor software de facturación para{' '}
               <span className="text-red-600">autónomos navarros</span> en 2027
             </h1>

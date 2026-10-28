@@ -16,6 +16,7 @@ import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
 import RelatedLinksSection from '@/components/RelatedLinksSection';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
+import { VERIFACTU_ANNOUNCED_DEADLINE } from '@/lib/verifactu-deadlines';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Metadata
@@ -173,7 +174,7 @@ const FAQS = [
   },
   {
     q: '¿Cómo funciona la facturación electrónica para autónomos en Pamplona?',
-    a: 'Los autónomos de Pamplona están sujetos a la Hacienda Foral de Navarra y al sistema VeriFactu (AEAT). Desde julio de 2027, toda factura debe registrarse en la AEAT con hash encadenado. NaFactura automatiza este proceso: creas la factura y el registro en Hacienda ocurre automáticamente.',
+    a: `Los autónomos de Pamplona están sujetos a la Hacienda Foral de Navarra y al sistema VeriFactu (AEAT). ${VERIFACTU_ANNOUNCED_DEADLINE.summary} como fecha a partir de la cual toda factura deberá registrarse con hash encadenado. NaFactura automatiza este proceso: creas la factura y el registro en Hacienda ocurre automáticamente.`,
   },
   {
     q: '¿Los autónomos de Pamplona tienen que usar NaTicket?',
@@ -239,7 +240,10 @@ export function NafacturaPamplonaPage(): React.JSX.Element {
               <Map className="h-4 w-4" />
               Pamplona · Comunidad Foral de Navarra
             </div>
-            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            <h1
+              data-speakable
+              className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl"
+            >
               Software de facturación para autónomos{' '}
               <span className="text-red-600">en Pamplona</span>
             </h1>
@@ -432,7 +436,7 @@ export function NafacturaPamplonaPage(): React.JSX.Element {
             {
               href: '/verifactu',
               label: 'VeriFactu para autónomos navarros',
-              description: 'Obligatorio desde julio 2027 para toda España',
+              description: `Obligatorio en toda España desde ${VERIFACTU_ANNOUNCED_DEADLINE.label} (anunciado)`,
             },
             {
               href: '/alternativa-holded-navarra',

@@ -24,6 +24,7 @@ import RelatedLinksSection from '@/components/RelatedLinksSection';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
 import { VerifactuDeadlines } from '@/components/verifactu-deadlines';
+import { VERIFACTU_ANNOUNCED_DEADLINE } from '@/lib/verifactu-deadlines';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Metadata
@@ -131,7 +132,7 @@ const faqJsonLd = {
       name: '¿Cuándo será obligatorio NaTicket en Navarra?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'A fecha de mayo de 2026, NaTicket se encuentra en fase de desarrollo técnico. La Hacienda Foral de Navarra no ha publicado todavía un calendario oficial de obligatoriedad. Se espera su implementación progresiva a partir de 2027, pero las fechas exactas están pendientes de confirmación oficial. El sistema VeriFactu (AEAT) sí es ya de aplicación y los autónomos navarros en estimación directa deben cumplirlo desde julio de 2027.',
+        text: `A fecha de mayo de 2026, NaTicket se encuentra en fase de desarrollo técnico. La Hacienda Foral de Navarra no ha publicado todavía un calendario oficial de obligatoriedad. Se espera su implementación progresiva a partir de 2027, pero las fechas exactas están pendientes de confirmación oficial. El software VeriFactu (AEAT) ya está en el mercado y los autónomos navarros en estimación directa deberán usarlo cuando sea obligatorio: ${VERIFACTU_ANNOUNCED_DEADLINE.summary}.`,
       },
     },
     {
@@ -147,7 +148,7 @@ const faqJsonLd = {
       name: '¿Los autónomos navarros tienen que usar VeriFactu Y NaTicket?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Actualmente, VeriFactu (AEAT) es obligatorio para todos los autónomos españoles en estimación directa, incluidos los navarros, desde julio de 2027. NaTicket es el sistema que Hacienda Foral de Navarra está desarrollando de forma complementaria. Es probable que los autónomos navarros deban cumplir con ambos: VeriFactu para el registro en la AEAT y NaTicket para el registro en Hacienda Foral de Navarra.',
+        text: `VeriFactu (AEAT) será obligatorio para todos los autónomos españoles en estimación directa, incluidos los navarros: ${VERIFACTU_ANNOUNCED_DEADLINE.summary}. NaTicket es el sistema que Hacienda Foral de Navarra está desarrollando de forma complementaria. Es probable que los autónomos navarros deban cumplir con ambos: VeriFactu para el registro en la AEAT y NaTicket para el registro en Hacienda Foral de Navarra.`,
       },
     },
     {
@@ -230,7 +231,7 @@ const COMPARISON_TABLE = [
   {
     feature: 'Obligatoriedad prevista',
     naticket: 'Pendiente de calendario oficial',
-    verifactu: '1 jul. 2027 (autónomos navarros)',
+    verifactu: `${VERIFACTU_ANNOUNCED_DEADLINE.label} (anunciado)`,
     ticketbai: 'Ya obligatorio en Euskadi',
   },
   {
@@ -249,8 +250,7 @@ const comparisonTableJsonLd = {
   name: 'Comparativa: NaTicket vs. VeriFactu vs. TicketBAI',
   about:
     'Comparativa de los sistemas de verificación de facturas en España: ámbito territorial, hacienda receptora, tipo de facturación, estado actual, obligatoriedad prevista y normativa base.',
-  description:
-    'VeriFactu (AEAT) está activo desde julio de 2025 y será obligatorio para los autónomos navarros el 1 de julio de 2027. NaTicket, el sistema de Hacienda Foral de Navarra, está en desarrollo y pendiente de calendario oficial. TicketBAI ya es obligatorio en Euskadi y aplica al sector minorista. Los autónomos navarros probablemente tendrán que reportar a VeriFactu y NaTicket a la vez desde el mismo software.',
+  description: `VeriFactu (AEAT) está activo desde julio de 2025 y será obligatorio para los autónomos navarros en ${VERIFACTU_ANNOUNCED_DEADLINE.label} (anunciado, pendiente de BOE). NaTicket, el sistema de Hacienda Foral de Navarra, está en desarrollo y pendiente de calendario oficial. TicketBAI ya es obligatorio en Euskadi y aplica al sector minorista. Los autónomos navarros probablemente tendrán que reportar a VeriFactu y NaTicket a la vez desde el mismo software.`,
 };
 
 const AFFECTED_GROUPS = [

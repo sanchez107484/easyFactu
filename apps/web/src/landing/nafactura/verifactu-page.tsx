@@ -20,6 +20,7 @@ import RelatedLinksSection from '@/components/RelatedLinksSection';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
 import { VerifactuDeadlines } from '@/components/verifactu-deadlines';
+import { VERIFACTU_ANNOUNCED_DEADLINE } from '@/lib/verifactu-deadlines';
 
 export const nafacturaVerifactuMetadata: Metadata = {
   title: `Cumplimiento fiscal para autónomos navarros — Guía 2027 | ${brandConfig.app.name}`,
@@ -101,7 +102,7 @@ const faqJsonLd = {
       name: '¿Los autónomos navarros tienen que usar VeriFactu?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Sí. VeriFactu es una obligación estatal que se aplica en toda España, incluida Navarra. Hacienda Foral de Navarra supervisa su cumplimiento. Desde julio de 2027, los autónomos navarros en estimación directa deben usar software garante certificado.',
+        text: `Sí. VeriFactu es una obligación estatal que se aplica en toda España, incluida Navarra. Hacienda Foral de Navarra supervisa su cumplimiento. ${VERIFACTU_ANNOUNCED_DEADLINE.summary} como fecha a partir de la cual los autónomos navarros en estimación directa deberán usar software adaptado.`,
       },
     },
     {
@@ -109,7 +110,7 @@ const faqJsonLd = {
       name: '¿Cuándo es obligatorio en Navarra?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Para autónomos navarros: 1 de julio de 2027. Para sociedades con sede en Navarra: 1 de enero de 2027. Desde julio de 2025, solo se puede adquirir software certificado.',
+        text: `${VERIFACTU_ANNOUNCED_DEADLINE.summary}, tanto para autónomos como para sociedades con sede en Navarra. Desde julio de 2025, solo se puede adquirir software adaptado.`,
       },
     },
     {
@@ -206,19 +207,10 @@ const TIMELINE = [
     done: true,
   },
   {
-    date: '1 enero 2027',
-    datetime: '2027-01-01',
-    event: 'Obligatorio para sociedades (SL, SA) en Navarra',
-    detail:
-      'Todas las sociedades con sede en Navarra deben emitir facturas verificables y registrarlas en la AEAT.',
-    done: false,
-  },
-  {
-    date: '1 julio 2027',
-    datetime: '2027-07-01',
-    event: 'Obligatorio para autónomos navarros',
-    detail:
-      'Los autónomos navarros en estimación directa deben usar exclusivamente software garante. Hacienda Foral supervisa el cumplimiento.',
+    date: `${VERIFACTU_ANNOUNCED_DEADLINE.label} (anunciado)`,
+    datetime: VERIFACTU_ANNOUNCED_DEADLINE.iso,
+    event: 'Obligatorio para sociedades y autónomos navarros',
+    detail: `${VERIFACTU_ANNOUNCED_DEADLINE.summary}: el Ministerio de Hacienda prevé hacerlo coincidir con la factura electrónica obligatoria. Hacienda Foral supervisa el cumplimiento.`,
     done: false,
   },
 ];
@@ -288,7 +280,7 @@ const WHO_IS_AFFECTED = [
 const FAQS = [
   {
     q: '¿Los autónomos navarros tienen que usar VeriFactu?',
-    a: 'Sí. VeriFactu es una obligación estatal (Ley Antifraude 11/2021) que se aplica en toda España, incluida Navarra. Hacienda Foral de Navarra supervisa el cumplimiento. Desde el 1 de julio de 2027, los autónomos navarros en estimación directa deben usar software garante certificado.',
+    a: `Sí. VeriFactu es una obligación estatal (Ley Antifraude 11/2021) que se aplica en toda España, incluida Navarra. Hacienda Foral de Navarra supervisa el cumplimiento. ${VERIFACTU_ANNOUNCED_DEADLINE.summary} como fecha a partir de la cual los autónomos navarros en estimación directa deberán usar software adaptado.`,
   },
   {
     q: '¿Hacienda Navarra tiene sus propias normas de facturación?',
@@ -296,7 +288,7 @@ const FAQS = [
   },
   {
     q: '¿Cuándo es obligatorio para los autónomos navarros?',
-    a: 'Para autónomos navarros persona física en estimación directa: 1 de julio de 2027. Para sociedades con sede en Navarra: 1 de enero de 2027. A partir de julio de 2025, solo se puede adquirir software certificado en el mercado.',
+    a: `${VERIFACTU_ANNOUNCED_DEADLINE.summary}, tanto para autónomos navarros en estimación directa como para sociedades con sede en Navarra. Mientras no se publique en el BOE, el texto vigente mantiene el 1 de enero de 2027 para sociedades y el 1 de julio de 2027 para el resto. A partir de julio de 2025, solo se puede adquirir software adaptado en el mercado.`,
   },
   {
     q: '¿Puedo seguir usando Excel?',
@@ -350,7 +342,10 @@ export function NafacturaVerifactuPage(): React.JSX.Element {
               <Shield className="h-4 w-4" />
               Cumplimiento Hacienda Foral de Navarra · Normativa fiscal
             </div>
-            <h1 data-speakable className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
+            <h1
+              data-speakable
+              className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl md:text-6xl"
+            >
               ¿Qué necesito para facturar{' '}
               <span className="text-red-600">correctamente en Navarra</span>?
             </h1>
@@ -545,9 +540,9 @@ export function NafacturaVerifactuPage(): React.JSX.Element {
                     ¿Eres autónomo navarro activo antes de julio 2025?
                   </p>
                   <p className="mt-1 text-sm text-orange-700">
-                    Tienes hasta el <strong>1 de julio de 2027</strong> para migrar a software
-                    garante. No esperes al último momento — Hacienda Navarra supervisa el
-                    cumplimiento activamente.
+                    {VERIFACTU_ANNOUNCED_DEADLINE.summary} como fecha límite para migrar a software
+                    adaptado. Tienes margen, pero no esperes al último momento: cambiar de programa
+                    lleva tiempo.
                   </p>
                 </div>
               </div>
