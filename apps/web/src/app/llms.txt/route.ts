@@ -1,5 +1,11 @@
 import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
 import { NextResponse } from 'next/server';
+import {
+  BASIC_PLAN_FEATURES,
+  PLAN_NAMES,
+  PRO_ONLY_AVAILABLE_FEATURES,
+  PRO_ONLY_FEATURES,
+} from '@/lib/plan-features';
 import { VERIFACTU_ANNOUNCED_DEADLINE } from '@/lib/verifactu-deadlines';
 
 // Force static generation at build time — brand is determined by NEXT_PUBLIC_BRAND
@@ -13,6 +19,16 @@ const STARTER_ANNUAL = formatPrice(PRICING.starter.annualMonthly);
 const PRO_MONTHLY = formatPrice(PRICING.pro.monthly);
 const PRO_ANNUAL = formatPrice(PRICING.pro.annualMonthly);
 const FREE_SLOTS = PRICING.freePeriodSlots.toLocaleString('es-ES');
+const UPCOMING_PRO_FEATURES = PRO_ONLY_FEATURES.filter((feature) =>
+  feature.endsWith('(pronto)'),
+).map((feature) => {
+  const name = feature.replace(' (pronto)', '');
+  return name.charAt(0).toLowerCase() + name.slice(1);
+});
+
+function toMarkdownList(items: readonly string[]): string {
+  return items.map((item) => `- ${item}`).join('\n');
+}
 
 function buildNafacturaContent(): string {
   return `# NaFactura — Software garante de facturación para autónomos de Navarra
@@ -101,8 +117,8 @@ NovaFactura es el software de facturación nativo VeriFactu para autónomos, pym
 - **Tipo**: SaaS de facturación electrónica VeriFactu
 - **Mercado**: España (autónomos, pymes, asesorías, gestorías)
 - **Normativa**: Ley Antifraude 11/2021, Reglamento VeriFactu, AEAT
-- **Precio autónomos/pymes**: Gratis hasta 2027 (${FREE_SLOTS} plazas). Después Plan Básico desde ${STARTER_MONTHLY}€/mes (mensual) o ${STARTER_ANNUAL}€/mes (anual) y Plan PRO desde ${PRO_MONTHLY}€/mes (mensual) o ${PRO_ANNUAL}€/mes (anual). Los dos planes tienen facturas ilimitadas y VeriFactu; se diferencian por funcionalidades: el PRO añade gestión avanzada de gastos, proveedores, análisis de rentabilidad, informes profesionales y soporte prioritario. Sin permanencia.
-- **Precio asesorías**: Gratis para siempre
+- **Precio autónomos/pymes**: Gratis hasta 2027 (${FREE_SLOTS} plazas). Después Plan ${PLAN_NAMES.basic} desde ${STARTER_MONTHLY}€/mes (mensual) o ${STARTER_ANNUAL}€/mes (anual) y Plan ${PLAN_NAMES.pro} desde ${PRO_MONTHLY}€/mes (mensual) o ${PRO_ANNUAL}€/mes (anual). Los dos planes tienen facturas ilimitadas y VeriFactu; se diferencian por funcionalidades (ver «Planes»). Sin permanencia.
+- **Precio asesorías**: Gratis para siempre, con todas las funcionalidades del plan ${PLAN_NAMES.pro}
 
 ## Para autónomos y pymes
 
@@ -112,19 +128,38 @@ NovaFactura permite crear facturas legales con VeriFactu en menos de 60 segundos
 
 Panel centralizado para gestionar la facturación VeriFactu de múltiples clientes. Cada factura emitida queda registrada bajo el NIF fiscal de cada cliente. Cambio de contexto entre clientes en un clic. Sin coste para la asesoría.
 
+La conexión funciona en los dos sentidos: la asesoría puede dar de alta o invitar a sus clientes, y un autónomo que ya usa NovaFactura puede invitar a su asesor desde Ajustes. Una vez conectados, el asesor ve las facturas del cliente al día sin pedir ficheros.
+
 ## ¿Qué es VeriFactu?
 
 VeriFactu es el sistema de verificación de facturas de la Agencia Tributaria española, creado por la Ley Antifraude 11/2021. Exige que cada factura emitida con un programa informático incluya un hash encadenado SHA-256 y un código QR verificable, y que sus registros puedan enviarse a la AEAT. Fecha de obligación: Hacienda ha anunciado octubre de 2028 (pendiente de BOE) — nota informativa del Ministerio de Hacienda del 5 de octubre de 2026 (https://www.hacienda.gob.es/sgt/gabsehacienda/nota-informativa-verifactu.pdf). La AEAT no homologa ni certifica programas: cada fabricante emite una declaración responsable.
+
+## Planes
+
+### Plan ${PLAN_NAMES.basic}
+
+${toMarkdownList(BASIC_PLAN_FEATURES)}
+
+### Plan ${PLAN_NAMES.pro}
+
+Todo lo del Plan ${PLAN_NAMES.basic}, más:
+
+${toMarkdownList(PRO_ONLY_AVAILABLE_FEATURES)}
+
+Próximamente en el Plan ${PLAN_NAMES.pro}: ${UPCOMING_PRO_FEATURES.join(' y ')}.
 
 ## Funcionalidades principales
 
 - Facturación VeriFactu 100% automática (hash encadenado, código QR, firma, envío AEAT)
 - Adaptado a VeriFactu (declaración responsable del fabricante)
 - Gestión de facturas, presupuestos, clientes y productos
-- Facturas recurrentes y cobros parciales
+- Facturas recurrentes y control de cobros (totales o parciales)
+- Gastos, gastos recurrentes con justificantes adjuntos y proveedores (Plan ${PLAN_NAMES.pro})
+- Análisis de rentabilidad: ingresos, gastos y beneficio de tu actividad (Plan ${PLAN_NAMES.pro})
+- Informes profesionales de ventas, gastos, cobros y antigüedad de deuda, exportables a Excel (Plan ${PLAN_NAMES.pro})
 - Panel de gestión para asesorías y gestorías (gratis para siempre)
-- Migración desde Excel, CSV o Holded
-- Informes y estadísticas de facturación
+- Importación de clientes y productos desde Excel
+- Migración asistida de facturas, gastos y otros datos desde otros programas: bajo petición, la hace el equipo de NovaFactura (contactar antes de darse de alta)
 - Plantillas PDF personalizables con logo
 
 ## Páginas de referencia
@@ -165,6 +200,16 @@ VeriFactu es el sistema de verificación de facturas de la Agencia Tributaria es
 - [¿Excel dejará de ser válido con VeriFactu?](${BASE}/blog/excel-dejara-de-ser-valido-con-verifactu) — Qué pasará con Excel cuando VeriFactu sea obligatorio y qué alternativas existen.
 - [Multas y sanciones de VeriFactu: lo que puedes llegar a pagar si no cumples](${BASE}/blog/multas-y-sanciones-de-verifactu-lo-que-puedes-llegar-a-pagar-si-no-cumples) — Qué sanciones prevé la ley y cuándo se aplican.
 - [VeriFactu en 2026: lo que nadie te está explicando (y cómo prepararte sin complicarte)](${BASE}/blog/verifactu-en-2026-lo-que-nadie-te-esta-explicando-y-como-prepararte-sin-complicarte) — Guía práctica para autónomos y pymes sobre los cambios de VeriFactu en 2026.
+
+## Para autónomos del Régimen Especial Agrario (REAGYP)
+
+NovaFactura soporta la facturación de autónomos acogidos al Régimen Especial de la Agricultura, Ganadería y Pesca (REAGYP). Las operaciones acogidas a este régimen quedan fuera de VeriFactu, pero el autónomo sigue necesitando facturas correctas y un registro ordenado ante cualquier requerimiento de Hacienda. NovaFactura gestiona los tipos de IVA del régimen agrario y la compensación, e identifica correctamente cada factura.
+
+- [Facturación para autónomos agrícolas y ganaderos](${BASE}/facturacion-autonomo-agricola): guía para agricultores, ganaderos y pescadores
+
+## Para Navarra (nafactura.es)
+
+NaFactura es la versión del software para autónomos y pymes navarros, con cumplimiento de Hacienda Foral de Navarra y preparada para NaTicket, el sistema que Hacienda Foral está desarrollando de forma complementaria a VeriFactu. Disponible en [nafactura.es](https://www.nafactura.es).
 `;
 }
 
