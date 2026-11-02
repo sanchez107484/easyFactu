@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import SiteHeader from '@/components/site-header';
 import FaqSection from '@/components/FaqSection';
+import RelatedLinksSection from '@/components/RelatedLinksSection';
 import FooterLanding from '@/components/FooterLanding';
 import { brandConfig } from '@easyfactura/brand-config';
 import {
@@ -617,6 +618,29 @@ export function NovafacturaAsesoriaFacturasPage() {
         </section>
 
         <FaqSection faqs={faqs} title="Preguntas frecuentes sobre hacer facturas de clientes" />
+
+        <RelatedLinksSection
+          title="Páginas relacionadas"
+          links={[
+            {
+              href: '/software-para-asesorias',
+              label: 'Software de facturación para asesorías y gestorías gratis',
+              description:
+                'Todo lo que tu despacho necesita: panel multi-cliente, alta en lote, digitalización y comparativa.',
+            },
+            {
+              href: '/asesoria',
+              label: 'VeriFactu para asesorías y gestorías',
+              description: 'Cómo cumple tu despacho con la obligación de VeriFactu.',
+            },
+            {
+              href: '/verifactu',
+              label: 'Qué es VeriFactu y cómo funciona',
+              description: 'Guía completa sobre la obligación de facturación verificable.',
+            },
+          ]}
+        />
+
         <FooterLanding />
       </div>
     </>

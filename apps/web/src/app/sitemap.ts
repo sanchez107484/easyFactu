@@ -39,7 +39,7 @@ const SHARED_ROUTES: MetadataRoute.Sitemap = [
   entry('/funcionalidades', 0.8),
   entry('/verifactu', 0.9),
   entry('/asesoria', 0.9),
-  entry('/software-para-asesorias', 0.8),
+  entry('/software-para-asesorias', 0.85, UPDATED_OCTOBER_2026),
   entry('/asesoria-facturas-clientes', 0.7),
   entry('/precios', 0.8, UPDATED_OCTOBER_2026),
   // /blog is added in sitemap() with its real lastmod (latest Sanity post).

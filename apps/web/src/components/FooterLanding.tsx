@@ -23,7 +23,7 @@ const novafacturaFooterColumns = [
     title: 'Para asesorías',
     links: [
       { href: '/asesoria', label: 'Landing para asesorías' },
-      { href: '/software-para-asesorias', label: 'Software para asesorías' },
+      { href: '/software-para-asesorias', label: 'Software facturación asesorías gratis' },
       { href: '/asesoria-facturas-clientes', label: 'Haces facturas de tus clientes' },
     ],
   },
