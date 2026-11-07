@@ -244,7 +244,7 @@ export function NovafacturaFacturaIntracomunitariaPage(): React.JSX.Element {
 
         <CtaDarkSection
           title={`${brandConfig.app.name} pone la mención legal por ti`}
-          description="Elige un cliente intracomunitario y la factura incluye sola la mención de entrega exenta o de inversión del sujeto pasivo. Gratis hasta 2027."
+          description="Elige un cliente intracomunitario y la factura incluye sola la mención de entrega exenta o de inversión del sujeto pasivo. Gratis hasta el 30 de junio de 2027."
           ctaText="Crear mi factura gratis"
         />
 

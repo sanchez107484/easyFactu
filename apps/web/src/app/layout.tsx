@@ -65,12 +65,12 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: `${brandConfig.app.name} | Factura sin preocuparte de VeriFactu | Gratis hasta 2027`,
+    default: `${brandConfig.app.name}: programa de facturación gratis para autónomos`,
     // %s is the page title — brand suffix is already included in each page’s metadata.title string.
     // Using bare "%s" prevents the double-brand duplication: "Page | Brand | Brand".
     template: `%s`,
   },
-  description: `Tú haces tu factura, nosotros nos encargamos de VeriFactu. Software de facturación para autónomos y pymes. 100% Gratis hasta 2027. Sin tarjeta. Sin complicaciones.`,
+  description: `Tú haces tu factura, nosotros nos encargamos de VeriFactu. Software de facturación para autónomos y pymes. 100% Gratis hasta el 30 de junio de 2027. Sin tarjeta. Sin complicaciones.`,
   authors: [{ name: brandConfig.app.legalEntity }],
   creator: brandConfig.app.legalEntity,
   publisher: brandConfig.app.legalEntity,
@@ -81,11 +81,11 @@ export const metadata: Metadata = {
     locale: 'es_ES',
     url: brandConfig.app.url,
     title: `${brandConfig.app.name} | Factura sin preocuparte de VeriFactu`,
-    description: `Tú haces tu factura, nosotros nos encargamos de Hacienda. Gratis hasta 2027. Sin tarjeta. Para autónomos y pymes.`,
+    description: `Tú haces tu factura, nosotros nos encargamos de Hacienda. Gratis hasta el 30 de junio de 2027. Sin tarjeta. Para autónomos y pymes.`,
     siteName: brandConfig.app.name,
     images: [
       {
-        url: `${brandConfig.app.url}${brandConfig.app.ogImage}`, // Crea esta imagen: mockup + texto "Gratis hasta 2027"
+        url: `${brandConfig.app.url}${brandConfig.app.ogImage}`, // Crea esta imagen: mockup + texto "Gratis hasta el 30 de junio de 2027"
         width: 1200,
         height: 630,
         alt: `${brandConfig.app.name} - Software de facturación VeriFactu`,
@@ -95,7 +95,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: `${brandConfig.app.name} | Factura sin preocuparte de VeriFactu`,
-    description: `Gratis hasta 2027. Sin tarjeta. Cumplimiento automático con Hacienda.`,
+    description: `Gratis hasta el 30 de junio de 2027. Sin tarjeta. Cumplimiento automático con Hacienda.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   icons: {

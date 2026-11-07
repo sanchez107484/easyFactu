@@ -111,7 +111,7 @@ export default function FooterLanding(): JSX.Element {
               </Badge>
               <p className="text-xs text-muted-foreground leading-relaxed mt-2">
                 Software de facturación con VeriFactu automático para autónomos y pymes. Gratis
-                hasta 2027.
+                hasta el 30 de junio de 2027.
               </p>
             </div>
 

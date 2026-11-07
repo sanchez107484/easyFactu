@@ -55,7 +55,7 @@ const comparisonRows = [
     excel: false,
     otros: false,
   })),
-  { label: 'Gratis hasta 2027', starter: true, pro: true, excel: false, otros: false },
+  { label: 'Gratis hasta el 30 de junio de 2027', starter: true, pro: true, excel: false, otros: false },
   { label: 'Sin tarjeta al registrarte', starter: true, pro: true, excel: true, otros: false },
   { label: 'Soporte en español', starter: true, pro: true, excel: false, otros: '€€ extra' },
   { label: 'Sin permanencia', starter: true, pro: true, excel: true, otros: false },
@@ -77,7 +77,7 @@ const testimonials = [
     name: 'Laura García',
     role: 'Diseñadora freelance',
     location: 'Madrid',
-    text: `Conseguí una de las plazas gratuitas y llevo 4 meses sin preocuparme por Hacienda. Cuando pase 2027 pagaré los ${formatPrice(PRICING.pro.annualMonthly)}€ del plan anual encantada, porque el ahorro en tiempo y nervios es brutal.`,
+    text: `Conseguí una de las plazas gratuitas y llevo 4 meses sin preocuparme por Hacienda. Cuando pase junio de 2027 pagaré los ${formatPrice(PRICING.pro.annualMonthly)}€ del plan anual encantada, porque el ahorro en tiempo y nervios es brutal.`,
     stars: 5,
     initials: 'LG',
     saving: 'Ahorra ~3h/semana',
@@ -95,7 +95,7 @@ const testimonials = [
     name: 'Patricia Gurrea',
     role: 'Consultora de negocio',
     location: 'Pamplona',
-    text: `El precio de ${formatPrice(PRICING.pro.annualMonthly)}€ al mes (anual) me parece muy justo para todo lo que incluye. Y que sea gratis hasta 2027 me convenció para probarlo sin ningún riesgo.`,
+    text: `El precio de ${formatPrice(PRICING.pro.annualMonthly)}€ al mes (anual) me parece muy justo para todo lo que incluye. Y que sea gratis hasta el 30 de junio de 2027 me convenció para probarlo sin ningún riesgo.`,
     stars: 5,
     initials: 'PG',
     saving: 'ROI positivo en 1 mes',
@@ -104,12 +104,12 @@ const testimonials = [
 
 const faqs = [
   {
-    q: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
+    q: `¿Cuánto cuesta ${brandConfig.app.name} después del 30 de junio de 2027?`,
     a: `Tienes dos planes, los dos con facturas ilimitadas y VeriFactu: Plan Básico a ${formatPrice(PRICING.starter.monthly)}€/mes (${formatPrice(PRICING.starter.annualMonthly)}€/mes anual) y Plan PRO a ${formatPrice(PRICING.pro.monthly)}€/mes (${formatPrice(PRICING.pro.annualMonthly)}€/mes anual), que añade gastos, proveedores, rentabilidad e informes. Sin permanencia.`,
   },
   {
     q: '¿Cuánto cuesta implementar VeriFactu?',
-    a: `Para un autónomo o una pyme, implementar VeriFactu es usar un programa de facturación adaptado: no hace falta instalar equipos ni contratar a un técnico. El coste es la cuota del programa, que en el mercado va ${VERIFACTU_MARKET_PRICES.overallRange} en pago anual (${VERIFACTU_MARKET_PRICES.checkedAt.label}). Con ${brandConfig.app.name} es 0 € hasta 2027 y después desde ${formatPrice(PRICING.starter.annualMonthly)} €/mes. Si ya tienes certificado digital (el de persona física de la FNMT es gratuito), no hay más costes.`,
+    a: `Para un autónomo o una pyme, implementar VeriFactu es usar un programa de facturación adaptado: no hace falta instalar equipos ni contratar a un técnico. El coste es la cuota del programa, que en el mercado va ${VERIFACTU_MARKET_PRICES.overallRange} en pago anual (${VERIFACTU_MARKET_PRICES.checkedAt.label}). Con ${brandConfig.app.name} es 0 € hasta el 30 de junio de 2027 y después desde ${formatPrice(PRICING.starter.annualMonthly)} €/mes. Si ya tienes certificado digital (el de persona física de la FNMT es gratuito), no hay más costes.`,
   },
   {
     q: '¿Qué pasa al acabar el periodo gratuito?',
@@ -120,7 +120,7 @@ const faqs = [
     a: `Los dos planes tienen facturas ilimitadas y VeriFactu incluido. Se diferencian en las funcionalidades: el Básico cubre toda la facturación (presupuestos, proformas, rectificativas, recurrentes y plantillas) y el PRO añade gestión avanzada de gastos, proveedores, análisis de rentabilidad, informes profesionales y soporte prioritario.`,
   },
   {
-    q: `¿Qué incluye el acceso gratuito hasta 2027?`,
+    q: `¿Qué incluye el acceso gratuito hasta el 30 de junio de 2027?`,
     a: `Acceso completo al plan que elijas — sin restricciones ni versión reducida.`,
   },
   {
@@ -129,7 +129,7 @@ const faqs = [
   },
   {
     q: '¿Necesito tarjeta de crédito para registrarme?',
-    a: `No. Solo necesitas tu email. No pedimos datos de pago hasta 2027.`,
+    a: `No. Solo necesitas tu email. No pedimos datos de pago hasta el 30 de junio de 2027.`,
   },
   {
     q: '¿Cuánto ahorro eligiendo el plan anual?',
@@ -141,7 +141,7 @@ const faqs = [
   },
   {
     q: '¿Puedo migrar mis facturas actuales?',
-    a: `Sí. Importación gratuita desde Excel, CSV o Holded. El equipo de ${brandConfig.app.name} te ayuda sin coste adicional.`,
+    a: 'Sí. Tú mismo importas clientes y productos desde una plantilla de Excel. Las facturas y demás datos de Holded u otros programas los migra nuestro equipo bajo petición y sin coste: escríbenos y nos encargamos.',
   },
 ];
 
@@ -312,7 +312,7 @@ export function NovafacturaPreciosPage({
                   Precio de {brandConfig.app.name}
                 </span>
                 <span className="relative inline-block text-blue-600">
-                  0€ hasta 2027.
+                  0€ hasta el 30 de junio de 2027.
                   <svg
                     className="absolute -bottom-1 left-0 w-full"
                     viewBox="0 0 400 10"
@@ -344,7 +344,7 @@ export function NovafacturaPreciosPage({
                   className="group flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-blue-600 px-10 text-base font-bold text-white shadow-xl shadow-blue-200 transition-all duration-200 hover:bg-blue-700 hover:shadow-2xl hover:-translate-y-0.5 sm:w-auto"
                 >
                   <Sparkles className="h-5 w-5 transition-transform group-hover:rotate-12" />
-                  Empezar gratis — Hasta 2027
+                  Empezar gratis — Hasta el 30 de junio de 2027
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Link>
                 <Link
@@ -436,7 +436,7 @@ export function NovafacturaPreciosPage({
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                     <p className="mb-6 text-center text-xs text-slate-400">
-                      Gratis hasta 2027 · Sin tarjeta al registrarte
+                      Gratis hasta el 30 de junio de 2027 · Sin tarjeta al registrarte
                     </p>
                     <div className="border-t border-slate-100 pt-5">
                       <PlanFeatureList
@@ -507,7 +507,7 @@ export function NovafacturaPreciosPage({
                       <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </Link>
                     <p className="mb-6 text-center text-xs text-slate-400">
-                      Gratis hasta 2027 · Sin tarjeta al registrarte
+                      Gratis hasta el 30 de junio de 2027 · Sin tarjeta al registrarte
                     </p>
                     <div className="border-t border-blue-100 pt-5">
                       <PlanFeatureList included={ALL_PLAN_FEATURES} />
@@ -516,7 +516,7 @@ export function NovafacturaPreciosPage({
                 </div>
               </div>
               <p className="mt-6 text-center text-xs text-slate-400">
-                Ambos planes incluyen el acceso gratuito hasta 2027. · Sin tarjeta al registrarte.
+                Ambos planes incluyen el acceso gratuito hasta el 30 de junio de 2027. · Sin tarjeta al registrarte.
               </p>
             </div>
           </section>
@@ -528,7 +528,7 @@ export function NovafacturaPreciosPage({
                 <div>
                   <div className="text-5xl font-black text-blue-600 tabular-nums">2027</div>
                   <p className="mt-1.5 font-semibold text-slate-700">
-                    Hasta 2027 completamente gratis
+                    Hasta el 30 de junio de 2027 completamente gratis
                   </p>
                   <p className="text-sm text-slate-400">
                     Para las primeras {formatCount(PRICING.freePeriodSlots)} inscripciones
@@ -825,7 +825,7 @@ export function NovafacturaPreciosPage({
               </div>
               <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-slate-500">
                 En resumen: los dos planes tienen facturas ilimitadas y VeriFactu incluido. El PRO
-                añade gastos, proveedores, rentabilidad e informes. Gratis hasta 2027 y sin
+                añade gastos, proveedores, rentabilidad e informes. Gratis hasta el 30 de junio de 2027 y sin
                 permanencia.
               </p>
               <p className="mt-4 text-center text-xs text-slate-400">
@@ -935,10 +935,10 @@ export function NovafacturaPreciosPage({
               <h2 className="mb-4 text-4xl font-extrabold text-slate-900 sm:text-5xl leading-tight">
                 Empieza gratis hoy.
                 <br />
-                <span className="text-blue-600">Gratis hasta 2027, sin compromiso.</span>
+                <span className="text-blue-600">Gratis hasta el 30 de junio de 2027, sin compromiso.</span>
               </h2>
               <p className="mx-auto mb-8 max-w-xl text-lg text-slate-500">
-                0€ hasta 2027. Luego, plan{' '}
+                0€ hasta el 30 de junio de 2027. Luego, plan{' '}
                 <strong className="text-slate-800">
                   {PLAN_NAMES.basic} desde{' '}
                   {annual
@@ -972,7 +972,7 @@ export function NovafacturaPreciosPage({
               </div>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-400">
                 {[
-                  'Gratis hasta 2027',
+                  'Gratis hasta el 30 de junio de 2027',
                   'Sin tarjeta al registrarte',
                   'Sin permanencia',
                   'Activación inmediata',
@@ -990,7 +990,7 @@ export function NovafacturaPreciosPage({
                 <div className="flex items-center justify-between">
                   <div className="text-left">
                     <p className="text-xs text-slate-400 font-medium">
-                      Hasta 2027 · Todos los planes
+                      Hasta el 30 de junio de 2027 · Todos los planes
                     </p>
                   </div>
                   <span className="text-2xl font-black text-blue-600">0€</span>

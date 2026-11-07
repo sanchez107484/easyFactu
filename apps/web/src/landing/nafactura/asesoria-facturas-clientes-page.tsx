@@ -38,7 +38,7 @@ const faqs = [
   },
   {
     q: '¿Puedo importar mis clientes desde Excel?',
-    a: 'Sí. Si tienes una lista de clientes en Excel o CSV con su nombre, NIF y datos de contacto, puedes importarla directamente al panel en cuestión de minutos.',
+    a: 'Sí. Si tienes una lista de clientes en Excel con su nombre, NIF y datos de contacto, puedes importarla directamente al panel en cuestión de minutos.',
   },
 ];
 

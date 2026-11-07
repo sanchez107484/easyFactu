@@ -17,7 +17,7 @@ export function VerifactuMarketPrices() {
         <p data-speakable className="mx-auto mb-10 max-w-2xl text-center text-slate-600">
           Un programa de facturación adaptado a VeriFactu cuesta {overallRange} en pago anual, según
           el plan (datos de <time dateTime={checkedAt.iso}>{checkedAt.label}</time>).{' '}
-          {brandConfig.app.name} es gratis hasta 2027 y después cuesta{' '}
+          {brandConfig.app.name} es gratis hasta el 30 de junio de 2027 y después cuesta{' '}
           {formatPrice(PRICING.starter.annualMonthly)} €/mes en el Plan Básico o{' '}
           {formatPrice(PRICING.pro.annualMonthly)} €/mes en el PRO, con VeriFactu incluido en los
           dos.
@@ -57,7 +57,7 @@ export function VerifactuMarketPrices() {
                   {brandConfig.app.name}
                 </th>
                 <td className="whitespace-nowrap px-5 py-4 font-semibold text-blue-700">
-                  0 € hasta 2027
+                  0 € hasta el 30 de junio de 2027
                 </td>
                 <td className="hidden px-5 py-4 text-slate-600 sm:table-cell">
                   Después, {formatPrice(PRICING.starter.annualMonthly)} €/mes (Básico) o{' '}

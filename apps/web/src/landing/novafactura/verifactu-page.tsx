@@ -350,7 +350,7 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
                 href="/registro"
                 className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-7 py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-blue-700"
               >
-                Empezar gratis — hasta 2027 sin coste
+                Empezar gratis — hasta el 30 de junio de 2027 sin coste
                 <ArrowRight className="h-5 w-5" />
               </Link>
               <Link
@@ -654,9 +654,9 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
               ))}
             </div>
             <div className="mt-10 rounded-3xl bg-blue-600 p-8 text-center text-white shadow-xl">
-              <h3 className="mb-2 text-2xl font-bold">Gratis hasta 2027. Sin tarjeta.</h3>
+              <h3 className="mb-2 text-2xl font-bold">Gratis hasta el 30 de junio de 2027. Sin tarjeta.</h3>
               <p className="mb-6 text-blue-100">
-                Empieza a facturar con VeriFactu hoy. Completamente gratuito hasta 2027.
+                Empieza a facturar con VeriFactu hoy. Completamente gratuito hasta el 30 de junio de 2027.
               </p>
               <Link
                 href="/registro"
@@ -715,7 +715,7 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
             {
               href: '/precios',
               label: 'Planes y precios',
-              description: `Desde ${formatPrice(PRICING.starter.monthly)}€/mes. Gratis hasta 2027 para empezar.`,
+              description: `Desde ${formatPrice(PRICING.starter.monthly)}€/mes. Gratis hasta el 30 de junio de 2027 para empezar.`,
             },
             {
               href: '/asesoria',

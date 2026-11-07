@@ -290,7 +290,7 @@ export function NovafacturaFacturasIndexPage(): React.JSX.Element {
               className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-7 py-3.5 text-base font-semibold text-white shadow transition hover:bg-blue-700"
             >
               <Sparkles className="h-5 w-5" />
-              Empezar gratis — hasta 2027 sin coste
+              Empezar gratis — hasta el 30 de junio de 2027 sin coste
             </Link>
           </div>
         </section>

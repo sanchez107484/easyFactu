@@ -50,7 +50,7 @@ export function ActivateProDialog({
             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
               <Gift className="h-5 w-5 text-green-600" />
             </div>
-            Activa PRO gratis hasta 2027
+            Activa PRO gratis hasta el 30 de junio de 2027
           </DialogTitle>
         </DialogHeader>
 
@@ -58,7 +58,7 @@ export function ActivateProDialog({
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
             <p className="text-sm text-muted-foreground">
               <strong className="text-foreground block mb-1">¿Qué significa esto?</strong>
-              Desbloquea todas las funcionalidades PRO sin coste alguno hasta 2027. Después, elige
+              Desbloquea todas las funcionalidades PRO sin coste alguno hasta el 30 de junio de 2027. Después, elige
               el plan que mejor se adapte a ti.
             </p>
           </div>

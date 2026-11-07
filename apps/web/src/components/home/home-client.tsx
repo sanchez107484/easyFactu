@@ -37,7 +37,7 @@ export function HomeStickyCtaBanner({ slots }: { slots: SignupSlots | null }) {
             {' · '}
           </>
         )}
-        Gratis hasta 2027 · Sin tarjeta al registrarte
+        Gratis hasta el 30 de junio de 2027 · Sin tarjeta al registrarte
       </p>
     </div>
   );
@@ -90,7 +90,7 @@ export function HomeAnimatedStats({ slots }: { slots: SignupSlots | null }) {
     ...(slots
       ? [{ value: counters.usuarios.toLocaleString('es-ES'), label: 'Profesionales inscritos' }]
       : []),
-    { value: '0 €', label: 'Hasta 2027 · sin tarjeta' },
+    { value: '0 €', label: 'Hasta el 30 de junio de 2027 · sin tarjeta' },
   ];
 
   return (

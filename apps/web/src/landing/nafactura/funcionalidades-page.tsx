@@ -58,7 +58,7 @@ export const nafacturaFuncionalidadesMetadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: `Funcionalidades de ${brandConfig.app.name} — Facturación para Navarra`,
-    description: `Descubre todo lo que incluye ${brandConfig.app.name} para autónomos navarros. Gratis hasta 2027.`,
+    description: `Descubre todo lo que incluye ${brandConfig.app.name} para autónomos navarros. Gratis hasta el 30 de junio de 2027.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   robots: { index: true, follow: true },
@@ -76,7 +76,7 @@ const softwareAppJsonLd = {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'EUR',
-    description: `Gratis hasta 2027 para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscripciones.`,
+    description: `Gratis hasta el 30 de junio de 2027 para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscripciones.`,
     availability: 'https://schema.org/LimitedAvailability',
   },
   featureList: [
@@ -89,7 +89,7 @@ const softwareAppJsonLd = {
     'Plantilla de factura personalizable',
     'Dashboard con KPIs e informes',
     'Acceso multiplataforma (web, móvil, tablet)',
-    'Migración desde Excel, CSV y otros programas',
+    'Importación de clientes y productos desde Excel y migración asistida bajo petición',
     'Soporte en español en menos de 2 horas',
     'Cumplimiento RGPD y servidores europeos',
   ],
@@ -178,9 +178,9 @@ const mainFeatures = [
   },
   {
     icon: Download,
-    title: 'Migración sin esfuerzo',
+    title: 'Importación y migración asistida',
     description:
-      'Importa clientes y facturas desde Excel, CSV u otros programas. Migración gratuita y asistida.',
+      'Importa clientes y productos desde Excel. Facturas y otros datos: migración gratuita y asistida, bajo petición.',
     highlight: false,
   },
   {
@@ -286,12 +286,12 @@ const comparisonRows = [
   { feature: 'IVA y retenciones según normativa navarra', competitors: false, us: true },
   { feature: 'Soporte especializado en régimen foral', competitors: false, us: true },
   {
-    feature: `${PRICING.freePeriodMonths} meses completamente gratuitos`,
+    feature: 'Gratis hasta el 30 de junio de 2027',
     competitors: false,
     us: true,
   },
   { feature: 'Sin tarjeta al registrarte', competitors: false, us: true },
-  { feature: 'Migración desde otros programas', competitors: 'Coste adicional', us: true },
+  { feature: 'Migración asistida desde otros programas (bajo petición)', competitors: 'Coste adicional', us: true },
   { feature: 'Soporte técnico incluido', competitors: 'Coste adicional', us: true },
   { feature: 'Plantilla de factura personalizable', competitors: true, us: true },
   { feature: 'App móvil y tablet', competitors: true, us: true },
@@ -318,12 +318,12 @@ const faqs = [
     a: 'No. La plataforma está diseñada para autónomos navarros sin formación contable. Tú introduces los datos básicos y el software calcula el IVA, el IRPF según normativa navarra, genera el PDF y gestiona toda la documentación automáticamente.',
   },
   {
-    q: '¿Qué incluye el acceso gratuito hasta 2027?',
+    q: '¿Qué incluye el acceso gratuito hasta el 30 de junio de 2027?',
     a: `Acceso completo a todas las funcionalidades: facturación conforme a Hacienda Navarra, gestión de clientes, presupuestos, catálogo de productos, dashboard, PDF personalizable y soporte técnico. Sin restricciones.`,
   },
   {
     q: '¿Puedo migrar mis facturas desde otro programa?',
-    a: 'Sí. Puedes importar clientes y facturas desde Excel, CSV u otros programas. La migración es gratuita y nuestro equipo te asiste.',
+    a: 'Sí. Tú mismo importas clientes y productos desde una plantilla de Excel. Las facturas y demás datos de Holded u otros programas los migra nuestro equipo bajo petición y sin coste: escríbenos y nos encargamos.',
   },
   {
     q: '¿Qué pasa con mis datos si cancelo?',
@@ -426,7 +426,7 @@ export function NafacturaFuncionalidadesPage(): React.JSX.Element {
                   className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-8 py-3.5 text-base font-bold text-white shadow-lg transition-all hover:bg-red-700 hover:shadow-xl"
                 >
                   <Sparkles className="h-4 w-4" />
-                  Pruébalo gratis hasta 2027
+                  Pruébalo gratis hasta el 30 de junio de 2027
                 </Link>
                 <Link
                   href="/precios"
@@ -589,7 +589,7 @@ export function NafacturaFuncionalidadesPage(): React.JSX.Element {
                 En resumen: la mayoría de programas no están adaptados a Hacienda Foral de Navarra
                 ni aplican el IVA y las retenciones del régimen navarro, y cobran aparte la
                 migración y el soporte. {brandConfig.app.name} está diseñado para Navarra desde el
-                primer día — con {PRICING.freePeriodMonths} meses completamente gratuitos.
+                primer día — y gratis hasta el 30 de junio de 2027.
               </p>
             </div>
           </section>
@@ -639,7 +639,7 @@ export function NafacturaFuncionalidadesPage(): React.JSX.Element {
                 Empieza a facturar correctamente en Navarra hoy
               </h2>
               <p className="mb-8 text-lg text-slate-500">
-                {PRICING.freePeriodMonths} meses con acceso completo a todas las funcionalidades,
+                Acceso completo a todas las funcionalidades hasta el 30 de junio de 2027,
                 sin tarjeta y sin compromisos.
               </p>
               <Link

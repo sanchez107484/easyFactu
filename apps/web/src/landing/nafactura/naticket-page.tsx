@@ -810,7 +810,7 @@ export function NafacturaNavicketPage(): React.JSX.Element {
                 <ArrowRight className="h-5 w-5" />
               </Link>
               <p className="text-sm text-slate-500">
-                Sin tarjeta · Gratis hasta 2027 · Cancelación inmediata
+                Sin tarjeta · Gratis hasta el 30 de junio de 2027 · Cancelación inmediata
               </p>
             </div>
           </div>
@@ -870,7 +870,7 @@ export function NafacturaNavicketPage(): React.JSX.Element {
             {
               href: '/precios',
               label: 'Planes y precios',
-              description: `Gratis hasta 2027. Desde ${formatPrice(PRICING.starter.monthly)}€/mes después.`,
+              description: `Gratis hasta el 30 de junio de 2027. Desde ${formatPrice(PRICING.starter.monthly)}€/mes después.`,
             },
           ]}
         />
@@ -883,7 +883,7 @@ export function NafacturaNavicketPage(): React.JSX.Element {
             </h2>
             <p className="text-slate-500 mb-8">
               Empieza gratis con {brandConfig.app.name}, el único software de facturación diseñado
-              exclusivamente para autónomos navarros. Gratis hasta 2027, preparado para NaTicket
+              exclusivamente para autónomos navarros. Gratis hasta el 30 de junio de 2027, preparado para NaTicket
               cuando entre en vigor.
             </p>
             <Link
@@ -894,7 +894,7 @@ export function NafacturaNavicketPage(): React.JSX.Element {
               <ArrowRight className="h-5 w-5" />
             </Link>
             <p className="mt-4 text-sm text-slate-400">
-              Gratis hasta 2027 · Sin tarjeta · Sin permanencia · Soporte en español
+              Gratis hasta el 30 de junio de 2027 · Sin tarjeta · Sin permanencia · Soporte en español
             </p>
           </div>
         </section>

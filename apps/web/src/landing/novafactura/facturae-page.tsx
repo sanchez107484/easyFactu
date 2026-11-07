@@ -175,7 +175,7 @@ export function NovafacturaFacturaePage(): React.JSX.Element {
 
         <CtaDarkSection
           title="Prepárate con tiempo para la factura electrónica"
-          description={`${brandConfig.app.name} ya cumple VeriFactu y es gratis hasta 2027. Empieza hoy y llega a ${VERIFACTU_ANNOUNCED_DEADLINE.label} sin prisas.`}
+          description={`${brandConfig.app.name} ya cumple VeriFactu y es gratis hasta el 30 de junio de 2027. Empieza hoy y llega a ${VERIFACTU_ANNOUNCED_DEADLINE.label} sin prisas.`}
           ctaText="Empieza ya gratis"
         />
 

@@ -499,7 +499,7 @@ export class EmailService {
               .join('')}
           </table>
           <p style="color:#166534;font-size:13px;margin:16px 0 0;padding-top:16px;border-top:1px solid #bbf7d0;">
-            <strong>Gratis hasta 2027</strong> — Sin compromiso. Cancela cuando quieras.
+            <strong>Gratis hasta el 30 de junio de 2027</strong> — Sin compromiso. Cancela cuando quieras.
           </p>
         </div>
         <table cellpadding="0" cellspacing="0" style="margin:24px 0;">

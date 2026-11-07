@@ -96,7 +96,7 @@ const faqs = [
   },
   {
     q: '¿Ofrecéis ayuda para migrar desde Holded, Cegid u otros?',
-    a: 'Sí. Ofrecemos migración gratuita y asistida para todos los planes. Nuestro equipo se encarga de importar tus clientes, facturas y datos históricos.',
+    a: 'Sí. Ofrecemos migración gratuita y asistida bajo petición, en todos los planes: escríbenos y nuestro equipo carga tus facturas y datos históricos. Los clientes y productos también puedes importarlos tú desde Excel.',
   },
   {
     q: '¿Tenéis soporte telefónico?',
@@ -303,7 +303,7 @@ export default async function ContactoPage() {
                     <Sparkles className="h-5 w-5 text-blue-200" />
                     <span className="text-sm font-bold text-blue-100">Oferta limitada</span>
                   </div>
-                  <h3 className="mb-2 text-xl font-extrabold">Gratis hasta 2027</h3>
+                  <h3 className="mb-2 text-xl font-extrabold">Gratis hasta el 30 de junio de 2027</h3>
                   <p className="mb-4 text-sm text-blue-100">
                     Sin tarjeta al registrarte. Añádela cuando quieras continuar.
                   </p>
@@ -425,7 +425,7 @@ export default async function ContactoPage() {
               ¿Prefieres probarlo directamente?
             </h2>
             <p className="mx-auto mb-8 max-w-lg text-lg text-slate-500">
-              Regístrate gratis y explora NovaFactura sin compromiso. Gratis hasta 2027 para los
+              Regístrate gratis y explora NovaFactura sin compromiso. Gratis hasta el 30 de junio de 2027 para los
               primeros {formatCount(PRICING.freePeriodSlots)}.
             </p>
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">

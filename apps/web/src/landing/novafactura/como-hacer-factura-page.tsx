@@ -508,7 +508,7 @@ export function NovafacturaComoHacerFacturaPage(): React.JSX.Element {
         <CtaDarkSection
           title="NovaFactura hace esto automáticamente"
           description="Solo introduces el cliente y el concepto. El software calcula el IVA, aplica el IRPF, genera el hash VeriFactu y envía a la AEAT. Todo en 60 segundos."
-          ctaText="Empezar gratis — hasta 2027 sin coste"
+          ctaText="Empezar gratis — hasta el 30 de junio de 2027 sin coste"
           showArrow
         />
 

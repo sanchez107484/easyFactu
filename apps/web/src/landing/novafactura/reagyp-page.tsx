@@ -52,7 +52,7 @@ const faqs = [
   },
   {
     q: '¿Cuánto cuesta NovaFactura para autónomos agrícolas?',
-    a: `Es gratuito hasta 2027 para todos los inscritos en el periodo de lanzamiento. No necesitas tarjeta de crédito para registrarte. A partir de 2027, el Plan Básico tiene un precio de ${formatPrice(PRICING.starter.monthly)}€/mes, con facturas ilimitadas y VeriFactu incluido (aunque no lo necesites ahora, lo tendrás disponible si cambia tu situación fiscal).`,
+    a: `Es gratuito hasta el 30 de junio de 2027 para todos los inscritos en el periodo de lanzamiento. No necesitas tarjeta de crédito para registrarte. A partir del 1 de julio de 2027, el Plan Básico tiene un precio de ${formatPrice(PRICING.starter.monthly)}€/mes, con facturas ilimitadas y VeriFactu incluido (aunque no lo necesites ahora, lo tendrás disponible si cambia tu situación fiscal).`,
   },
 ];
 
@@ -148,12 +148,12 @@ const softwareJsonLd = {
   operatingSystem: 'Web',
   url: `${brandConfig.app.url}/facturacion-autonomo-agricola`,
   description:
-    'Cómo facturar siendo autónomo agrícola: régimen especial REAGP, compensación del 12%, modelo 303 y cumplimiento VeriFactu. Software gratis hasta 2027.',
+    'Cómo facturar siendo autónomo agrícola: régimen especial REAGP, compensación del 12%, modelo 303 y cumplimiento VeriFactu. Software gratis hasta el 30 de junio de 2027.',
   offers: {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'EUR',
-    description: 'Gratuito hasta 2027',
+    description: 'Gratuito hasta el 30 de junio de 2027',
   },
   publisher: { '@type': 'Organization', name: brandConfig.app.name, url: brandConfig.app.url },
 };
@@ -164,7 +164,7 @@ const serviceJsonLd = {
   name: 'Facturación para Autónomos Agrícolas: REAGP, IVA y VeriFactu 2026',
   serviceType: 'Software de facturación para autónomos agrícolas y ganaderos',
   description:
-    'Cómo facturar siendo autónomo agrícola: régimen especial REAGP, compensación del 12%, modelo 303 y cumplimiento VeriFactu. Software gratis hasta 2027.',
+    'Cómo facturar siendo autónomo agrícola: régimen especial REAGP, compensación del 12%, modelo 303 y cumplimiento VeriFactu. Software gratis hasta el 30 de junio de 2027.',
   provider: { '@type': 'Organization', name: brandConfig.app.name, url: brandConfig.app.url },
   areaServed: { '@type': 'Country', name: 'España' },
   audience: {
@@ -175,13 +175,13 @@ const serviceJsonLd = {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'EUR',
-    description: 'Gratuito hasta 2027',
+    description: 'Gratuito hasta el 30 de junio de 2027',
   },
 };
 
 const PAGE_TITLE = 'Factura de agricultor REAGYP: ejemplo y cálculo de la compensación';
 const PAGE_DESCRIPTION =
-  'Ejemplo de factura de agricultor o ganadero en REAGYP, descargable en Excel y PDF, y calculadora de la compensación del 12 % (agrícola) y 10,5 % (ganadero o pesquero). Software gratis hasta 2027.';
+  'Ejemplo de factura de agricultor o ganadero en REAGYP, descargable en Excel y PDF, y calculadora de la compensación del 12 % (agrícola) y 10,5 % (ganadero o pesquero). Software gratis hasta el 30 de junio de 2027.';
 
 export const novafacturaReagypMetadata: Metadata = {
   title: PAGE_TITLE,
@@ -294,7 +294,7 @@ export function NovafacturaReagypPage() {
               </Link>
             </div>
             <p className="mt-4 text-sm text-gray-400">
-              Gratis hasta 2027 · Sin tarjeta · Sin permanencia
+              Gratis hasta el 30 de junio de 2027 · Sin tarjeta · Sin permanencia
             </p>
           </div>
         </section>
@@ -460,7 +460,7 @@ export function NovafacturaReagypPage() {
 
             {/* CTA inline */}
             <div className="mt-12 rounded-3xl bg-gradient-to-br from-green-600 to-teal-600 p-10 text-center text-white shadow-xl">
-              <h3 className="mb-3 text-2xl font-extrabold">Gratis hasta 2027. Sin tarjeta.</h3>
+              <h3 className="mb-3 text-2xl font-extrabold">Gratis hasta el 30 de junio de 2027. Sin tarjeta.</h3>
               <p className="mb-6 text-green-100">
                 Únete a los autónomos que ya gestionan su facturación sin complicaciones.
               </p>

@@ -696,7 +696,7 @@ function UpgradeBanner({ isEmpty, isFreePlan }: { isEmpty: boolean; isFreePlan: 
               {isFreePlan && (
                 <Badge className="bg-green-500 text-white border-green-600 gap-1 animate-pulse">
                   <Gift className="h-3 w-3" />
-                  Gratis hasta 2027
+                  Gratis hasta el 30 de junio de 2027
                 </Badge>
               )}
             </div>
@@ -766,7 +766,7 @@ function UpgradeBanner({ isEmpty, isFreePlan }: { isEmpty: boolean; isFreePlan: 
                 <>
                   <Button size="lg" className="gap-2 shadow-lg shadow-primary/25" onClick={() => setShowProModal(true)}>
                     <Gift className="h-5 w-5" />
-                    Activar PRO gratuito hasta 2027
+                    Activar PRO gratuito hasta el 30 de junio de 2027
                   </Button>
                   <Link
                     href="/dashboard/ajustes/plan"

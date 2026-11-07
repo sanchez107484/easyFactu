@@ -206,7 +206,7 @@ function PlanDisplay({
                 <span className="text-sm text-muted-foreground ml-1">
                   {cycle === 'monthly' ? '/mes' : '/año'}
                 </span>
-                <p className="text-xs text-muted-foreground mt-1">desde 2027</p>
+                <p className="text-xs text-muted-foreground mt-1">desde el 1 de julio de 2027</p>
               </div>
 
               {cycle === 'annual' && (
@@ -228,12 +228,12 @@ function PlanDisplay({
                 {isPreferred ? (
                   <>
                     <Check className="h-4 w-4 mr-2" />
-                    Seleccionado para 2027
+                    Seleccionado para julio de 2027
                   </>
                 ) : (
                   <>
                     <Calendar className="h-4 w-4 mr-2" />
-                    Seleccionar para 2027
+                    Seleccionar para julio de 2027
                   </>
                 )}
               </Button>
@@ -541,10 +541,10 @@ export default function AjustesPlanPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold">Activa PRO gratuitamente</h3>
-                    <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">Gratis hasta 2027</Badge>
+                    <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">Gratis hasta el 30 de junio de 2027</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Desbloquea todas las funcionalidades PRO sin coste hasta 2027.
+                    Desbloquea todas las funcionalidades PRO sin coste hasta el 30 de junio de 2027.
                   </p>
                 </div>
               </div>
@@ -565,7 +565,7 @@ export default function AjustesPlanPage() {
         <AlertDescription className="text-green-800">
           <span className="font-semibold text-base">¡Promoción de lanzamiento!</span>
           <span className="block text-sm mt-0.5">
-            Disfruta de NovaFactura PRO gratis hasta 2027. Después, tu plan costará según la tabla
+            Disfruta de NovaFactura PRO gratis hasta el 30 de junio de 2027. Después, tu plan costará según la tabla
             inferior.
           </span>
         </AlertDescription>
@@ -674,7 +674,7 @@ export default function AjustesPlanPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary shrink-0" />
-              Seleccionar plan para 2027
+              Seleccionar plan para julio de 2027
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
@@ -682,14 +682,14 @@ export default function AjustesPlanPage() {
               <p className="text-sm text-muted-foreground">
                 <strong className="text-foreground">¿Qué significa esto?</strong>
                 <br />
-                Estás seleccionando el plan que tendrás a partir de 2027. No se te cobrará nada
+                Estás seleccionando el plan que tendrás a partir del 1 de julio de 2027. No se te cobrará nada
                 ahora. Te informaremos cuando se acerque la fecha.
               </p>
             </div>
             <div className="rounded-lg border border-green-200 bg-green-50 p-3">
               <p className="text-sm text-green-700">
                 <CheckCircle2 className="h-4 w-4 inline mr-1" />
-                Podrás cambiar de opinión en cualquier momento antes de 2027.
+                Podrás cambiar de opinión en cualquier momento antes del 1 de julio de 2027.
               </p>
             </div>
           </div>

@@ -57,7 +57,7 @@ const testimonials = [
     name: 'Patricia Gurrea',
     role: 'Consultora de negocio',
     location: 'Pamplona',
-    text: `Funciona todo muy bien, igual de bien que otras más caras que he usado. Y lo mejor es que es gratis hasta 2027, una oportunidad que no podía dejar pasar.`,
+    text: `Funciona todo muy bien, igual de bien que otras más caras que he usado. Y lo mejor es que es gratis hasta el 30 de junio de 2027, una oportunidad que no podía dejar pasar.`,
     stars: 5,
     initials: 'PG',
   },
@@ -113,8 +113,8 @@ const features = [
   },
   {
     icon: Download,
-    title: 'Adiós a Excel en minutos',
-    description: 'Importa clientes y facturas desde Excel, CSV o Holded con ayuda del equipo.',
+    title: 'Trae tus datos contigo',
+    description: 'Importa clientes y productos desde Excel. Facturas y otros datos: migración asistida bajo petición.',
   },
   {
     icon: Shield,
@@ -126,7 +126,7 @@ const features = [
 const faqs = [
   {
     q: `¿${brandConfig.app.name} es un programa de facturación gratis de verdad?`,
-    a: `Sí. Las primeras ${formatCount(PRICING.freePeriodSlots)} altas tienen acceso completo y gratuito hasta 2027: facturas ilimitadas, presupuestos, recurrentes, control de cobros y VeriFactu. No pedimos tarjeta al registrarte y no hay permanencia.`,
+    a: `Sí. Las primeras ${formatCount(PRICING.freePeriodSlots)} altas tienen acceso completo y gratuito hasta el 30 de junio de 2027: facturas ilimitadas, presupuestos, recurrentes, control de cobros y VeriFactu. No pedimos tarjeta al registrarte y no hay permanencia.`,
   },
   {
     q: '¿Cuánto tiempo me ahorra frente a Excel o Word?',
@@ -142,10 +142,10 @@ const faqs = [
   },
   {
     q: '¿Es posible migrar facturas y clientes desde Excel u otro programa?',
-    a: 'Sí. Importación desde Excel, CSV o directamente desde Holded. Subes tu base de clientes en un archivo y tus facturas históricas quedan disponibles en tu cuenta. La migración es gratuita y nuestro equipo te ayuda durante el proceso.',
+    a: 'Sí. Tú mismo importas clientes y productos desde una plantilla de Excel. Las facturas y demás datos de Holded u otros programas los migra nuestro equipo bajo petición y sin coste: escríbenos y nos encargamos.',
   },
   {
-    q: '¿Cuánto cuesta después de 2027?',
+    q: '¿Cuánto cuesta después del 30 de junio de 2027?',
     a: `Los dos planes tienen facturas ilimitadas y VeriFactu: Plan Básico ${formatPrice(PRICING.starter.monthly)}€/mes o ${formatPrice(PRICING.starter.annualMonthly)}€/mes si pagas anual. Plan PRO ${formatPrice(PRICING.pro.monthly)}€/mes (añade gastos, proveedores, rentabilidad e informes) o ${formatPrice(PRICING.pro.annualMonthly)}€/mes anual. Sin permanencia.`,
   },
   {
@@ -181,14 +181,14 @@ const homepageFaqJsonLd = {
 const homepageSoftwareJsonLd = softwareApplicationJsonLd({
   path: '/',
   featureList: [
-    'Programa de facturación gratis hasta 2027',
+    'Programa de facturación gratis hasta el 30 de junio de 2027',
     'Facturación en menos de 60 segundos',
     'Cálculo automático de IVA e IRPF',
     'Numeración correlativa por series',
     'Presupuestos, proformas y facturas recurrentes',
     'Control de cobros y facturas vencidas',
     'Acceso multiplataforma (web, móvil, tablet)',
-    'Migración desde Excel, CSV y Holded',
+    'Importación de clientes y productos desde Excel y migración asistida bajo petición',
     'Soporte en español en menos de 2 horas',
     'Adaptado a VeriFactu: hash encadenado, QR y envío a la AEAT',
   ],
@@ -280,7 +280,7 @@ export async function NovafacturaHomePage() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
               </span>
-              Gratis hasta 2027 · sin tarjeta
+              Gratis hasta el 30 de junio de 2027 · sin tarjeta
             </div>
 
             <h1
@@ -420,7 +420,7 @@ export async function NovafacturaHomePage() {
                   Oferta limitada a {formatCount(PRICING.freePeriodSlots)} inscripciones
                 </div>
                 <h2 className="mb-2 text-3xl font-extrabold text-slate-900 sm:text-4xl">
-                  Gratis hasta 2027
+                  Gratis hasta el 30 de junio de 2027
                 </h2>
                 <p className="mb-2 text-lg font-bold text-blue-600">Sin tarjeta al registrarte</p>
                 <p className="mb-6 text-slate-500">
@@ -434,7 +434,7 @@ export async function NovafacturaHomePage() {
                 )}
                 <div className="mb-8 grid gap-4 sm:grid-cols-3">
                   {[
-                    { icon: Clock, value: 'Hasta 2027', label: 'Acceso completo' },
+                    { icon: Clock, value: '30 junio 2027', label: 'Acceso completo gratis hasta' },
                     { icon: CreditCard, value: '0€', label: 'Sin tarjeta al registrarte' },
                     {
                       icon: TrendingUp,
@@ -613,7 +613,7 @@ export async function NovafacturaHomePage() {
                   <br />
                 </>
               )}
-              Gratis hasta 2027. Sin tarjeta al registrarte. Sin compromiso.
+              Gratis hasta el 30 de junio de 2027. Sin tarjeta al registrarte. Sin compromiso.
             </p>
             <Link
               href="/registro"
@@ -625,7 +625,7 @@ export async function NovafacturaHomePage() {
             <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-500">
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-blue-600" />
-                Gratis hasta 2027
+                Gratis hasta el 30 de junio de 2027
               </span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-blue-600" />

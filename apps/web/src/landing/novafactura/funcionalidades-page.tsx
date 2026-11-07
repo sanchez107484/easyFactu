@@ -254,13 +254,13 @@ const featureBlocks: FeatureBlock[] = [
       {
         id: 'migracion',
         icon: Download,
-        title: 'Importación desde Excel',
+        title: 'Importación y migración asistida',
         description:
-          'Trae tus clientes y tus facturas anteriores desde Excel, CSV o Holded. Te ayudamos sin coste.',
+          'Importa tú mismo clientes y productos desde Excel. Las facturas y otros datos de tu programa anterior los migra nuestro equipo, bajo petición.',
         points: [
-          'Importación de clientes y productos',
-          'Historial de facturas disponible en tu cuenta',
-          'Migración asistida y gratuita',
+          'Clientes y productos desde una plantilla de Excel',
+          'Facturas, gastos y otros datos: migración asistida bajo petición',
+          'Migración gratuita, a cargo del equipo',
         ],
         guide: {
           href: '/blog/excel-dejara-de-ser-valido-con-verifactu',
@@ -304,7 +304,7 @@ const softwareAppJsonLd = {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'EUR',
-    description: `Gratis hasta 2027 para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscripciones.`,
+    description: `Gratis hasta el 30 de junio de 2027 para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscripciones.`,
     availability: 'https://schema.org/LimitedAvailability',
   },
   featureList: featureBlocks.flatMap((block) => block.features.map((feature) => feature.title)),
@@ -331,7 +331,7 @@ const faqs = [
     a: 'No. Introduces el cliente, el concepto y el importe — el programa calcula el IVA (21 %, 10 % o 4 %), aplica la retención de IRPF si procede (7 % los primeros años, 15 % después) y genera el PDF listo para enviar. También ves un resumen de tus ingresos y del IVA para preparar el modelo 303 trimestral.',
   },
   {
-    q: '¿Qué incluye el acceso gratuito hasta 2027?',
+    q: '¿Qué incluye el acceso gratuito hasta el 30 de junio de 2027?',
     a: 'Acceso completo sin restricciones: facturas, clientes y productos, presupuestos, proformas, recurrentes, control de cobros, panel de ingresos, PDF personalizable y VeriFactu. Sin límite de facturas ni funciones bloqueadas. El acceso gratuito es para las primeras plazas disponibles.',
   },
   {
@@ -344,7 +344,7 @@ const faqs = [
   },
   {
     q: '¿Puedo migrar mis datos desde otro programa de facturación?',
-    a: `Sí. Puedes importar clientes y facturas desde Excel, CSV o directamente desde Holded. El historial queda en tu cuenta para consulta. La migración es gratuita y el equipo de ${brandConfig.app.name} te ayuda en el proceso.`,
+    a: 'Sí. Tú mismo importas clientes y productos desde una plantilla de Excel. Las facturas y demás datos de Holded u otros programas los migra nuestro equipo bajo petición y sin coste: escríbenos y nos encargamos.',
   },
   {
     q: '¿Qué pasa con mis datos si cancelo la suscripción?',
@@ -486,7 +486,7 @@ export async function NovafacturaFuncionalidadesPage(): Promise<React.JSX.Elemen
                   className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-8 py-3.5 text-base font-bold text-white shadow-lg transition-all hover:bg-blue-700 hover:shadow-xl"
                 >
                   <Sparkles className="h-4 w-4" />
-                  Pruébalo gratis hasta 2027
+                  Pruébalo gratis hasta el 30 de junio de 2027
                 </Link>
                 <Link
                   href="/precios"
@@ -531,7 +531,7 @@ export async function NovafacturaFuncionalidadesPage(): Promise<React.JSX.Elemen
                 Pruébalas todas sin pagar nada
               </h2>
               <p className="mb-8 text-lg text-slate-500">
-                Acceso completo a todas las funcionalidades hasta 2027, sin tarjeta y sin
+                Acceso completo a todas las funcionalidades hasta el 30 de junio de 2027, sin tarjeta y sin
                 compromisos.
               </p>
               <Link

@@ -33,7 +33,7 @@ function toMarkdownList(items: readonly string[]): string {
 function buildNafacturaContent(): string {
   return `# NaFactura — Software garante de facturación para autónomos de Navarra
 
-> Software garante de facturación diseñado exclusivamente para la Comunidad Foral de Navarra. Cumplimiento automático con Hacienda Foral de Navarra, VeriFactu (AEAT) y preparado para NaTicket. Gratis hasta 2027 sin tarjeta.
+> Software garante de facturación diseñado exclusivamente para la Comunidad Foral de Navarra. Cumplimiento automático con Hacienda Foral de Navarra, VeriFactu (AEAT) y preparado para NaTicket. Gratis hasta el 30 de junio de 2027 sin tarjeta.
 
 NaFactura es el único software de facturación especializado para autónomos y pymes navarros. Automatiza el hash encadenado SHA-256, la firma electrónica cualificada, el código QR normativo y el envío directo a la Hacienda Foral de Navarra. Preparado para NaTicket desde el primer día.
 
@@ -43,7 +43,7 @@ NaFactura es el único software de facturación especializado para autónomos y 
 - **Tipo**: Software garante de facturación electrónica para Navarra
 - **Mercado**: Comunidad Foral de Navarra — autónomos, pymes y asesorías navarras
 - **Normativa**: Hacienda Foral de Navarra · Convenio Económico · VeriFactu (AEAT) · NaTicket (en desarrollo)
-- **Precio autónomos/pymes**: Gratis hasta 2027 (${FREE_SLOTS} plazas totales). Después Plan Starter desde ${STARTER_MONTHLY}€/mes (mensual) o ${STARTER_ANNUAL}€/mes (anual). Plan PRO desde ${PRO_MONTHLY}€/mes (mensual) o ${PRO_ANNUAL}€/mes (anual). Sin permanencia.
+- **Precio autónomos/pymes**: Gratis hasta el 30 de junio de 2027 (${FREE_SLOTS} plazas totales). Después Plan Starter desde ${STARTER_MONTHLY}€/mes (mensual) o ${STARTER_ANNUAL}€/mes (anual). Plan PRO desde ${PRO_MONTHLY}€/mes (mensual) o ${PRO_ANNUAL}€/mes (anual). Sin permanencia.
 - **Precio asesorías navarras**: Gratis para siempre
 
 ## ¿Para quién es NaFactura?
@@ -73,7 +73,8 @@ El Convenio Económico establece el régimen tributario especial de Navarra. Los
 - Gestión de facturas, presupuestos, clientes y productos
 - Facturas recurrentes y cobros parciales
 - Panel centralizado para asesorías y gestorías navarras (gratis para siempre)
-- Migración gratuita desde Excel, CSV o Holded (asistida por el equipo)
+- Importación de clientes y productos desde Excel
+- Migración gratuita de facturas y otros datos desde otros programas: asistida por el equipo, bajo petición
 - Informes y estadísticas de facturación
 - Acceso multiplataforma: web, móvil y tablet
 
@@ -82,7 +83,7 @@ El Convenio Económico establece el régimen tributario especial de Navarra. Los
 - [Inicio](${BASE}): Software garante de facturación para autónomos navarros · Hacienda Foral de Navarra
 - [Funcionalidades](${BASE}/funcionalidades): Todas las funcionalidades del software de facturación para Navarra
 - [VeriFactu en Navarra](${BASE}/verifactu): Qué es VeriFactu, cuándo es obligatorio para autónomos navarros y cómo cumplir automáticamente
-- [Precios](${BASE}/precios): Planes y precios de NaFactura · Gratis hasta 2027
+- [Precios](${BASE}/precios): Planes y precios de NaFactura · Gratis hasta el 30 de junio de 2027
 - [Para asesorías navarras](${BASE}/asesoria): Panel centralizado para asesorías y gestorías de Navarra · Gratis para siempre
 - [Registro gratuito](${BASE}/registro): Crear cuenta sin tarjeta · Activación inmediata
 
@@ -98,8 +99,8 @@ El Convenio Económico establece el régimen tributario especial de Navarra. Los
 - **¿Qué es el software garante?** El programa que cumple los requisitos técnicos de Hacienda Foral de Navarra: hash encadenado, firma electrónica, código QR y envío automático a la administración foral.
 - **¿Cuándo es obligatorio VeriFactu para autónomos navarros?** ${VERIFACTU_ANNOUNCED_DEADLINE.summary}. Los autónomos navarros deben cumplir con VeriFactu (AEAT) y además prepararse para NaTicket (Hacienda Foral).
 - **¿Qué es NaTicket?** El sistema de registro de facturas que está desarrollando la Hacienda Foral de Navarra. NaFactura está preparado para su integración desde el primer día.
-- **¿Cuánto cuesta NaFactura?** Gratis hasta 2027 (${FREE_SLOTS} plazas). Después desde ${STARTER_MONTHLY}€/mes sin permanencia.
-- **¿Puedo migrar desde Holded?** Sí. Migración gratuita y asistida desde Holded, Excel o CSV.
+- **¿Cuánto cuesta NaFactura?** Gratis hasta el 30 de junio de 2027 (${FREE_SLOTS} plazas). Después desde ${STARTER_MONTHLY}€/mes sin permanencia.
+- **¿Puedo migrar desde Holded?** Sí. Clientes y productos se importan desde Excel; facturas y otros datos, con migración gratuita y asistida bajo petición.
 - **¿Es NaFactura diferente a NovaFactura?** Sí. NaFactura es la versión del software diseñada exclusivamente para autónomos y pymes de Navarra, con cumplimiento específico de Hacienda Foral y preparación para NaTicket.
 `;
 }
@@ -107,7 +108,7 @@ El Convenio Económico establece el régimen tributario especial de Navarra. Los
 function buildNovafacturaContent(): string {
   return `# NovaFactura — Software de facturación VeriFactu para autónomos y pymes en España
 
-> Software de facturación adaptado a VeriFactu (declaración responsable del fabricante). Cumplimiento automático con la Ley Antifraude 11/2021. Completamente gratuito hasta 2027 para autónomos y pymes. Gratis para siempre para asesorías y gestorías.
+> Software de facturación adaptado a VeriFactu (declaración responsable del fabricante). Cumplimiento automático con la Ley Antifraude 11/2021. Completamente gratuito hasta el 30 de junio de 2027 para autónomos y pymes. Gratis para siempre para asesorías y gestorías.
 
 NovaFactura es el software de facturación nativo VeriFactu para autónomos, pymes y asesorías en España. Automatiza el hash encadenado SHA-256, la firma electrónica, el código QR y el envío directo al endpoint de la AEAT.
 
@@ -117,7 +118,7 @@ NovaFactura es el software de facturación nativo VeriFactu para autónomos, pym
 - **Tipo**: SaaS de facturación electrónica VeriFactu
 - **Mercado**: España (autónomos, pymes, asesorías, gestorías)
 - **Normativa**: Ley Antifraude 11/2021, Reglamento VeriFactu, AEAT
-- **Precio autónomos/pymes**: Gratis hasta 2027 (${FREE_SLOTS} plazas). Después Plan ${PLAN_NAMES.basic} desde ${STARTER_MONTHLY}€/mes (mensual) o ${STARTER_ANNUAL}€/mes (anual) y Plan ${PLAN_NAMES.pro} desde ${PRO_MONTHLY}€/mes (mensual) o ${PRO_ANNUAL}€/mes (anual). Los dos planes tienen facturas ilimitadas y VeriFactu; se diferencian por funcionalidades (ver «Planes»). Sin permanencia.
+- **Precio autónomos/pymes**: Gratis hasta el 30 de junio de 2027 (${FREE_SLOTS} plazas). Después Plan ${PLAN_NAMES.basic} desde ${STARTER_MONTHLY}€/mes (mensual) o ${STARTER_ANNUAL}€/mes (anual) y Plan ${PLAN_NAMES.pro} desde ${PRO_MONTHLY}€/mes (mensual) o ${PRO_ANNUAL}€/mes (anual). Los dos planes tienen facturas ilimitadas y VeriFactu; se diferencian por funcionalidades (ver «Planes»). Sin permanencia.
 - **Precio asesorías**: Gratis para siempre, con todas las funcionalidades del plan ${PLAN_NAMES.pro}
 
 ## Para autónomos y pymes

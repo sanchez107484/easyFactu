@@ -23,12 +23,12 @@ import { VERIFACTU_ANNOUNCED_DEADLINE } from '@/lib/verifactu-deadlines';
 // ─────────────────────────────────────────────────────────────────────────────
 export const nafacturaPamplonaMetadata: Metadata = {
   title: `Software de facturación para autónomos en Pamplona | ${brandConfig.app.name}`,
-  description: `El programa de facturación para autónomos y pymes de Pamplona adaptado a Hacienda Foral de Navarra. VeriFactu, NaTicket preparado, gratis hasta 2027. Cumplimiento fiscal navarro garantizado.`,
+  description: `El programa de facturación para autónomos y pymes de Pamplona adaptado a Hacienda Foral de Navarra. VeriFactu, NaTicket preparado, gratis hasta el 30 de junio de 2027. Cumplimiento fiscal navarro garantizado.`,
   alternates: { canonical: `${brandConfig.app.url}/software-facturacion-pamplona` },
   openGraph: {
     title: `Software de facturación para autónomos en Pamplona | ${brandConfig.app.name}`,
     description:
-      'Facturación para autónomos de Pamplona con cumplimiento automático de Hacienda Foral de Navarra. Gratis hasta 2027.',
+      'Facturación para autónomos de Pamplona con cumplimiento automático de Hacienda Foral de Navarra. Gratis hasta el 30 de junio de 2027.',
     url: `${brandConfig.app.url}/software-facturacion-pamplona`,
     type: 'website',
     siteName: brandConfig.app.name,
@@ -45,7 +45,7 @@ export const nafacturaPamplonaMetadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: `Software de facturación para autónomos en Pamplona | ${brandConfig.app.name}`,
-    description: `El programa de facturación para Pamplona adaptado a Hacienda Navarra. Gratis hasta 2027.`,
+    description: `El programa de facturación para Pamplona adaptado a Hacienda Navarra. Gratis hasta el 30 de junio de 2027.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   robots: { index: true, follow: true },
@@ -66,7 +66,7 @@ const localBusinessJsonLd = {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'EUR',
-    description: 'Gratis hasta 2027',
+    description: 'Gratis hasta el 30 de junio de 2027',
   },
   areaServed: {
     '@type': 'City',
@@ -149,7 +149,7 @@ const TESTIMONIALS = [
     role: 'Fontanero autónomo',
     location: 'Pamplona',
     initials: 'ME',
-    text: `Empecé a usar ${brandConfig.app.name} y me olvidé de los sustos con Hacienda Navarra. Todo cuadra desde el principio. Y lo mejor: gratis hasta 2027.`,
+    text: `Empecé a usar ${brandConfig.app.name} y me olvidé de los sustos con Hacienda Navarra. Todo cuadra desde el principio. Y lo mejor: gratis hasta el 30 de junio de 2027.`,
   },
   {
     name: 'Amaia Zubiría',
@@ -170,7 +170,7 @@ const TESTIMONIALS = [
 const FAQS = [
   {
     q: `¿Cuál es el mejor software de facturación para autónomos en Pamplona?`,
-    a: `${brandConfig.app.name} es el software de facturación diseñado específicamente para autónomos y pymes de Pamplona y Navarra. Incluye cumplimiento automático con Hacienda Foral de Navarra, VeriFactu integrado y preparación para NaTicket. Es gratuito hasta 2027.`,
+    a: `${brandConfig.app.name} es el software de facturación diseñado específicamente para autónomos y pymes de Pamplona y Navarra. Incluye cumplimiento automático con Hacienda Foral de Navarra, VeriFactu integrado y preparación para NaTicket. Es gratuito hasta el 30 de junio de 2027.`,
   },
   {
     q: '¿Cómo funciona la facturación electrónica para autónomos en Pamplona?',
@@ -182,7 +182,7 @@ const FAQS = [
   },
   {
     q: '¿Existe un software de facturación gratuito para autónomos en Pamplona?',
-    a: `Sí. ${brandConfig.app.name} es completamente gratuito para los autónomos de Pamplona durante 2025, 2026 y 2027. Sin tarjeta, sin límites de facturas. Después, desde ${formatPrice(PRICING.starter.monthly)}€/mes sin permanencia.`,
+    a: `Sí. ${brandConfig.app.name} es completamente gratuito para los autónomos de Pamplona hasta el 30 de junio de 2027. Sin tarjeta, sin límites de facturas. Después, desde ${formatPrice(PRICING.starter.monthly)}€/mes sin permanencia.`,
   },
   {
     q: '¿NaFactura cubre el régimen fiscal de Hacienda Foral de Navarra para Pamplona?',
@@ -252,7 +252,7 @@ export function NafacturaPamplonaPage(): React.JSX.Element {
               Navarra. Cumplimiento automático con{' '}
               <strong className="text-slate-900">Hacienda Foral de Navarra</strong>,{' '}
               <strong className="text-slate-900">VeriFactu</strong> y preparado para{' '}
-              <strong className="text-slate-900">NaTicket</strong>. Gratis hasta 2027.
+              <strong className="text-slate-900">NaTicket</strong>. Gratis hasta el 30 de junio de 2027.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
@@ -380,10 +380,10 @@ export function NafacturaPamplonaPage(): React.JSX.Element {
         <section className="border-t border-slate-100 bg-slate-50 py-16">
           <div className="mx-auto max-w-4xl px-6 text-center">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">
-              Gratis para todos los autónomos de Pamplona hasta 2027
+              Gratis para todos los autónomos de Pamplona hasta el 30 de junio de 2027
             </h2>
             <p className="text-slate-500 mb-8 max-w-2xl mx-auto">
-              Durante 2025, 2026 y todo 2027: {brandConfig.app.name} es completamente gratuito para
+              Hasta el 30 de junio de 2027: {brandConfig.app.name} es completamente gratuito para
               los autónomos de Pamplona. Sin tarjeta, sin límites de facturas, sin trampa. Después,
               desde {formatPrice(PRICING.starter.monthly)}€/mes, sin permanencia.
             </p>
@@ -395,7 +395,7 @@ export function NafacturaPamplonaPage(): React.JSX.Element {
               <ArrowRight className="h-5 w-5" />
             </Link>
             <p className="mt-4 text-sm text-slate-400">
-              Sin tarjeta · Gratis hasta 2027 · Sin permanencia
+              Sin tarjeta · Gratis hasta el 30 de junio de 2027 · Sin permanencia
             </p>
           </div>
         </section>

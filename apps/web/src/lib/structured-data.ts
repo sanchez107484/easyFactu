@@ -82,7 +82,7 @@ export function softwareApplicationJsonLd({
       // Free signups are capped (see free-slots meter), hence LimitedAvailability.
       availability: 'https://schema.org/LimitedAvailability',
       url: `${BASE_URL}/registro`,
-      description: 'Gratis hasta 2027. Sin tarjeta al registrarte.',
+      description: 'Gratis hasta el 30 de junio de 2027. Sin tarjeta al registrarte.',
     },
     ...(featureList ? { featureList } : {}),
   };

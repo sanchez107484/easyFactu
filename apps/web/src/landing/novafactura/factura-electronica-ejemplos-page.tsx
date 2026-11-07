@@ -238,7 +238,7 @@ export function NovafacturaFacturaElectronicaEjemplosPage(): React.JSX.Element {
 
         <CtaDarkSection
           title="Factura bien desde hoy"
-          description={`Crea facturas con todos los datos obligatorios y VeriFactu incluido. ${brandConfig.app.name} es gratis hasta 2027.`}
+          description={`Crea facturas con todos los datos obligatorios y VeriFactu incluido. ${brandConfig.app.name} es gratis hasta el 30 de junio de 2027.`}
           ctaText="Empieza ya gratis"
         />
 

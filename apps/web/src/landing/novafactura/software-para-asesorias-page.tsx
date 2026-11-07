@@ -44,7 +44,7 @@ const faqs = [
   },
   {
     q: '¿Puedo importar mis clientes actuales desde Excel?',
-    a: 'Sí. Si tienes una lista de clientes en Excel o CSV con su nombre, NIF y datos de contacto, puedes importarla directamente al panel. En cuestión de minutos tienes toda tu cartera cargada sin introducir nada a mano.',
+    a: 'Sí. Si tienes una lista de clientes en Excel con su nombre, NIF y datos de contacto, puedes importarla directamente al panel. En cuestión de minutos tienes toda tu cartera cargada sin introducir nada a mano.',
   },
   {
     q: '¿Puedo exportar las facturas para mi programa contable?',
@@ -141,7 +141,7 @@ const howToJsonLd = {
       '@type': 'HowToStep',
       position: 1,
       name: 'Importa tu cartera de clientes',
-      text: 'Sube tu lista de clientes desde Excel o CSV con nombre, NIF y datos de contacto. En minutos tienes toda tu cartera en el panel.',
+      text: 'Sube tu lista de clientes desde Excel con nombre, NIF y datos de contacto. En minutos tienes toda tu cartera en el panel.',
     },
     {
       '@type': 'HowToStep',
@@ -175,7 +175,7 @@ const BENEFITS = [
     icon: UserPlus,
     title: 'Alta de clientes en lote',
     description:
-      'Importa toda tu cartera desde un Excel o CSV con nombre, NIF y datos de contacto. En minutos tienes 50 o 100 clientes cargados sin introducir nada a mano.',
+      'Importa toda tu cartera desde un Excel con nombre, NIF y datos de contacto. En minutos tienes 50 o 100 clientes cargados sin introducir nada a mano.',
   },
   {
     icon: ScanLine,
@@ -549,13 +549,13 @@ export function NovafacturaSoftwareParaAsesoriasPage() {
                   Importa tu cartera en minutos
                 </h2>
                 <p className="mt-4 leading-relaxed text-gray-600 dark:text-gray-400">
-                  Si tienes una lista de clientes en Excel o CSV con su nombre, NIF y datos de
+                  Si tienes una lista de clientes en Excel con su nombre, NIF y datos de
                   contacto, puedes importarla directamente al panel. No necesitas introducir nada a
                   mano.
                 </p>
                 <ul className="mt-6 space-y-3">
                   {[
-                    'Sube un Excel o CSV con la plantilla guiada',
+                    'Sube un Excel con la plantilla guiada',
                     'Validación automática de NIFs antes de importar',
                     'Cada cliente se crea con su entorno de facturación',
                     'Puedes añadir más clientes en cualquier momento',

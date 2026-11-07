@@ -55,7 +55,7 @@ const faqs = [
   },
   {
     q: `¿Cuánto cuesta ${brandConfig.app.name}?`,
-    a: `Es gratis hasta 2027 para las primeras altas. Después, el Plan Básico cuesta ${formatPrice(PRICING.starter.monthly)}€/mes (${formatPrice(PRICING.starter.annualMonthly)}€/mes en pago anual) y el Plan PRO ${formatPrice(PRICING.pro.monthly)}€/mes (${formatPrice(PRICING.pro.annualMonthly)}€/mes anual). Sin permanencia.`,
+    a: `Es gratis hasta el 30 de junio de 2027 para las primeras altas. Después, el Plan Básico cuesta ${formatPrice(PRICING.starter.monthly)}€/mes (${formatPrice(PRICING.starter.annualMonthly)}€/mes en pago anual) y el Plan PRO ${formatPrice(PRICING.pro.monthly)}€/mes (${formatPrice(PRICING.pro.annualMonthly)}€/mes anual). Sin permanencia.`,
   },
   {
     q: `¿${brandConfig.app.name} está adaptado a VeriFactu?`,
@@ -107,7 +107,8 @@ const softwareJsonLd = {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'EUR',
-    description: 'Gratis hasta 2027 para las primeras altas',
+    description: 'Gratis hasta el 30 de junio de 2027 para las primeras altas',
+    validThrough: '2027-06-30',
   },
   publisher: {
     '@type': 'Organization',
@@ -391,7 +392,7 @@ export function NovafacturaFacturacionOnlinePage(): React.JSX.Element {
         <section className="bg-indigo-50 py-16 md:py-20">
           <div className="mx-auto max-w-3xl px-6 text-center">
             <h2 className="mb-4 text-3xl font-bold text-slate-900">
-              Sin coste hasta 2027. Luego desde {formatPrice(PRICING.starter.monthly)}
+              Sin coste hasta el 30 de junio de 2027. Luego desde {formatPrice(PRICING.starter.monthly)}
               €/mes.
             </h2>
             <p className="mb-8 text-slate-600">
@@ -438,7 +439,7 @@ export function NovafacturaFacturacionOnlinePage(): React.JSX.Element {
             <h2 className="mb-4 text-3xl font-bold text-white">
               Recupera las horas que pierdes facturando
             </h2>
-            <p className="mb-8 text-slate-400">Gratis hasta 2027. Sin tarjeta. Sin compromisos.</p>
+            <p className="mb-8 text-slate-400">Gratis hasta el 30 de junio de 2027. Sin tarjeta. Sin compromisos.</p>
             <Link
               href="/registro"
               className="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-8 py-4 text-lg font-semibold text-white shadow-lg transition hover:bg-indigo-400"

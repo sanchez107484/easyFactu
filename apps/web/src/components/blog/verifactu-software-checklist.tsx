@@ -56,7 +56,7 @@ export function VerifactuSoftwareChecklist() {
         <h2 className="text-2xl font-bold text-foreground">Prueba un software VeriFactu gratis</h2>
         <p className="mt-3 text-muted-foreground">
           {brandConfig.app.name} cumple todos los puntos de la checklist: hash encadenado, QR de la
-          AEAT, envío de registros y facturas inalterables. Pruébalo gratis hasta 2027, sin tarjeta,
+          AEAT, envío de registros y facturas inalterables. Pruébalo gratis hasta el 30 de junio de 2027, sin tarjeta,
           y comprueba tú mismo el QR de tu primera factura.
         </p>
         <Link

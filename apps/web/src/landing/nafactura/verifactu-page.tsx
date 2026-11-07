@@ -359,7 +359,7 @@ export function NafacturaVerifactuPage(): React.JSX.Element {
                 href="/registro"
                 className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-7 py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-red-700"
               >
-                Empezar gratis — hasta 2027 sin coste
+                Empezar gratis — hasta el 30 de junio de 2027 sin coste
                 <ArrowRight className="h-5 w-5" />
               </Link>
               <Link
@@ -671,11 +671,11 @@ export function NafacturaVerifactuPage(): React.JSX.Element {
             </div>
             <div className="mt-10 rounded-3xl bg-red-600 p-8 text-center text-white shadow-xl">
               <h3 className="mb-2 text-2xl font-bold">
-                Gratis hasta 2027. Para autónomos navarros.
+                Gratis hasta el 30 de junio de 2027. Para autónomos navarros.
               </h3>
               <p className="mb-6 text-red-100">
-                Empieza a facturar cumpliendo con Hacienda Navarra. Completamente gratuito hasta
-                2027.
+                Empieza a facturar cumpliendo con Hacienda Navarra. Completamente gratuito hasta el
+                30 de junio de 2027.
               </p>
               <Link
                 href="/registro"
@@ -777,7 +777,7 @@ export function NafacturaVerifactuPage(): React.JSX.Element {
             {
               href: '/precios',
               label: 'Planes y precios',
-              description: `Desde ${formatPrice(PRICING.starter.monthly)}€/mes. Gratis hasta 2027.`,
+              description: `Desde ${formatPrice(PRICING.starter.monthly)}€/mes. Gratis hasta el 30 de junio de 2027.`,
             },
             {
               href: '/asesoria',

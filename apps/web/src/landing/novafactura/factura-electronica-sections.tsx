@@ -32,7 +32,7 @@ export function eInvoiceRelatedLinks(currentHref: string) {
     {
       href: '/precios',
       label: 'Precio del programa de facturación',
-      description: 'Gratis hasta 2027, con VeriFactu incluido.',
+      description: 'Gratis hasta el 30 de junio de 2027, con VeriFactu incluido.',
     },
     { href: '/verifactu', label: '¿Qué es VeriFactu?', description: 'La otra obligación de 2028.' },
   ];

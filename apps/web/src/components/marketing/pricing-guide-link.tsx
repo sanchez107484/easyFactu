@@ -19,7 +19,7 @@ export function PricingGuideLink() {
           >
             precio del programa
           </Link>
-          : {brandConfig.app.name} es gratis hasta 2027 y después cuesta desde{' '}
+          : {brandConfig.app.name} es gratis hasta el 30 de junio de 2027 y después cuesta desde{' '}
           {formatPrice(PRICING.starter.annualMonthly)} €/mes con pago anual.
         </p>
       </div>

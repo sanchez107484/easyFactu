@@ -52,7 +52,7 @@ export const nafacturaBrandConfig = {
       },
       {
         iconName: 'Clock' as const,
-        title: 'Gratis los primeros 6 meses',
+        title: 'Gratis hasta el 30 de junio de 2027',
         description: 'Sin tarjeta de crédito',
       },
       {
@@ -94,6 +94,5 @@ export const nafacturaPricing = {
     annualTotal: 129,
     annualSaving: 25.8,
   },
-  freePeriodMonths: 6,
   freePeriodSlots: 1000,
 };

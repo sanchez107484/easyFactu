@@ -89,7 +89,6 @@ export interface BrandConfig {
 export interface PricingConfig {
   starter: { monthly: number; annualMonthly: number; annualTotal: number; annualSaving: number };
   pro: { monthly: number; annualMonthly: number; annualTotal: number; annualSaving: number };
-  freePeriodMonths: number;
   freePeriodSlots: number;
 }
 

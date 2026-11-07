@@ -14,7 +14,7 @@ import { Gift, ArrowRight } from 'lucide-react';
 const BANNER_CONFIG = {
   id: 'pro-upgrade-basic',
   title: 'Activa PRO gratuitamente',
-  description: 'Desbloquea todas las funcionalidades PRO sin coste hasta 2027.',
+  description: 'Desbloquea todas las funcionalidades PRO sin coste hasta el 30 de junio de 2027.',
   variant: 'promo' as const,
   icon: 'gift' as const,
 };

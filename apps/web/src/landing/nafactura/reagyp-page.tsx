@@ -46,7 +46,7 @@ const faqs = [
   },
   {
     q: '¿Cuánto cuesta NaFactura para autónomos agrícolas navarros?',
-    a: `Es gratuito hasta 2027 para todos los inscritos en el periodo de lanzamiento. No necesitas tarjeta de crédito para registrarte. A partir de 2027, el Plan Starter tiene un precio reducido con todas las funcionalidades incluidas.`,
+    a: `Es gratuito hasta el 30 de junio de 2027 para todos los inscritos en el periodo de lanzamiento. No necesitas tarjeta de crédito para registrarte. A partir del 1 de julio de 2027, el Plan Starter tiene un precio reducido con todas las funcionalidades incluidas.`,
   },
 ];
 
@@ -139,7 +139,7 @@ const softwareJsonLd = {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'EUR',
-    description: 'Gratuito hasta 2027',
+    description: 'Gratuito hasta el 30 de junio de 2027',
   },
   publisher: { '@type': 'Organization', name: brandConfig.app.name, url: brandConfig.app.url },
 };
@@ -165,7 +165,7 @@ const serviceJsonLd = {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'EUR',
-    description: 'Gratuito hasta 2027',
+    description: 'Gratuito hasta el 30 de junio de 2027',
   },
 };
 
@@ -182,12 +182,12 @@ const faqJsonLd = {
 export const nafacturaReagypMetadata: Metadata = {
   title: `Facturación para autónomos agrícolas en Navarra | ${brandConfig.app.name}`,
   description:
-    'Programa de facturación para autónomos del sector agrario navarro: agricultores, ganaderos y pescadores. Adaptado a Hacienda Foral de Navarra. IVA agrario gestionado. Gratis hasta 2027.',
+    'Programa de facturación para autónomos del sector agrario navarro: agricultores, ganaderos y pescadores. Adaptado a Hacienda Foral de Navarra. IVA agrario gestionado. Gratis hasta el 30 de junio de 2027.',
   alternates: { canonical: `${brandConfig.app.url}/facturacion-autonomo-agricola` },
   openGraph: {
     title: `Facturación para autónomos agrícolas en Navarra | ${brandConfig.app.name}`,
     description:
-      'Programa de facturación para autónomos del régimen agrario navarro. IVA agrario gestionado, facturas legales para Hacienda Foral. Gratis hasta 2027.',
+      'Programa de facturación para autónomos del régimen agrario navarro. IVA agrario gestionado, facturas legales para Hacienda Foral. Gratis hasta el 30 de junio de 2027.',
     url: `${brandConfig.app.url}/facturacion-autonomo-agricola`,
     type: 'website',
     siteName: brandConfig.app.name,
@@ -205,7 +205,7 @@ export const nafacturaReagypMetadata: Metadata = {
     card: 'summary_large_image',
     title: `Facturación para autónomos agrícolas en Navarra | ${brandConfig.app.name}`,
     description:
-      'Gestiona el IVA agrario navarro y emite facturas legales para Hacienda Foral. Gratis hasta 2027.',
+      'Gestiona el IVA agrario navarro y emite facturas legales para Hacienda Foral. Gratis hasta el 30 de junio de 2027.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   robots: { index: true, follow: true },
@@ -295,7 +295,7 @@ export function NafacturaReagypPage() {
               </Link>
             </div>
             <p className="mt-4 text-sm text-gray-400">
-              Gratis hasta 2027 · Sin tarjeta · Sin permanencia
+              Gratis hasta el 30 de junio de 2027 · Sin tarjeta · Sin permanencia
             </p>
           </div>
         </section>
@@ -457,7 +457,7 @@ export function NafacturaReagypPage() {
 
             {/* CTA inline */}
             <div className="mt-12 rounded-3xl bg-gradient-to-br from-green-600 to-red-600 p-10 text-center text-white shadow-xl">
-              <h3 className="mb-3 text-2xl font-extrabold">Gratis hasta 2027. Sin tarjeta.</h3>
+              <h3 className="mb-3 text-2xl font-extrabold">Gratis hasta el 30 de junio de 2027. Sin tarjeta.</h3>
               <p className="mb-6 text-green-100">
                 Únete a los autónomos navarros que ya gestionan su facturación sin complicaciones.
               </p>

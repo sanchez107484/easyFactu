@@ -55,7 +55,7 @@ export const novafacturaBrandConfig = {
       },
       {
         iconName: 'Clock' as const,
-        title: 'Gratis hasta 2027',
+        title: 'Gratis hasta el 30 de junio de 2027',
         description: 'Sin tarjeta de crédito requerida',
       },
       {
@@ -97,6 +97,5 @@ export const novafacturaPricing = {
     annualTotal: 129,
     annualSaving: 25.8,
   },
-  freePeriodMonths: 6,
   freePeriodSlots: 5000,
 };

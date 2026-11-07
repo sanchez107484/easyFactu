@@ -43,7 +43,7 @@ const testimonials = [
     name: 'Mikel Iraizoz',
     role: 'Asesor freelance',
     location: 'Pamplona',
-    text: `Llevaba tiempo preocupado por cumplir con Hacienda Navarra. Con ${brandConfig.app.name} me despreocupé en minutos. Envío automático, sin complicaciones. Y encima gratis hasta 2027.`,
+    text: `Llevaba tiempo preocupado por cumplir con Hacienda Navarra. Con ${brandConfig.app.name} me despreocupé en minutos. Envío automático, sin complicaciones. Y encima gratis hasta el 30 de junio de 2027.`,
     stars: 5,
     initials: 'MI',
   },
@@ -102,8 +102,8 @@ const features = [
   },
   {
     icon: Download,
-    title: 'Migración simplificada',
-    description: 'Importa clientes y facturas desde Excel, CSV o Holded con un solo clic.',
+    title: 'Importación y migración asistida',
+    description: 'Importa clientes y productos desde Excel. Facturas y otros datos: migración asistida bajo petición.',
     highlight: false,
   },
   {
@@ -131,9 +131,9 @@ const comparisonRows = [
   { feature: 'Hash encadenado automático', them: false, us: true },
   { feature: 'Envío a Hacienda Navarra integrado', them: false, us: true },
   { feature: 'Código QR normativo', them: false, us: true },
-  { feature: 'Gratis hasta 2027 (plazas limitadas)', them: false, us: true },
+  { feature: 'Gratis hasta el 30 de junio de 2027 (plazas limitadas)', them: false, us: true },
   { feature: 'Sin instalación requerida', them: false, us: true },
-  { feature: 'Migración desde otros programas', them: false, us: true },
+  { feature: 'Migración asistida desde otros programas (bajo petición)', them: false, us: true },
   { feature: 'Soporte técnico incluido', them: 'Coste adicional', us: true },
 ];
 
@@ -145,20 +145,20 @@ const comparisonTableJsonLd = {
   name: `Comparativa: ${brandConfig.app.name} frente a software tradicional`,
   about:
     'Comparativa de cumplimiento con Hacienda Foral de Navarra: hash encadenado, envío a Hacienda Navarra, código QR normativo, instalación, migración, soporte y precio.',
-  description: `${brandConfig.app.name} incluye cumplimiento con Hacienda Foral de Navarra, hash encadenado automático, envío a Hacienda Navarra integrado y código QR normativo de serie, sin instalación y gratis hasta 2027. El software tradicional no está adaptado al régimen foral navarro y cobra el soporte técnico aparte.`,
+  description: `${brandConfig.app.name} incluye cumplimiento con Hacienda Foral de Navarra, hash encadenado automático, envío a Hacienda Navarra integrado y código QR normativo de serie, sin instalación y gratis hasta el 30 de junio de 2027. El software tradicional no está adaptado al régimen foral navarro y cobra el soporte técnico aparte.`,
 };
 
 const faqs = [
   {
     q: '¿El acceso gratuito tiene plazas limitadas?',
-    a: `Sí. Ofrecemos acceso gratuito hasta 2027 a las primeras ${PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones. Una vez alcanzado el límite, el período gratuito dejará de estar disponible para nuevos usuarios.`,
+    a: `Sí. Ofrecemos acceso gratuito hasta el 30 de junio de 2027 a las primeras ${PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones. Una vez alcanzado el límite, el período gratuito dejará de estar disponible para nuevos usuarios.`,
   },
   {
     q: '¿Qué obligaciones fiscales tienen los autónomos en Navarra?',
     a: 'La Hacienda Foral de Navarra exige que el software de facturación garantice la trazabilidad e inalterabilidad de los registros. Esto implica el uso de hash encadenado, firma electrónica cualificada y comunicación directa con la administración foral en cada factura emitida.',
   },
   {
-    q: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
+    q: `¿Cuánto cuesta ${brandConfig.app.name} después del 30 de junio de 2027?`,
     a: `Plan Starter (hasta 60 facturas/año): ${formatPrice(PRICING.starter.monthly)}€/mes o ${formatPrice(PRICING.starter.annualMonthly)}€/mes anual. Plan PRO con cumplimiento foral automático: ${formatPrice(PRICING.pro.monthly)}€/mes o ${formatPrice(PRICING.pro.annualMonthly)}€/mes anual. Sin permanencia.`,
   },
   {
@@ -171,7 +171,7 @@ const faqs = [
   },
   {
     q: '¿Es posible migrar facturas desde otro software?',
-    a: `Sí. ${brandConfig.app.name} permite importar clientes y facturas desde Excel, CSV o Holded. La migración es gratuita y asistida por nuestro equipo.`,
+    a: 'Sí. Tú mismo importas clientes y productos desde una plantilla de Excel. Las facturas y demás datos de Holded u otros programas los migra nuestro equipo bajo petición y sin coste: escríbenos y nos encargamos.',
   },
   {
     q: '¿Se requieren conocimientos de contabilidad?',
@@ -210,7 +210,7 @@ const homepageFaqJsonLd = {
       name: '¿El acceso gratuito tiene plazas limitadas?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `Sí. Ofrecemos acceso gratuito hasta 2027 a las primeras ${PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones. Una vez alcanzado el límite, el período gratuito dejará de estar disponible para nuevos usuarios.`,
+        text: `Sí. Ofrecemos acceso gratuito hasta el 30 de junio de 2027 a las primeras ${PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones. Una vez alcanzado el límite, el período gratuito dejará de estar disponible para nuevos usuarios.`,
       },
     },
     {
@@ -223,7 +223,7 @@ const homepageFaqJsonLd = {
     },
     {
       '@type': 'Question',
-      name: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
+      name: `¿Cuánto cuesta ${brandConfig.app.name} después del 30 de junio de 2027?`,
       acceptedAnswer: {
         '@type': 'Answer',
         text: `Plan Starter: ${formatPrice(PRICING.starter.monthly)}€/mes. Plan PRO con cumplimiento foral automático: ${formatPrice(PRICING.pro.monthly)}€/mes. Sin permanencia.`,
@@ -250,7 +250,7 @@ const homepageFaqJsonLd = {
       name: '¿Es posible migrar facturas desde otro software?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `Sí. ${brandConfig.app.name} permite importar clientes y facturas desde Excel, CSV o Holded. La migración es gratuita y asistida.`,
+        text: 'Sí. Tú mismo importas clientes y productos desde una plantilla de Excel. Las facturas y demás datos de Holded u otros programas los migra nuestro equipo bajo petición y sin coste: escríbenos y nos encargamos.',
       },
     },
     {
@@ -330,7 +330,7 @@ const homepageSoftwareJsonLd = {
   offers: [
     {
       '@type': 'Offer',
-      name: `Plan Gratuito — ${PRICING.freePeriodMonths} meses`,
+      name: 'Plan Gratuito — hasta el 30 de junio de 2027',
       price: '0',
       priceCurrency: 'EUR',
       availability: 'https://schema.org/LimitedAvailability',
@@ -362,7 +362,7 @@ const homepageSoftwareJsonLd = {
     'Gestión de clientes y presupuestos',
     'PDF profesional personalizable',
     'Acceso multiplataforma (web, móvil, tablet)',
-    'Migración desde Excel, CSV y Holded',
+    'Importación de clientes y productos desde Excel y migración asistida bajo petición',
     'Soporte en español en menos de 2 horas',
   ],
 };
@@ -372,7 +372,7 @@ const homepageSoftwareJsonLd = {
 // ─────────────────────────────────────────────────────────────────────────────
 export const nafacturaHomeMetadata: Metadata = {
   title: `Software de facturación Navarra 2027 | Gratis | ${brandConfig.app.name}`,
-  description: `Programa de facturación para autónomos navarros adaptado a Hacienda Foral de Navarra: VeriFactu, hash encadenado y preparado para NaTicket. Gratis hasta 2027, sin tarjeta.`,
+  description: `Programa de facturación para autónomos navarros adaptado a Hacienda Foral de Navarra: VeriFactu, hash encadenado y preparado para NaTicket. Gratis hasta el 30 de junio de 2027, sin tarjeta.`,
   alternates: {
     canonical: brandConfig.app.url,
   },
@@ -381,7 +381,7 @@ export const nafacturaHomeMetadata: Metadata = {
     locale: 'es_ES',
     url: brandConfig.app.url,
     title: `Software de facturación Navarra 2027 | Gratis | ${brandConfig.app.name}`,
-    description: `Programa de facturación para autónomos navarros adaptado a Hacienda Foral de Navarra: VeriFactu, hash encadenado y preparado para NaTicket. Gratis hasta 2027, sin tarjeta.`,
+    description: `Programa de facturación para autónomos navarros adaptado a Hacienda Foral de Navarra: VeriFactu, hash encadenado y preparado para NaTicket. Gratis hasta el 30 de junio de 2027, sin tarjeta.`,
     siteName: brandConfig.app.name,
     images: [
       {
@@ -395,7 +395,7 @@ export const nafacturaHomeMetadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: `Software de facturación Navarra 2027 | Gratis | ${brandConfig.app.name}`,
-    description: `Programa de facturación para autónomos navarros adaptado a Hacienda Foral de Navarra: VeriFactu, hash encadenado y preparado para NaTicket. Gratis hasta 2027, sin tarjeta.`,
+    description: `Programa de facturación para autónomos navarros adaptado a Hacienda Foral de Navarra: VeriFactu, hash encadenado y preparado para NaTicket. Gratis hasta el 30 de junio de 2027, sin tarjeta.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   robots: { index: true, follow: true },
@@ -493,7 +493,7 @@ export function NafacturaHomePage() {
               >
                 <div className="flex items-center justify-center gap-2">
                   <Sparkles className="h-5 w-5 text-white" />
-                  <span className="text-base font-bold text-white">Gratis hasta 2027</span>
+                  <span className="text-base font-bold text-white">Gratis hasta el 30 de junio de 2027</span>
                 </div>
               </div>
 
@@ -805,7 +805,7 @@ export function NafacturaHomePage() {
                   Oferta limitada a {PLAZAS_CONFIG.total.toLocaleString('es-ES')} inscripciones
                 </div>
                 <h2 className="mb-2 text-3xl font-extrabold text-slate-900 sm:text-4xl">
-                  Gratis hasta 2027
+                  Gratis hasta el 30 de junio de 2027
                 </h2>
                 <p className="mb-2 text-lg font-bold text-red-600">Sin tarjeta al registrarte</p>
                 <p className="mb-6 text-slate-500">
@@ -814,7 +814,7 @@ export function NafacturaHomePage() {
                 </p>
                 <div className="mb-8 grid gap-4 sm:grid-cols-3">
                   {[
-                    { icon: Clock, value: 'Hasta 2027', label: 'Acceso completo' },
+                    { icon: Clock, value: '30 junio 2027', label: 'Acceso completo gratis hasta' },
                     { icon: CreditCard, value: '0€', label: 'Sin tarjeta al registrarte' },
                     {
                       icon: TrendingUp,
@@ -845,7 +845,7 @@ export function NafacturaHomePage() {
                       {[
                         { text: 'Hasta 60 facturas al año', ok: true },
                         { text: 'PDF, envío por email y app móvil', ok: true },
-                        { text: 'Importación desde Excel / CSV', ok: true },
+                        { text: 'Importación de clientes y productos desde Excel', ok: true },
                         { text: 'Cumplimiento foral incluido', ok: true },
                       ].map(({ text, ok }) => (
                         <li key={text} className="flex items-center gap-2 text-xs">
@@ -981,8 +981,8 @@ export function NafacturaHomePage() {
             <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-slate-500">
               En síntesis: el software tradicional no está adaptado a la Hacienda Foral de Navarra —
               sin hash encadenado, sin envío integrado a Hacienda Navarra y sin código QR normativo.{' '}
-              {brandConfig.app.name} lo incluye todo de serie, sin instalación, con migración y
-              soporte técnico sin coste adicional, y gratis hasta 2027.
+              {brandConfig.app.name} lo incluye todo de serie, sin instalación, con migración asistida bajo petición y
+              soporte técnico sin coste adicional, y gratis hasta el 30 de junio de 2027.
             </p>
           </div>
         </section>
@@ -1056,7 +1056,7 @@ export function NafacturaHomePage() {
             <p className="mb-8 text-lg text-slate-500">
               Únete a los primeros profesionales navarros que ya cumplen con Hacienda Foral.
               <br />
-              Gratis hasta 2027. Sin tarjeta al registrarte. Sin compromiso.
+              Gratis hasta el 30 de junio de 2027. Sin tarjeta al registrarte. Sin compromiso.
             </p>
             <Link
               href="/registro"
@@ -1068,7 +1068,7 @@ export function NafacturaHomePage() {
             <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-500">
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-red-600" />
-                Gratis hasta 2027
+                Gratis hasta el 30 de junio de 2027
               </span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-red-600" />

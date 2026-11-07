@@ -3,7 +3,7 @@ import { brandConfig } from '@easyfactura/brand-config';
 
 export const metadata: Metadata = {
   title: `Crear cuenta gratis | ${brandConfig.app.name}`,
-  description: `Regístrate gratis en ${brandConfig.app.name}. Gratis hasta 2027, sin tarjeta de crédito. Software de facturación VeriFactu para autónomos y pymes.`,
+  description: `Regístrate gratis en ${brandConfig.app.name}. Gratis hasta el 30 de junio de 2027, sin tarjeta de crédito. Software de facturación VeriFactu para autónomos y pymes.`,
   robots: {
     index: false,
     follow: true,

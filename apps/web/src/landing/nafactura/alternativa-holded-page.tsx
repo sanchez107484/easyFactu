@@ -27,7 +27,7 @@ import FooterLanding from '@/components/FooterLanding';
 // ─────────────────────────────────────────────────────────────────────────────
 export const nafacturaHoldedMetadata: Metadata = {
   title: `Alternativa a Holded para autónomos navarros — ${brandConfig.app.name}`,
-  description: `¿Por qué los autónomos navarros prefieren ${brandConfig.app.name} a Holded? Comparativa completa: cumplimiento Hacienda Navarra, precio, funcionalidades y soporte. Gratis hasta 2027.`,
+  description: `¿Por qué los autónomos navarros prefieren ${brandConfig.app.name} a Holded? Comparativa completa: cumplimiento Hacienda Navarra, precio, funcionalidades y soporte. Gratis hasta el 30 de junio de 2027.`,
   alternates: { canonical: `${brandConfig.app.url}/alternativa-holded-navarra` },
   openGraph: {
     title: `Alternativa a Holded para autónomos navarros | ${brandConfig.app.name}`,
@@ -80,7 +80,7 @@ const faqJsonLd = {
       name: '¿Por qué NaFactura es mejor que Holded para autónomos navarros?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `NaFactura está diseñado exclusivamente para autónomos y pymes navarros, con cumplimiento automático de la Hacienda Foral de Navarra. Holded es un ERP genérico para toda España que no está especializado en el régimen fiscal navarro. Además, NaFactura es gratuito hasta 2027 y tiene un precio muy inferior a Holded.`,
+        text: `NaFactura está diseñado exclusivamente para autónomos y pymes navarros, con cumplimiento automático de la Hacienda Foral de Navarra. Holded es un ERP genérico para toda España que no está especializado en el régimen fiscal navarro. Además, NaFactura es gratuito hasta el 30 de junio de 2027 y tiene un precio muy inferior a Holded.`,
       },
     },
     {
@@ -96,7 +96,7 @@ const faqJsonLd = {
       name: '¿Puedo migrar mis datos de Holded a NaFactura?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `Sí. ${brandConfig.app.name} permite importar clientes y facturas desde Holded sin coste adicional. Nuestro equipo te asiste durante la migración.`,
+        text: 'Sí. Tú mismo importas clientes y productos desde una plantilla de Excel. Las facturas y demás datos de Holded u otros programas los migra nuestro equipo bajo petición y sin coste: escríbenos y nos encargamos.',
       },
     },
     {
@@ -104,7 +104,7 @@ const faqJsonLd = {
       name: '¿Cuánto cuesta NaFactura comparado con Holded?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `NaFactura es completamente gratuito hasta finales de 2027. A partir de 2028, el plan de autónomo comienza desde ${formatPrice(PRICING.starter.monthly)}€/mes sin permanencia. Holded tiene planes de pago desde 14€/mes, sin período gratuito, y orientados a empresas con módulos de CRM, RRHH e inventario que los autónomos navarros no suelen necesitar.`,
+        text: `NaFactura es completamente gratuito hasta el 30 de junio de 2027. A partir del 1 de julio de 2027, el plan de autónomo comienza desde ${formatPrice(PRICING.starter.monthly)}€/mes sin permanencia. Holded tiene planes de pago desde 14€/mes, sin período gratuito, y orientados a empresas con módulos de CRM, RRHH e inventario que los autónomos navarros no suelen necesitar.`,
       },
     },
     {
@@ -120,7 +120,7 @@ const faqJsonLd = {
       name: '¿Qué funcionalidades tiene NaFactura que Holded no ofrece para autónomos navarros?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `NaFactura ofrece: cumplimiento automático con Hacienda Foral de Navarra, IVA e IRPF navarros preconfigurados, preparación activa para NaTicket, precio accesible para autónomos y migración asistida gratuita desde Holded. Holded, siendo un ERP completo, tiene ventaja en módulos de CRM, RRHH e inventario, pero el autónomo navarro promedio paga por funcionalidades que no necesita.`,
+        text: `NaFactura ofrece: cumplimiento automático con Hacienda Foral de Navarra, IVA e IRPF navarros preconfigurados, preparación activa para NaTicket, precio accesible para autónomos y migración asistida gratuita desde Holded, bajo petición. Holded, siendo un ERP completo, tiene ventaja en módulos de CRM, RRHH e inventario, pero el autónomo navarro promedio paga por funcionalidades que no necesita.`,
       },
     },
   ],
@@ -135,14 +135,14 @@ const COMPARISON = [
   { feature: 'IVA e IRPF régimen navarro', nafactura: true, holded: 'Parcial' },
   { feature: 'VeriFactu incluido', nafactura: true, holded: true },
   { feature: 'Preparación para NaTicket', nafactura: true, holded: 'Planificado' },
-  { feature: 'Gratis hasta 2027', nafactura: true, holded: false },
+  { feature: 'Gratis hasta el 30 de junio de 2027', nafactura: true, holded: false },
   { feature: 'Sin tarjeta al registrarte', nafactura: true, holded: false },
   {
     feature: 'Precio desde',
     nafactura: `${formatPrice(PRICING.starter.monthly)}€/mes`,
     holded: 'Desde 14€/mes',
   },
-  { feature: 'Migración desde Holded', nafactura: true, holded: false },
+  { feature: 'Migración asistida desde Holded (bajo petición)', nafactura: true, holded: false },
   { feature: 'Soporte en español <2h', nafactura: true, holded: 'Variable' },
   { feature: 'Sin permanencia', nafactura: true, holded: true },
   { feature: 'Diseñado para ERP completo', nafactura: false, holded: true },
@@ -156,7 +156,7 @@ const comparisonTableJsonLd = {
   name: `Comparativa: ${brandConfig.app.name} vs. Holded para autónomos navarros`,
   about:
     'Comparativa entre NaFactura y Holded: especialización en Navarra, cumplimiento con Hacienda Foral, IVA e IRPF del régimen navarro, VeriFactu, preparación para NaTicket, precio, migración, soporte y permanencia.',
-  description: `${brandConfig.app.name} está especializado en Navarra con cumplimiento automático de Hacienda Foral, IVA e IRPF del régimen navarro, VeriFactu incluido y preparación para NaTicket — gratis hasta 2027. Holded es un ERP genérico para toda España: incluye VeriFactu, pero su soporte del régimen navarro es parcial y su precio parte de 14€/mes.`,
+  description: `${brandConfig.app.name} está especializado en Navarra con cumplimiento automático de Hacienda Foral, IVA e IRPF del régimen navarro, VeriFactu incluido y preparación para NaTicket — gratis hasta el 30 de junio de 2027. Holded es un ERP genérico para toda España: incluye VeriFactu, pero su soporte del régimen navarro es parcial y su precio parte de 14€/mes.`,
 };
 
 const ADVANTAGES = [
@@ -195,7 +195,7 @@ const TESTIMONIALS = [
     role: 'Consultora de negocio',
     location: 'Pamplona',
     initials: 'PG',
-    text: `Migré de Holded en menos de una hora. La importación fue perfecta y el soporte me ayudó con cualquier duda sobre la Hacienda Foral.`,
+    text: `Me ayudaron a migrar desde Holded y el soporte resolvió cualquier duda sobre la Hacienda Foral.`,
   },
 ];
 
@@ -252,7 +252,7 @@ export function NafacturaHoldedPage(): React.JSX.Element {
                 href="/registro"
                 className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-7 py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-red-700"
               >
-                Empezar gratis — migración incluida
+                Empezar gratis
                 <ArrowRight className="h-5 w-5" />
               </Link>
               <Link
@@ -334,8 +334,7 @@ export function NafacturaHoldedPage(): React.JSX.Element {
               En resumen: Holded es un ERP genérico para toda España cuyo soporte del régimen
               navarro es parcial. {brandConfig.app.name} está diseñado exclusivamente para Navarra:
               cumplimiento automático con Hacienda Foral, IVA e IRPF navarro completos y preparación
-              para NaTicket — gratis hasta 2027, sin permanencia y con migración desde Holded
-              incluida.
+              para NaTicket — gratis hasta el 30 de junio de 2027, sin permanencia y con migración asistida desde Holded bajo petición.
             </p>
             <p className="mt-3 text-xs text-slate-400">
               * Comparativa basada en análisis de mercado. Mayo 2026.
@@ -405,21 +404,20 @@ export function NafacturaHoldedPage(): React.JSX.Element {
         <section className="py-20">
           <div className="mx-auto max-w-3xl px-6 text-center">
             <h2 className="text-3xl font-bold text-slate-900 mb-4">
-              Migra de Holded en menos de una hora
+              Cambia de Holded con la ayuda de nuestro equipo
             </h2>
             <p className="text-slate-500 mb-8">
-              Importación gratuita de clientes y facturas desde Holded. Sin pérdida de datos. Con
-              asistencia de nuestro equipo.
+              Tú importas clientes y productos desde Excel. Las facturas y demás datos de Holded los migra nuestro equipo, gratis y bajo petición.
             </p>
             <Link
               href="/registro"
               className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-8 py-4 text-lg font-semibold text-white shadow-lg transition hover:bg-red-700"
             >
-              Empezar gratis — migración incluida
+              Empezar gratis
               <ArrowRight className="h-5 w-5" />
             </Link>
             <p className="mt-4 text-sm text-slate-400">
-              Sin tarjeta · Gratis hasta 2027 · Migración asistida y gratuita
+              Sin tarjeta · Gratis hasta el 30 de junio de 2027 · Migración asistida y gratuita bajo petición
             </p>
           </div>
         </section>
@@ -437,7 +435,7 @@ export function NafacturaHoldedPage(): React.JSX.Element {
               {[
                 {
                   q: `¿Por qué NaFactura es mejor que Holded para autónomos navarros?`,
-                  a: `NaFactura está diseñado exclusivamente para autónomos y pymes navarros, con cumplimiento automático de la Hacienda Foral de Navarra. Holded es un ERP genérico para toda España. Además, NaFactura es gratuito hasta 2027 y tiene un precio muy inferior a Holded.`,
+                  a: `NaFactura está diseñado exclusivamente para autónomos y pymes navarros, con cumplimiento automático de la Hacienda Foral de Navarra. Holded es un ERP genérico para toda España. Además, NaFactura es gratuito hasta el 30 de junio de 2027 y tiene un precio muy inferior a Holded.`,
                 },
                 {
                   q: '¿Holded cumple con la Hacienda Foral de Navarra?',
@@ -445,11 +443,11 @@ export function NafacturaHoldedPage(): React.JSX.Element {
                 },
                 {
                   q: '¿Puedo migrar mis datos de Holded a NaFactura?',
-                  a: `Sí. ${brandConfig.app.name} permite importar clientes y facturas desde Holded sin coste adicional. Nuestro equipo te asiste durante todo el proceso.`,
+                  a: 'Sí. Tú mismo importas clientes y productos desde una plantilla de Excel. Las facturas y demás datos de Holded u otros programas los migra nuestro equipo bajo petición y sin coste: escríbenos y nos encargamos.',
                 },
                 {
                   q: '¿Cuánto cuesta NaFactura comparado con Holded?',
-                  a: `NaFactura es completamente gratuito hasta finales de 2027. Después, desde ${formatPrice(PRICING.starter.monthly)}€/mes sin permanencia. Holded parte desde 14€/mes con módulos de CRM y RRHH que los autónomos navarros no necesitan.`,
+                  a: `NaFactura es completamente gratuito hasta el 30 de junio de 2027. Después, desde ${formatPrice(PRICING.starter.monthly)}€/mes sin permanencia. Holded parte desde 14€/mes con módulos de CRM y RRHH que los autónomos navarros no necesitan.`,
                 },
                 {
                   q: '¿NaFactura está preparado para NaTicket?',

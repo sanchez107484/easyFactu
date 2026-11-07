@@ -42,7 +42,7 @@ const schemaData = {
       mainEntity: [
         {
           '@type': 'Question',
-          name: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
+          name: `¿Cuánto cuesta ${brandConfig.app.name} después del 30 de junio de 2027?`,
           acceptedAnswer: {
             '@type': 'Answer',
             text: `Tienes dos planes: Plan Starter a ${formatPrice(PRICING.starter.monthly)}€/mes con hasta 60 facturas al año, y Plan PRO a ${formatPrice(PRICING.pro.monthly)}€/mes con facturas ilimitadas. Sin permanencia.`,
@@ -91,7 +91,7 @@ const comparisonRows = [
   { label: 'Hash encadenado + QR', starter: true, pro: true, excel: false, otros: '€€ extra' },
   { label: 'Envío AEAT integrado', starter: true, pro: true, excel: false, otros: '€€ extra' },
   { label: 'Gestión de gastos (PRO)', starter: false, pro: true, excel: false, otros: false },
-  { label: 'Gratis hasta 2027', starter: true, pro: true, excel: false, otros: false },
+  { label: 'Gratis hasta el 30 de junio de 2027', starter: true, pro: true, excel: false, otros: false },
   { label: 'Sin tarjeta al registrarte', starter: true, pro: true, excel: true, otros: false },
   { label: 'Soporte en español', starter: true, pro: true, excel: false, otros: '€€ extra' },
   { label: 'Sin permanencia', starter: true, pro: true, excel: true, otros: false },
@@ -131,7 +131,7 @@ const testimonials = [
     name: 'Patricia Gurrea',
     role: 'Consultora de negocio',
     location: 'Pamplona',
-    text: `El precio de ${formatPrice(PRICING.pro.annualMonthly)}€ al mes (anual) me parece muy justo para todo lo que incluye. Y que sea gratis hasta 2027 me convenció para probarlo sin ningún riesgo.`,
+    text: `El precio de ${formatPrice(PRICING.pro.annualMonthly)}€ al mes (anual) me parece muy justo para todo lo que incluye. Y que sea gratis hasta el 30 de junio de 2027 me convenció para probarlo sin ningún riesgo.`,
     stars: 5,
     initials: 'PG',
     saving: 'ROI positivo en 1 mes',
@@ -140,7 +140,7 @@ const testimonials = [
 
 const faqs = [
   {
-    q: `¿Cuánto cuesta ${brandConfig.app.name} después de 2027?`,
+    q: `¿Cuánto cuesta ${brandConfig.app.name} después del 30 de junio de 2027?`,
     a: `Tienes dos planes: Plan Starter a ${formatPrice(PRICING.starter.monthly)}€/mes (${formatPrice(PRICING.starter.annualMonthly)}€/mes anual) con hasta 60 facturas al año, y Plan PRO a ${formatPrice(PRICING.pro.monthly)}€/mes (${formatPrice(PRICING.pro.annualMonthly)}€/mes anual) con facturas ilimitadas. Sin permanencia.`,
   },
   {
@@ -152,7 +152,7 @@ const faqs = [
     a: `Ambos planes incluyen VeriFactu automático y cumplimiento con Hacienda Navarra. La diferencia es el límite de facturas: Starter hasta 60 al año, PRO ilimitadas.`,
   },
   {
-    q: `¿Qué incluye el acceso gratuito hasta 2027?`,
+    q: `¿Qué incluye el acceso gratuito hasta el 30 de junio de 2027?`,
     a: `Acceso completo al plan que elijas — sin restricciones ni versión reducida.`,
   },
   {
@@ -161,7 +161,7 @@ const faqs = [
   },
   {
     q: '¿Necesito tarjeta de crédito para registrarme?',
-    a: `No. Solo necesitas tu email. No pedimos datos de pago hasta 2027.`,
+    a: `No. Solo necesitas tu email. No pedimos datos de pago hasta el 30 de junio de 2027.`,
   },
   {
     q: '¿Cuánto ahorro eligiendo el plan anual?',
@@ -169,7 +169,7 @@ const faqs = [
   },
   {
     q: '¿Puedo migrar mis facturas actuales?',
-    a: `Sí. Importación gratuita desde Excel, CSV o Holded. El equipo de ${brandConfig.app.name} te ayuda sin coste adicional.`,
+    a: 'Sí. Tú mismo importas clientes y productos desde una plantilla de Excel. Las facturas y demás datos de Holded u otros programas los migra nuestro equipo bajo petición y sin coste: escríbenos y nos encargamos.',
   },
 ];
 
@@ -309,7 +309,7 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                   Precio de {brandConfig.app.name} para Navarra
                 </span>
                 <span className="relative inline-block text-red-600">
-                  0€ hasta 2027.
+                  0€ hasta el 30 de junio de 2027.
                   <svg
                     className="absolute -bottom-1 left-0 w-full"
                     viewBox="0 0 400 10"
@@ -341,7 +341,7 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                   className="group flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-red-600 px-10 text-base font-bold text-white shadow-xl shadow-red-200 transition-all duration-200 hover:bg-red-700 hover:shadow-2xl hover:-translate-y-0.5 sm:w-auto"
                 >
                   <Sparkles className="h-5 w-5 transition-transform group-hover:rotate-12" />
-                  Empezar gratis — Hasta 2027
+                  Empezar gratis — Hasta el 30 de junio de 2027
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Link>
                 <Link
@@ -433,7 +433,7 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                     <p className="mb-6 text-center text-xs text-slate-400">
-                      Gratis hasta 2027 · Sin tarjeta al registrarte
+                      Gratis hasta el 30 de junio de 2027 · Sin tarjeta al registrarte
                     </p>
                     <div className="border-t border-slate-100 pt-5 space-y-2">
                       <div className="flex items-center justify-between rounded-xl border-2 border-slate-200 bg-slate-50 px-3 py-2.5 mb-4">
@@ -513,7 +513,7 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                       <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </Link>
                     <p className="mb-6 text-center text-xs text-slate-400">
-                      Gratis hasta 2027 · Sin tarjeta al registrarte
+                      Gratis hasta el 30 de junio de 2027 · Sin tarjeta al registrarte
                     </p>
                     <div className="border-t border-red-100 pt-5 space-y-2">
                       <div
@@ -545,7 +545,7 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                 </div>
               </div>
               <p className="mt-6 text-center text-xs text-slate-400">
-                Ambos planes incluyen el acceso gratuito hasta 2027. · Sin tarjeta al registrarte.
+                Ambos planes incluyen el acceso gratuito hasta el 30 de junio de 2027. · Sin tarjeta al registrarte.
               </p>
             </div>
           </section>
@@ -557,7 +557,7 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                 <div>
                   <div className="text-5xl font-black text-red-600 tabular-nums">2027</div>
                   <p className="mt-1.5 font-semibold text-slate-700">
-                    Hasta 2027 completamente gratis
+                    Hasta el 30 de junio de 2027 completamente gratis
                   </p>
                   <p className="text-sm text-slate-400">Para las primeras 5.000 inscripciones</p>
                 </div>
@@ -883,7 +883,7 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                 En resumen: ni Excel/Word ni la mayoría de programas incluyen el cumplimiento con
                 Hacienda Foral de Navarra y el VeriFactu automático — lo cobran aparte o no lo
                 ofrecen. Con {brandConfig.app.name} lo tienes todo incluido tanto en Starter (hasta
-                60 facturas/año) como en PRO (facturas ilimitadas), gratis hasta 2027 y sin
+                60 facturas/año) como en PRO (facturas ilimitadas), gratis hasta el 30 de junio de 2027 y sin
                 permanencia.
               </p>
               <p className="mt-4 text-center text-xs text-slate-400">
@@ -985,10 +985,10 @@ export function NafacturaPreciosPage(): React.JSX.Element {
               <h2 className="mb-4 text-4xl font-extrabold text-slate-900 sm:text-5xl leading-tight">
                 Empieza gratis hoy.
                 <br />
-                <span className="text-red-600">Gratis hasta 2027, sin compromiso.</span>
+                <span className="text-red-600">Gratis hasta el 30 de junio de 2027, sin compromiso.</span>
               </h2>
               <p className="mx-auto mb-8 max-w-xl text-lg text-slate-500">
-                0€ hasta 2027. Luego, plan{' '}
+                0€ hasta el 30 de junio de 2027. Luego, plan{' '}
                 <strong className="text-slate-800">
                   Starter desde{' '}
                   {annual
@@ -1022,7 +1022,7 @@ export function NafacturaPreciosPage(): React.JSX.Element {
               </div>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-400">
                 {[
-                  'Gratis hasta 2027',
+                  'Gratis hasta el 30 de junio de 2027',
                   'Sin tarjeta al registrarte',
                   'Sin permanencia',
                   'Activación inmediata',
@@ -1040,7 +1040,7 @@ export function NafacturaPreciosPage(): React.JSX.Element {
                 <div className="flex items-center justify-between">
                   <div className="text-left">
                     <p className="text-xs text-slate-400 font-medium">
-                      Hasta 2027 · Todos los planes
+                      Hasta el 30 de junio de 2027 · Todos los planes
                     </p>
                   </div>
                   <span className="text-2xl font-black text-red-600">0€</span>

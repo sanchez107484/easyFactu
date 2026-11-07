@@ -204,7 +204,7 @@ function NewsBannerContent({ data, isDismissing, onDismiss }: NewsBannerContentP
               <p className="font-semibold text-foreground">{data.title}</p>
               {variant === 'promo' && (
                 <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 border border-green-200">
-                  Gratis hasta 2027
+                  Gratis hasta el 30 de junio de 2027
                 </span>
               )}
             </div>

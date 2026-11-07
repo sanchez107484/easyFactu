@@ -23,7 +23,7 @@ import { VERIFACTU_ANNOUNCED_DEADLINE } from '@/lib/verifactu-deadlines';
 // ─────────────────────────────────────────────────────────────────────────────
 export const nafacturaMejorSoftwareMetadata: Metadata = {
   title: `Mejor software de facturación para autónomos navarros 2027 | ${brandConfig.app.name}`,
-  description: `Comparativa de los mejores programas de facturación para autónomos y pymes de Navarra en 2027. VeriFactu, Hacienda Foral, precio y soporte. ${brandConfig.app.name} gratis hasta 2027.`,
+  description: `Comparativa de los mejores programas de facturación para autónomos y pymes de Navarra en 2027. VeriFactu, Hacienda Foral, precio y soporte. ${brandConfig.app.name} gratis hasta el 30 de junio de 2027.`,
   alternates: { canonical: `${brandConfig.app.url}/mejor-software-facturacion-navarra` },
   openGraph: {
     title: `Mejor software de facturación para autónomos navarros 2027 | ${brandConfig.app.name}`,
@@ -45,7 +45,7 @@ export const nafacturaMejorSoftwareMetadata: Metadata = {
     card: 'summary_large_image',
     title: `Mejor software facturación autónomos Navarra 2027 | ${brandConfig.app.name}`,
     description:
-      'Comparativa completa de programas de facturación para Navarra. Gratis hasta 2027.',
+      'Comparativa completa de programas de facturación para Navarra. Gratis hasta el 30 de junio de 2027.',
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   robots: { index: true, follow: true },
@@ -109,14 +109,14 @@ const SOFTWARE_LIST = [
     rank: 1,
     name: brandConfig.app.name,
     tagline: 'El único diseñado exclusivamente para Navarra',
-    price: `Gratis hasta 2027, luego desde ${formatPrice(PRICING.starter.monthly)}€/mes`,
+    price: `Gratis hasta el 30 de junio de 2027, luego desde ${formatPrice(PRICING.starter.monthly)}€/mes`,
     scores: [true, true, true, true, true, true, true, true],
     highlight: true,
     pros: [
       'Especializado en Navarra al 100%',
       'Hacienda Foral automático',
       'Preparado para NaTicket',
-      'Gratis hasta 2027',
+      'Gratis hasta el 30 de junio de 2027',
       'Interfaz muy sencilla',
     ],
     cons: ['Sin módulo de contabilidad avanzada', 'Sin CRM ni RRHH'],
@@ -165,7 +165,7 @@ const SOFTWARE_LIST = [
 const FAQS = [
   {
     q: `¿Cuál es el mejor software de facturación para autónomos en Navarra en 2027?`,
-    a: `El mejor software para autónomos navarros en 2027 es ${brandConfig.app.name}: es el único programa diseñado exclusivamente para la realidad fiscal navarra, con cumplimiento automático de la Hacienda Foral de Navarra, VeriFactu incluido, preparación para NaTicket y gratuito hasta 2027.`,
+    a: `El mejor software para autónomos navarros en 2027 es ${brandConfig.app.name}: es el único programa diseñado exclusivamente para la realidad fiscal navarra, con cumplimiento automático de la Hacienda Foral de Navarra, VeriFactu incluido, preparación para NaTicket y gratuito hasta el 30 de junio de 2027.`,
   },
   {
     q: '¿Qué software de facturación cumple con la Hacienda Foral de Navarra?',
@@ -173,7 +173,7 @@ const FAQS = [
   },
   {
     q: '¿Hay algún software de facturación gratuito para autónomos navarros?',
-    a: `Sí. ${brandConfig.app.name} es completamente gratuito para autónomos navarros hasta finales de 2027. Sin tarjeta, sin límites de facturas, sin trampa. Incluye VeriFactu, preparación para NaTicket y soporte en español. A partir de 2028, desde ${formatPrice(PRICING.starter.monthly)}€/mes sin permanencia.`,
+    a: `Sí. ${brandConfig.app.name} es completamente gratuito para autónomos navarros hasta el 30 de junio de 2027. Sin tarjeta, sin límites de facturas, sin trampa. Incluye VeriFactu, preparación para NaTicket y soporte en español. A partir de 2028, desde ${formatPrice(PRICING.starter.monthly)}€/mes sin permanencia.`,
   },
   {
     q: '¿Qué diferencia hay entre VeriFactu y NaTicket para autónomos navarros?',
@@ -181,7 +181,7 @@ const FAQS = [
   },
   {
     q: '¿Puedo cambiar de software si ya tengo facturas con Holded o Billin?',
-    a: `Sí. ${brandConfig.app.name} incluye importación gratuita de clientes y facturas desde los principales programas (Holded, Billin, Excel, CSV). El equipo de soporte te asiste durante la migración sin coste adicional.`,
+    a: 'Sí. Tú mismo importas clientes y productos desde una plantilla de Excel. Las facturas y demás datos de Holded u otros programas los migra nuestro equipo bajo petición y sin coste: escríbenos y nos encargamos.',
   },
 ];
 
@@ -360,7 +360,7 @@ export function NafacturaMejorSoftwarePage(): React.JSX.Element {
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                     <span className="text-xs text-red-700">
-                      Gratis hasta 2027 · Sin permanencia
+                      Gratis hasta el 30 de junio de 2027 · Sin permanencia
                     </span>
                   </div>
                 )}
@@ -402,7 +402,7 @@ export function NafacturaMejorSoftwarePage(): React.JSX.Element {
         <section className="py-20">
           <div className="mx-auto max-w-3xl px-6 text-center">
             <h2 className="text-3xl font-bold text-slate-900 mb-4">
-              El mejor software para autónomos navarros, gratis hasta 2027
+              El mejor software para autónomos navarros, gratis hasta el 30 de junio de 2027
             </h2>
             <Link
               href="/registro"
@@ -412,7 +412,7 @@ export function NafacturaMejorSoftwarePage(): React.JSX.Element {
               <ArrowRight className="h-5 w-5" />
             </Link>
             <p className="mt-4 text-sm text-slate-400">
-              Sin tarjeta · Gratis hasta 2027 · Sin permanencia · Soporte en español
+              Sin tarjeta · Gratis hasta el 30 de junio de 2027 · Sin permanencia · Soporte en español
             </p>
           </div>
         </section>

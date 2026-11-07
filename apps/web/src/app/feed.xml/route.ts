@@ -9,7 +9,7 @@ const BRAND_INFO = {
   novafactura: {
     title: 'NovaFactura — Software de facturación VeriFactu',
     description:
-      'Software de facturación para autónomos y pymes. VeriFactu automático, envío a AEAT, exportación contable. Gratis hasta 2027.',
+      'Software de facturación para autónomos y pymes. VeriFactu automático, envío a AEAT, exportación contable. Gratis hasta el 30 de junio de 2027.',
     siteUrl: 'https://novafactura.es',
     feedUrl: 'https://novafactura.es/feed.xml',
     language: 'es-ES',
@@ -17,7 +17,7 @@ const BRAND_INFO = {
   nafactura: {
     title: 'NaFactura — Software de facturación Navarra',
     description:
-      'Software de facturación para autónomos navarros. NaTicket automático, exportación CSV/PDF, cumplimiento con Hacienda Foral. Gratis hasta 2027.',
+      'Software de facturación para autónomos navarros. NaTicket automático, exportación CSV/PDF, cumplimiento con Hacienda Foral. Gratis hasta el 30 de junio de 2027.',
     siteUrl: 'https://nafactura.es',
     feedUrl: 'https://nafactura.es/feed.xml',
     language: 'es-ES',

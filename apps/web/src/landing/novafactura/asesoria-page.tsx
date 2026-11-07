@@ -49,7 +49,7 @@ const faqs = [
   },
   {
     q: '¿Puedo importar mis clientes actuales desde Excel?',
-    a: 'Sí. Si tienes una lista de clientes en Excel o CSV con su nombre, NIF y datos de contacto, puedes importarla directamente al panel. En cuestión de minutos tienes toda tu cartera cargada sin introducir nada a mano.',
+    a: 'Sí. Si tienes una lista de clientes en Excel con su nombre, NIF y datos de contacto, puedes importarla directamente al panel. En cuestión de minutos tienes toda tu cartera cargada sin introducir nada a mano.',
   },
   {
     q: '¿NovaFactura está adaptado a VeriFactu?',

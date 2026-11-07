@@ -194,7 +194,7 @@ const faqJsonLd = {
       name: '¿Puedo importar mis clientes actuales desde Excel?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Sí. Si tienes una lista de clientes en Excel o CSV con su nombre, NIF y datos de contacto, puedes importarla directamente al panel. En cuestión de minutos tienes toda tu cartera cargada sin introducir nada a mano.',
+        text: 'Sí. Si tienes una lista de clientes en Excel con su nombre, NIF y datos de contacto, puedes importarla directamente al panel. En cuestión de minutos tienes toda tu cartera cargada sin introducir nada a mano.',
       },
     },
     {
