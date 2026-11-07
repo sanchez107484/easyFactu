@@ -162,7 +162,7 @@ export default function AjustesEmpresaPage() {
 
   // ── Layout ────────────────────────────────────────────────────────────────
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-start pb-20">
       {/* ── Columna izquierda: Datos Profesionales ── */}
       <Card>
         <CardHeader>

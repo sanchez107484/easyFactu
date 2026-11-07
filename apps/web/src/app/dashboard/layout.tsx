@@ -10,6 +10,7 @@ import { DashboardSidebar } from '@/components/dashboard/sidebar';
 import { DashboardHeader } from '@/components/dashboard/header';
 import { ActingAsBanner } from '@/components/dashboard/acting-as-banner';
 import { ProUpgradeBanner } from '@/components/dashboard/pro-upgrade-banner';
+import { HelpChatWidget } from '@/components/help-chat/help-chat-widget';
 import { cn } from '@/lib/utils';
 
 /**
@@ -118,6 +119,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="px-4 py-4 h-full">{children}</div>
         </main>
       </div>
+
+      <HelpChatWidget />
     </div>
   );
 }

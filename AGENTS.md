@@ -86,7 +86,7 @@ pnpm prisma:seed              # Seed the database ⚠️
   - `(legal)/` — aviso-legal, politica-privacidad, etc.
   - `dashboard/` — authenticated SPA shell: facturas, clientes, productos, recurrentes, presupuestos, informes, ajustes, verifactu
   - `blog/` — Sanity CMS powered blog
-  - `api/` — Next.js API routes (PDF generation via Playwright/Chromium)
+  - `api/` — Next.js API routes (PDF generation via Playwright/Chromium, `chat-soporte` proxy to n8n)
 
 ### Key directories
 
@@ -125,6 +125,7 @@ app/                      # Next.js App Router pages
 components/               # Feature + UI components (organized by domain)
   ui/                     # Shadcn/ui primitives
   facturas/               # Invoice-specific components
+  help-chat/              # Dashboard floating help chat, NovaFactura only (NEXT_PUBLIC_HELP_CHAT_ENABLED); talks to app/api/chat-soporte, which validates the session, rate limits and calls n8n
   clientes/               # Customer components
   dashboard/              # Dashboard shell, widgets
   ...
@@ -254,6 +255,8 @@ async findAll(query: QueryInvoiceDto) {
 | `NEXT_PUBLIC_SANITY_API_VERSION` | Sanity API version                                  |
 | `SANITY_REVALIDATE_SECRET`       | Webhook secret for ISR revalidation                 |
 | `NEXT_PUBLIC_GTM_ID`             | Google Tag Manager container ID                     |
+| `NEXT_PUBLIC_HELP_CHAT_ENABLED`  | Shows the dashboard help chat (NovaFactura only)    |
+| `N8N_SUPPORT_CHAT_WEBHOOK_URL`   | n8n help chat webhook. **Server only**              |
 
 ---
 
