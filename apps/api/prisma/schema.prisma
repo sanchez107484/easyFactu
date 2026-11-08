@@ -44,7 +44,7 @@ model Tenant {
   impersonationLogsAsClient AgencyImpersonationLog[] @relation("ImpersonationClientTenant")
   agencyInvitations         AgencyInvitation[]
   agencyClientRequests      AgencyClientRequest[]    @relation("AgencyClientRequests")
-  clientAgencyRequests      AgencyClientRequest[]   @relation("ClientAgencyRequests")
+  clientAgencyRequests      AgencyClientRequest[]    @relation("ClientAgencyRequests")
   clientReferrals           AgencyReferral[]         @relation("ClientReferrals")
   agencyRelationHistory     AgencyRelationHistory[]  @relation("AgencyHistoryRelations")
   clientRelationHistory     AgencyRelationHistory[]  @relation("ClientHistoryRelations")
@@ -68,6 +68,8 @@ model Tenant {
   suppliers                 Supplier[]
   tenantUsers               TenantUser[]
   verifactuLogs             VerifactuLog[]
+  integrationAccount        IntegrationAccount?
+  apiKeys                   ApiKey[]
 
   @@index([email])
   @@index([accountType])
@@ -81,7 +83,7 @@ model Plan {
   cycle          PlanCycle
   tier           PlanTier
   limits         Json            @default("{\"allowExpenses\": false, \"maxInvoicesPerYear\": null}")
-  isActive       Boolean         @default(true)  @map("is_active")
+  isActive       Boolean         @default(true) @map("is_active")
   createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   changeLogsFrom PlanChangeLog[] @relation("PlanChangeFrom")
@@ -94,16 +96,18 @@ model Plan {
 }
 
 model Subscription {
-  id                  String             @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  tenantId            String             @unique @map("tenant_id")
-  planId             String             @map("plan_id")
-  status             SubscriptionStatus @default(ACTIVE)
-  billingCycle       PlanCycle          @map("billing_cycle")
-  startedAt          DateTime           @default(now()) @map("started_at") @db.Timestamptz(6)
-  changedAt          DateTime           @default(now()) @updatedAt @map("changed_at") @db.Timestamptz(6)
-  preferredPlanSlug  String?            @map("preferred_plan_slug")
-  plan               Plan               @relation(fields: [planId], references: [id], onDelete: NoAction)
-  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id                String               @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  tenantId          String               @unique @map("tenant_id")
+  planId            String               @map("plan_id")
+  status            SubscriptionStatus   @default(ACTIVE)
+  billingCycle      PlanCycle            @map("billing_cycle")
+  startedAt         DateTime             @default(now()) @map("started_at") @db.Timestamptz(6)
+  changedAt         DateTime             @default(now()) @updatedAt @map("changed_at") @db.Timestamptz(6)
+  preferredPlanSlug String?              @map("preferred_plan_slug")
+  /// Set when an external system (the ERP) includes and manages the plan. The tenant cannot change plan while set.
+  managedBy         SubscriptionManager? @map("managed_by")
+  plan              Plan                 @relation(fields: [planId], references: [id], onDelete: NoAction)
+  tenant            Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([planId])
   @@index([status])
@@ -207,6 +211,8 @@ model Customer {
   updatedAt               DateTime           @updatedAt @map("updated_at")
   isReagyp                Boolean            @default(false) @map("is_reagyp")
   hasEquivalenceSurcharge Boolean            @default(false) @map("has_equivalence_surcharge")
+  /// Payer id in the integrated ERP (integrations API v1).
+  externalId              String?            @map("external_id")
   tenant                  Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   expenses                Expense[]
   invoices                Invoice[]
@@ -214,6 +220,7 @@ model Customer {
   recurringInvoices       RecurringInvoice[]
 
   @@unique([tenantId, nif])
+  @@unique([tenantId, externalId])
   @@index([tenantId])
   @@index([tenantId, isActive])
   @@index([name(ops: raw("gin_trgm_ops"))], map: "customers_name_trgm_idx", type: Gin)
@@ -358,6 +365,8 @@ model Invoice {
   surchargeTotal             Decimal?               @map("surcharge_total") @db.Decimal(12, 2)
   rectificationType          RectificationType?     @map("rectification_type")
   supersededBySubstitutionId String?                @map("superseded_by_substitution_id")
+  /// Invoice id in the integrated ERP (integrations API v1). One invoice per value and tenant.
+  externalRef                String?                @map("external_ref")
   exportEvents               InvoiceExportEvent[]
   lines                      InvoiceLine[]
   noteLogs                   InvoiceNoteLog[]
@@ -374,6 +383,7 @@ model Invoice {
   payments                   Payment[]
   verifactuLogs              VerifactuLog[]
 
+  @@unique([tenantId, externalRef])
   @@index([tenantId, number])
   @@index([tenantId])
   @@index([tenantId, issueDate])
@@ -550,22 +560,22 @@ model AgencyInvitation {
 }
 
 model AgencyClientRequest {
-  id                String                   @id @default(uuid())
-  clientTenantId    String                   @map("client_tenant_id")
-  agencyTenantId    String                   @map("agency_tenant_id")
-  clientEmail       String                   @map("client_email")
-  clientBusinessName String                  @map("client_business_name")
-  clientNif        String                   @map("client_nif")
-  message           String?                  @map("message")
-  status            AgencyClientRequestStatus @default(PENDING)
-  expiresAt         DateTime                 @map("expires_at")
-  rejectedAt        DateTime?                @map("rejected_at")
-  rejectionReason   String?                  @map("rejection_reason")
-  acceptedAt        DateTime?                @map("accepted_at")
-  createdAt         DateTime                 @default(now()) @map("created_at")
-  updatedAt         DateTime                 @updatedAt @map("updated_at")
-  agencyTenant      Tenant                   @relation("AgencyClientRequests", fields: [agencyTenantId], references: [id], onDelete: Cascade)
-  clientTenant      Tenant                   @relation("ClientAgencyRequests", fields: [clientTenantId], references: [id], onDelete: Cascade)
+  id                 String                    @id @default(uuid())
+  clientTenantId     String                    @map("client_tenant_id")
+  agencyTenantId     String                    @map("agency_tenant_id")
+  clientEmail        String                    @map("client_email")
+  clientBusinessName String                    @map("client_business_name")
+  clientNif          String                    @map("client_nif")
+  message            String?                   @map("message")
+  status             AgencyClientRequestStatus @default(PENDING)
+  expiresAt          DateTime                  @map("expires_at")
+  rejectedAt         DateTime?                 @map("rejected_at")
+  rejectionReason    String?                   @map("rejection_reason")
+  acceptedAt         DateTime?                 @map("accepted_at")
+  createdAt          DateTime                  @default(now()) @map("created_at")
+  updatedAt          DateTime                  @updatedAt @map("updated_at")
+  agencyTenant       Tenant                    @relation("AgencyClientRequests", fields: [agencyTenantId], references: [id], onDelete: Cascade)
+  clientTenant       Tenant                    @relation("ClientAgencyRequests", fields: [clientTenantId], references: [id], onDelete: Cascade)
 
   @@unique([clientTenantId, agencyTenantId], map: "agency_client_requests_unique_pending")
   @@index([agencyTenantId])
@@ -1065,4 +1075,88 @@ enum RecurringStatus {
   ACTIVE
   PAUSED
   COMPLETED
+}
+
+// ==================== INTEGRATIONS API v1 (HU-21A) ====================
+
+enum SubscriptionManager {
+  ERP
+}
+
+enum IntegrationAccountStatus {
+  PENDING_CONSENT
+  ACTIVE
+  GRACE
+  ENDED
+}
+
+enum ApiKeyEnvironment {
+  LIVE
+  TEST
+}
+
+enum IdempotencyStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+/// Link between a tenant and its company in the integrated ERP.
+model IntegrationAccount {
+  id                String                   @id @default(uuid())
+  tenantId          String                   @unique @map("tenant_id")
+  erpAccountId      String                   @unique @map("erp_account_id")
+  status            IntegrationAccountStatus
+  /// SHA-256 of the one-time token emailed to the current OWNER when the NIF already existed.
+  consentTokenHash  String?                  @unique @map("consent_token_hash")
+  consentExpiresAt  DateTime?                @map("consent_expires_at")
+  consentAcceptedAt DateTime?                @map("consent_accepted_at")
+  createdAt         DateTime                 @default(now()) @map("created_at")
+  updatedAt         DateTime                 @updatedAt @map("updated_at")
+  tenant            Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  apiKeys           ApiKey[]
+
+  @@index([status])
+  @@map("integration_accounts")
+}
+
+/// Per-clinic API key. Only the SHA-256 hash is stored; the plaintext is shown once.
+model ApiKey {
+  id                   String             @id @default(uuid())
+  tenantId             String             @map("tenant_id")
+  integrationAccountId String             @map("integration_account_id")
+  keyHash              String             @unique @map("key_hash")
+  /// First characters of the key (e.g. "nfk_live_Ab12") to identify it in support, never enough to use it.
+  keyPrefix            String             @map("key_prefix")
+  environment          ApiKeyEnvironment
+  /// Set on rotation: the previous key stays valid until this moment (24 h overlap).
+  expiresAt            DateTime?          @map("expires_at")
+  revokedAt            DateTime?          @map("revoked_at")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  tenant               Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  integrationAccount   IntegrationAccount @relation(fields: [integrationAccountId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([integrationAccountId])
+  @@map("api_keys")
+}
+
+/// Stored result of a POST made with an Idempotency-Key. Expires after 30 days.
+model IdempotencyRecord {
+  id             String            @id @default(uuid())
+  /// "account:<integrationAccountId>" for API key calls, "provisioning" for account provisioning.
+  scope          String
+  idempotencyKey String            @map("idempotency_key")
+  /// SHA-256 of method, path and canonical body: same key with a different request is a conflict.
+  requestHash    String            @map("request_hash")
+  status         IdempotencyStatus
+  responseStatus Int?              @map("response_status")
+  responseBody   Json?             @map("response_body")
+  /// While IN_PROGRESS, other requests with the same key get REQUEST_IN_PROGRESS until this moment.
+  lockedUntil    DateTime          @map("locked_until")
+  expiresAt      DateTime          @map("expires_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
+
+  @@unique([scope, idempotencyKey])
+  @@index([expiresAt])
+  @@map("idempotency_records")
 }

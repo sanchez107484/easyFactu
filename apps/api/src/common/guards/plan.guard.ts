@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { REQUIRED_PLAN_KEY } from '../decorators/require-plan.decorator';
 import { PlanTier } from '@easyfactura/shared-types';
+import { PlanRequiredException } from '../errors/plan-required.exception';
 
 const TIER_HIERARCHY: Record<PlanTier, number> = {
   [PlanTier.BASIC]: 1,
@@ -47,9 +48,7 @@ export class PlanGuard implements CanActivate {
     const requiredLevel = TIER_HIERARCHY[requiredTier] ?? 0;
 
     if (currentLevel < requiredLevel) {
-      throw new ForbiddenException(
-        'Esta función requiere un plan PRO. Actualiza tu suscripción para continuar.'
-      );
+      throw new PlanRequiredException();
     }
 
     return true;

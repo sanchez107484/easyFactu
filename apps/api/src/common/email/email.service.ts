@@ -616,6 +616,18 @@ export class EmailService {
 
   // ─── Private send ──────────────────────────────────────────────────────────
 
+  /**
+   * Sends `content` (an HTML fragment) inside the brand layout. Lets feature modules keep
+   * their own copy instead of growing this service; use `buttonHtml` for call-to-action links.
+   */
+  async sendBranded(opts: { to: string; subject: string; content: string }): Promise<void> {
+    await this.send({ to: opts.to, subject: opts.subject, html: this.buildBaseLayout(opts.content) });
+  }
+
+  buttonHtml(text: string, url: string): string {
+    return this.buildButton(text, url);
+  }
+
   private async send(opts: SendEmailOptions): Promise<void> {
     if (!this.resend) {
       this.logger.warn(`[EMAIL] Resend no configurado. Email no enviado. To: ${opts.to} | Subject: ${opts.subject}`);

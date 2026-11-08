@@ -577,7 +577,16 @@ export class InvoiceService {
 
   // ==================== PUBLIC CRUD ====================
 
-  async create(tenantId: string, createdByUserId: string | null, dto: CreateInvoiceDto) {
+  /**
+   * @param options.externalRef - Id of the invoice in an integrated ERP (integrations API).
+   *   Unique per tenant; never accepted from the web DTO.
+   */
+  async create(
+    tenantId: string,
+    createdByUserId: string | null,
+    dto: CreateInvoiceDto,
+    options: { externalRef?: string } = {}
+  ) {
     const isQuote = dto.invoiceType === 'quote';
     const isProforma = dto.invoiceType === 'proforma';
 
@@ -679,6 +688,7 @@ export class InvoiceService {
           notes: dto.notes ?? null,
           paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : undefined,
           createdByUserId: resolvedCreatedByUserId,
+          externalRef: options.externalRef ?? null,
           lines: {
             create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
           },

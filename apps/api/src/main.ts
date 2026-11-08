@@ -12,6 +12,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
+import { buildIntegrationsOpenApi } from './modules/integrations/openapi/integrations-openapi';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -146,6 +147,9 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
+
+  // ERP integration contract, documented on its own (also exported with `pnpm openapi:integrations`)
+  SwaggerModule.setup('api/integrations', app, buildIntegrationsOpenApi(app));
 
   // Graceful shutdown — releases port on nodemon/ts-node-dev restarts
   app.enableShutdownHooks();

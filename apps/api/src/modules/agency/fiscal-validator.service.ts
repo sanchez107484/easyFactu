@@ -11,7 +11,7 @@ export interface FiscalAlert {
 }
 
 // Limit for simplified invoices (facturas simplificadas) per AEAT regulation
-const SIMPLIFIED_INVOICE_LIMIT = 400;
+export const SIMPLIFIED_INVOICE_LIMIT = 400;
 
 // NIF/CIF/NIE control letter algorithm
 const NIF_LETTERS = 'TRWAGMYFPDXBNJZSQVHLCKE';

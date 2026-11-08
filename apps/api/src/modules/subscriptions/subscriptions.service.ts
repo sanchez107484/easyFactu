@@ -144,6 +144,12 @@ export class SubscriptionsService {
       throw new NotFoundException('Suscripción no encontrada');
     }
 
+    if (currentSubscription.managedBy) {
+      throw new ForbiddenException(
+        'Tu plan está incluido en tu ERP. Para cambiarlo, contacta con el proveedor de tu ERP.'
+      );
+    }
+
     if (currentSubscription.plan.slug === targetPlanSlug) {
       return { success: true, message: 'Ya estás en este plan' };
     }

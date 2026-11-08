@@ -1,15 +1,19 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, SubscriptionManager } from '@prisma/client';
 
 export type FreePlanSlug = 'BASIC_FREE' | 'PROFESSIONAL_FREE';
 
 /**
  * Every tenant must have exactly one subscription from the moment it exists —
  * PlanGuard and the plan UI rely on it. Call inside the tenant-creation transaction.
+ *
+ * @param managedBy - set when an external system (the ERP) includes the plan; the tenant
+ *   then cannot change plan by itself.
  */
 export async function createFreeSubscription(
   tx: Prisma.TransactionClient,
   tenantId: string,
-  planSlug: FreePlanSlug
+  planSlug: FreePlanSlug,
+  managedBy?: SubscriptionManager
 ): Promise<void> {
   const plan = await tx.plan.findUnique({ where: { slug: planSlug }, select: { id: true } });
   if (!plan) {
@@ -22,6 +26,7 @@ export async function createFreeSubscription(
       planId: plan.id,
       status: 'ACTIVE',
       billingCycle: 'FREE',
+      ...(managedBy ? { managedBy } : {}),
     },
   });
 }

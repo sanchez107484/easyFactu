@@ -27,6 +27,7 @@ import { ActivitySummaryModule } from './modules/activity-summary/activity-summa
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { SignupStatsModule } from './modules/signup-stats/signup-stats.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { SignupStatsModule } from './modules/signup-stats/signup-stats.module';
     SubscriptionsModule,
     ReportsModule,
     SignupStatsModule,
+    IntegrationsModule,
   ],
   controllers: [],
   providers: [

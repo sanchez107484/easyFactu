@@ -1,0 +1,10 @@
+{
+  "rootDir": ".",
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "testRegex": ".*\\.contract\\.ts$",
+  "testEnvironment": "node",
+  "testTimeout": 90000,
+  "transform": {
+    "^.+\\.ts$": ["ts-jest", { "tsconfig": "<rootDir>/../../tsconfig.spec.json" }]
+  }
+}

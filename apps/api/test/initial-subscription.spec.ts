@@ -25,6 +25,22 @@ describe('createFreeSubscription', () => {
     });
   });
 
+  it('marks the subscription as managed by the ERP when requested', async () => {
+    const { tx, create } = buildTx({ id: 'plan-pro' });
+
+    await createFreeSubscription(tx, 'tenant-1', 'PROFESSIONAL_FREE', 'ERP');
+
+    expect(create).toHaveBeenCalledWith({
+      data: {
+        tenantId: 'tenant-1',
+        planId: 'plan-pro',
+        status: 'ACTIVE',
+        billingCycle: 'FREE',
+        managedBy: 'ERP',
+      },
+    });
+  });
+
   it('fails (rolling back the transaction) when the plan is missing from the seed', async () => {
     const { tx, create } = buildTx(null);
 

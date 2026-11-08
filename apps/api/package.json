@@ -22,11 +22,13 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:contract": "jest --config ./test/contract/jest-contract.json --runInBand",
     "prisma:generate": "prisma generate --schema=./prisma/schema.prisma && node scripts/sync-prisma-client.js",
     "prisma:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
     "prisma:migrate:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=./prisma/schema.prisma",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "openapi:integrations": "ts-node -r tsconfig-paths/register --transpile-only scripts/export-integrations-openapi.ts"
   },
   "dependencies": {
     "@easyfactura/brand-config": "workspace:*",

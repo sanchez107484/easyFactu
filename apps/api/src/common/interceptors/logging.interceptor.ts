@@ -2,6 +2,7 @@ import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } fr
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request } from 'express';
+import { redactSensitive } from '../logging/redact-sensitive';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -20,11 +21,15 @@ export class LoggingInterceptor implements NestInterceptor {
           const { statusCode } = response;
           const duration = Date.now() - now;
 
-          this.logger.log(`${method} ${url} ${statusCode} - ${duration}ms - ${ip} - ${userAgent}`);
+          this.logger.log(
+            redactSensitive(`${method} ${url} ${statusCode} - ${duration}ms - ${ip} - ${userAgent}`)
+          );
         },
         error: (error: Error) => {
           const duration = Date.now() - now;
-          this.logger.error(`${method} ${url} ERROR - ${duration}ms - ${ip} - ${error.message}`);
+          this.logger.error(
+            redactSensitive(`${method} ${url} ERROR - ${duration}ms - ${ip} - ${error.message}`)
+          );
         },
       })
     );

@@ -1,0 +1,2080 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/integrations/v1/health": {
+      "get": {
+        "description": "Sin autenticación ni datos. En mantenimiento responde 503 con Retry-After.",
+        "operationId": "IntegrationHealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "MAINTENANCE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Estado del servicio",
+        "tags": [
+          "Estado"
+        ]
+      }
+    },
+    "/integrations/v1/accounts": {
+      "post": {
+        "description": "NIF nuevo: crea la cuenta (ACTIVE) con PRO gestionado por el ERP y devuelve la primera API key. NIF ya registrado: PENDING_CONSENT sin key hasta que el titular acepte por email. erpAccountId ya dado de alta: devuelve su estado (200) sin key.",
+        "operationId": "IntegrationAccountsController_provision",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Obligatoria. Misma clave y mismo cuerpo: misma respuesta (200). Se guarda 30 días.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProvisionAccountDto"
+              },
+              "examples": {
+                "alta": {
+                  "value": {
+                    "erpAccountId": "EMP-0042",
+                    "nif": "B12345674",
+                    "businessName": "Óptica Ejemplo",
+                    "legalName": "Óptica Ejemplo S.L.",
+                    "email": "titular@opticaejemplo.es",
+                    "owner": {
+                      "firstName": "María",
+                      "lastName": "Pérez",
+                      "email": "titular@opticaejemplo.es"
+                    },
+                    "address": {
+                      "line1": "C/ Mayor 1",
+                      "postalCode": "31001",
+                      "city": "Pamplona",
+                      "province": "Navarra"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reintento idempotente o cuenta ya existente (apiKey null)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationAccountResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationAccountResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_PROVISION_SECRET",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "IDEMPOTENCY_CONFLICT · REQUEST_IN_PROGRESS (reintentable)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL (reintentable)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "provisioningSecret": []
+          }
+        ],
+        "summary": "Alta o vinculación de una clínica",
+        "tags": [
+          "Cuentas"
+        ]
+      }
+    },
+    "/integrations/v1/accounts/{erpAccountId}": {
+      "get": {
+        "description": "PENDING_CONSENT, ACTIVE, GRACE o ENDED. Nunca devuelve la API key.",
+        "operationId": "IntegrationAccountsController_getAccount",
+        "parameters": [
+          {
+            "name": "erpAccountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationAccountResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_PROVISION_SECRET",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL (reintentable)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "provisioningSecret": []
+          }
+        ],
+        "summary": "Estado del alta",
+        "tags": [
+          "Cuentas"
+        ]
+      }
+    },
+    "/integrations/v1/accounts/{erpAccountId}/keys": {
+      "post": {
+        "description": "La key se muestra una sola vez. Las anteriores siguen válidas 24 h. Requiere cuenta ACTIVE o GRACE.",
+        "operationId": "IntegrationAccountsController_issueKey",
+        "parameters": [
+          {
+            "name": "erpAccountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Obligatoria. Misma clave y mismo cuerpo: misma respuesta (200). Se guarda 30 días.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuedApiKeyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_PROVISION_SECRET",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "IDEMPOTENCY_CONFLICT · REQUEST_IN_PROGRESS (reintentable)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL (reintentable)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "provisioningSecret": []
+          }
+        ],
+        "summary": "Nueva API key (rotación sin corte)",
+        "tags": [
+          "Cuentas"
+        ]
+      }
+    },
+    "/integrations/v1/accounts/{erpAccountId}/keys/{keyId}": {
+      "delete": {
+        "operationId": "IntegrationAccountsController_revokeKey",
+        "parameters": [
+          {
+            "name": "erpAccountId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revocada (o ya lo estaba)"
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_PROVISION_SECRET",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL (reintentable)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "provisioningSecret": []
+          }
+        ],
+        "summary": "Revoca una API key al momento",
+        "tags": [
+          "Cuentas"
+        ]
+      }
+    },
+    "/integrations/v1/invoices": {
+      "post": {
+        "description": "Crea o actualiza el pagador (customer) por externalId, convierte los precios con IVA incluido y confirma la factura. El total coincide al céntimo con la suma cobrada: si una línea no puede cuadrar sola, se añade una línea \"Ajuste por redondeo (IVA incluido)\" al mismo tipo. Responde con registrationStatus PENDING hasta que Hacienda conteste.",
+        "operationId": "IntegrationInvoicesController_issue",
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "description": "Se respeta si se envía; si no, se genera. Vuelve siempre.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Obligatoria. Misma clave y mismo cuerpo: misma respuesta (200). Se guarda 30 días.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssueInvoiceDto"
+              },
+              "examples": {
+                "simplificada": {
+                  "summary": "Ticket (simplificada) con dos tipos de IVA",
+                  "value": {
+                    "externalRef": "VENTA-2026-001234",
+                    "invoiceType": "simplified",
+                    "operationDate": "2026-11-08",
+                    "paymentMethod": "CARD",
+                    "customer": {
+                      "externalId": "PAG-000981",
+                      "name": "Laura Gómez Ruiz",
+                      "nif": "12345678Z"
+                    },
+                    "lines": [
+                      {
+                        "description": "Gafas graduadas progresivas",
+                        "quantity": "1",
+                        "unitPriceWithTax": "352.00",
+                        "taxRate": "10"
+                      },
+                      {
+                        "description": "Gafas de sol",
+                        "quantity": "1",
+                        "unitPriceWithTax": "107.69",
+                        "taxRate": "21",
+                        "discountPercent": "0"
+                      }
+                    ],
+                    "regimeData": null
+                  }
+                },
+                "completa": {
+                  "summary": "Factura completa con domicilio del pagador",
+                  "value": {
+                    "externalRef": "VENTA-2026-001235-1",
+                    "invoiceType": "standard",
+                    "paymentMethod": "BANK_TRANSFER",
+                    "customer": {
+                      "externalId": "PAG-000982",
+                      "name": "Seguros Ejemplo S.A.",
+                      "nif": "A58818501",
+                      "email": "facturas@segurosejemplo.es",
+                      "address": {
+                        "line1": "Av. Carlos III 10",
+                        "postalCode": "31002",
+                        "city": "Pamplona",
+                        "province": "Navarra"
+                      }
+                    },
+                    "lines": [
+                      {
+                        "description": "Lentes de contacto mensuales",
+                        "quantity": "6",
+                        "unitPriceWithTax": "18.50",
+                        "taxRate": "10",
+                        "discountPercent": "10"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reintento idempotente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationInvoiceResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationInvoiceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_API_KEY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "PLAN_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "IDEMPOTENCY_CONFLICT · REQUEST_IN_PROGRESS (reintentable)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "FISCAL_RULE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, con Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL (reintentable con la misma Idempotency-Key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "summary": "Emite una factura completa o simplificada",
+        "tags": [
+          "Facturas"
+        ]
+      },
+      "get": {
+        "operationId": "IntegrationInvoicesController_findByExternalRef",
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "description": "Se respeta si se envía; si no, se genera. Vuelve siempre.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "externalRef",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "example": "VENTA-2026-001234"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "data vacío si no existe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationInvoiceListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_API_KEY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "PLAN_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "FISCAL_RULE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, con Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL (reintentable con la misma Idempotency-Key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "summary": "Busca por externalRef (recuperación tras un tiempo agotado)",
+        "tags": [
+          "Facturas"
+        ]
+      }
+    },
+    "/integrations/v1/invoices/{id}": {
+      "get": {
+        "description": "Consulta con espera creciente mientras registrationStatus sea PENDING.",
+        "operationId": "IntegrationInvoicesController_findOne",
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "description": "Se respeta si se envía; si no, se genera. Vuelve siempre.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationInvoiceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_API_KEY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "PLAN_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "FISCAL_RULE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, con Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL (reintentable con la misma Idempotency-Key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "summary": "Estado y datos fiscales",
+        "tags": [
+          "Facturas"
+        ]
+      }
+    },
+    "/integrations/v1/invoices/{id}/pdf": {
+      "get": {
+        "operationId": "IntegrationInvoicesController_downloadPdf",
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "description": "Se respeta si se envía; si no, se genera. Vuelve siempre.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "application/pdf"
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_API_KEY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "PLAN_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "FISCAL_RULE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, con Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL (reintentable con la misma Idempotency-Key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "summary": "PDF de la factura",
+        "tags": [
+          "Facturas"
+        ]
+      }
+    },
+    "/integrations/v1/invoices/{id}/payments": {
+      "post": {
+        "operationId": "IntegrationInvoicesController_registerPayment",
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "description": "Se respeta si se envía; si no, se genera. Vuelve siempre.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Obligatoria. Misma clave y mismo cuerpo: misma respuesta (200). Se guarda 30 días.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterPaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationPaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_API_KEY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "PLAN_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "IDEMPOTENCY_CONFLICT · REQUEST_IN_PROGRESS (reintentable)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "FISCAL_RULE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, con Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL (reintentable con la misma Idempotency-Key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "summary": "Registra un cobro",
+        "tags": [
+          "Facturas"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "NovaFactura · API de integración v1",
+    "description": "Un solo contrato, servido igual por NovaFactura y Nafactura. El servidor es el `apiUrl` devuelto en el alta.\n\n- **Autenticación**: `Authorization: Bearer nfk_live_…` (sandbox: `nfk_test_…`). La key define la clínica; nunca se envía el tenant.\n- **Idempotency-Key**: obligatoria en todo POST. Misma clave y mismo cuerpo: misma respuesta (200). Otra petición con la misma clave: 409 IDEMPOTENCY_CONFLICT. En curso: 409 REQUEST_IN_PROGRESS. Se guarda 30 días. Las API keys no se guardan: en un reintento `apiKey` vuelve null.\n- **X-Request-Id**: se respeta si se envía; si no, se genera. Vuelve siempre y queda en los logs.\n- **Límite**: 60 peticiones por minuto y key, con cabeceras RateLimit-* y Retry-After en 429.\n- **Importes**: texto decimal con punto (\"35.00\"). Precio con IVA incluido; el total coincide al céntimo con la suma cobrada, `round_half_up(cantidad × precio × (1 − descuento %))` por línea.\n- **Errores**: `application/problem+json` (RFC 9457) con `code` estable y `retryable`.\n- **Compatibilidad**: añadir campos o códigos no rompe v1; ignora lo que no conozcas. Un cambio incompatible es /v2.",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [
+    {
+      "url": "{apiUrl}",
+      "description": "apiUrl devuelto en el alta",
+      "variables": {
+        "apiUrl": {
+          "default": "https://api.novafactura.es/api/v1"
+        }
+      }
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "description": "API key de la clínica (nfk_live_/nfk_test_)"
+      },
+      "provisioningSecret": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "description": "Secreto de alta del ERP (ERP_PROVISION_SECRET)"
+      }
+    },
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ok"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "ProblemFieldErrorResponse": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "example": "lines[0].taxRate"
+          },
+          "message": {
+            "type": "string",
+            "example": "Tipo de IVA no permitido (0, 4, 10 o 21)"
+          }
+        },
+        "required": [
+          "field",
+          "message"
+        ]
+      },
+      "ProblemDetailsResponse": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "https://docs.novafactura.es/errors/validation-error"
+          },
+          "title": {
+            "type": "string",
+            "example": "Datos no válidos"
+          },
+          "status": {
+            "type": "number",
+            "example": 400
+          },
+          "code": {
+            "type": "string",
+            "example": "VALIDATION_ERROR"
+          },
+          "retryable": {
+            "type": "boolean",
+            "example": false
+          },
+          "detail": {
+            "type": "string",
+            "example": "La petición tiene datos no válidos"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "req_2f6c…"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProblemFieldErrorResponse"
+            }
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code",
+          "retryable",
+          "detail",
+          "requestId"
+        ]
+      },
+      "AccountOwnerDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "example": "María"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Pérez"
+          },
+          "email": {
+            "type": "string",
+            "description": "Email con el que el titular entrará en NovaFactura",
+            "example": "titular@opticaejemplo.es"
+          }
+        },
+        "required": [
+          "firstName",
+          "lastName",
+          "email"
+        ]
+      },
+      "IntegrationAddressDto": {
+        "type": "object",
+        "properties": {
+          "line1": {
+            "type": "string",
+            "example": "C/ Mayor 1"
+          },
+          "postalCode": {
+            "type": "string",
+            "example": "31001"
+          },
+          "city": {
+            "type": "string",
+            "example": "Pamplona"
+          },
+          "province": {
+            "type": "string",
+            "example": "Navarra"
+          }
+        },
+        "required": [
+          "line1",
+          "postalCode",
+          "city"
+        ]
+      },
+      "ProvisionAccountDto": {
+        "type": "object",
+        "properties": {
+          "erpAccountId": {
+            "type": "string",
+            "description": "Id de la empresa en el ERP",
+            "example": "EMP-0042"
+          },
+          "nif": {
+            "type": "string",
+            "description": "NIF o CIF de la clínica (emisor de las facturas)",
+            "example": "B12345674"
+          },
+          "businessName": {
+            "type": "string",
+            "example": "Óptica Ejemplo"
+          },
+          "legalName": {
+            "type": "string",
+            "example": "Óptica Ejemplo S.L."
+          },
+          "email": {
+            "type": "string",
+            "description": "Email de facturación de la clínica",
+            "example": "titular@opticaejemplo.es"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/AccountOwnerDto"
+          },
+          "address": {
+            "$ref": "#/components/schemas/IntegrationAddressDto"
+          }
+        },
+        "required": [
+          "erpAccountId",
+          "nif",
+          "businessName",
+          "email",
+          "owner",
+          "address"
+        ]
+      },
+      "IntegrationAccountResponse": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "example": "b3d5…"
+          },
+          "erpAccountId": {
+            "type": "string",
+            "example": "EMP-0042"
+          },
+          "tenantId": {
+            "type": "string",
+            "description": "Tenant de la clínica; lo usa el ERP en el SSO",
+            "example": "a1c2…"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING_CONSENT",
+              "ACTIVE",
+              "GRACE",
+              "ENDED"
+            ],
+            "example": "ACTIVE"
+          },
+          "apiKey": {
+            "type": "object",
+            "nullable": true,
+            "description": "Solo en la respuesta que crea la key; se muestra una vez. En un reintento idempotente vuelve null: pide otra con POST /accounts/{erpAccountId}/keys.",
+            "example": "nfk_test_Q2x…"
+          },
+          "keyId": {
+            "type": "object",
+            "nullable": true,
+            "example": "2b1e…"
+          },
+          "apiUrl": {
+            "type": "string",
+            "example": "https://api.novafactura.es/api/v1"
+          },
+          "appUrl": {
+            "type": "string",
+            "example": "https://app.novafactura.es"
+          }
+        },
+        "required": [
+          "accountId",
+          "erpAccountId",
+          "tenantId",
+          "status",
+          "apiKey",
+          "apiUrl",
+          "appUrl"
+        ]
+      },
+      "IssuedApiKeyResponse": {
+        "type": "object",
+        "properties": {
+          "keyId": {
+            "type": "string",
+            "example": "2b1e…"
+          },
+          "apiKey": {
+            "type": "object",
+            "nullable": true,
+            "description": "Se muestra una sola vez. En un reintento idempotente vuelve null.",
+            "example": "nfk_test_Q2x…"
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-11-08T10:00:00.000Z"
+          },
+          "previousKeysExpireAt": {
+            "type": "string",
+            "description": "Las keys anteriores siguen válidas hasta esta fecha (24 h)",
+            "example": "2026-11-09T10:00:00.000Z"
+          }
+        },
+        "required": [
+          "keyId",
+          "apiKey",
+          "createdAt",
+          "previousKeysExpireAt"
+        ]
+      },
+      "InvoicePayerDto": {
+        "type": "object",
+        "properties": {
+          "externalId": {
+            "type": "string",
+            "description": "Id del pagador en el ERP. Crea o actualiza el cliente por este valor.",
+            "example": "PAG-000981"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre o razón social del pagador",
+            "example": "Laura Gómez Ruiz"
+          },
+          "nif": {
+            "type": "string",
+            "description": "NIF, NIE o CIF del pagador. Obligatorio en los dos tipos de factura.",
+            "example": "12345678Z"
+          },
+          "email": {
+            "type": "string",
+            "example": "laura@example.com"
+          },
+          "address": {
+            "description": "Domicilio del pagador. Obligatorio en facturas completas (standard).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntegrationAddressDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "externalId",
+          "name",
+          "nif"
+        ]
+      },
+      "IssueInvoiceLineDto": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Descripción comercial (nunca graduaciones ni diagnósticos)",
+            "example": "Gafas graduadas progresivas"
+          },
+          "quantity": {
+            "type": "string",
+            "description": "Cantidad, hasta 4 decimales, mayor que 0",
+            "example": "1"
+          },
+          "unitPriceWithTax": {
+            "type": "string",
+            "description": "Precio unitario cobrado, IVA incluido, hasta 2 decimales",
+            "example": "352.00"
+          },
+          "taxRate": {
+            "type": "string",
+            "description": "Tipo de IVA (%)",
+            "enum": [
+              "0",
+              "4",
+              "10",
+              "21"
+            ],
+            "example": "10"
+          },
+          "discountPercent": {
+            "type": "string",
+            "description": "Descuento de la línea (%), hasta 2 decimales",
+            "example": "0"
+          }
+        },
+        "required": [
+          "description",
+          "quantity",
+          "unitPriceWithTax",
+          "taxRate"
+        ]
+      },
+      "IssueInvoiceDto": {
+        "type": "object",
+        "properties": {
+          "externalRef": {
+            "type": "string",
+            "description": "Id de la factura en el ERP, único por clínica. Si una venta se reparte entre varios pagadores, una referencia por factura.",
+            "example": "VENTA-2026-001234"
+          },
+          "invoiceType": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "simplified"
+            ],
+            "example": "simplified"
+          },
+          "operationDate": {
+            "type": "string",
+            "description": "Fecha de la operación (YYYY-MM-DD). Por defecto, hoy.",
+            "example": "2026-11-08"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "BANK_TRANSFER",
+              "DIRECT_DEBIT",
+              "CARD",
+              "CASH",
+              "PAYPAL",
+              "OTHER",
+              "BIZUM"
+            ],
+            "example": "CARD"
+          },
+          "customer": {
+            "description": "Pagador: el cliente de la factura. Siempre obligatorio.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InvoicePayerDto"
+              }
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueInvoiceLineDto"
+            }
+          },
+          "regimeData": {
+            "type": "object",
+            "description": "Datos propios de un régimen (p. ej. foral). Opcional; el régimen lo decide la cuenta.",
+            "nullable": true,
+            "example": null
+          }
+        },
+        "required": [
+          "externalRef",
+          "invoiceType",
+          "customer",
+          "lines"
+        ]
+      },
+      "InvoiceTotalsResponse": {
+        "type": "object",
+        "properties": {
+          "base": {
+            "type": "string",
+            "example": "409.00"
+          },
+          "tax": {
+            "type": "string",
+            "example": "50.69"
+          },
+          "total": {
+            "type": "string",
+            "example": "459.69"
+          }
+        },
+        "required": [
+          "base",
+          "tax",
+          "total"
+        ]
+      },
+      "TaxBreakdownResponse": {
+        "type": "object",
+        "properties": {
+          "rate": {
+            "type": "string",
+            "example": "10"
+          },
+          "base": {
+            "type": "string",
+            "example": "320.00"
+          },
+          "tax": {
+            "type": "string",
+            "example": "32.00"
+          }
+        },
+        "required": [
+          "rate",
+          "base",
+          "tax"
+        ]
+      },
+      "RegistrationErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "SUBMISSION_FAILED"
+          },
+          "message": {
+            "type": "string",
+            "example": "El envío a Hacienda ha fallado. La clínica puede reintentarlo desde NovaFactura."
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "IntegrationInvoiceResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "8f0c3a52-2c7e-4f1e-9a51-0d6b1f0f9c11"
+          },
+          "externalRef": {
+            "type": "string",
+            "example": "VENTA-2026-001234"
+          },
+          "number": {
+            "type": "string",
+            "example": "T-2026-000318"
+          },
+          "invoiceType": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "simplified"
+            ],
+            "example": "simplified"
+          },
+          "issueDate": {
+            "type": "string",
+            "example": "2026-11-08"
+          },
+          "operationDate": {
+            "type": "string",
+            "example": "2026-11-08"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/InvoiceTotalsResponse"
+          },
+          "taxBreakdown": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaxBreakdownResponse"
+            }
+          },
+          "hash": {
+            "type": "object",
+            "nullable": true,
+            "example": "3C464DAF61ACB827…"
+          },
+          "qrUrl": {
+            "type": "object",
+            "nullable": true,
+            "description": "Puede cambiar hasta que registrationStatus sea final",
+            "example": "https://…"
+          },
+          "registrationStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "ACCEPTED_WITH_WARNINGS",
+              "REJECTED"
+            ],
+            "description": "PENDING mientras se envía o reintenta; los demás son finales. Con PENDING, consulta con espera creciente.",
+            "example": "PENDING"
+          },
+          "registrationError": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RegistrationErrorResponse"
+              }
+            ]
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "UNPAID",
+              "PARTIALLY_PAID",
+              "PAID"
+            ],
+            "example": "UNPAID"
+          },
+          "amountPaid": {
+            "type": "string",
+            "example": "0.00"
+          },
+          "appUrl": {
+            "type": "string",
+            "description": "Enlace a la factura en NovaFactura (requiere sesión)",
+            "example": "https://app.novafactura.es/dashboard/facturas/8f0c…"
+          }
+        },
+        "required": [
+          "id",
+          "externalRef",
+          "number",
+          "invoiceType",
+          "issueDate",
+          "operationDate",
+          "totals",
+          "taxBreakdown",
+          "hash",
+          "qrUrl",
+          "registrationStatus",
+          "registrationError",
+          "paymentStatus",
+          "amountPaid",
+          "appUrl"
+        ]
+      },
+      "IntegrationInvoiceListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationInvoiceResponse"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "RegisterPaymentDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Importe cobrado, mayor que 0, hasta 2 decimales",
+            "example": "459.69"
+          },
+          "paymentDate": {
+            "type": "string",
+            "description": "Fecha del cobro (YYYY-MM-DD). Por defecto, hoy.",
+            "example": "2026-11-08"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "BANK_TRANSFER",
+              "DIRECT_DEBIT",
+              "CARD",
+              "CASH",
+              "PAYPAL",
+              "OTHER",
+              "BIZUM"
+            ],
+            "example": "CARD"
+          },
+          "reference": {
+            "type": "string",
+            "description": "Referencia del cobro en el ERP",
+            "example": "COBRO-2026-000777"
+          }
+        },
+        "required": [
+          "amount",
+          "paymentMethod"
+        ]
+      },
+      "IntegrationPaymentResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "5b7f0a7e-0a8a-4d2e-9a0f-1b2c3d4e5f60"
+          },
+          "invoiceId": {
+            "type": "string",
+            "example": "8f0c3a52-2c7e-4f1e-9a51-0d6b1f0f9c11"
+          },
+          "amount": {
+            "type": "string",
+            "example": "459.69"
+          },
+          "paymentDate": {
+            "type": "string",
+            "example": "2026-11-08"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "BANK_TRANSFER",
+              "DIRECT_DEBIT",
+              "CARD",
+              "CASH",
+              "PAYPAL",
+              "OTHER",
+              "BIZUM"
+            ],
+            "nullable": true,
+            "example": "CARD"
+          },
+          "reference": {
+            "type": "object",
+            "nullable": true,
+            "example": "COBRO-2026-000777"
+          },
+          "invoicePaymentStatus": {
+            "type": "string",
+            "enum": [
+              "UNPAID",
+              "PARTIALLY_PAID",
+              "PAID"
+            ],
+            "example": "PAID"
+          },
+          "invoiceAmountPaid": {
+            "type": "string",
+            "example": "459.69"
+          },
+          "invoiceAmountDue": {
+            "type": "string",
+            "example": "0.00"
+          }
+        },
+        "required": [
+          "id",
+          "invoiceId",
+          "amount",
+          "paymentDate",
+          "paymentMethod",
+          "reference",
+          "invoicePaymentStatus",
+          "invoiceAmountPaid",
+          "invoiceAmountDue"
+        ]
+      }
+    }
+  }
+}

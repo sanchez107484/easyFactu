@@ -1,6 +1,6 @@
 # EasyFactura — Project Copilot Agent Instructions
 
-> **Bootstrapped**: 2026-04-26 | **Last updated**: 2026-04-26 | **Stack**: NestJS 10 + Next.js 15 + Prisma 6 + PostgreSQL (Supabase)  
+> **Bootstrapped**: 2026-04-26 | **Last updated**: 2026-11-08 | **Stack**: NestJS 10 + Next.js 15 + Prisma 6 + PostgreSQL (Supabase)  
 > This file is the single source of truth for any AI agent working in this repo.  
 > Read this file FIRST before writing any code. Update it when architecture changes.
 
@@ -116,6 +116,7 @@ modules/
   verifactu/              # AEAT VeriFactu: hash, XML, signing, sending, QR
   agency/                 # Gestoría/agency multi-client management (confirmed ✅)
   reports/                # PRO reports: summary, grouped SALES/EXPENSES/COLLECTIONS (GROUPING SETS engine in grouping/, comparison, sort, top N), RECEIVABLES aging, free-text lines matched to products via `product_aliases` + pg_trgm (invoices never modified) → Excel + history in Supabase Storage bucket `reports`
+  integrations/           # ERP API v1 (HU-21A) at /api/v1/integrations/v1: only orchestrates invoices/payments/PDF/series. API keys nfk_live_/nfk_test_ (SHA-256 only, 24 h rotation overlap, prefix tied to VERIFACTU_ENVIRONMENT), Idempotency-Key records (30 d), Problem Details filter + X-Request-Id middleware scoped to this module, per-key rate limit (in-memory), price-with-tax → net converter verified with InvoiceCalculationService (adds an "Ajuste por redondeo" line when a 4 % amount is unreachable). Customer = ERP payer (externalId), Invoice.externalRef unique per tenant. OpenAPI: `pnpm openapi:integrations` → apps/api/openapi/integrations-v1.json; black-box suite: `pnpm test:contract` (BASE_URL, API_KEY)
 ```
 
 **Frontend `apps/web/src/`**
@@ -243,6 +244,11 @@ async findAll(query: QueryInvoiceDto) {
 | `CERTIFICATE_ENCRYPTION_KEY`    | AES encryption for certs          | **Must be 64 hex chars (32 bytes)**                        |
 | `UPLOAD_DIR`                    | Upload directory path             | Default `uploads`                                          |
 | `CRON_SECRET`                   | Vercel Cron auth (auto-sent as Bearer) | Strong random hex in production                   |
+| `ERP_PROVISION_SECRET`          | ERP secret for /integrations/v1/accounts | ≥ 32 chars; empty disables provisioning         |
+| `INTEGRATIONS_API_URL` / `INTEGRATIONS_APP_URL` | apiUrl / appUrl returned to the ERP | Per deployment (NovaFactura, Nafactura, sandboxes) |
+| `INTEGRATIONS_ERP_NAME`         | ERP name shown in clinic emails    |                                                            |
+| `INTEGRATIONS_RATE_LIMIT_PER_MINUTE` | Requests/minute per API key   | Default 60                                                 |
+| `INTEGRATIONS_MAINTENANCE`      | `true` → /health answers 503       |                                                            |
 
 ### Frontend (`apps/web/.env.local`) — see `apps/web/.env.example`
 
@@ -716,7 +722,7 @@ Antes de dar cualquier tarea por terminada — verificar punto a punto:
 3. **Refresh token storage**: Both tokens in `localStorage` (confirmed in `api-client.ts`). XSS risk. Known trade-off or pending improvement?
 4. **Frontend middleware**: `middleware.ts` is permissive — auth validated client-side in dashboard layout (confirmed). Server-side validation at middleware level would improve security posture.
 5. **Certificate exposure**: `uploads/certificates/` served by NestJS static assets at `/api/v1/uploads/`. Confirm route prefix does NOT publicly expose certificate files.
-6. **Plan enforcement**: `PlanGuard` + `@RequirePlan()` implemented for expenses, suppliers, attachments, recurring expenses, activity summary and reports. Pending review for other modules.
+6. **Plan enforcement**: `PlanGuard` + `@RequirePlan()` implemented for expenses, suppliers, attachments, recurring expenses, activity summary, reports and the integrations API (PlanGuard throws `PlanRequiredException`: 403 in the app, 402 PLAN_REQUIRED in the integrations API). Pending review for other modules. Subscriptions with `managedBy` (ERP) cannot change plan (403).
 7. **Email verification**: `emailVerified` on User model. Is verification enforced (blocks login until verified)?
 8. **CI pipeline**: Only `lighthouse-ci.yml` (daily audit). No build/lint/test CI on PRs — a broken build could go undetected.
 9. **Sanity revalidation**: Sanity CMS configured for blog. Is ISR revalidation webhook active in production?
