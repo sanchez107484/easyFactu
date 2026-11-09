@@ -81,6 +81,7 @@ export class VerifactuService {
         data: {
           hash,
           prevHash,
+          chainedAt: new Date(),
           verifactuStatus: VerifactuStatus.PENDING,
         },
       });

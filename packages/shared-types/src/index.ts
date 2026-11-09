@@ -58,6 +58,8 @@ export enum InvoiceStatus {
   SENT = 'SENT',
   PAID = 'PAID',
   RECTIFIED = 'RECTIFIED',
+  /** Anulada mediante un registro de anulación VeriFactu (solo desde la API de integración). */
+  CANCELLED = 'CANCELLED',
 }
 
 export enum PaymentStatus {
@@ -369,7 +371,8 @@ export interface Customer {
   type: CustomerType;
   name: string;
   legalName: string | null;
-  nif: string;
+  /** Null solo en pagadores sin NIF de facturas simplificadas emitidas por la API de integración. */
+  nif: string | null;
   email: string | null;
   phone: string | null;
   address: string;
@@ -437,7 +440,9 @@ export interface QueryCustomersInput {
  * A customer from a sibling tenant in the same agency network.
  * Includes metadata identifying the source tenant for display purposes.
  */
-export interface SharedPoolCustomer extends Customer {
+/** The shared pool is matched and imported by NIF, so it never includes customers without NIF. */
+export interface SharedPoolCustomer extends Omit<Customer, 'nif'> {
+  nif: string;
   sourceTenantId: string;
   sourceTenantName: string;
 }
@@ -590,6 +595,8 @@ export interface Invoice {
   number: string | null;
   issueDate: string;
   dueDate: string | null;
+  /** Fecha de la operación cuando difiere de la de expedición (FechaOperacion). */
+  operationDate?: string | null;
   status: InvoiceStatus;
   subtotal: number;
   discountPercent: number | null;
@@ -621,7 +628,7 @@ export interface Invoice {
   rectificationReason: string | null;
   rectificationType: RectificationType | null;
   rectifiedInvoice?: Invoice | null;
-   rectificativeInvoices?: Array<{
+  rectificativeInvoices?: Array<{
     id: string;
     number: string | null;
     issueDate: string;
@@ -821,7 +828,7 @@ export interface InvoiceWithMatchedLines {
   number: string | null;
   issueDate: string;
   status: InvoiceStatus;
-  customer: { id: string; name: string; nif: string };
+  customer: { id: string; name: string; nif: string | null };
   matchedLines: InvoiceLineSearchResult[];
 }
 

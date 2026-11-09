@@ -2,7 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { InvoicePdfService } from '../../invoice-templates/pdf/invoice-pdf.service';
 import { CreatePaymentDto } from '../../payments/dto/create-payment.dto';
 import { PaymentService } from '../../payments/payment.service';
-import { IntegrationPaymentResponse } from '../dto/integration-responses.dto';
+import { VerifactuCancellationService } from '../../verifactu/services/verifactu-cancellation.service';
+import {
+  IntegrationInvoiceResponse,
+  IntegrationPaymentResponse,
+} from '../dto/integration-responses.dto';
+import { CancelInvoiceDto } from '../dto/invoice-records.dto';
 import { RegisterPaymentDto } from '../dto/integration-payment.dto';
 import { formatMoney } from '../utils/decimal';
 import { IntegrationInvoicesService, todayInSpain } from './integration-invoices.service';
@@ -12,14 +17,26 @@ export interface RenderedPdf {
   filename: string;
 }
 
-/** Actions on an invoice already issued through the API: PDF and payments. */
+/** Actions on an invoice already issued through the API: PDF, payments and cancellation. */
 @Injectable()
 export class IntegrationInvoiceActionsService {
   constructor(
     private readonly invoices: IntegrationInvoicesService,
     private readonly payments: PaymentService,
-    private readonly pdf: InvoicePdfService
+    private readonly pdf: InvoicePdfService,
+    private readonly cancellations: VerifactuCancellationService
   ) {}
+
+  /** Cancellation record (RegistroAnulacion); the rules live in VerifactuCancellationService. */
+  async cancel(
+    tenantId: string,
+    invoiceId: string,
+    dto: CancelInvoiceDto
+  ): Promise<IntegrationInvoiceResponse> {
+    await this.invoices.assertIssuedInvoice(tenantId, invoiceId);
+    await this.cancellations.cancelInvoice(tenantId, invoiceId, dto.reason.trim());
+    return this.invoices.findOne(tenantId, invoiceId);
+  }
 
   async renderPdf(tenantId: string, invoiceId: string): Promise<RenderedPdf> {
     await this.invoices.assertIssuedInvoice(tenantId, invoiceId);

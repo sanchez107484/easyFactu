@@ -297,7 +297,8 @@ export function createInvoicePdfElement(
   );
 
   // Prefer immutable snapshot fields; fall back to live customer relation.
-  const hasCustomerSnapshot = invoice.customerSnapshotNif != null;
+  // The snapshot name is always set on confirmation; the NIF may be null (simplified invoices).
+  const hasCustomerSnapshot = invoice.customerSnapshotName != null;
   const custName = hasCustomerSnapshot
     ? (invoice.customerSnapshotName ?? '')
     : (invoice.customer?.name ?? '');
@@ -366,6 +367,13 @@ export function createInvoicePdfElement(
             <Text style={styles.metaLabel}>Fecha de emisión</Text>
             <Text style={styles.metaValue}>{formatDate(invoice.issueDate)}</Text>
           </View>
+          {invoice.operationDate &&
+          formatDate(invoice.operationDate) !== formatDate(invoice.issueDate) ? (
+            <View style={styles.metaItem}>
+              <Text style={styles.metaLabel}>Fecha de operación</Text>
+              <Text style={styles.metaValue}>{formatDate(invoice.operationDate)}</Text>
+            </View>
+          ) : null}
           {invoice.isRectificative && invoice.rectifiedInvoice ? (
             <View style={styles.metaItem}>
               <Text style={styles.metaLabel}>Factura rectificada</Text>

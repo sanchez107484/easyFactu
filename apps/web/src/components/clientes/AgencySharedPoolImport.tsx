@@ -20,7 +20,7 @@ function mapToFormData(customer: Customer): Partial<CustomerFormData> {
     type: customer.type,
     name: customer.name,
     legalName: customer.legalName ?? undefined,
-    nif: customer.nif,
+    nif: customer.nif ?? '',
     email: customer.email ?? undefined,
     phone: customer.phone ?? undefined,
     address: customer.address ?? undefined,

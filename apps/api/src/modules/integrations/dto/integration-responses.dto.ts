@@ -9,6 +9,10 @@ export const REGISTRATION_STATUSES = [
 ] as const;
 export type RegistrationStatus = (typeof REGISTRATION_STATUSES)[number];
 
+export const RECORD_TYPES = ['F1', 'F2', 'F3', 'R1', 'R2', 'R3', 'R4', 'R5'] as const;
+export const ISSUED_INVOICE_STATUSES = ['ISSUED', 'RECTIFIED', 'CANCELLED'] as const;
+export type IssuedInvoiceStatus = (typeof ISSUED_INVOICE_STATUSES)[number];
+
 export const ACCOUNT_STATUSES = ['PENDING_CONSENT', 'ACTIVE', 'GRACE', 'ENDED'] as const;
 
 export class InvoiceTotalsResponse {
@@ -31,13 +35,59 @@ export class RegistrationErrorResponse {
   message!: string;
 }
 
+export class InvoiceCancellationResponse {
+  @ApiProperty({ example: 'Ticket duplicado por error' }) reason!: string;
+  @ApiProperty({ example: '2026-11-09T10:15:00.000Z' }) cancelledAt!: string;
+  @ApiProperty({
+    enum: REGISTRATION_STATUSES,
+    description: 'Estado del registro de anulación en Hacienda',
+    example: 'PENDING',
+  })
+  registrationStatus!: RegistrationStatus;
+}
+
 export class IntegrationInvoiceResponse {
   @ApiProperty({ example: '8f0c3a52-2c7e-4f1e-9a51-0d6b1f0f9c11' }) id!: string;
   @ApiProperty({ example: 'VENTA-2026-001234' }) externalRef!: string;
   @ApiProperty({ example: 'T-2026-000318' }) number!: string;
   @ApiProperty({ enum: ['standard', 'simplified'], example: 'simplified' }) invoiceType!: string;
+  @ApiProperty({
+    enum: RECORD_TYPES,
+    description:
+      'Tipo de registro VeriFactu: F1 completa, F2 simplificada, F3 canje de simplificadas, ' +
+      'R4 rectificativa de completa, R5 rectificativa de simplificada',
+    example: 'F2',
+  })
+  recordType!: string;
+  @ApiProperty({
+    enum: ISSUED_INVOICE_STATUSES,
+    description:
+      'CANCELLED tras un registro de anulación; RECTIFIED si se sustituyó desde NovaFactura',
+    example: 'ISSUED',
+  })
+  status!: IssuedInvoiceStatus;
   @ApiProperty({ example: '2026-11-08' }) issueDate!: string;
-  @ApiProperty({ example: '2026-11-08' }) operationDate!: string;
+  @ApiProperty({
+    description: 'Igual a issueDate salvo que se indicase otra',
+    example: '2026-11-08',
+  })
+  operationDate!: string;
+  @ApiProperty({ nullable: true, description: 'Factura que rectifica (R4/R5)', example: null })
+  rectifiedInvoiceId!: string | null;
+  @ApiProperty({
+    nullable: true,
+    description: 'Factura completa (F3) por la que se canjeó esta simplificada',
+    example: null,
+  })
+  exchangedByInvoiceId!: string | null;
+  @ApiProperty({
+    type: [String],
+    description: 'Simplificadas que sustituye (solo F3)',
+    example: [],
+  })
+  replacedInvoiceIds!: string[];
+  @ApiProperty({ type: InvoiceCancellationResponse, nullable: true })
+  cancellation!: InvoiceCancellationResponse | null;
   @ApiProperty({ type: InvoiceTotalsResponse }) totals!: InvoiceTotalsResponse;
   @ApiProperty({ type: [TaxBreakdownResponse] }) taxBreakdown!: TaxBreakdownResponse[];
   @ApiProperty({ nullable: true, example: '3C464DAF61ACB827…' }) hash!: string | null;
@@ -68,6 +118,25 @@ export class IntegrationInvoiceResponse {
 
 export class IntegrationInvoiceListResponse {
   @ApiProperty({ type: [IntegrationInvoiceResponse] }) data!: IntegrationInvoiceResponse[];
+}
+
+export class PaginationMetaResponse {
+  @ApiProperty({ example: 42 }) total!: number;
+  @ApiProperty({ example: 1 }) page!: number;
+  @ApiProperty({ example: 20 }) limit!: number;
+}
+
+export class IntegrationCustomerInvoicesResponse {
+  @ApiProperty({ type: [IntegrationInvoiceResponse] }) data!: IntegrationInvoiceResponse[];
+  @ApiProperty({ type: PaginationMetaResponse }) meta!: PaginationMetaResponse;
+}
+
+export class IntegrationSettingsResponse {
+  @ApiProperty({
+    description: 'Importe máximo de una simplificada, IVA incluido',
+    example: '400.00',
+  })
+  simplifiedInvoiceLimit!: string;
 }
 
 export class IntegrationPaymentResponse {

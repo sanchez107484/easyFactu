@@ -12,6 +12,7 @@ export const INVOICE_STATUS_FILTERS = [
   { value: InvoiceStatus.SENT, label: 'Enviadas' },
   { value: InvoiceStatus.PAID, label: 'Pagadas' },
   { value: InvoiceStatus.RECTIFIED, label: 'Rectificadas' },
+  { value: InvoiceStatus.CANCELLED, label: 'Anuladas' },
 ];
 
 interface InvoiceStatusFilterPillsProps {

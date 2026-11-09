@@ -38,4 +38,16 @@ export class SpainHaciendaAdapter implements IHaciendaAdapter {
   async generateQrUrl(tenantId: string, invoiceId: string): Promise<string> {
     return this.qrService.generateQrUrl(tenantId, invoiceId);
   }
+
+  async generateCancellationXml(tenantId: string, cancellationId: string): Promise<string> {
+    return this.xmlService.generateCancellationXml(tenantId, cancellationId);
+  }
+
+  async sendCancellation(
+    tenantId: string,
+    cancellationId: string,
+    signedXml: string
+  ): Promise<void> {
+    return this.senderService.sendCancellationToAeat(tenantId, cancellationId, signedXml);
+  }
 }

@@ -5,10 +5,14 @@ import { InvoiceSeriesModule } from '../invoice-series/invoice-series.module';
 import { InvoiceTemplateModule } from '../invoice-templates/invoice-template.module';
 import { InvoiceModule } from '../invoices/invoice.module';
 import { PaymentModule } from '../payments/payment.module';
+import { VerifactuModule } from '../verifactu/verifactu.module';
 import { IntegrationAccountsController } from './controllers/integration-accounts.controller';
 import { IntegrationConsentsController } from './controllers/integration-consents.controller';
+import { IntegrationCustomersController } from './controllers/integration-customers.controller';
 import { IntegrationHealthController } from './controllers/integration-health.controller';
+import { IntegrationInvoiceRecordsController } from './controllers/integration-invoice-records.controller';
 import { IntegrationInvoicesController } from './controllers/integration-invoices.controller';
+import { IntegrationSettingsController } from './controllers/integration-settings.controller';
 import { ApiKeyRateLimitGuard } from './guards/api-key-rate-limit.guard';
 import { ApiKeyGuard } from './guards/api-key.guard';
 import { ProvisioningSecretGuard } from './guards/provisioning-secret.guard';
@@ -18,11 +22,15 @@ import { AccountProvisioningService } from './services/account-provisioning.serv
 import { ApiKeyService } from './services/api-key.service';
 import { IntegrationAccountsService } from './services/integration-accounts.service';
 import { IntegrationConsentService } from './services/integration-consent.service';
+import { IntegrationCustomerInvoicesService } from './services/integration-customer-invoices.service';
 import { IntegrationCustomersService } from './services/integration-customers.service';
 import { IntegrationEmailsService } from './services/integration-emails.service';
+import { IntegrationExchangesService } from './services/integration-exchanges.service';
 import { IntegrationHealthService } from './services/integration-health.service';
 import { IntegrationInvoiceActionsService } from './services/integration-invoice-actions.service';
 import { IntegrationInvoicesService } from './services/integration-invoices.service';
+import { IntegrationRectificationsService } from './services/integration-rectifications.service';
+import { IntegrationSettingsService } from './services/integration-settings.service';
 import { IntegrationUrlsService } from './services/integration-urls.service';
 import { PriceWithTaxConverter } from './services/price-with-tax.converter';
 
@@ -31,10 +39,13 @@ export const INTEGRATION_CONTRACT_CONTROLLERS = [
   IntegrationHealthController,
   IntegrationAccountsController,
   IntegrationInvoicesController,
+  IntegrationInvoiceRecordsController,
+  IntegrationCustomersController,
+  IntegrationSettingsController,
 ];
 
 /**
- * Integrations API v1 (HU-21A): one contract served the same by NovaFactura and Nafactura.
+ * Integrations API v1 (HU-21A, HU-21C record types): one contract served the same by NovaFactura and Nafactura.
  * It only orchestrates existing services (invoices, calculation, numbering, VeriFactu, PDF,
  * payments, subscriptions); fiscal logic stays in those modules.
  */
@@ -46,6 +57,7 @@ export const INTEGRATION_CONTRACT_CONTROLLERS = [
     InvoiceSeriesModule,
     InvoiceTemplateModule,
     PaymentModule,
+    VerifactuModule,
   ],
   controllers: [...INTEGRATION_CONTRACT_CONTROLLERS, IntegrationConsentsController],
   providers: [
@@ -61,6 +73,10 @@ export const INTEGRATION_CONTRACT_CONTROLLERS = [
     PriceWithTaxConverter,
     IntegrationInvoicesService,
     IntegrationInvoiceActionsService,
+    IntegrationRectificationsService,
+    IntegrationExchangesService,
+    IntegrationCustomerInvoicesService,
+    IntegrationSettingsService,
     AccountProvisioningService,
     IntegrationConsentService,
     IntegrationAccountsService,

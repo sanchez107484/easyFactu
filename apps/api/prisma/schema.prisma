@@ -36,6 +36,9 @@ model Tenant {
   preferredExportFormat     ExportFormat?            @map("preferred_export_format")
   taxRegime                 TaxRegime                @default(GENERAL) @map("tax_regime")
   reaypRate                 Decimal?                 @map("reagyp_rate") @db.Decimal(5, 2)
+  /// Max total (tax included) of a simplified invoice. 400 € by default; up to 3000 € for the
+  /// activities of art. 4.1 RD 1619/2012 (e.g. retail, such as opticians).
+  simplifiedInvoiceLimit    Decimal                  @default(400) @map("simplified_invoice_limit") @db.Decimal(12, 2)
   agencyRelations           AgencyClientRelation[]   @relation("AgencyRelations")
   clientRelations           AgencyClientRelation[]   @relation("ClientRelations")
   agencyExportLogs          AgencyExportLog[]        @relation("AgencyExportLogs")
@@ -68,6 +71,7 @@ model Tenant {
   suppliers                 Supplier[]
   tenantUsers               TenantUser[]
   verifactuLogs             VerifactuLog[]
+  invoiceCancellations      InvoiceCancellation[]
   integrationAccount        IntegrationAccount?
   apiKeys                   ApiKey[]
 
@@ -196,7 +200,8 @@ model Customer {
   type                    CustomerType       @default(COMPANY)
   name                    String
   legalName               String?            @map("legal_name")
-  nif                     String
+  /// Null only for payers without NIF of simplified invoices (integrations API).
+  nif                     String?
   email                   String?
   phone                   String?
   address                 String?
@@ -367,6 +372,15 @@ model Invoice {
   supersededBySubstitutionId String?                @map("superseded_by_substitution_id")
   /// Invoice id in the integrated ERP (integrations API v1). One invoice per value and tenant.
   externalRef                String?                @map("external_ref")
+  /// Date of the operation when it differs from the issue date (FechaOperacion). Null = issue date.
+  operationDate              DateTime?              @map("operation_date") @db.Date
+  /// When the hash of this record was generated (FechaHoraHusoGenRegistro). Orders the chain.
+  chainedAt                  DateTime?              @map("chained_at")
+  /// F3 invoice that replaced this simplified invoice (canje, art. 15 RD 1619/2012).
+  exchangedByInvoiceId       String?                @map("exchanged_by_invoice_id")
+  exchangedByInvoice         Invoice?               @relation("InvoiceExchange", fields: [exchangedByInvoiceId], references: [id], onDelete: SetNull)
+  exchangedInvoices          Invoice[]              @relation("InvoiceExchange")
+  cancellation               InvoiceCancellation?
   exportEvents               InvoiceExportEvent[]
   lines                      InvoiceLine[]
   noteLogs                   InvoiceNoteLog[]
@@ -399,6 +413,7 @@ model Invoice {
   @@index([recurringInvoiceId])
   @@index([number(ops: raw("gin_trgm_ops"))], map: "invoices_number_trgm_idx", type: Gin)
   @@index([supersededBySubstitutionId])
+  @@index([exchangedByInvoiceId])
   @@map("invoices")
 }
 
@@ -469,6 +484,26 @@ model VerifactuLog {
   @@index([invoiceId, createdAt(sort: Desc)], map: "verifactu_logs_invoice_created_at_idx")
   @@index([createdAt])
   @@map("verifactu_logs")
+}
+
+/// VeriFactu cancellation record (RegistroAnulacion): annuls the registration of an invoice
+/// that should not have been issued. It is a link of the tenant hash chain, like an invoice.
+model InvoiceCancellation {
+  id              String          @id @default(uuid())
+  tenantId        String          @map("tenant_id")
+  invoiceId       String          @unique @map("invoice_id")
+  reason          String
+  hash            String?         @unique
+  prevHash        String?         @map("prev_hash")
+  chainedAt       DateTime?       @map("chained_at")
+  verifactuStatus VerifactuStatus @default(PENDING) @map("verifactu_status")
+  verifactuSentAt DateTime?       @map("verifactu_sent_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  invoice         Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, chainedAt])
+  @@map("invoice_cancellations")
 }
 
 model InvoiceDefaults {
@@ -981,6 +1016,8 @@ enum InvoiceStatus {
   RECTIFIED
   PROFORMA
   QUOTE
+  /// Annulled through a VeriFactu cancellation record (RegistroAnulacion).
+  CANCELLED
 }
 
 enum PaymentStatus {

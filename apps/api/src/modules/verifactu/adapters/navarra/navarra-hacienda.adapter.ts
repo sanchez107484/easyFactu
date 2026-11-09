@@ -46,4 +46,20 @@ export class NavarraHaciendaAdapter implements IHaciendaAdapter {
         'Se requiere el formato de QR de Hacienda Navarra.'
     );
   }
+
+  async generateCancellationXml(_tenantId: string, _cancellationId: string): Promise<string> {
+    throw new NotImplementedException(
+      'NavarraHaciendaAdapter: generateCancellationXml pendiente de implementación.'
+    );
+  }
+
+  async sendCancellation(
+    _tenantId: string,
+    _cancellationId: string,
+    _signedXml: string
+  ): Promise<void> {
+    throw new NotImplementedException(
+      'NavarraHaciendaAdapter: sendCancellation pendiente de implementación.'
+    );
+  }
 }

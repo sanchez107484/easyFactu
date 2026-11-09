@@ -14,6 +14,9 @@ export interface ChargedLine {
   discountPercent?: string;
 }
 
+/** 1 for a sale; -1 for a return, whose lines are recorded with negative quantities. */
+export type LineSign = 1n | -1n;
+
 export interface ConvertedInvoiceLines {
   lines: CreateInvoiceLineDto[];
   /** Sum of round_half_up(quantity × unitPriceWithTax × (1 − discount%)) over the lines, in cents. */
@@ -60,16 +63,21 @@ export const ROUNDING_ADJUSTMENT_DESCRIPTION = 'Ajuste por redondeo (IVA incluid
 export class PriceWithTaxConverter {
   constructor(private readonly calculation: InvoiceCalculationService) {}
 
-  convertInvoice(chargedLines: ChargedLine[]): ConvertedInvoiceLines {
-    const converted = chargedLines.map((charged, index) => this.convertLine(charged, index));
-    const adjustments = this.roundingAdjustments(converted);
+  /**
+   * With sign -1n (a return) the lines carry negative quantities and the search is checked
+   * against the real calculation with that sign, so rounding of negative amounts is exact too.
+   * chargedCents is always positive.
+   */
+  convertInvoice(chargedLines: ChargedLine[], sign: LineSign = 1n): ConvertedInvoiceLines {
+    const converted = chargedLines.map((charged, index) => this.convertLine(charged, index, sign));
+    const adjustments = this.roundingAdjustments(converted, sign);
     return {
       lines: [...converted.map((c) => c.line), ...adjustments],
       chargedCents: converted.reduce((sum, c) => sum + c.chargedCents, 0n),
     };
   }
 
-  private convertLine(charged: ChargedLine, index: number): ConvertedLine {
+  private convertLine(charged: ChargedLine, index: number, sign: LineSign): ConvertedLine {
     const scaled = this.scale(charged);
     const chargedCents = divideHalfUp(
       scaled.priceCents * scaled.quantity * (PERCENT_BASIS - scaled.discount),
@@ -80,10 +88,15 @@ export class PriceWithTaxConverter {
       shortfall <= MAX_SHORTFALL_CENTS && shortfall <= chargedCents;
       shortfall++
     ) {
-      const unitPrice = this.findUnitPrice(charged.description, scaled, chargedCents - shortfall);
+      const unitPrice = this.findUnitPrice(
+        charged.description,
+        scaled,
+        chargedCents - shortfall,
+        sign
+      );
       if (unitPrice !== undefined) {
         return {
-          line: this.toInvoiceLine(charged.description, scaled, unitPrice),
+          line: this.toInvoiceLine(charged.description, scaled, unitPrice, sign),
           chargedCents,
           shortfallCents: shortfall,
         };
@@ -93,7 +106,7 @@ export class PriceWithTaxConverter {
   }
 
   /** One extra line per VAT rate carrying the cents the lines of that rate could not reach. */
-  private roundingAdjustments(converted: ConvertedLine[]): CreateInvoiceLineDto[] {
+  private roundingAdjustments(converted: ConvertedLine[], sign: LineSign): CreateInvoiceLineDto[] {
     const shortfallByRate = new Map<number, bigint>();
     for (const { line, shortfallCents } of converted) {
       if (shortfallCents > 0n) {
@@ -110,9 +123,9 @@ export class PriceWithTaxConverter {
         taxRate: BigInt(taxRate),
         discount: 0n,
       };
-      const unitPrice = this.findUnitPrice(ROUNDING_ADJUSTMENT_DESCRIPTION, scaled, cents);
+      const unitPrice = this.findUnitPrice(ROUNDING_ADJUSTMENT_DESCRIPTION, scaled, cents, sign);
       if (unitPrice === undefined) throw this.unrepresentable(converted.length);
-      return this.toInvoiceLine(ROUNDING_ADJUSTMENT_DESCRIPTION, scaled, unitPrice);
+      return this.toInvoiceLine(ROUNDING_ADJUSTMENT_DESCRIPTION, scaled, unitPrice, sign);
     });
   }
 
@@ -129,7 +142,8 @@ export class PriceWithTaxConverter {
   private findUnitPrice(
     description: string,
     scaled: ScaledLine,
-    targetCents: bigint
+    targetCents: bigint,
+    sign: LineSign
   ): bigint | undefined {
     const netFactor = scaled.quantity * (PERCENT_BASIS - scaled.discount) * (100n + scaled.taxRate);
     if (netFactor === 0n) {
@@ -139,9 +153,10 @@ export class PriceWithTaxConverter {
         : undefined;
     }
     const candidates = this.candidatesAround(divideHalfUp(targetCents * 10n ** 12n, netFactor));
+    const target = { cents: targetCents, sign };
     return (
-      candidates.find((price) => this.reaches(description, scaled, price, targetCents, true)) ??
-      candidates.find((price) => this.reaches(description, scaled, price, targetCents, false))
+      candidates.find((price) => this.reaches(description, scaled, price, target, true)) ??
+      candidates.find((price) => this.reaches(description, scaled, price, target, false))
     );
   }
 
@@ -159,25 +174,27 @@ export class PriceWithTaxConverter {
     description: string,
     scaled: ScaledLine,
     unitPrice: bigint,
-    targetCents: bigint,
+    target: { cents: bigint; sign: LineSign },
     requireLineTotal: boolean
   ): boolean {
     const [result] = this.calculation.calculateTotals([
-      this.toInvoiceLine(description, scaled, unitPrice),
+      this.toInvoiceLine(description, scaled, unitPrice, target.sign),
     ]).lines;
-    if (!result || toCents(result.subtotal) + toCents(result.taxAmount) !== targetCents)
+    const signedTarget = target.cents * target.sign;
+    if (!result || toCents(result.subtotal) + toCents(result.taxAmount) !== signedTarget)
       return false;
-    return !requireLineTotal || toCents(result.lineTotal) === targetCents;
+    return !requireLineTotal || toCents(result.lineTotal) === signedTarget;
   }
 
   private toInvoiceLine(
     description: string,
     scaled: ScaledLine,
-    unitPrice: bigint
+    unitPrice: bigint,
+    sign: LineSign
   ): CreateInvoiceLineDto {
     const line = new CreateInvoiceLineDto();
     line.description = description;
-    line.quantity = scaledToNumber(scaled.quantity, QUANTITY_SCALE);
+    line.quantity = scaledToNumber(scaled.quantity * sign, QUANTITY_SCALE);
     line.unitPrice = scaledToNumber(unitPrice, UNIT_PRICE_SCALE);
     line.taxRate = Number(scaled.taxRate);
     if (scaled.discount > 0n) line.discountPercent = scaledToNumber(scaled.discount, MONEY_SCALE);

@@ -259,9 +259,11 @@ export class CustomerService {
       }
     }
 
+    // The pool is imported by NIF: customers without NIF (integrations API) are left out.
     const where: Prisma.CustomerWhereInput = {
       tenantId: { in: allSourceIds },
       isActive: true,
+      nif: { not: null },
     };
 
     if (search?.trim()) {
@@ -281,11 +283,13 @@ export class CustomerService {
 
     // Deduplicate by NIF: keep only the most recently updated record per NIF.
     // The first record encountered wins because we ordered by updatedAt DESC.
-    const seenNifs = new Map<string, (typeof customers)[0]>();
+    const seenNifs = new Map<string, (typeof customers)[0] & { nif: string }>();
     for (const customer of customers) {
-      const normalizedNif = customer.nif.toUpperCase();
+      const { nif } = customer;
+      if (nif === null) continue;
+      const normalizedNif = nif.toUpperCase();
       if (!seenNifs.has(normalizedNif)) {
-        seenNifs.set(normalizedNif, customer);
+        seenNifs.set(normalizedNif, { ...customer, nif });
       }
     }
 

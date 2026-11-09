@@ -269,6 +269,12 @@ export class InvoicePdfService {
     doc.moveDown(2);
     doc.fontSize(14).text(docNumber, 40, undefined, { align: 'left' });
     doc.fontSize(10).text(`Fecha emisión: ${invoice.issueDate?.toString().slice(0, 10) || ''}`);
+    const operationDate = invoice.operationDate
+      ? new Date(invoice.operationDate).toISOString().slice(0, 10)
+      : null;
+    if (operationDate && operationDate !== new Date(invoice.issueDate).toISOString().slice(0, 10)) {
+      doc.text(`Fecha de operación: ${operationDate}`);
+    }
     if (invoice.dueDate) doc.text(`Fecha vencimiento: ${invoice.dueDate.toString().slice(0, 10)}`);
 
     // Motivo de la rectificación (solo facturas rectificativas)
@@ -288,7 +294,8 @@ export class InvoicePdfService {
     }
 
     // Cliente — prefer immutable snapshot fields; fall back to live customer relation.
-    const hasCustomerSnapshot = invoice.customerSnapshotNif != null;
+    // The snapshot name is always set on confirmation; the NIF may be null (simplified invoices).
+    const hasCustomerSnapshot = invoice.customerSnapshotName != null;
     const custLegalName = hasCustomerSnapshot
       ? (invoice.customerSnapshotLegalName ?? invoice.customerSnapshotName)
       : invoice.customer?.legalName;
@@ -314,7 +321,7 @@ export class InvoicePdfService {
     doc.text(custAddress || '');
     doc.text(`${custPostalCode || ''} ${custCity || ''}`);
     doc.text(`${custProvince || ''} (${custCountry || ''})`);
-    doc.text(`NIF: ${custNif || ''}`);
+    if (custNif) doc.text(`NIF: ${custNif}`);
     doc.text(`Email: ${custEmail || ''}`);
 
     // Líneas de factura
@@ -426,8 +433,7 @@ export class InvoicePdfService {
     invoiceType?: string | null;
   }): string {
     if (invoice.isRectificative) {
-      const typeLabel =
-        invoice.rectificationType === 'SUBSTITUTION' ? 'SUSTITUCIÓN' : 'ABONOS';
+      const typeLabel = invoice.rectificationType === 'SUBSTITUTION' ? 'SUSTITUCIÓN' : 'ABONOS';
       return `Factura Rectificativa (${typeLabel})`;
     }
     return this.resolveDocumentTypeLabel(invoice.invoiceType);

@@ -1142,7 +1142,7 @@ export default function NuevaRecurrentePage() {
           ? {
               id: editRecurring.customer.id,
               name: editRecurring.customer.name,
-              nif: editRecurring.customer.nif,
+              nif: editRecurring.customer.nif ?? '',
             }
           : undefined
       }

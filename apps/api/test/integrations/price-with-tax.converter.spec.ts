@@ -71,6 +71,34 @@ describe('PriceWithTaxConverter', () => {
     expect(mismatches).toEqual([]);
   });
 
+  it('returns (sign -1) match minus the charged amount with negative quantities', () => {
+    const mismatches: string[] = [];
+    for (const taxRate of TAX_RATES) {
+      for (const discountPercent of DISCOUNTS) {
+        for (const quantity of QUANTITIES) {
+          for (const unitPriceWithTax of prices) {
+            const line = {
+              description: 'Devolución',
+              quantity,
+              unitPriceWithTax,
+              taxRate,
+              discountPercent,
+            };
+            const converted = converter.convertInvoice([line], -1n);
+            const totalCents = toCents(calculation.calculateTotals(converted.lines).total);
+            const hasPositiveQuantity = converted.lines.some((l) => l.quantity > 0);
+            if (totalCents !== -converted.chargedCents || hasPositiveQuantity) {
+              mismatches.push(
+                `${JSON.stringify(line)} → ${totalCents} ≠ -${converted.chargedCents}`
+              );
+            }
+          }
+        }
+      }
+    }
+    expect(mismatches).toEqual([]);
+  });
+
   it('matches the sum of charged lines on mixed-rate invoices', () => {
     for (let offset = 0; offset < prices.length - 4; offset++) {
       const lines: ChargedLine[] = TAX_RATES.map((taxRate, index) => ({

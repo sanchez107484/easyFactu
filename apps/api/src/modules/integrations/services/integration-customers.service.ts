@@ -8,7 +8,7 @@ import { IntegrationException } from '../errors/integration.exception';
 
 interface ExistingPayer {
   id: string;
-  nif: string;
+  nif: string | null;
   externalId: string | null;
   hasEquivalenceSurcharge: boolean;
 }
@@ -19,6 +19,13 @@ const PAYER_SELECT = {
   externalId: true,
   hasEquivalenceSurcharge: true,
 } as const;
+
+/**
+ * Customer of simplified invoices issued without payer. The "@" cannot appear in an ERP
+ * externalId, so it never collides with a real payer.
+ */
+export const ANONYMOUS_PAYER_EXTERNAL_ID = '@consumidor-final';
+export const ANONYMOUS_PAYER_NAME = 'Consumidor final';
 
 export function normalizeNif(nif: string): string {
   return nif
@@ -40,17 +47,22 @@ function isUniqueViolation(error: unknown): boolean {
 export class IntegrationCustomersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async upsertPayer(tenantId: string, payer: InvoicePayerDto): Promise<{ id: string }> {
-    const nif = normalizeNif(payer.nif);
+  /**
+   * Without payer (simplified invoice only) the invoice goes to the tenant's "Consumidor final".
+   * A payer without NIF keeps the NIF already known for it: a ticket never erases it.
+   */
+  async upsertPayer(tenantId: string, payer: InvoicePayerDto | undefined): Promise<{ id: string }> {
+    if (!payer) return this.upsertAnonymousPayer(tenantId);
+    const nif = payer.nif ? normalizeNif(payer.nif) : null;
     const existing = await this.findPayer(tenantId, payer.externalId, nif);
     if (!existing) return this.createPayer(tenantId, payer, nif);
 
     this.assertNoEquivalenceSurcharge(existing);
-    if (existing.nif !== nif) await this.assertNifFree(tenantId, nif, existing.id);
+    if (nif && existing.nif !== nif) await this.assertNifFree(tenantId, nif, existing.id);
     await this.prisma.customer.update({
       where: { id: existing.id },
       data: {
-        ...this.payerData(payer, nif),
+        ...this.payerData(payer, nif ?? existing.nif),
         externalId: existing.externalId ?? payer.externalId,
         isActive: true,
       },
@@ -58,16 +70,26 @@ export class IntegrationCustomersService {
     return { id: existing.id };
   }
 
+  private async upsertAnonymousPayer(tenantId: string): Promise<{ id: string }> {
+    const anonymous: InvoicePayerDto = {
+      externalId: ANONYMOUS_PAYER_EXTERNAL_ID,
+      name: ANONYMOUS_PAYER_NAME,
+    };
+    const existing = await this.findPayer(tenantId, ANONYMOUS_PAYER_EXTERNAL_ID, null);
+    if (existing) return { id: existing.id };
+    return this.createPayer(tenantId, anonymous, null);
+  }
+
   private async findPayer(
     tenantId: string,
     externalId: string,
-    nif: string
+    nif: string | null
   ): Promise<ExistingPayer | null> {
     const byExternalId = await this.prisma.customer.findFirst({
       where: { tenantId, externalId },
       select: PAYER_SELECT,
     });
-    if (byExternalId) return byExternalId;
+    if (byExternalId || !nif) return byExternalId;
     return this.prisma.customer.findFirst({
       where: { tenantId, nif: { equals: nif, mode: 'insensitive' } },
       select: PAYER_SELECT,
@@ -78,7 +100,7 @@ export class IntegrationCustomersService {
   private async createPayer(
     tenantId: string,
     payer: InvoicePayerDto,
-    nif: string
+    nif: string | null
   ): Promise<{ id: string }> {
     try {
       return await this.prisma.customer.create({
@@ -98,7 +120,7 @@ export class IntegrationCustomersService {
     }
   }
 
-  private payerData(payer: InvoicePayerDto, nif: string) {
+  private payerData(payer: InvoicePayerDto, nif: string | null) {
     return {
       name: payer.name.trim(),
       nif,
@@ -110,8 +132,8 @@ export class IntegrationCustomersService {
     };
   }
 
-  private customerTypeFor(nif: string): CustomerType {
-    return getNifType(nif) === NifType.CIF ? CustomerType.COMPANY : CustomerType.INDIVIDUAL;
+  private customerTypeFor(nif: string | null): CustomerType {
+    return nif && getNifType(nif) === NifType.CIF ? CustomerType.COMPANY : CustomerType.INDIVIDUAL;
   }
 
   private async assertNifFree(tenantId: string, nif: string, payerId: string): Promise<void> {

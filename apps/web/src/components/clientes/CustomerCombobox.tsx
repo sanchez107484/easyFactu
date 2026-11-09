@@ -49,14 +49,14 @@ export function CustomerCombobox({
     const q = search.toLowerCase().trim();
     if (!q) return customers;
     return customers.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.nif.toLowerCase().includes(q),
+      (c) => c.name.toLowerCase().includes(q) || (c.nif ?? '').toLowerCase().includes(q),
     );
   }, [customers, search]);
 
   // Remove from the pool any customer whose NIF already exists locally
   const sharedDeduped = useMemo(() => {
     if (!sharedCustomers?.length) return [];
-    const localNifs = new Set(customers.map((c) => c.nif.toUpperCase()));
+    const localNifs = new Set(customers.flatMap((c) => (c.nif ? [c.nif.toUpperCase()] : [])));
     return sharedCustomers.filter((c) => !localNifs.has(c.nif.toUpperCase()));
   }, [sharedCustomers, customers]);
 

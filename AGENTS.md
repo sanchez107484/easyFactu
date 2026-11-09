@@ -1,6 +1,6 @@
 # EasyFactura — Project Copilot Agent Instructions
 
-> **Bootstrapped**: 2026-04-26 | **Last updated**: 2026-11-08 | **Stack**: NestJS 10 + Next.js 15 + Prisma 6 + PostgreSQL (Supabase)  
+> **Bootstrapped**: 2026-04-26 | **Last updated**: 2026-11-09 | **Stack**: NestJS 10 + Next.js 15 + Prisma 6 + PostgreSQL (Supabase)  
 > This file is the single source of truth for any AI agent working in this repo.  
 > Read this file FIRST before writing any code. Update it when architecture changes.
 
@@ -116,7 +116,7 @@ modules/
   verifactu/              # AEAT VeriFactu: hash, XML, signing, sending, QR
   agency/                 # Gestoría/agency multi-client management (confirmed ✅)
   reports/                # PRO reports: summary, grouped SALES/EXPENSES/COLLECTIONS (GROUPING SETS engine in grouping/, comparison, sort, top N), RECEIVABLES aging, free-text lines matched to products via `product_aliases` + pg_trgm (invoices never modified) → Excel + history in Supabase Storage bucket `reports`
-  integrations/           # ERP API v1 (HU-21A) at /api/v1/integrations/v1: only orchestrates invoices/payments/PDF/series. API keys nfk_live_/nfk_test_ (SHA-256 only, 24 h rotation overlap, prefix tied to VERIFACTU_ENVIRONMENT), Idempotency-Key records (30 d), Problem Details filter + X-Request-Id middleware scoped to this module, per-key rate limit (in-memory), price-with-tax → net converter verified with InvoiceCalculationService (adds an "Ajuste por redondeo" line when a 4 % amount is unreachable). Customer = ERP payer (externalId), Invoice.externalRef unique per tenant. OpenAPI: `pnpm openapi:integrations` → apps/api/openapi/integrations-v1.json; black-box suite: `pnpm test:contract` (BASE_URL, API_KEY)
+  integrations/           # ERP API v1 (HU-21A) at /api/v1/integrations/v1: only orchestrates invoices/payments/PDF/series. API keys nfk_live_/nfk_test_ (SHA-256 only, 24 h rotation overlap, prefix tied to VERIFACTU_ENVIRONMENT), Idempotency-Key records (30 d), Problem Details filter + X-Request-Id middleware scoped to this module, per-key rate limit (in-memory), price-with-tax → net converter verified with InvoiceCalculationService (adds an "Ajuste por redondeo" line when a 4 % amount is unreachable). Customer = ERP payer (externalId), Invoice.externalRef unique per tenant. HU-21C: simplified invoices without payer ("Consumidor final", externalId `@consumidor-final`) or with payer without NIF (Customer.nif nullable, only via this API), `operationDate`, per-tenant `Tenant.simplifiedInvoiceLimit` (≤ 3000 €, GET/PATCH /settings), returns `POST /invoices/{id}/rectifications` (R4/R5 by differences, capped at the original total), exchanges `POST /invoices/exchanges` (F3, simplified invoices get `exchangedByInvoiceId`), cancellations `POST /invoices/{id}/cancellation`, `GET /customers/{externalId}/invoices`. OpenAPI: `pnpm openapi:integrations` → apps/api/openapi/integrations-v1.json; black-box suite: `pnpm test:contract` (BASE_URL, API_KEY)
 ```
 
 **Frontend `apps/web/src/`**
@@ -170,6 +170,7 @@ DRAFT ────────────────────────�
   │                                    │
   ▼                                    ▼
 PROFORMA                           RECTIFIED (via rectificativa invoice)
+  │                                CANCELLED (cancellation record, integrations API only)
   │
   ▼
 QUOTE (presupuesto — separate flow)
@@ -492,6 +493,9 @@ function generateChainedHash(tenantId: string, invoiceNumber: string): Promise<s
   - `VerifactuSenderService` — HTTPS submission to AEAT endpoint
   - `VerifactuQrService` — QR code generation for invoices
   - `VerifactuService` — orchestrates the above
+  - `VerifactuCancellationService` — cancellation records (`InvoiceCancellation`, RegistroAnulacion): invoice → `CANCELLED`, chained + signed + sent like an invoice
+- XML is built by pure functions in `verifactu/xml/` (tested per record type): `TipoFactura` F1 complete, F2 simplified (no `Destinatarios`), F3 exchange (`FacturasSustituidas`), R4 rectificative of complete, R5 rectificative of simplified; `FechaOperacion` only when it differs from the issue date
+- Hash chain: the previous link is the latest hashed record of the tenant (invoices of any status + cancellations) ordered by `chainedAt` (set when hashed; legacy rows fall back to issue date)
 - Invoice confirmation triggers hash generation + (optionally) AEAT submission
 - `VERIFACTU_ENVIRONMENT=sandbox` → AEAT pre-production; `production` → real submission
 - Certificates are encrypted at rest using `CERTIFICATE_ENCRYPTION_KEY`

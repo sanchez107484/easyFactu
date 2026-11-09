@@ -125,7 +125,11 @@ interface PaymentTarget {
 
 function isOverdue(invoice: Invoice): boolean {
   if (!invoice.dueDate) return false;
-  if (invoice.status === InvoiceStatus.PAID || invoice.status === InvoiceStatus.RECTIFIED)
+  if (
+    invoice.status === InvoiceStatus.PAID ||
+    invoice.status === InvoiceStatus.RECTIFIED ||
+    invoice.status === InvoiceStatus.CANCELLED
+  )
     return false;
   if (invoice.status === InvoiceStatus.DRAFT) return false;
   if (invoice.status === InvoiceStatus.PROFORMA) return false;

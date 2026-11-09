@@ -1,6 +1,9 @@
-import { Prisma, VerifactuStatus } from '@prisma/client';
+import { InvoiceStatus, Prisma, VerifactuStatus } from '@prisma/client';
+import { resolveInvoiceRecordType } from '../../verifactu/xml/invoice-record-type';
 import {
+  InvoiceCancellationResponse,
   IntegrationInvoiceResponse,
+  IssuedInvoiceStatus,
   RegistrationErrorResponse,
   RegistrationStatus,
   TaxBreakdownResponse,
@@ -13,7 +16,15 @@ export const INTEGRATION_INVOICE_SELECT = {
   externalRef: true,
   number: true,
   invoiceType: true,
+  status: true,
   issueDate: true,
+  operationDate: true,
+  isRectificative: true,
+  rectifiedInvoiceId: true,
+  rectifiedInvoice: { select: { invoiceType: true } },
+  exchangedByInvoiceId: true,
+  exchangedInvoices: { select: { id: true }, orderBy: { issueDate: 'asc' } },
+  cancellation: { select: { reason: true, createdAt: true, verifactuStatus: true } },
   subtotal: true,
   discountAmount: true,
   taxTotal: true,
@@ -74,6 +85,22 @@ function buildTaxBreakdown(lines: IntegrationInvoiceRow['lines']): TaxBreakdownR
     }));
 }
 
+function toIssuedStatus(status: InvoiceStatus): IssuedInvoiceStatus {
+  if (status === InvoiceStatus.CANCELLED) return 'CANCELLED';
+  return status === InvoiceStatus.RECTIFIED ? 'RECTIFIED' : 'ISSUED';
+}
+
+function toCancellationResponse(
+  cancellation: IntegrationInvoiceRow['cancellation']
+): InvoiceCancellationResponse | null {
+  if (!cancellation) return null;
+  return {
+    reason: cancellation.reason,
+    cancelledAt: cancellation.createdAt.toISOString(),
+    registrationStatus: toRegistrationStatus(cancellation.verifactuStatus),
+  };
+}
+
 export function toIntegrationInvoiceResponse(
   invoice: IntegrationInvoiceRow,
   appUrl: string
@@ -85,9 +112,19 @@ export function toIntegrationInvoiceResponse(
     externalRef: invoice.externalRef ?? '',
     number: invoice.number ?? '',
     invoiceType: invoice.invoiceType,
+    recordType: resolveInvoiceRecordType({
+      invoiceType: invoice.invoiceType,
+      isRectificative: invoice.isRectificative,
+      rectifiedInvoice: invoice.rectifiedInvoice,
+      exchangedInvoiceCount: invoice.exchangedInvoices.length,
+    }),
+    status: toIssuedStatus(invoice.status),
     issueDate,
-    // Until the operation date is stored (HU-21C), it is always the issue date.
-    operationDate: issueDate,
+    operationDate: invoice.operationDate ? toIsoDate(invoice.operationDate) : issueDate,
+    rectifiedInvoiceId: invoice.rectifiedInvoiceId,
+    exchangedByInvoiceId: invoice.exchangedByInvoiceId,
+    replacedInvoiceIds: invoice.exchangedInvoices.map((replaced) => replaced.id),
+    cancellation: toCancellationResponse(invoice.cancellation),
     totals: {
       base: formatMoney(base),
       tax: formatMoney(invoice.taxTotal),

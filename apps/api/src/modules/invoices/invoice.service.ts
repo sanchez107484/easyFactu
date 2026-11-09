@@ -93,6 +93,13 @@ type TransactionOptions = {
   isolationLevel?: Prisma.TransactionIsolationLevel;
 };
 
+/** Data only the integrations API sets on an invoice; never accepted from the web DTOs. */
+export interface IntegrationInvoiceOptions {
+  externalRef?: string;
+  /** YYYY-MM-DD. Omitted when it equals the issue date. */
+  operationDate?: string;
+}
+
 @Injectable()
 export class InvoiceService {
   constructor(
@@ -368,7 +375,7 @@ export class InvoiceService {
   private buildCustomerSnapshot(customer: {
     name: string;
     legalName: string | null;
-    nif: string;
+    nif: string | null;
     type: string;
     email: string | null;
     phone: string | null;
@@ -520,6 +527,25 @@ export class InvoiceService {
   }
 
   /**
+   * Only simplified invoices (and their rectificatives, R5) may be issued to a customer
+   * without NIF. Such customers are only created by the integrations API.
+   */
+  private assertCustomerIdentifiedIfRequired(
+    invoice: { invoiceType: string; rectifiedInvoice: { invoiceType: string } | null },
+    customerNif: string | null
+  ): void {
+    if (customerNif) return;
+    const isSimplified =
+      invoice.invoiceType === 'simplified' ||
+      invoice.rectifiedInvoice?.invoiceType === 'simplified';
+    if (!isSimplified) {
+      throw new BadRequestException(
+        'El cliente no tiene NIF. Solo se pueden emitir facturas simplificadas a clientes sin NIF.'
+      );
+    }
+  }
+
+  /**
    * Returns the agrarian compensation rate (%) to apply to the invoice, or undefined
    * if the regime is GENERAL or compensation does not apply to this customer.
    *
@@ -580,12 +606,13 @@ export class InvoiceService {
   /**
    * @param options.externalRef - Id of the invoice in an integrated ERP (integrations API).
    *   Unique per tenant; never accepted from the web DTO.
+   * @param options.operationDate - Operation date (YYYY-MM-DD) when it differs from the issue date.
    */
   async create(
     tenantId: string,
     createdByUserId: string | null,
     dto: CreateInvoiceDto,
-    options: { externalRef?: string } = {}
+    options: IntegrationInvoiceOptions = {}
   ) {
     const isQuote = dto.invoiceType === 'quote';
     const isProforma = dto.invoiceType === 'proforma';
@@ -689,6 +716,7 @@ export class InvoiceService {
           paymentDetails: dto.paymentDetails ? { ...dto.paymentDetails } : undefined,
           createdByUserId: resolvedCreatedByUserId,
           externalRef: options.externalRef ?? null,
+          operationDate: options.operationDate ? new Date(options.operationDate) : null,
           lines: {
             create: this.buildLineCreateData(tenantId, dto.lines, totals.lines),
           },
@@ -1323,9 +1351,11 @@ export class InvoiceService {
         rectifiedInvoiceId: true,
         rectificationReason: true,
         rectificationType: true,
+        exchangedByInvoiceId: true,
         validUntil: true,
         quoteAcceptanceStatus: true,
         series: { select: { id: true, type: true } },
+        rectifiedInvoice: { select: { invoiceType: true } },
         lines: {
           orderBy: { sortOrder: 'asc' },
           select: {
@@ -1739,6 +1769,7 @@ export class InvoiceService {
       this.fetchCustomerForSnapshot(tenantId, invoice.customerId),
       this.fetchIssuerSnapshot(tenantId),
     ]);
+    this.assertCustomerIdentifiedIfRequired(invoice, customerForSnapshot.nif);
     const customerSnapshot = this.buildCustomerSnapshot(customerForSnapshot);
 
     const confirmedInvoice = await this.runTransaction(
@@ -2055,12 +2086,27 @@ export class InvoiceService {
     });
   }
 
-  async rectify(tenantId: string, id: string, dto: RectifyInvoiceDto) {
+  /**
+   * @param options - Only used by the integrations API: ERP reference, issue date in Spain and
+   *   operation date. A rectificative of a simplified invoice stays simplified (R5).
+   */
+  async rectify(
+    tenantId: string,
+    id: string,
+    dto: RectifyInvoiceDto,
+    options: IntegrationInvoiceOptions & { issueDate?: string } = {}
+  ) {
     const original = await this.findForMutation(tenantId, id);
 
     if (!RECTIFIABLE_STATUSES.includes(original.status as InvoiceStatus)) {
       throw new ConflictException(
         'Solo se pueden rectificar facturas confirmadas, enviadas o pagadas'
+      );
+    }
+
+    if (original.exchangedByInvoiceId) {
+      throw new ConflictException(
+        'Esta factura simplificada se canjeó por una factura completa. Rectifica la factura completa.'
       );
     }
 
@@ -2160,7 +2206,13 @@ export class InvoiceService {
             seriesId: rectificativeSeries.id,
             customerId: original.customerId,
             number: null,
-            issueDate: new Date(),
+            issueDate: options.issueDate ? new Date(options.issueDate) : new Date(),
+            operationDate: options.operationDate ? new Date(options.operationDate) : null,
+            externalRef: options.externalRef ?? null,
+            invoiceType:
+              original.invoiceType === PrismaInvoiceType.simplified
+                ? PrismaInvoiceType.simplified
+                : PrismaInvoiceType.standard,
             status: PrismaInvoiceStatus.DRAFT,
             isRectificative: true,
             rectifiedInvoiceId: id,

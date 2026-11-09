@@ -78,6 +78,55 @@ export class VerifactuSenderService {
   }
 
   /**
+   * Send a signed cancellation record (RegistroAnulacion). The attempt is logged against the
+   * annulled invoice; the registration status lives in the cancellation record.
+   */
+  async sendCancellationToAeat(
+    tenantId: string,
+    cancellationId: string,
+    signedXml: string
+  ): Promise<void> {
+    const cancellation = await this.prisma.invoiceCancellation.findFirst({
+      where: { id: cancellationId, tenantId },
+      select: { invoiceId: true },
+    });
+    if (!cancellation) throw new Error('Registro de anulación no encontrado');
+
+    const isProduction = this.config.get('NODE_ENV') === 'production';
+    const endpoint = isProduction ? this.AEAT_PRODUCTION_URL : this.AEAT_SANDBOX_URL;
+    try {
+      const response = await firstValueFrom(
+        this.http.post(endpoint, signedXml, {
+          headers: { 'Content-Type': 'application/xml', Accept: 'application/xml' },
+        })
+      );
+      await this.logVerifactuSubmission(tenantId, cancellation.invoiceId, {
+        action: 'CANCELLATION_SENT',
+        requestXml: signedXml,
+        responseXml: JSON.stringify(response.data),
+        statusCode: response.status,
+      });
+      await this.prisma.invoiceCancellation.update({
+        where: { id: cancellationId },
+        data: { verifactuStatus: VerifactuStatus.ACCEPTED, verifactuSentAt: new Date() },
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      await this.logVerifactuSubmission(tenantId, cancellation.invoiceId, {
+        action: 'CANCELLATION_ERROR',
+        requestXml: signedXml,
+        errorMessage: message,
+      });
+      await this.prisma.invoiceCancellation.update({
+        where: { id: cancellationId },
+        data: { verifactuStatus: VerifactuStatus.ERROR },
+      });
+      this.logger.error(`Error sending cancellation ${cancellationId} to AEAT: ${message}`);
+      throw error;
+    }
+  }
+
+  /**
    * Log VeriFactu submission attempt
    */
   private async logVerifactuSubmission(

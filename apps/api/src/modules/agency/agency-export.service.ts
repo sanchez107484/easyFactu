@@ -77,7 +77,7 @@ export type ExportableInvoice = {
     name: string;
     legalName: string | null;
     type: string;
-    nif: string;
+    nif: string | null;
     address: string | null;
     postalCode: string | null;
     city: string | null;

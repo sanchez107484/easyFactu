@@ -10,7 +10,8 @@ export interface FiscalAlert {
   invoiceNumber?: string;
 }
 
-// Limit for simplified invoices (facturas simplificadas) per AEAT regulation
+// Default limit for simplified invoices (art. 4 RD 1619/2012). Each tenant can raise it
+// (Tenant.simplifiedInvoiceLimit) up to 3000 € for the activities of art. 4.1.
 export const SIMPLIFIED_INVOICE_LIMIT = 400;
 
 // NIF/CIF/NIE control letter algorithm
@@ -124,16 +125,20 @@ export class FiscalValidatorService {
   private async detectSimplifiedInvoiceLimitBreaches(
     clientTenantId: string
   ): Promise<FiscalAlert[]> {
-    // A simplified invoice (factura simplificada) cannot exceed €400 total (AEAT Art. 4)
-    // In our system, invoices without customer NIF are treated as simplified
+    // A simplified invoice cannot exceed the tenant limit (400 € by default, art. 4 RD 1619/2012).
+    // Invoices typed as simplified and invoices to customers without NIF are both checked.
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: clientTenantId },
+      select: { simplifiedInvoiceLimit: true },
+    });
+    const limit = Number(tenant?.simplifiedInvoiceLimit ?? SIMPLIFIED_INVOICE_LIMIT);
     const oversizedSimplified = await this.prisma.invoice.findMany({
       where: {
         tenantId: clientTenantId,
         status: { in: ['CONFIRMED', 'SENT', 'PAID'] },
-        total: { gt: SIMPLIFIED_INVOICE_LIMIT },
-        customer: {
-          nif: '',
-        },
+        isRectificative: false,
+        total: { gt: limit },
+        OR: [{ invoiceType: 'simplified' }, { customer: { nif: null } }, { customer: { nif: '' } }],
       },
       select: { id: true, number: true, total: true },
       take: 10, // Cap results to avoid flooding
@@ -143,7 +148,7 @@ export class FiscalValidatorService {
       type: 'warning' as const,
       code: 'SIMPLIFIED_INVOICE_OVER_LIMIT',
       title: `Factura simplificada supera el límite: ${inv.number}`,
-      description: `La factura ${inv.number} (${Number(inv.total).toFixed(2)} €) supera el límite de ${SIMPLIFIED_INVOICE_LIMIT} € para facturas simplificadas. Debería emitirse como factura completa con datos del cliente.`,
+      description: `La factura ${inv.number} (${Number(inv.total).toFixed(2)} €) supera el límite de ${limit.toFixed(2)} € para facturas simplificadas. Debería emitirse como factura completa con datos del cliente.`,
       invoiceId: inv.id,
       invoiceNumber: inv.number ?? undefined,
     }));

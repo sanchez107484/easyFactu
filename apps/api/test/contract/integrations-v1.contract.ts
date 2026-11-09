@@ -108,7 +108,9 @@ describe('authentication and validation', () => {
     );
   });
 
-  it('refuses a simplified invoice above the legal limit with 422 FISCAL_RULE', async () => {
+  it('refuses a simplified invoice above the account limit with 422 FISCAL_RULE', async () => {
+    const reset = await call('PATCH', '/settings', { body: { simplifiedInvoiceLimit: '400.00' } });
+    expect(reset.status).toBe(200);
     const body = {
       ...contractExample(`LIMIT-${RUN_ID}`),
       lines: [{ description: 'Gafas', quantity: '1', unitPriceWithTax: '400.01', taxRate: '21' }],
@@ -268,5 +270,200 @@ describe('price with tax included: total equals the sum charged', () => {
 
     expect(response.status).toBe(201);
     expect(response.body.totals.total).toBe(centsToMoney(expected));
+  });
+});
+
+/** Madrid calendar date, `days` days ago (YYYY-MM-DD). */
+function madridDate(days = 0): string {
+  const date = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(date);
+}
+
+type InvoiceBody = {
+  id: string;
+  recordType: string;
+  status: string;
+  hash: string | null;
+  operationDate: string;
+  totals: { total: string };
+  rectifiedInvoiceId: string | null;
+  exchangedByInvoiceId: string | null;
+  replacedInvoiceIds: string[];
+  cancellation: { registrationStatus: string } | null;
+};
+
+const ticketLine = {
+  description: 'Líquido de lentillas',
+  quantity: '1',
+  unitPriceWithTax: '12.10',
+  taxRate: '21',
+};
+
+async function issueTicket(suffix: string, extra: Record<string, unknown> = {}) {
+  return call<InvoiceBody>('POST', '/invoices', {
+    body: {
+      externalRef: `T-${suffix}-${RUN_ID}`,
+      invoiceType: 'simplified',
+      lines: [ticketLine],
+      ...extra,
+    },
+  });
+}
+
+/** The VeriFactu hash is generated right after confirmation, in the background. */
+async function waitForHash(invoiceId: string): Promise<void> {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const response = await call<InvoiceBody>('GET', `/invoices/${invoiceId}`);
+    if (response.body.hash) return;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw new Error(`Invoice ${invoiceId} was not hashed in time`);
+}
+
+describe('record types, payers without NIF and operation date (HU-21C)', () => {
+  const identifiedPayer = {
+    ...payer,
+    address: { line1: 'C/ Mayor 1', postalCode: '31001', city: 'Pamplona', province: 'Navarra' },
+  };
+
+  it('reads and changes the simplified invoice limit (max 3000 €)', async () => {
+    const updated = await call('PATCH', '/settings', { body: { simplifiedInvoiceLimit: '3000' } });
+    expect(updated.status).toBe(200);
+    expect(updated.body).toEqual({ simplifiedInvoiceLimit: '3000.00' });
+    expectProblem(
+      await call('PATCH', '/settings', { body: { simplifiedInvoiceLimit: '3000.01' } }),
+      400,
+      'VALIDATION_ERROR'
+    );
+    await call('PATCH', '/settings', { body: { simplifiedInvoiceLimit: '400.00' } });
+    const read = await call('GET', '/settings');
+    expect(read.body).toEqual({ simplifiedInvoiceLimit: '400.00' });
+  });
+
+  it('issues a simplified invoice without payer as F2', async () => {
+    const response = await issueTicket('ANON');
+    expect(response.status).toBe(201);
+    expect(response.body).toMatchObject({
+      recordType: 'F2',
+      status: 'ISSUED',
+      operationDate: madridDate(),
+    });
+  });
+
+  it('issues a simplified invoice to a payer without NIF with an earlier operation date', async () => {
+    const response = await issueTicket('NONIF', {
+      operationDate: madridDate(2),
+      customer: { externalId: `NONIF-${RUN_ID}`, name: 'Paciente sin NIF' },
+    });
+    expect(response.status).toBe(201);
+    expect(response.body).toMatchObject({ recordType: 'F2', operationDate: madridDate(2) });
+  });
+
+  it('rejects a future operation date with 422 FISCAL_RULE', async () => {
+    expectProblem(
+      await issueTicket('FUTURE', { operationDate: madridDate(-2) }),
+      422,
+      'FISCAL_RULE'
+    );
+  });
+
+  it('still requires the NIF on a complete invoice', async () => {
+    const response = await call('POST', '/invoices', {
+      body: {
+        externalRef: `STDNONIF-${RUN_ID}`,
+        invoiceType: 'standard',
+        customer: { externalId: `X-${RUN_ID}`, name: 'Sin NIF', address: identifiedPayer.address },
+        lines: [ticketLine],
+      },
+    });
+    expectProblem(response, 400, 'VALIDATION_ERROR');
+    expect(response.body.errors).toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'customer.nif' })])
+    );
+  });
+
+  it('registers a return of a simplified invoice as R5 and caps it at the original total', async () => {
+    const ticket = await issueTicket('RET', { customer: payer });
+    const refund = (ref: string, amount: string) =>
+      call<InvoiceBody>('POST', `/invoices/${ticket.body.id}/rectifications`, {
+        body: {
+          externalRef: `${ref}-${RUN_ID}`,
+          reason: 'Devolución en tienda',
+          lines: [{ ...ticketLine, unitPriceWithTax: amount }],
+        },
+      });
+
+    const partial = await refund('DEV1', '5.00');
+    expect(partial.status).toBe(201);
+    expect(partial.body).toMatchObject({
+      recordType: 'R5',
+      rectifiedInvoiceId: ticket.body.id,
+      totals: { total: '-5.00' },
+    });
+    expectProblem(await refund('DEV2', '7.11'), 422, 'FISCAL_RULE');
+  });
+
+  it('exchanges simplified invoices for a complete invoice (F3)', async () => {
+    const first = await issueTicket('EX1', { customer: payer });
+    const second = await issueTicket('EX2', { customer: payer });
+    const exchange = await call<InvoiceBody>('POST', '/invoices/exchanges', {
+      body: {
+        externalRef: `CANJE-${RUN_ID}`,
+        invoiceIds: [first.body.id, second.body.id],
+        customer: identifiedPayer,
+      },
+    });
+    expect(exchange.status).toBe(201);
+    expect(exchange.body).toMatchObject({
+      recordType: 'F3',
+      totals: { total: '24.20' },
+      replacedInvoiceIds: expect.arrayContaining([first.body.id, second.body.id]),
+    });
+
+    const replaced = await call<InvoiceBody>('GET', `/invoices/${first.body.id}`);
+    expect(replaced.body.exchangedByInvoiceId).toBe(exchange.body.id);
+    expectProblem(
+      await call('POST', '/invoices/exchanges', {
+        body: {
+          externalRef: `CANJE2-${RUN_ID}`,
+          invoiceIds: [first.body.id],
+          customer: identifiedPayer,
+        },
+      }),
+      409,
+      'INVALID_STATE'
+    );
+  });
+
+  it('annuls an invoice issued by mistake with a cancellation record', async () => {
+    const ticket = await issueTicket('ANUL');
+    await waitForHash(ticket.body.id);
+    const body = { reason: 'Ticket duplicado por error' };
+
+    const cancelled = await call<InvoiceBody>('POST', `/invoices/${ticket.body.id}/cancellation`, {
+      body,
+    });
+    expect(cancelled.status).toBe(201);
+    expect(cancelled.body.status).toBe('CANCELLED');
+    expect(REGISTRATION_STATUSES).toContain(cancelled.body.cancellation?.registrationStatus);
+
+    expectProblem(
+      await call('POST', `/invoices/${ticket.body.id}/cancellation`, { body }),
+      409,
+      'INVALID_STATE'
+    );
+  });
+
+  it('lists the invoices of a payer, newest first and paginated', async () => {
+    const response = await call<{ data: InvoiceBody[]; meta: { total: number; limit: number } }>(
+      'GET',
+      `/customers/${encodeURIComponent(payer.externalId)}/invoices?limit=5`
+    );
+    expect(response.status).toBe(200);
+    expect(response.body.meta.limit).toBe(5);
+    expect(response.body.meta.total).toBeGreaterThan(0);
+    expect(response.body.data.length).toBeLessThanOrEqual(5);
+
+    expectProblem(await call('GET', `/customers/unknown-${RUN_ID}/invoices`), 404, 'NOT_FOUND');
   });
 });

@@ -556,6 +556,43 @@
                     "regimeData": null
                   }
                 },
+                "simplificadaSinPagador": {
+                  "summary": "Ticket sin pagador (se emite a \"Consumidor final\")",
+                  "value": {
+                    "externalRef": "VENTA-2026-001240",
+                    "invoiceType": "simplified",
+                    "paymentMethod": "CASH",
+                    "lines": [
+                      {
+                        "description": "Líquido de lentes de contacto",
+                        "quantity": "2",
+                        "unitPriceWithTax": "9.90",
+                        "taxRate": "21"
+                      }
+                    ]
+                  }
+                },
+                "simplificadaPagadorSinNif": {
+                  "summary": "Ticket con pagador sin NIF y fecha de operación anterior",
+                  "value": {
+                    "externalRef": "VENTA-2026-001241",
+                    "invoiceType": "simplified",
+                    "operationDate": "2026-11-02",
+                    "paymentMethod": "CARD",
+                    "customer": {
+                      "externalId": "PAG-000990",
+                      "name": "Carmen Ruiz"
+                    },
+                    "lines": [
+                      {
+                        "description": "Revisión y ajuste de montura",
+                        "quantity": "1",
+                        "unitPriceWithTax": "15.00",
+                        "taxRate": "21"
+                      }
+                    ]
+                  }
+                },
                 "completa": {
                   "summary": "Factura completa con domicilio del pagador",
                   "value": {
@@ -1357,6 +1394,1056 @@
           "Facturas"
         ]
       }
+    },
+    "/integrations/v1/invoices/exchanges": {
+      "post": {
+        "description": "Emite una factura completa con las líneas de una o varias simplificadas emitidas por la API, identificando al destinatario (NIF y domicilio obligatorios). Las simplificadas quedan registradas y apuntan a la F3 (exchangedByInvoiceId).",
+        "operationId": "IntegrationInvoiceRecordsController_exchange",
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "description": "Se respeta si se envía; si no, se genera. Vuelve siempre.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Obligatoria. Misma clave y mismo cuerpo: misma respuesta (200). Se guarda 30 días.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExchangeSimplifiedInvoicesDto"
+              },
+              "examples": {
+                "canje": {
+                  "value": {
+                    "externalRef": "CANJE-2026-000012",
+                    "invoiceIds": [
+                      "8f0c3a52-2c7e-4f1e-9a51-0d6b1f0f9c11"
+                    ],
+                    "customer": {
+                      "externalId": "PAG-000981",
+                      "name": "Laura Gómez Ruiz",
+                      "nif": "12345678Z",
+                      "address": {
+                        "line1": "C/ Estafeta 5",
+                        "postalCode": "31001",
+                        "city": "Pamplona",
+                        "province": "Navarra"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reintento idempotente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationInvoiceResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationInvoiceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_API_KEY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "PLAN_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "IDEMPOTENCY_CONFLICT · REQUEST_IN_PROGRESS (reintentable)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "FISCAL_RULE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, con Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL (reintentable con la misma Idempotency-Key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "summary": "Canjea simplificadas por una factura completa (F3)",
+        "tags": [
+          "Facturas"
+        ]
+      }
+    },
+    "/integrations/v1/invoices/{id}/rectifications": {
+      "post": {
+        "description": "Emite una rectificativa con importes negativos: R5 si la original es simplificada, R4 si es completa. Las líneas llevan el importe devuelto IVA incluido, en positivo. La suma de devoluciones no puede superar el total de la factura original.",
+        "operationId": "IntegrationInvoiceRecordsController_rectify",
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "description": "Se respeta si se envía; si no, se genera. Vuelve siempre.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Obligatoria. Misma clave y mismo cuerpo: misma respuesta (200). Se guarda 30 días.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RectifyIssuedInvoiceDto"
+              },
+              "examples": {
+                "devolucion": {
+                  "value": {
+                    "externalRef": "DEV-2026-000045",
+                    "reason": "Devolución de las gafas de sol",
+                    "lines": [
+                      {
+                        "description": "Gafas de sol",
+                        "quantity": "1",
+                        "unitPriceWithTax": "107.69",
+                        "taxRate": "21"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reintento idempotente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationInvoiceResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "La rectificativa emitida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationInvoiceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_API_KEY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "PLAN_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "IDEMPOTENCY_CONFLICT · REQUEST_IN_PROGRESS (reintentable)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "FISCAL_RULE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, con Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL (reintentable con la misma Idempotency-Key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "summary": "Registra una devolución (rectificativa por diferencias)",
+        "tags": [
+          "Facturas"
+        ]
+      }
+    },
+    "/integrations/v1/invoices/{id}/cancellation": {
+      "post": {
+        "description": "Genera un registro de anulación VeriFactu encadenado. Solo para facturas que no debieron emitirse (p. ej. un ticket duplicado); una devolución es una rectificativa. No admite facturas con rectificativas emitidas ni simplificadas canjeadas. La factura pasa a status CANCELLED y cancellation.registrationStatus sigue el envío a Hacienda.",
+        "operationId": "IntegrationInvoiceRecordsController_cancel",
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "description": "Se respeta si se envía; si no, se genera. Vuelve siempre.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Obligatoria. Misma clave y mismo cuerpo: misma respuesta (200). Se guarda 30 días.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelInvoiceDto"
+              },
+              "examples": {
+                "anulacion": {
+                  "value": {
+                    "reason": "Ticket duplicado por error en caja"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reintento idempotente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationInvoiceResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "La factura anulada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationInvoiceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_API_KEY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "PLAN_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "IDEMPOTENCY_CONFLICT · REQUEST_IN_PROGRESS (reintentable)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "FISCAL_RULE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, con Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL (reintentable con la misma Idempotency-Key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "summary": "Anula el registro de una factura emitida por error",
+        "tags": [
+          "Facturas"
+        ]
+      }
+    },
+    "/integrations/v1/customers/{externalId}/invoices": {
+      "get": {
+        "description": "Facturas emitidas por la API al pagador (externalId), de la más reciente a la más antigua: ventas, devoluciones, canjes y anuladas. Paginado.",
+        "operationId": "IntegrationCustomersController_list",
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "description": "Se respeta si se envía; si no, se genera. Vuelve siempre.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "externalId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationCustomerInvoicesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_API_KEY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "PLAN_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "FISCAL_RULE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, con Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL (reintentable con la misma Idempotency-Key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "summary": "Facturas de un pagador",
+        "tags": [
+          "Clientes"
+        ]
+      }
+    },
+    "/integrations/v1/settings": {
+      "get": {
+        "operationId": "IntegrationSettingsController_get",
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "description": "Se respeta si se envía; si no, se genera. Vuelve siempre.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationSettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_API_KEY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "PLAN_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "FISCAL_RULE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, con Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL (reintentable con la misma Idempotency-Key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "summary": "Ajustes fiscales de la clínica",
+        "tags": [
+          "Ajustes"
+        ]
+      },
+      "patch": {
+        "description": "400 € con carácter general; hasta 3000 € si la actividad está en el art. 4.1 RD 1619/2012 (comercio minorista, como las ópticas). La clínica es responsable de que le corresponda.",
+        "operationId": "IntegrationSettingsController_update",
+        "parameters": [
+          {
+            "name": "X-Request-Id",
+            "in": "header",
+            "description": "Se respeta si se envía; si no, se genera. Vuelve siempre.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIntegrationSettingsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationSettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "INVALID_API_KEY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "PLAN_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "FISCAL_RULE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, con Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL (reintentable con la misma Idempotency-Key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetailsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "summary": "Cambia el límite de la factura simplificada",
+        "tags": [
+          "Ajustes"
+        ]
+      }
     }
   },
   "info": {
@@ -1662,7 +2749,7 @@
           },
           "nif": {
             "type": "string",
-            "description": "NIF, NIE o CIF del pagador. Obligatorio en los dos tipos de factura.",
+            "description": "NIF, NIE o CIF del pagador. Obligatorio en facturas completas y canjes; opcional en simplificadas.",
             "example": "12345678Z"
           },
           "email": {
@@ -1680,8 +2767,7 @@
         },
         "required": [
           "externalId",
-          "name",
-          "nif"
+          "name"
         ]
       },
       "IssueInvoiceLineDto": {
@@ -1744,7 +2830,7 @@
           },
           "operationDate": {
             "type": "string",
-            "description": "Fecha de la operación (YYYY-MM-DD). Por defecto, hoy.",
+            "description": "Fecha de la operación (YYYY-MM-DD) si es anterior a la de expedición (hoy). Por defecto, hoy.",
             "example": "2026-11-08"
           },
           "paymentMethod": {
@@ -1761,7 +2847,7 @@
             "example": "CARD"
           },
           "customer": {
-            "description": "Pagador: el cliente de la factura. Siempre obligatorio.",
+            "description": "Pagador: el cliente de la factura. Obligatorio, con NIF y domicilio, en facturas completas. En simplificadas es opcional: sin él, la factura se emite a \"Consumidor final\".",
             "allOf": [
               {
                 "$ref": "#/components/schemas/InvoicePayerDto"
@@ -1784,8 +2870,36 @@
         "required": [
           "externalRef",
           "invoiceType",
-          "customer",
           "lines"
+        ]
+      },
+      "InvoiceCancellationResponse": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "Ticket duplicado por error"
+          },
+          "cancelledAt": {
+            "type": "string",
+            "example": "2026-11-09T10:15:00.000Z"
+          },
+          "registrationStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "ACCEPTED_WITH_WARNINGS",
+              "REJECTED"
+            ],
+            "description": "Estado del registro de anulación en Hacienda",
+            "example": "PENDING"
+          }
+        },
+        "required": [
+          "reason",
+          "cancelledAt",
+          "registrationStatus"
         ]
       },
       "InvoiceTotalsResponse": {
@@ -1872,13 +2986,67 @@
             ],
             "example": "simplified"
           },
+          "recordType": {
+            "type": "string",
+            "enum": [
+              "F1",
+              "F2",
+              "F3",
+              "R1",
+              "R2",
+              "R3",
+              "R4",
+              "R5"
+            ],
+            "description": "Tipo de registro VeriFactu: F1 completa, F2 simplificada, F3 canje de simplificadas, R4 rectificativa de completa, R5 rectificativa de simplificada",
+            "example": "F2"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ISSUED",
+              "RECTIFIED",
+              "CANCELLED"
+            ],
+            "description": "CANCELLED tras un registro de anulación; RECTIFIED si se sustituyó desde NovaFactura",
+            "example": "ISSUED"
+          },
           "issueDate": {
             "type": "string",
             "example": "2026-11-08"
           },
           "operationDate": {
             "type": "string",
+            "description": "Igual a issueDate salvo que se indicase otra",
             "example": "2026-11-08"
+          },
+          "rectifiedInvoiceId": {
+            "type": "object",
+            "nullable": true,
+            "description": "Factura que rectifica (R4/R5)",
+            "example": null
+          },
+          "exchangedByInvoiceId": {
+            "type": "object",
+            "nullable": true,
+            "description": "Factura completa (F3) por la que se canjeó esta simplificada",
+            "example": null
+          },
+          "replacedInvoiceIds": {
+            "description": "Simplificadas que sustituye (solo F3)",
+            "example": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cancellation": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InvoiceCancellationResponse"
+              }
+            ]
           },
           "totals": {
             "$ref": "#/components/schemas/InvoiceTotalsResponse"
@@ -1943,8 +3111,14 @@
           "externalRef",
           "number",
           "invoiceType",
+          "recordType",
+          "status",
           "issueDate",
           "operationDate",
+          "rectifiedInvoiceId",
+          "exchangedByInvoiceId",
+          "replacedInvoiceIds",
+          "cancellation",
           "totals",
           "taxBreakdown",
           "hash",
@@ -2073,6 +3247,163 @@
           "invoicePaymentStatus",
           "invoiceAmountPaid",
           "invoiceAmountDue"
+        ]
+      },
+      "ExchangeSimplifiedInvoicesDto": {
+        "type": "object",
+        "properties": {
+          "externalRef": {
+            "type": "string",
+            "description": "Id de la factura completa en el ERP",
+            "example": "CANJE-2026-000012"
+          },
+          "invoiceIds": {
+            "description": "Ids (NovaFactura) de las facturas simplificadas que se canjean",
+            "example": [
+              "8f0c3a52-2c7e-4f1e-9a51-0d6b1f0f9c11"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "customer": {
+            "description": "Destinatario de la factura completa: NIF y domicilio obligatorios",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InvoicePayerDto"
+              }
+            ]
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "BANK_TRANSFER",
+              "DIRECT_DEBIT",
+              "CARD",
+              "CASH",
+              "PAYPAL",
+              "OTHER",
+              "BIZUM"
+            ],
+            "example": "CARD"
+          }
+        },
+        "required": [
+          "externalRef",
+          "invoiceIds",
+          "customer"
+        ]
+      },
+      "RectifyIssuedInvoiceDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Motivo (se guarda en NovaFactura)",
+            "example": "Devolución de la montura"
+          },
+          "externalRef": {
+            "type": "string",
+            "description": "Id de la devolución en el ERP, único por clínica (como el de una factura)",
+            "example": "DEV-2026-000045"
+          },
+          "operationDate": {
+            "type": "string",
+            "description": "Fecha de la devolución (YYYY-MM-DD) si es anterior a hoy. Por defecto, hoy.",
+            "example": "2026-11-08"
+          },
+          "lines": {
+            "description": "Líneas devueltas con el importe devuelto IVA incluido, en positivo. La rectificativa las registra en negativo. Cada tipo de IVA debe existir en la factura original.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssueInvoiceLineDto"
+            }
+          }
+        },
+        "required": [
+          "reason",
+          "externalRef",
+          "lines"
+        ]
+      },
+      "CancelInvoiceDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Motivo (se guarda en NovaFactura)",
+            "example": "Devolución de la montura"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "PaginationMetaResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "example": 42
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "limit": {
+            "type": "number",
+            "example": 20
+          }
+        },
+        "required": [
+          "total",
+          "page",
+          "limit"
+        ]
+      },
+      "IntegrationCustomerInvoicesResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrationInvoiceResponse"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaResponse"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "IntegrationSettingsResponse": {
+        "type": "object",
+        "properties": {
+          "simplifiedInvoiceLimit": {
+            "type": "string",
+            "description": "Importe máximo de una simplificada, IVA incluido",
+            "example": "400.00"
+          }
+        },
+        "required": [
+          "simplifiedInvoiceLimit"
+        ]
+      },
+      "UpdateIntegrationSettingsDto": {
+        "type": "object",
+        "properties": {
+          "simplifiedInvoiceLimit": {
+            "type": "string",
+            "description": "Importe máximo (IVA incluido) de una factura simplificada. 400 € con carácter general; hasta 3000 € en las actividades del art. 4.1 RD 1619/2012 (p. ej. comercio minorista, ópticas).",
+            "example": "3000.00"
+          }
+        },
+        "required": [
+          "simplifiedInvoiceLimit"
         ]
       }
     }

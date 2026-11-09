@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import * as crypto from 'crypto';
 
+const CANCELLATION_MARKER = 'ANULACION';
+
 interface InvoiceHashData {
   /**
    * NIF of the invoice issuer (tenant). Must be taken from `issuerSnapshotNif`
@@ -26,39 +28,67 @@ export class VerifactuHashService {
     tenantId: string,
     invoiceData: InvoiceHashData
   ): Promise<{ hash: string; prevHash: string | null }> {
-    if (!invoiceData.issuerNif) {
-      throw new Error(
-        'No se puede generar el hash: el NIF del emisor está vacío. ' +
-          'Comprueba que el snapshot del emisor se generó correctamente al confirmar la factura.'
-      );
-    }
+    this.assertIssuerNif(invoiceData.issuerNif);
+    const prevHash = await this.findPreviousHash(tenantId);
 
-    // Get previous invoice hash from the same tenant for chain continuity
-    const previousInvoice = await this.prisma.invoice.findFirst({
-      where: {
-        tenantId,
-        status: 'CONFIRMED',
-        hash: { not: null },
-      },
-      orderBy: { issueDate: 'desc' },
-      select: { hash: true },
-    });
-
-    const prevHash = previousInvoice?.hash || '';
-
-    // Build hash string according to VeriFactu specification
     const hashString = this.buildHashString(
       invoiceData.issuerNif,
       invoiceData.number,
       invoiceData.issueDate,
       invoiceData.total,
-      prevHash
+      prevHash ?? ''
     );
 
-    // Generate SHA-256 hash
-    const hash = this.sha256(hashString);
+    return { hash: this.sha256(hashString), prevHash };
+  }
 
-    return { hash, prevHash: prevHash || null };
+  /**
+   * Hash of a cancellation record (RegistroAnulacion). It identifies the annulled invoice
+   * and is chained after the latest record of the tenant, like an invoice.
+   * Format: SHA256(NIF + Número + Fecha + "ANULACION" + HashAnterior)
+   */
+  async generateCancellationHash(
+    tenantId: string,
+    annulled: Omit<InvoiceHashData, 'total'>
+  ): Promise<{ hash: string; prevHash: string | null }> {
+    this.assertIssuerNif(annulled.issuerNif);
+    const prevHash = await this.findPreviousHash(tenantId);
+    const hashString = `${annulled.issuerNif}${annulled.number}${this.formatHashDate(annulled.issueDate)}${CANCELLATION_MARKER}${prevHash ?? ''}`;
+    return { hash: this.sha256(hashString), prevHash };
+  }
+
+  /**
+   * Hash of the latest record of the tenant chain: invoices (any status once hashed) and
+   * cancellation records, ordered by generation time (chainedAt). Records hashed before
+   * chainedAt existed fall back to the issue date.
+   */
+  async findPreviousHash(tenantId: string): Promise<string | null> {
+    const [lastInvoice, lastCancellation] = await Promise.all([
+      this.prisma.invoice.findFirst({
+        where: { tenantId, hash: { not: null } },
+        orderBy: [{ chainedAt: { sort: 'desc', nulls: 'last' } }, { issueDate: 'desc' }],
+        select: { hash: true, chainedAt: true },
+      }),
+      this.prisma.invoiceCancellation.findFirst({
+        where: { tenantId, hash: { not: null } },
+        orderBy: { chainedAt: { sort: 'desc', nulls: 'last' } },
+        select: { hash: true, chainedAt: true },
+      }),
+    ]);
+    if (!lastCancellation) return lastInvoice?.hash ?? null;
+    if (!lastInvoice) return lastCancellation.hash;
+    const invoiceTime = lastInvoice.chainedAt?.getTime() ?? 0;
+    const cancellationTime = lastCancellation.chainedAt?.getTime() ?? 0;
+    return invoiceTime > cancellationTime ? lastInvoice.hash : lastCancellation.hash;
+  }
+
+  private assertIssuerNif(issuerNif: string): void {
+    if (!issuerNif) {
+      throw new Error(
+        'No se puede generar el hash: el NIF del emisor está vacío. ' +
+          'Comprueba que el snapshot del emisor se generó correctamente al confirmar la factura.'
+      );
+    }
   }
 
   /**
@@ -72,16 +102,19 @@ export class VerifactuHashService {
     total: number,
     prevHash: string
   ): string {
-    // Format date as DDMMYYYY
-    const day = issueDate.getDate().toString().padStart(2, '0');
-    const month = (issueDate.getMonth() + 1).toString().padStart(2, '0');
-    const year = issueDate.getFullYear().toString();
-    const formattedDate = `${day}${month}${year}`;
+    const formattedDate = this.formatHashDate(issueDate);
 
     // Format total with 2 decimals
     const formattedTotal = total.toFixed(2);
 
     return `${nif}${number}${formattedDate}${formattedTotal}${prevHash}`;
+  }
+
+  /** DDMMYYYY (server local date, as invoices have always been hashed). */
+  private formatHashDate(date: Date): string {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    return `${day}${month}${date.getFullYear()}`;
   }
 
   /**

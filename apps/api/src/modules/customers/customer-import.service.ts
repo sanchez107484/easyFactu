@@ -422,6 +422,6 @@ export class CustomerImportService {
       select: { nif: true },
     });
 
-    return new Set(existing.map((c) => c.nif.toUpperCase()));
+    return new Set(existing.flatMap((c) => (c.nif ? [c.nif.toUpperCase()] : [])));
   }
 }

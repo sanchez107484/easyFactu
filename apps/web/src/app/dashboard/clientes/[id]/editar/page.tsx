@@ -232,6 +232,10 @@ export default function EditarClientePage() {
   };
 
   return (
-    <EditCustomerForm customerId={id} defaultValues={defaultValues} originalNif={customer.nif} />
+    <EditCustomerForm
+      customerId={id}
+      defaultValues={defaultValues}
+      originalNif={customer.nif ?? ''}
+    />
   );
 }

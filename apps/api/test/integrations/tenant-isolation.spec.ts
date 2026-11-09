@@ -6,7 +6,9 @@ import { IntegrationInvoiceActionsService } from '../../src/modules/integrations
 import { IntegrationInvoicesService } from '../../src/modules/integrations/services/integration-invoices.service';
 import { IntegrationUrlsService } from '../../src/modules/integrations/services/integration-urls.service';
 import { PriceWithTaxConverter } from '../../src/modules/integrations/services/price-with-tax.converter';
+import { IntegrationCustomerInvoicesService } from '../../src/modules/integrations/services/integration-customer-invoices.service';
 import { PaymentService } from '../../src/modules/payments/payment.service';
+import { VerifactuCancellationService } from '../../src/modules/verifactu/services/verifactu-cancellation.service';
 import { PrismaService } from '../../src/prisma/prisma.service';
 
 const TENANT_A = 'tenant-a';
@@ -43,6 +45,13 @@ function issuedInvoice(tenantId: string, id: string, externalRef: string): Row {
     paymentStatus: 'UNPAID',
     amountPaid: 0,
     status: 'CONFIRMED',
+    operationDate: null,
+    isRectificative: false,
+    rectifiedInvoiceId: null,
+    rectifiedInvoice: null,
+    exchangedByInvoiceId: null,
+    exchangedInvoices: [],
+    cancellation: null,
     lines: [{ taxRate: 21, subtotal: 10, taxAmount: 2.1 }],
   };
 }
@@ -59,7 +68,11 @@ function setup() {
     },
   ];
   const prisma = {
-    invoice: { findFirst: scopedFindFirst(invoices) },
+    invoice: {
+      findFirst: scopedFindFirst(invoices),
+      findMany: jest.fn(async () => []),
+      count: jest.fn(async () => 0),
+    },
     customer: {
       findFirst: scopedFindFirst(customers),
       create: jest.fn(async ({ data }: { data: Row }) => ({ id: 'customer-new', ...data })),
@@ -79,8 +92,26 @@ function setup() {
     {} as PriceWithTaxConverter,
     urls
   );
-  const actions = new IntegrationInvoiceActionsService(invoicesService, payments, pdf);
-  return { prisma, invoicesService, actions, customersService, payments, pdf };
+  const cancellations = {
+    cancelInvoice: jest.fn(),
+  } as unknown as VerifactuCancellationService;
+  const actions = new IntegrationInvoiceActionsService(
+    invoicesService,
+    payments,
+    pdf,
+    cancellations
+  );
+  const customerInvoices = new IntegrationCustomerInvoicesService(prisma, urls);
+  return {
+    prisma,
+    invoicesService,
+    actions,
+    customersService,
+    customerInvoices,
+    payments,
+    pdf,
+    cancellations,
+  };
 }
 
 describe('Integrations API · tenant isolation', () => {
@@ -113,6 +144,28 @@ describe('Integrations API · tenant isolation', () => {
     });
     expect(payments.createPayment).not.toHaveBeenCalled();
     expect(pdf.generate).not.toHaveBeenCalled();
+  });
+
+  it("never cancels another tenant's invoice", async () => {
+    const { actions, cancellations } = setup();
+    await expect(
+      actions.cancel(TENANT_A, INVOICE_B, { reason: 'Ticket duplicado' })
+    ).rejects.toMatchObject({ code: IntegrationErrorCode.NOT_FOUND });
+    expect(cancellations.cancelInvoice).not.toHaveBeenCalled();
+  });
+
+  it("does not list the invoices of another tenant's payer", async () => {
+    const { prisma, customerInvoices } = setup();
+    await expect(customerInvoices.list(TENANT_A, 'PAG-1', {})).rejects.toMatchObject({
+      code: IntegrationErrorCode.NOT_FOUND,
+    });
+    expect(prisma.invoice.findMany).not.toHaveBeenCalled();
+
+    await expect(customerInvoices.list(TENANT_B, 'PAG-1', {})).resolves.toMatchObject({
+      meta: { total: 0, page: 1, limit: 20 },
+    });
+    const [[query]] = (prisma.invoice.findMany as jest.Mock).mock.calls as [[{ where: Row }]];
+    expect(query.where).toMatchObject({ tenantId: TENANT_B, customerId: 'customer-b' });
   });
 
   it('only exposes invoices issued through the API (with externalRef)', async () => {

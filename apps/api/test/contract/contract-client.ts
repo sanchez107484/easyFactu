@@ -46,7 +46,7 @@ function buildHeaders(method: string, options: RequestOptions): Record<string, s
 }
 
 export async function call<T = Record<string, unknown>>(
-  method: 'GET' | 'POST' | 'DELETE',
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
   options: RequestOptions = {}
 ): Promise<ContractResponse<T>> {

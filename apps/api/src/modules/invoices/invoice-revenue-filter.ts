@@ -8,6 +8,9 @@ import { Prisma } from '@prisma/client';
  *   must be summed algebraically with their credit notes.
  * - It excludes RECTIFIED invoices that were substituted (SUBSTITUTION), because
  *   the substitute invoice already replaces them in the aggregates.
+ * - It excludes simplified invoices exchanged for an issued complete invoice (F3, canje):
+ *   the F3 carries the same operations.
+ * - CANCELLED invoices (cancellation record) never count.
  */
 export function buildRevenueInvoiceFilter(alias: string = 'i'): Prisma.Sql {
   const prefix = alias ? `${alias}.` : '';
@@ -30,6 +33,11 @@ export function buildRevenueInvoiceFilter(alias: string = 'i'): Prisma.Sql {
             AND r.status IN ('CONFIRMED', 'SENT', 'PAID')
         )
       )
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM invoices x
+      WHERE x.id = ${Prisma.raw(`${prefix}exchanged_by_invoice_id`)}
+        AND x.status IN ('CONFIRMED', 'SENT', 'PAID', 'RECTIFIED')
     )
   `;
 }

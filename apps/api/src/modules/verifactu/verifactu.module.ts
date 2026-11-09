@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { VerifactuController } from './verifactu.controller';
 import { PublicVerifyController } from './controllers/public-verify.controller';
 import { VerifactuService } from './services/verifactu.service';
+import { VerifactuCancellationService } from './services/verifactu-cancellation.service';
 import { VerifactuHashService } from './services/verifactu-hash.service';
 import { VerifactuXmlService } from './services/verifactu-xml.service';
 import { VerifactuSignerService } from './services/verifactu-signer.service';
@@ -18,6 +19,7 @@ import { HACIENDA_ADAPTER } from './interfaces/hacienda-adapter.interface';
   controllers: [VerifactuController, PublicVerifyController],
   providers: [
     VerifactuService,
+    VerifactuCancellationService,
     VerifactuHashService,
     // Servicios especializados usados internamente por SpainHaciendaAdapter
     VerifactuXmlService,
@@ -41,6 +43,6 @@ import { HACIENDA_ADAPTER } from './interfaces/hacienda-adapter.interface';
       inject: [ConfigService, SpainHaciendaAdapter, NavarraHaciendaAdapter],
     },
   ],
-  exports: [VerifactuService],
+  exports: [VerifactuService, VerifactuCancellationService],
 })
 export class VerifactuModule {}

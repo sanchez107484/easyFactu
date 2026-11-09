@@ -24,8 +24,8 @@ import { IntegrationAddressDto } from './integration-address.dto';
 export const ISSUABLE_INVOICE_TYPES = ['standard', 'simplified'] as const;
 export type IssuableInvoiceType = (typeof ISSUABLE_INVOICE_TYPES)[number];
 
-const EXTERNAL_ID_PATTERN = /^[A-Za-z0-9._:/-]{1,100}$/;
-const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+export const EXTERNAL_ID_PATTERN = /^[A-Za-z0-9._:/-]{1,100}$/;
+export const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export class InvoicePayerDto {
   @ApiProperty({
@@ -43,13 +43,15 @@ export class InvoicePayerDto {
   @MaxLength(100, { message: 'Máximo 100 caracteres' })
   name!: string;
 
-  @ApiProperty({
-    description: 'NIF, NIE o CIF del pagador. Obligatorio en los dos tipos de factura.',
+  @ApiPropertyOptional({
+    description:
+      'NIF, NIE o CIF del pagador. Obligatorio en facturas completas y canjes; opcional en simplificadas.',
     example: '12345678Z',
   })
+  @IsOptional()
   @IsString({ message: 'Debe ser texto' })
   @IsValidNif({ message: 'NIF, NIE o CIF no válido' })
-  nif!: string;
+  nif?: string;
 
   @ApiPropertyOptional({ example: 'laura@example.com' })
   @IsOptional()
@@ -123,7 +125,8 @@ export class IssueInvoiceDto {
   invoiceType!: IssuableInvoiceType;
 
   @ApiPropertyOptional({
-    description: 'Fecha de la operación (YYYY-MM-DD). Por defecto, hoy.',
+    description:
+      'Fecha de la operación (YYYY-MM-DD) si es anterior a la de expedición (hoy). Por defecto, hoy.',
     example: '2026-11-08',
   })
   @IsOptional()
@@ -135,14 +138,16 @@ export class IssueInvoiceDto {
   @IsEnum(PaymentMethod, { message: 'Método de pago no permitido' })
   paymentMethod?: PaymentMethod;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: InvoicePayerDto,
-    description: 'Pagador: el cliente de la factura. Siempre obligatorio.',
+    description:
+      'Pagador: el cliente de la factura. Obligatorio, con NIF y domicilio, en facturas completas. ' +
+      'En simplificadas es opcional: sin él, la factura se emite a "Consumidor final".',
   })
-  @IsDefined({ message: 'Obligatorio' })
+  @IsOptional()
   @ValidateNested()
   @Type(() => InvoicePayerDto)
-  customer!: InvoicePayerDto;
+  customer?: InvoicePayerDto;
 
   @ApiProperty({ type: [IssueInvoiceLineDto] })
   @IsDefined({ message: 'Obligatorio' })

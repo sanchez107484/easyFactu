@@ -54,6 +54,13 @@ export const INVOICE_STATUS_CONFIG: Record<
     border: 'border-rectificativa-200 dark:border-rectificativa-800',
     dot: 'bg-rectificativa-500',
   },
+  [InvoiceStatus.CANCELLED]: {
+    label: 'Anulada',
+    color: 'text-muted-foreground',
+    bg: 'bg-muted',
+    border: 'border-border',
+    dot: 'bg-muted-foreground',
+  },
 };
 
 interface InvoiceStatusBadgeProps {

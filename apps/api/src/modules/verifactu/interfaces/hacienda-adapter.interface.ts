@@ -37,4 +37,14 @@ export interface IHaciendaAdapter {
    * El formato de la URL varía según la Hacienda.
    */
   generateQrUrl(tenantId: string, invoiceId: string): Promise<string>;
+
+  /**
+   * Genera el XML del registro de anulación (RegistroAnulacion) de una factura.
+   */
+  generateCancellationXml(tenantId: string, cancellationId: string): Promise<string>;
+
+  /**
+   * Envía el registro de anulación firmado y actualiza su estado de registro.
+   */
+  sendCancellation(tenantId: string, cancellationId: string, signedXml: string): Promise<void>;
 }
