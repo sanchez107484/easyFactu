@@ -11,6 +11,7 @@ const PUBLIC_ROUTES = [
   '/recuperar-password',
   '/nueva-password',
   '/activar-cuenta',
+  '/sso',
   // Marketing
   '/precios',
   '/funcionalidades',

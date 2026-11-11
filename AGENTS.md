@@ -1,6 +1,6 @@
 # EasyFactura — Project Copilot Agent Instructions
 
-> **Bootstrapped**: 2026-04-26 | **Last updated**: 2026-11-09 | **Stack**: NestJS 10 + Next.js 15 + Prisma 6 + PostgreSQL (Supabase)  
+> **Bootstrapped**: 2026-04-26 | **Last updated**: 2026-11-10 | **Stack**: NestJS 10 + Next.js 15 + Prisma 6 + PostgreSQL (Supabase)  
 > This file is the single source of truth for any AI agent working in this repo.  
 > Read this file FIRST before writing any code. Update it when architecture changes.
 
@@ -103,7 +103,7 @@ common/
   validators/             # Custom class-validator validators
 prisma/                   # PrismaModule + PrismaService + withTransactionRetry (bounded retries on transient Prisma errors)
 modules/
-  auth/                   # JWT auth (login, register, refresh, email verify, password reset)
+  auth/                   # JWT auth (login, register, refresh, email verify, password reset). Tokens signed in AuthTokensService. sso/ (HU-21D): POST /auth/sso/exchange swaps an ERP ES256 token (≤ 60 s, single-use jti in `sso_token_uses`, public key only) for a normal session; user found by ERP user id via `erp_sso_users` (never by email), created as ADMIN (never OWNER), no password and no password reset; only allow-listed destinations (sso-destinations.ts). Web page `/sso#token=…`
   tenants/                # Tenant CRUD + user management
   customers/              # Customer catalog
   products/               # Product/service catalog
@@ -250,6 +250,8 @@ async findAll(query: QueryInvoiceDto) {
 | `INTEGRATIONS_ERP_NAME`         | ERP name shown in clinic emails    |                                                            |
 | `INTEGRATIONS_RATE_LIMIT_PER_MINUTE` | Requests/minute per API key   | Default 60                                                 |
 | `INTEGRATIONS_MAINTENANCE`      | `true` → /health answers 503       |                                                            |
+| `ERP_SSO_PUBLIC_KEY`            | ERP ES256 public key (PEM) for SSO | Empty disables SSO (503)                                   |
+| `ERP_SSO_ISSUER` / `ERP_SSO_AUDIENCE` | Expected `iss` / `aud` of SSO tokens |                                                     |
 
 ### Frontend (`apps/web/.env.local`) — see `apps/web/.env.example`
 
@@ -726,7 +728,7 @@ Antes de dar cualquier tarea por terminada — verificar punto a punto:
 3. **Refresh token storage**: Both tokens in `localStorage` (confirmed in `api-client.ts`). XSS risk. Known trade-off or pending improvement?
 4. **Frontend middleware**: `middleware.ts` is permissive — auth validated client-side in dashboard layout (confirmed). Server-side validation at middleware level would improve security posture.
 5. **Certificate exposure**: `uploads/certificates/` served by NestJS static assets at `/api/v1/uploads/`. Confirm route prefix does NOT publicly expose certificate files.
-6. **Plan enforcement**: `PlanGuard` + `@RequirePlan()` implemented for expenses, suppliers, attachments, recurring expenses, activity summary, reports and the integrations API (PlanGuard throws `PlanRequiredException`: 403 in the app, 402 PLAN_REQUIRED in the integrations API). Pending review for other modules. Subscriptions with `managedBy` (ERP) cannot change plan (403).
+6. **Plan enforcement**: `PlanGuard` + `@RequirePlan()` implemented for expenses, suppliers, attachments, recurring expenses, activity summary, reports and the integrations API (PlanGuard throws `PlanRequiredException`: 403 in the app, 402 PLAN_REQUIRED in the integrations API). Pending review for other modules. Subscriptions with `managedBy` (ERP) cannot change or pre-select a plan (403); the web plan page shows «Plan incluido en tu ERP» instead of the selector.
 7. **Email verification**: `emailVerified` on User model. Is verification enforced (blocks login until verified)?
 8. **CI pipeline**: Only `lighthouse-ci.yml` (daily audit). No build/lint/test CI on PRs — a broken build could go undetected.
 9. **Sanity revalidation**: Sanity CMS configured for blog. Is ISR revalidation webhook active in production?

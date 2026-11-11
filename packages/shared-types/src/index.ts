@@ -159,7 +159,13 @@ export interface Subscription {
   startedAt: string;
   changedAt: string;
   preferredPlanSlug?: string | null;
+  /** Set when the ERP includes and manages the plan: the tenant cannot change it. */
+  managedBy?: SubscriptionManager | null;
   plan?: Plan;
+}
+
+export enum SubscriptionManager {
+  ERP = 'ERP',
 }
 
 export interface PlanChangeLog {
@@ -1672,6 +1678,11 @@ export interface InviteClientInput {
 export interface ActivateAccountInput {
   token: string;
   password: string;
+}
+
+/** Session opened from an ERP SSO token (HU-21D): login response plus the page to open. */
+export interface SsoExchangeResponse extends AuthResponse {
+  redirectTo: string;
 }
 
 export interface ActivateAccountTokenInfo {

@@ -74,6 +74,7 @@ model Tenant {
   invoiceCancellations      InvoiceCancellation[]
   integrationAccount        IntegrationAccount?
   apiKeys                   ApiKey[]
+  erpSsoUsers               ErpSsoUser[]
 
   @@index([email])
   @@index([accountType])
@@ -188,6 +189,7 @@ model User {
   recurringInvoicesCreated RecurringInvoice[]       @relation("RecurringInvoiceCreatedBy")
   reportsGenerated         ReportHistory[]          @relation("ReportGeneratedBy")
   tenantUsers              TenantUser[]
+  erpSsoUser               ErpSsoUser?
 
   @@index([signupLandingPath])
   @@map("users")
@@ -1151,6 +1153,7 @@ model IntegrationAccount {
   updatedAt         DateTime                 @updatedAt @map("updated_at")
   tenant            Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   apiKeys           ApiKey[]
+  ssoUsers          ErpSsoUser[]
 
   @@index([status])
   @@map("integration_accounts")
@@ -1196,4 +1199,35 @@ model IdempotencyRecord {
   @@unique([scope, idempotencyKey])
   @@index([expiresAt])
   @@map("idempotency_records")
+}
+
+// ==================== SSO FROM THE ERP (HU-21D) ====================
+
+/// NovaFactura user created by SSO for one ERP user in one clinic. The ERP user id is the
+/// identity: the email in the token is never used to find or link users.
+model ErpSsoUser {
+  id                   String             @id @default(uuid())
+  tenantId             String             @map("tenant_id")
+  integrationAccountId String             @map("integration_account_id")
+  erpUserId            String             @map("erp_user_id")
+  userId               String             @unique @map("user_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  lastLoginAt          DateTime?          @map("last_login_at")
+  tenant               Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  integrationAccount   IntegrationAccount @relation(fields: [integrationAccountId], references: [id], onDelete: Cascade)
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationAccountId, erpUserId])
+  @@index([tenantId])
+  @@map("erp_sso_users")
+}
+
+/// jti of every SSO token already exchanged: a token works once. Rows can be purged after expiresAt.
+model SsoTokenUse {
+  jti       String   @id
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime @default(now()) @map("used_at")
+
+  @@index([expiresAt])
+  @@map("sso_token_uses")
 }

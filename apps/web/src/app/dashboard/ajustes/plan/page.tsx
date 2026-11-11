@@ -43,6 +43,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ErpIncludedPlan } from '@/components/ajustes/erp-included-plan';
 import {
   ALL_PLAN_FEATURES,
   BASIC_PLAN_FEATURES,
@@ -421,6 +422,15 @@ export default function AjustesPlanPage() {
       setCycle(preferredCycle);
     }
   }, [preferredPlanSlug, preferredCycle]);
+
+  // Wait for the subscription: an ERP-managed plan must never flash the selector.
+  if (subLoading) {
+    return <Card className="h-[200px] animate-pulse" />;
+  }
+
+  if (subscription?.managedBy) {
+    return <ErpIncludedPlan plan={currentPlan} />;
+  }
 
   const handleActivatePro = async () => {
     try {

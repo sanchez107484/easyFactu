@@ -103,7 +103,9 @@ apiClient.interceptors.response.use(
       originalRequest &&
       !originalRequest._retry &&
       !originalRequest.url?.includes('/auth/login') &&
-      !originalRequest.url?.includes('/auth/refresh')
+      !originalRequest.url?.includes('/auth/refresh') &&
+      // SSO tokens work once: never replay the exchange after a refresh
+      !originalRequest.url?.includes('/auth/sso/')
     ) {
       originalRequest._retry = true;
 

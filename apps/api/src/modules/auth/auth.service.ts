@@ -6,7 +6,6 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { createFreeSubscription } from '../subscriptions/initial-subscription';
@@ -21,6 +20,7 @@ import { SwitchTenantDto } from './dto/switch-tenant.dto';
 import { ActivateAccountDto } from './dto/activate-account.dto';
 import { JwtValidationCacheService } from './jwt-validation-cache.service';
 import { toSignupAttributionColumns } from './signup-attribution.mapper';
+import { AuthTokensService, ImpersonationClaims } from './auth-tokens.service';
 
 @Injectable()
 export class AuthService {
@@ -28,7 +28,7 @@ export class AuthService {
 
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService,
+    private authTokens: AuthTokensService,
     private configService: ConfigService,
     private invoiceSeriesService: InvoiceSeriesService,
     private emailService: EmailService,
@@ -693,9 +693,11 @@ export class AuthService {
   async forgotPassword(email: string) {
     const user = await this.prisma.user.findUnique({
       where: { email },
+      include: { erpSsoUser: { select: { id: true } } },
     });
 
-    if (!user) {
+    // SSO users only enter from the ERP: a password would bypass the ERP revoking access.
+    if (!user || user.erpSsoUser) {
       // Don't reveal if user exists
       return { message: 'Si el email existe, recibirás un enlace de recuperación' };
     }
@@ -1112,43 +1114,12 @@ export class AuthService {
     }
   }
 
-  private async generateTokens(
+  private generateTokens(
     userId: string,
     email: string,
     tenantId: string,
-    impersonation?: {
-      actingAsClient: true;
-      agencyTenantId: string;
-      impersonationLogId: string;
-    }
+    impersonation?: ImpersonationClaims
   ) {
-    const payload = {
-      sub: userId,
-      email,
-      tenantId,
-      ...(impersonation
-        ? {
-            actingAsClient: true,
-            agencyTenantId: impersonation.agencyTenantId,
-            impersonationLogId: impersonation.impersonationLogId,
-          }
-        : {}),
-    };
-
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRATION') || '15m',
-      }),
-      this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION') || '7d',
-      }),
-    ]);
-
-    return {
-      accessToken,
-      refreshToken,
-    };
+    return this.authTokens.generate(userId, email, tenantId, impersonation);
   }
 }

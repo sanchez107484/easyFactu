@@ -5,6 +5,7 @@ import type {
   ActivateAccountInput,
   ActivateAccountTokenInfo,
   AuthResponse,
+  SsoExchangeResponse,
 } from '@easyfactura/shared-types';
 
 interface ChangePasswordInput {
@@ -40,6 +41,11 @@ export const authApi = {
   activateAccount: (data: ActivateAccountInput): Promise<AuthResponse> =>
     apiClient
       .post<ApiResponse<AuthResponse>>('/auth/activate-account', data)
+      .then(unwrapApiResponse),
+
+  exchangeSsoToken: (token: string): Promise<SsoExchangeResponse> =>
+    apiClient
+      .post<ApiResponse<SsoExchangeResponse>>('/auth/sso/exchange', { token })
       .then(unwrapApiResponse),
 
   verifyEmail: (token: string): Promise<{ message: string }> =>

@@ -10,6 +10,16 @@ import { ChangePlanDto } from './dto/change-plan.dto';
 import { SetPreferredPlanDto } from './dto/set-preferred-plan.dto';
 import { PlanTier, SubscriptionStatus } from '@easyfactura/shared-types';
 
+const ERP_MANAGED_PLAN_MESSAGE =
+  'Tu plan está incluido en tu ERP. Para cambiarlo, contacta con el proveedor de tu ERP.';
+
+/** A plan included in the ERP is managed there: the tenant cannot change or pre-select one. */
+function assertNotManagedByErp(subscription: { managedBy: string | null }): void {
+  if (subscription.managedBy) {
+    throw new ForbiddenException(ERP_MANAGED_PLAN_MESSAGE);
+  }
+}
+
 export interface DowngradeValidationResult {
   valid: boolean;
   violations: string[];
@@ -42,6 +52,15 @@ export class SubscriptionsService {
     dto: SetPreferredPlanDto
   ): Promise<{ success: boolean; preferredPlanSlug: string | null }> {
     const { preferredPlanSlug } = dto;
+
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { tenantId },
+      select: { managedBy: true },
+    });
+    if (!subscription) {
+      throw new NotFoundException('Suscripción no encontrada');
+    }
+    assertNotManagedByErp(subscription);
 
     await this.prisma.subscription.update({
       where: { tenantId },
@@ -144,11 +163,7 @@ export class SubscriptionsService {
       throw new NotFoundException('Suscripción no encontrada');
     }
 
-    if (currentSubscription.managedBy) {
-      throw new ForbiddenException(
-        'Tu plan está incluido en tu ERP. Para cambiarlo, contacta con el proveedor de tu ERP.'
-      );
-    }
+    assertNotManagedByErp(currentSubscription);
 
     if (currentSubscription.plan.slug === targetPlanSlug) {
       return { success: true, message: 'Ya estás en este plan' };
