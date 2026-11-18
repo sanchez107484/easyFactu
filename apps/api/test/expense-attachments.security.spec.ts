@@ -1,6 +1,8 @@
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { Plan } from '@easyfactura/shared-types';
+import { PlanTier } from '@easyfactura/shared-types';
 import { ExpenseAttachmentsService } from '../src/modules/expense-attachments/expense-attachments.service';
+import { ExpenseAttachmentStorageService } from '../src/modules/expense-attachments/expense-attachment-storage.service';
+import { InMemoryAttachmentStorage } from './helpers/in-memory-attachment-storage';
 import { prismaTest, cleanupTestData } from './helpers/prisma-test';
 import {
   createTestTenant,
@@ -32,7 +34,10 @@ function createMulterFile(overrides: Partial<Express.Multer.File> = {}): Express
 }
 
 describe('ExpenseAttachmentsService security', () => {
-  const attachmentsService = new ExpenseAttachmentsService(prismaTest);
+  const attachmentsService = new ExpenseAttachmentsService(
+    prismaTest,
+    new InMemoryAttachmentStorage() as unknown as ExpenseAttachmentStorageService
+  );
   let tenantAId: string;
   let tenantBId: string;
   let userAId: string;
@@ -51,8 +56,8 @@ describe('ExpenseAttachmentsService security', () => {
   };
 
   beforeAll(async () => {
-    const tenantA = await createTestTenant(Plan.PROFESSIONAL);
-    const tenantB = await createTestTenant(Plan.PROFESSIONAL);
+    const tenantA = await createTestTenant(PlanTier.PROFESSIONAL);
+    const tenantB = await createTestTenant(PlanTier.PROFESSIONAL);
     tenantAId = tenantA.id;
     tenantBId = tenantB.id;
     tracked.tenantIds.push(tenantAId, tenantBId);

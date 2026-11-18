@@ -1,11 +1,17 @@
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Plan } from '@easyfactura/shared-types';
+import { PlanTier } from '@easyfactura/shared-types';
+import { PlanRequiredException } from '../src/common/errors/plan-required.exception';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { PlanGuard } from '../src/common/guards/plan.guard';
 import { REQUIRED_PLAN_KEY } from '../src/common/decorators/require-plan.decorator';
 import { prismaTest, cleanupTestData } from './helpers/prisma-test';
-import { createTestTenant, createTestUser, linkTenantUser } from './helpers/test-data';
+import {
+  createTenantWithoutSubscription,
+  createTestTenant,
+  createTestUser,
+  linkTenantUser,
+} from './helpers/test-data';
 
 function createMockContext(tenantId?: string): ExecutionContext {
   return {
@@ -23,7 +29,7 @@ describe('PlanGuard', () => {
   let guard: PlanGuard;
   let reflector: Reflector;
   let prisma: PrismaService;
-  let freeTenantId: string;
+  let basicTenantId: string;
   let proTenantId: string;
 
   const tracked = {
@@ -31,70 +37,73 @@ describe('PlanGuard', () => {
     userIds: [] as string[],
   };
 
+  function requirePlan(tier: PlanTier | undefined): void {
+    reflector.getAllAndOverride = jest.fn().mockReturnValue(tier);
+  }
+
   beforeAll(async () => {
     prisma = new PrismaService();
     reflector = new Reflector();
     guard = new PlanGuard(reflector, prisma);
 
-    const freeTenant = await createTestTenant(Plan.FREE);
-    const proTenant = await createTestTenant(Plan.PROFESSIONAL);
-    freeTenantId = freeTenant.id;
+    const basicTenant = await createTestTenant(PlanTier.BASIC);
+    const proTenant = await createTestTenant(PlanTier.PROFESSIONAL);
+    basicTenantId = basicTenant.id;
     proTenantId = proTenant.id;
-    tracked.tenantIds.push(freeTenantId, proTenantId);
+    tracked.tenantIds.push(basicTenantId, proTenantId);
 
     const user = await createTestUser();
     tracked.userIds.push(user.id);
-    await linkTenantUser(freeTenantId, user.id);
+    await linkTenantUser(basicTenantId, user.id);
     await linkTenantUser(proTenantId, user.id);
   });
 
   afterAll(async () => {
     await cleanupTestData(tracked);
+    await prisma.$disconnect();
     await prismaTest.$disconnect();
   });
 
-  it('should allow access when no plan is required', async () => {
-    const context = createMockContext(freeTenantId);
-    reflector.getAllAndOverride = jest.fn().mockReturnValue(undefined);
-
-    await expect(guard.canActivate(context)).resolves.toBe(true);
+  it('allows access when no plan is required', async () => {
+    requirePlan(undefined);
+    await expect(guard.canActivate(createMockContext(basicTenantId))).resolves.toBe(true);
   });
 
-  it('should deny access when tenantId is missing', async () => {
-    const context = createMockContext(undefined);
-    reflector.getAllAndOverride = jest.fn().mockReturnValue(Plan.PROFESSIONAL);
-
-    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+  it('denies access when tenantId is missing', async () => {
+    requirePlan(PlanTier.PROFESSIONAL);
+    await expect(guard.canActivate(createMockContext(undefined))).rejects.toThrow(
+      ForbiddenException
+    );
   });
 
-  it('should allow PRO tenant to access PRO feature', async () => {
-    const context = createMockContext(proTenantId);
-    reflector.getAllAndOverride = jest.fn().mockReturnValue(Plan.PROFESSIONAL);
-
-    await expect(guard.canActivate(context)).resolves.toBe(true);
+  it('allows a PROFESSIONAL tenant to use a PROFESSIONAL feature', async () => {
+    requirePlan(PlanTier.PROFESSIONAL);
+    await expect(guard.canActivate(createMockContext(proTenantId))).resolves.toBe(true);
   });
 
-  it('should deny FREE tenant from PRO feature', async () => {
-    const context = createMockContext(freeTenantId);
-    reflector.getAllAndOverride = jest.fn().mockReturnValue(Plan.PROFESSIONAL);
-
-    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+  it('allows a PROFESSIONAL tenant to use a BASIC feature', async () => {
+    requirePlan(PlanTier.BASIC);
+    await expect(guard.canActivate(createMockContext(proTenantId))).resolves.toBe(true);
   });
 
-  it('should allow BASIC tenant to access BASIC feature', async () => {
-    const basicTenant = await createTestTenant(Plan.BASIC);
-    tracked.tenantIds.push(basicTenant.id);
-
-    const context = createMockContext(basicTenant.id);
-    reflector.getAllAndOverride = jest.fn().mockReturnValue(Plan.BASIC);
-
-    await expect(guard.canActivate(context)).resolves.toBe(true);
+  it('allows a BASIC tenant to use a BASIC feature', async () => {
+    requirePlan(PlanTier.BASIC);
+    await expect(guard.canActivate(createMockContext(basicTenantId))).resolves.toBe(true);
   });
 
-  it('should deny FREE tenant from BASIC feature', async () => {
-    const context = createMockContext(freeTenantId);
-    reflector.getAllAndOverride = jest.fn().mockReturnValue(Plan.BASIC);
+  it('denies a BASIC tenant a PROFESSIONAL feature with PlanRequiredException', async () => {
+    requirePlan(PlanTier.PROFESSIONAL);
+    await expect(guard.canActivate(createMockContext(basicTenantId))).rejects.toThrow(
+      PlanRequiredException
+    );
+  });
 
-    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+  it('denies a tenant without subscription', async () => {
+    const orphan = await createTenantWithoutSubscription();
+    tracked.tenantIds.push(orphan.id);
+    requirePlan(PlanTier.BASIC);
+    await expect(guard.canActivate(createMockContext(orphan.id))).rejects.toThrow(
+      ForbiddenException
+    );
   });
 });

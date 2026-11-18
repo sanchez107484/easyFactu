@@ -1,4 +1,5 @@
-import { Plan, TenantUserRole } from '@easyfactura/shared-types';
+import { PlanTier, TenantUserRole } from '@easyfactura/shared-types';
+import { createFreeSubscription } from '../../src/modules/subscriptions/initial-subscription';
 import { prismaTest } from './prisma-test';
 
 let counter = 0;
@@ -16,7 +17,35 @@ function unique(prefix: string): string {
   return `${prefix}_${Date.now()}_${process.pid}_${counter}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export async function createTestTenant(plan: Plan = Plan.FREE) {
+/**
+ * Creates a tenant with its subscription in one transaction, exactly as signup, agency clients
+ * and ERP provisioning do: the plan lives in Subscription → Plan.tier, never on the tenant.
+ */
+export async function createTestTenant(tier: PlanTier = PlanTier.BASIC) {
+  return prismaTest.$transaction(async (tx) => {
+    const tenant = await tx.tenant.create({
+      data: {
+        businessName: unique('tenant'),
+        nif: unique('NIF'),
+        address: 'Test address',
+        postalCode: '31001',
+        city: 'Pamplona',
+        province: 'Navarra',
+        country: 'ES',
+        email: `${unique('tenant')}@test.local`,
+      },
+    });
+    await createFreeSubscription(
+      tx,
+      tenant.id,
+      tier === PlanTier.PROFESSIONAL ? 'PROFESSIONAL_FREE' : 'BASIC_FREE'
+    );
+    return tenant;
+  });
+}
+
+/** A tenant without subscription: an inconsistent state the app never creates on purpose. */
+export async function createTenantWithoutSubscription() {
   return prismaTest.tenant.create({
     data: {
       businessName: unique('tenant'),
@@ -27,7 +56,6 @@ export async function createTestTenant(plan: Plan = Plan.FREE) {
       province: 'Navarra',
       country: 'ES',
       email: `${unique('tenant')}@test.local`,
-      plan,
     },
   });
 }

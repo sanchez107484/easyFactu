@@ -1,5 +1,5 @@
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { Plan } from '@easyfactura/shared-types';
+import { PlanTier } from '@easyfactura/shared-types';
 import { SuppliersService } from '../src/modules/suppliers/suppliers.service';
 import { prismaTest, cleanupTestData } from './helpers/prisma-test';
 import {
@@ -26,8 +26,8 @@ describe('SuppliersService security', () => {
   };
 
   beforeAll(async () => {
-    const tenantA = await createTestTenant(Plan.PROFESSIONAL);
-    const tenantB = await createTestTenant(Plan.PROFESSIONAL);
+    const tenantA = await createTestTenant(PlanTier.PROFESSIONAL);
+    const tenantB = await createTestTenant(PlanTier.PROFESSIONAL);
     tenantAId = tenantA.id;
     tenantBId = tenantB.id;
     tracked.tenantIds.push(tenantAId, tenantBId);

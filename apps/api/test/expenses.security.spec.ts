@@ -1,5 +1,5 @@
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { Plan } from '@easyfactura/shared-types';
+import { PlanTier } from '@easyfactura/shared-types';
 import { ExpensesService } from '../src/modules/expenses/expenses.service';
 import { ExpensesCalculationService } from '../src/modules/expenses/expenses-calculation.service';
 import { SuppliersService } from '../src/modules/suppliers/suppliers.service';
@@ -42,8 +42,8 @@ describe('ExpensesService security', () => {
   };
 
   beforeAll(async () => {
-    const tenantA = await createTestTenant(Plan.PROFESSIONAL);
-    const tenantB = await createTestTenant(Plan.PROFESSIONAL);
+    const tenantA = await createTestTenant(PlanTier.PROFESSIONAL);
+    const tenantB = await createTestTenant(PlanTier.PROFESSIONAL);
     tenantAId = tenantA.id;
     tenantBId = tenantB.id;
     tracked.tenantIds.push(tenantAId, tenantBId);

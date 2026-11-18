@@ -1,5 +1,5 @@
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { Plan, RecurringExpenseFrequency } from '@easyfactura/shared-types';
+import { PlanTier, RecurringExpenseFrequency } from '@easyfactura/shared-types';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { RecurringExpensesService } from '../src/modules/recurring-expenses/recurring-expenses.service';
 import { ExpensesCalculationService } from '../src/modules/expenses/expenses-calculation.service';
@@ -39,8 +39,8 @@ describe('RecurringExpensesService security', () => {
   };
 
   beforeAll(async () => {
-    const tenantA = await createTestTenant(Plan.PROFESSIONAL);
-    const tenantB = await createTestTenant(Plan.PROFESSIONAL);
+    const tenantA = await createTestTenant(PlanTier.PROFESSIONAL);
+    const tenantB = await createTestTenant(PlanTier.PROFESSIONAL);
     tenantAId = tenantA.id;
     tenantBId = tenantB.id;
     tracked.tenantIds.push(tenantAId, tenantBId);
