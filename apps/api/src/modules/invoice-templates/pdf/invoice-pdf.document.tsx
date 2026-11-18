@@ -2,7 +2,13 @@
 // @ts-nocheck — @react-pdf/renderer components are incompatible with React 18 types (missing `refs`)
 // NOTE: @react-pdf/renderer is NOT imported at the top level because it is ESM-only.
 // The `renderer` object is injected at runtime via the `createInvoicePdfElement` factory.
-import { Invoice, InvoiceLayout, InvoiceTemplate, Tenant } from '@easyfactura/shared-types';
+import {
+  Invoice,
+  InvoiceLayout,
+  InvoiceTemplate,
+  Tenant,
+  shouldShowDiscountColumn,
+} from '@easyfactura/shared-types';
 import { formatIban } from '@easyfactura/shared-validators';
 import { formatCurrency, formatUnitPrice } from '../../../common/utils/format';
 
@@ -251,10 +257,7 @@ export function createInvoicePdfElement(
   const showUnitPrice = layout.itemsTable.showUnitPrice ?? true;
   const showTaxColumn = layout.itemsTable.showTaxColumn ?? true;
   const showLineTotal = layout.itemsTable.showLineTotal ?? true;
-  // Show Dto column only when actual discount data exists.
-  // layout.itemsTable.showDiscount===false is the hard override (simplifyTable).
-  const hasDiscountData = lines.some((line) => (Number(line.discountPercent) || 0) > 0);
-  const showDiscount = layout.itemsTable.showDiscount === false ? false : hasDiscountData;
+  const showDiscount = shouldShowDiscountColumn(layout.itemsTable, lines);
 
   // Prefer immutable snapshot fields; fall back to live tenant relation for backwards compat.
   const senderName = invoice.issuerSnapshotName ?? tenant.businessName;

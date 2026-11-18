@@ -1022,6 +1022,21 @@ export const DEFAULT_INVOICE_LAYOUT: InvoiceLayout = {
   notes: { show: true, showLabel: true },
 };
 
+/**
+ * Whether the items table must show the "Dto." column.
+ * A real line discount is always shown next to the unit price (RD 1619/2012, art. 6.1.f):
+ * hiding it would leave a unit price that does not match the line total.
+ * It is only omitted when the unit price itself is hidden (e.g. the simplified table).
+ */
+export function shouldShowDiscountColumn(
+  itemsTable: Pick<InvoiceLayout['itemsTable'], 'showUnitPrice'>,
+  lines: ReadonlyArray<{ discountPercent?: number | string | null }>,
+): boolean {
+  const isUnitPriceVisible = itemsTable.showUnitPrice ?? true;
+  const hasDiscountData = lines.some((line) => (Number(line.discountPercent) || 0) > 0);
+  return isUnitPriceVisible && hasDiscountData;
+}
+
 export interface InvoiceTemplate {
   id: string;
   tenantId: string;

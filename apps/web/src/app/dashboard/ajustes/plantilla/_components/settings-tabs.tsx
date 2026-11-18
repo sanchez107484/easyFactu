@@ -723,11 +723,6 @@ function DetailsTab({
             onChange={(v) => patchItemsTable({ showReference: v })}
           />
           <ToggleRow
-            label="Descuento"
-            checked={layout.itemsTable.showDiscount}
-            onChange={(v) => patchItemsTable({ showDiscount: v })}
-          />
-          <ToggleRow
             label="Precio unitario"
             description="Util para facturas de un unico servicio"
             checked={layout.itemsTable.showUnitPrice ?? true}
