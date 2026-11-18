@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
-import { PaymentMethod } from '@easyfactura/shared-types';
+import { IsOptional, IsString, Matches, MaxLength, IsIn } from 'class-validator';
+import { PaymentMethod, SELECTABLE_PAYMENT_METHODS } from '@easyfactura/shared-types';
 
 export class RegisterPaymentDto {
   @ApiProperty({
@@ -20,8 +20,8 @@ export class RegisterPaymentDto {
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Fecha con formato YYYY-MM-DD' })
   paymentDate?: string;
 
-  @ApiProperty({ enum: PaymentMethod, example: PaymentMethod.CARD })
-  @IsEnum(PaymentMethod, { message: 'Método de pago no permitido' })
+  @ApiProperty({ enum: SELECTABLE_PAYMENT_METHODS, example: PaymentMethod.CARD })
+  @IsIn(SELECTABLE_PAYMENT_METHODS, { message: 'Método de pago no permitido' })
   paymentMethod!: PaymentMethod;
 
   @ApiPropertyOptional({

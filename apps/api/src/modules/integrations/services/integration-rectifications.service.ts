@@ -15,6 +15,7 @@ import {
   todayInSpain,
 } from './integration-invoice-rules';
 import { IntegrationInvoicesService } from './integration-invoices.service';
+import { IntegrationSettlementService } from './integration-settlement.service';
 import { PriceWithTaxConverter } from './price-with-tax.converter';
 
 const ISSUED_STATUSES: InvoiceStatus[] = [
@@ -35,7 +36,8 @@ export class IntegrationRectificationsService {
     private readonly prisma: PrismaService,
     private readonly invoiceService: InvoiceService,
     private readonly invoices: IntegrationInvoicesService,
-    private readonly converter: PriceWithTaxConverter
+    private readonly converter: PriceWithTaxConverter,
+    private readonly settlements: IntegrationSettlementService
   ) {}
 
   async rectify(
@@ -59,6 +61,9 @@ export class IntegrationRectificationsService {
       original.taxBreakdown.map((row) => Number(row.rate))
     );
     await this.assertWithinRefundableAmount(tenantId, original, converted.chargedCents);
+    const settlementPlan = dto.settlement
+      ? this.settlements.plan(dto.settlement, converted.chargedCents, original)
+      : undefined;
 
     const draft = await this.invoiceService.rectify(
       tenantId,
@@ -66,7 +71,15 @@ export class IntegrationRectificationsService {
       toRectifyDto(dto.reason, converted.lines),
       { externalRef: dto.externalRef, operationDate, issueDate: todayInSpain() }
     );
-    return this.invoices.confirmIfMatches(tenantId, draft, -converted.chargedCents);
+    return this.invoices.confirmIfMatches(
+      tenantId,
+      draft,
+      -converted.chargedCents,
+      settlementPlan && {
+        onConfirmed: (tx, rectificative) =>
+          this.settlements.apply(tx, tenantId, settlementPlan, rectificative),
+      }
+    );
   }
 
   /** Original total plus every issued return (negative) must stay ≥ 0 after this one. */

@@ -21,7 +21,7 @@ import { useInvoiceDefaults, useUpdateInvoiceDefaults } from '@/hooks/use-invoic
 import { useUpdateTemplate, useDefaultTemplate } from '@/hooks/use-invoice-templates';
 import { useTenant, useUpdateTenant } from '@/hooks/use-tenant';
 import { InvoiceLayout, PaymentMethod } from '@easyfactura/shared-types';
-import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
+import { SELECTABLE_PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import {
   PaymentDetailsFields,
   PaymentDetailsValues,
@@ -175,7 +175,7 @@ export function InvoiceDefaultsForm() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="none">Sin predeterminado</SelectItem>
-            {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+            {Object.entries(SELECTABLE_PAYMENT_METHOD_LABELS).map(([value, label]) => (
               <SelectItem key={value} value={value}>
                 {label}
               </SelectItem>

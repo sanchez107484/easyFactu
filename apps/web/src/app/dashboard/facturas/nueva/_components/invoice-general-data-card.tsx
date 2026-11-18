@@ -20,7 +20,7 @@ import {
   PaymentDetailsValues,
 } from '@/components/facturas/PaymentDetailsFields';
 import { formatSeriesPreview } from '@easyfactura/shared-validators';
-import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
+import { SELECTABLE_PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import {
   PaymentMethod,
   Customer,
@@ -264,7 +264,7 @@ export function InvoiceGeneralDataCard({
               <SelectValue placeholder="Selecciona un método" />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+              {Object.entries(SELECTABLE_PAYMENT_METHOD_LABELS).map(([value, label]) => (
                 <SelectItem key={value} value={value}>
                   {label}
                 </SelectItem>

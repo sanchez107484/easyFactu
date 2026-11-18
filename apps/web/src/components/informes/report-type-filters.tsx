@@ -1,6 +1,11 @@
 'use client';
 
-import { PaymentMethod, PaymentStatus, ProductType, ReportType } from '@easyfactura/shared-types';
+import {
+  PaymentStatus,
+  ProductType,
+  ReportType,
+  SELECTABLE_PAYMENT_METHODS,
+} from '@easyfactura/shared-types';
 import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import { useCustomers } from '@/hooks/use-customers';
 import { useProducts } from '@/hooks/use-products';
@@ -25,7 +30,8 @@ const PRODUCT_TYPE_OPTIONS = Object.values(ProductType).map((type) => ({
   label: PRODUCT_TYPE_LABELS[type],
 }));
 
-const PAYMENT_METHOD_OPTIONS = Object.values(PaymentMethod).map((method) => ({
+// Compensations are not collections (no money comes in), so they are not offered as a filter.
+const PAYMENT_METHOD_OPTIONS = SELECTABLE_PAYMENT_METHODS.map((method) => ({
   value: method,
   label: PAYMENT_METHOD_LABELS[method],
 }));
@@ -96,7 +102,7 @@ export function ReportTypeFilters({ type, filters, onChange }: ReportTypeFilters
             onChange={(values) =>
               onChange({
                 ...filters,
-                paymentMethods: pickAll(Object.values(PaymentMethod), values),
+                paymentMethods: pickAll(SELECTABLE_PAYMENT_METHODS, values),
               })
             }
           />

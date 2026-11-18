@@ -619,7 +619,8 @@
                         "taxRate": "10",
                         "discountPercent": "10"
                       }
-                    ]
+                    ],
+                    "notes": "Garantía de 2 años en monturas. Recogida en tienda."
                   }
                 }
               }
@@ -1600,7 +1601,7 @@
     },
     "/integrations/v1/invoices/{id}/rectifications": {
       "post": {
-        "description": "Emite una rectificativa con importes negativos: R5 si la original es simplificada, R4 si es completa. Las líneas llevan el importe devuelto IVA incluido, en positivo. La suma de devoluciones no puede superar el total de la factura original.",
+        "description": "Emite una rectificativa con importes negativos: R5 si la original es simplificada, R4 si es completa. Las líneas llevan el importe devuelto IVA incluido, en positivo. La suma de devoluciones no puede superar el total de la factura original. Con settlement, la rectificativa nace saldada en la misma transacción: el reembolso es un pago negativo de la rectificativa y la compensación reduce lo pendiente de la factura original. refund + compensation = total de la rectificativa en positivo (422 FISCAL_RULE si no); la compensación no puede superar lo pendiente de la original (422).",
         "operationId": "IntegrationInvoiceRecordsController_rectify",
         "parameters": [
           {
@@ -1650,6 +1651,32 @@
                         "taxRate": "21"
                       }
                     ]
+                  }
+                },
+                "devolucionSaldada": {
+                  "summary": "Devolución saldada: reembolso con tarjeta + compensación",
+                  "value": {
+                    "externalRef": "DEV-2026-000046",
+                    "reason": "Devolución de las gafas de sol",
+                    "lines": [
+                      {
+                        "description": "Gafas de sol",
+                        "quantity": "1",
+                        "unitPriceWithTax": "107.69",
+                        "taxRate": "21"
+                      }
+                    ],
+                    "settlement": {
+                      "refund": {
+                        "amount": "80.00",
+                        "paymentMethod": "CARD",
+                        "paymentDate": "2026-11-18",
+                        "reference": "REEMB-2026-000012"
+                      },
+                      "compensation": {
+                        "amount": "27.69"
+                      }
+                    }
                   }
                 }
               }
@@ -2860,6 +2887,12 @@
               "$ref": "#/components/schemas/IssueInvoiceLineDto"
             }
           },
+          "notes": {
+            "type": "string",
+            "description": "Observaciones que se imprimen en el PDF de la factura, en el apartado \"Notas\". Texto libre (admite saltos de línea), máximo 500 caracteres. No se envía a la AEAT.",
+            "maxLength": 500,
+            "example": "Garantía de 2 años en monturas. Recogida en tienda."
+          },
           "regimeData": {
             "type": "object",
             "description": "Datos propios de un régimen (p. ej. foral). Opcional; el régimen lo decide la cuenta.",
@@ -3295,6 +3328,67 @@
           "customer"
         ]
       },
+      "SettlementRefundDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Importe reembolsado, en positivo",
+            "example": "80.00"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "BANK_TRANSFER",
+              "DIRECT_DEBIT",
+              "CARD",
+              "CASH",
+              "PAYPAL",
+              "OTHER",
+              "BIZUM"
+            ],
+            "example": "CARD"
+          },
+          "paymentDate": {
+            "type": "string",
+            "description": "Fecha del reembolso (YYYY-MM-DD), no posterior a hoy. Por defecto, hoy.",
+            "example": "2026-11-18"
+          },
+          "reference": {
+            "type": "string",
+            "description": "Referencia del reembolso en el ERP",
+            "example": "REEMB-0045"
+          }
+        },
+        "required": [
+          "amount",
+          "paymentMethod"
+        ]
+      },
+      "SettlementCompensationDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Importe compensado con lo pendiente de la factura original, en positivo",
+            "example": "27.69"
+          }
+        },
+        "required": [
+          "amount"
+        ]
+      },
+      "RectificationSettlementDto": {
+        "type": "object",
+        "properties": {
+          "refund": {
+            "$ref": "#/components/schemas/SettlementRefundDto"
+          },
+          "compensation": {
+            "$ref": "#/components/schemas/SettlementCompensationDto"
+          }
+        }
+      },
       "RectifyIssuedInvoiceDto": {
         "type": "object",
         "properties": {
@@ -3319,6 +3413,14 @@
             "items": {
               "$ref": "#/components/schemas/IssueInvoiceLineDto"
             }
+          },
+          "settlement": {
+            "description": "Cómo se salda la devolución: reembolso (pago negativo de la rectificativa) y/o compensación con lo pendiente de la factura original. La suma debe ser el total de la rectificativa en positivo (422 FISCAL_RULE si no). Sin settlement, la rectificativa queda pendiente.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RectificationSettlementDto"
+              }
+            ]
           }
         },
         "required": [

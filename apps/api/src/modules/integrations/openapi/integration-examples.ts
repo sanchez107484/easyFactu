@@ -87,6 +87,7 @@ export const ISSUE_INVOICE_EXAMPLES = {
           discountPercent: '10',
         },
       ],
+      notes: 'Garantía de 2 años en monturas. Recogida en tienda.',
     },
   },
 };
@@ -107,6 +108,21 @@ export const RECTIFY_INVOICE_EXAMPLE = {
   lines: [
     { description: 'Gafas de sol', quantity: '1', unitPriceWithTax: '107.69', taxRate: '21' },
   ],
+};
+
+/** Return settled as in the ERP: part refunded by card, part offset against what is still owed. */
+export const RECTIFY_INVOICE_SETTLED_EXAMPLE = {
+  ...RECTIFY_INVOICE_EXAMPLE,
+  externalRef: 'DEV-2026-000046',
+  settlement: {
+    refund: {
+      amount: '80.00',
+      paymentMethod: 'CARD',
+      paymentDate: '2026-11-18',
+      reference: 'REEMB-2026-000012',
+    },
+    compensation: { amount: '27.69' },
+  },
 };
 
 export const EXCHANGE_INVOICES_EXAMPLE = {

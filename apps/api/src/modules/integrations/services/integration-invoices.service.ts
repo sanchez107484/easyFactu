@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InvoiceStatus, TaxRegime } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateInvoiceDto, CreateInvoiceLineDto } from '../../invoices/dto/create-invoice.dto';
-import { InvoiceService } from '../../invoices/invoice.service';
+import { ConfirmInvoiceOptions, InvoiceService } from '../../invoices/invoice.service';
 import { IntegrationInvoiceResponse } from '../dto/integration-responses.dto';
 import { InvoicePayerDto, IssueInvoiceDto } from '../dto/issue-invoice.dto';
 import { IntegrationErrorCode } from '../errors/integration-error-code';
@@ -137,11 +137,13 @@ export class IntegrationInvoicesService {
   /**
    * Confirms (irreversible) a draft only when its total is exactly the expected amount
    * (negative for a return); otherwise the draft is discarded and nothing is issued.
+   * `confirmOptions.onConfirmed` commits with the confirmation or rolls it back.
    */
   async confirmIfMatches(
     tenantId: string,
     draft: { id: string; total: unknown },
-    expectedCents: bigint
+    expectedCents: bigint,
+    confirmOptions?: ConfirmInvoiceOptions
   ): Promise<IntegrationInvoiceResponse> {
     const totalCents = toCents(Number(draft.total));
     if (totalCents !== expectedCents) {
@@ -154,8 +156,38 @@ export class IntegrationInvoicesService {
         'Error interno al cuadrar los importes. No se ha emitido la factura.'
       );
     }
-    await this.invoiceService.confirm(tenantId, draft.id);
+    if (confirmOptions) {
+      await this.confirmOrDiscard(tenantId, draft.id, confirmOptions);
+    } else {
+      await this.invoiceService.confirm(tenantId, draft.id);
+    }
     return this.findOne(tenantId, draft.id);
+  }
+
+  /** The hook rolled the confirmation back: the draft is discarded so nothing half-done remains. */
+  private async confirmOrDiscard(
+    tenantId: string,
+    draftId: string,
+    confirmOptions: ConfirmInvoiceOptions
+  ): Promise<void> {
+    try {
+      await this.invoiceService.confirm(tenantId, draftId, confirmOptions);
+    } catch (error) {
+      await this.discardDraft(tenantId, draftId);
+      throw error;
+    }
+  }
+
+  /** Best effort: a draft left behind is discarded anyway when the ERP retries the externalRef. */
+  private async discardDraft(tenantId: string, draftId: string): Promise<void> {
+    try {
+      await this.invoiceService.remove(tenantId, draftId);
+    } catch (removeError) {
+      const message = removeError instanceof Error ? removeError.message : String(removeError);
+      this.logger.error(
+        `Draft ${draftId} could not be discarded after a failed confirmation: ${message}`
+      );
+    }
   }
 }
 
@@ -190,6 +222,7 @@ export function buildCreateDto(
   options: {
     invoiceType: 'standard' | 'simplified';
     paymentMethod?: IssueInvoiceDto['paymentMethod'];
+    notes?: string;
   }
 ): CreateInvoiceDto {
   const createDto = new CreateInvoiceDto();
@@ -197,6 +230,13 @@ export function buildCreateDto(
   createDto.issueDate = todayInSpain();
   createDto.invoiceType = options.invoiceType;
   createDto.paymentMethod = options.paymentMethod;
+  createDto.notes = normalizeNotes(options.notes);
   createDto.lines = lines;
   return createDto;
+}
+
+/** Blank notes are treated as absent so the PDF does not print an empty "Notas" section. */
+function normalizeNotes(notes: string | undefined): string | undefined {
+  const trimmed = notes?.trim();
+  return trimmed ? trimmed : undefined;
 }

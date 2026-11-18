@@ -12,9 +12,10 @@ import {
   Min,
   Max,
   MaxLength,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Frequency, PaymentMethod } from '@easyfactura/shared-types';
+import { Frequency, PaymentMethod, SELECTABLE_PAYMENT_METHODS } from '@easyfactura/shared-types';
 import { CreateRecurringInvoiceLineDto } from './create-recurring-invoice.dto';
 import { PaymentDetailsDto } from '../../invoices/dto/create-invoice.dto';
 
@@ -57,7 +58,7 @@ export class UpdateRecurringInvoiceDto {
   compensacionPercent?: number | null;
 
   @IsOptional()
-  @IsEnum(PaymentMethod)
+  @IsIn(SELECTABLE_PAYMENT_METHODS, { message: 'Método de pago no válido' })
   paymentMethod?: PaymentMethod | null;
 
   @IsOptional()

@@ -98,7 +98,21 @@ export enum PaymentMethod {
   PAYPAL = 'PAYPAL',
   OTHER = 'OTHER',
   BIZUM = 'BIZUM',
+  /** Set only by the system: a return offset against what an invoice still owes (HU-21F). */
+  COMPENSATION = 'COMPENSATION',
 }
+
+/** Payment methods a user or the ERP may choose. COMPENSATION is never chosen, only recorded. */
+export type SelectablePaymentMethod = Exclude<PaymentMethod, PaymentMethod.COMPENSATION>;
+
+export function isSelectablePaymentMethod(
+  method: PaymentMethod,
+): method is SelectablePaymentMethod {
+  return method !== PaymentMethod.COMPENSATION;
+}
+
+export const SELECTABLE_PAYMENT_METHODS: SelectablePaymentMethod[] =
+  Object.values(PaymentMethod).filter(isSelectablePaymentMethod);
 
 export enum AgencyInvitationStatus {
   PENDING = 'PENDING',

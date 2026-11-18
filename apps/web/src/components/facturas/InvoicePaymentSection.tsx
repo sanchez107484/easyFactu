@@ -20,7 +20,7 @@ import type {
   Payment,
   PaymentMethod as PaymentMethodType,
 } from '@easyfactura/shared-types';
-import { PaymentStatus } from '@easyfactura/shared-types';
+import { PaymentMethod, PaymentStatus } from '@easyfactura/shared-types';
 import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import { formatCurrency, cn, parseNum, formatDateShort } from '@/lib/utils';
 
@@ -146,39 +146,43 @@ export function InvoicePaymentSection({
                             {PAYMENT_METHOD_LABELS[payment.paymentMethod as PaymentMethodType]}
                           </span>
                         )}
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <button
-                              type="button"
-                              className="h-5 w-5 inline-flex items-center justify-center rounded text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Eliminar {actionWord}</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                ¿Eliminar este {actionWord} de {formatCurrency(payAmount)}? El
-                                importe {isCreditNote ? 'abonado' : 'cobrado'} se actualizará automáticamente.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                onClick={() =>
-                                  deletePayment.mutate({
-                                    invoiceId: invoice.id,
-                                    paymentId: payment.id,
-                                  })
-                                }
+                        {/* A compensation is recorded with the return and cannot be deleted. */}
+                        {payment.paymentMethod !== PaymentMethod.COMPENSATION && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <button
+                                type="button"
+                                className="h-5 w-5 inline-flex items-center justify-center rounded text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
                               >
-                                Eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Eliminar {actionWord}</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  ¿Eliminar este {actionWord} de {formatCurrency(payAmount)}? El
+                                  importe {isCreditNote ? 'abonado' : 'cobrado'} se actualizará
+                                  automáticamente.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() =>
+                                    deletePayment.mutate({
+                                      invoiceId: invoice.id,
+                                      paymentId: payment.id,
+                                    })
+                                  }
+                                >
+                                  Eliminar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     </div>
                   );

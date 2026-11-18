@@ -34,7 +34,7 @@ export function invalidState(detail: string): IntegrationException {
 }
 
 /** YYYY-MM-DD that exists in the calendar (rejects 2026-02-30). */
-function isCalendarDate(value: string): boolean {
+export function isCalendarDate(value: string): boolean {
   const date = new Date(`${value}T00:00:00Z`);
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }

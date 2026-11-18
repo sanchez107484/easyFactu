@@ -1,5 +1,4 @@
 import {
-  IsEnum,
   IsNumber,
   IsObject,
   IsOptional,
@@ -8,9 +7,10 @@ import {
   MaxLength,
   Min,
   ValidateNested,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PaymentMethod } from '@easyfactura/shared-types';
+import { PaymentMethod, SELECTABLE_PAYMENT_METHODS } from '@easyfactura/shared-types';
 
 class PaymentDetailsDto {
   @IsOptional()
@@ -41,7 +41,7 @@ class PaymentDetailsDto {
 
 export class UpdateInvoiceDefaultsDto {
   @IsOptional()
-  @IsEnum(PaymentMethod)
+  @IsIn(SELECTABLE_PAYMENT_METHODS, { message: 'Método de pago no válido' })
   paymentMethod?: PaymentMethod | null;
 
   @IsOptional()

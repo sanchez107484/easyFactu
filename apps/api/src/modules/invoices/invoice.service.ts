@@ -100,6 +100,17 @@ export interface IntegrationInvoiceOptions {
   operationDate?: string;
 }
 
+/** The confirmed invoice as the hook receives it: numbered, with its final totals. */
+export interface ConfirmedInvoiceSummary {
+  id: string;
+  number: string | null;
+  total: Prisma.Decimal;
+}
+
+export interface ConfirmInvoiceOptions {
+  onConfirmed?: (tx: Prisma.TransactionClient, invoice: ConfirmedInvoiceSummary) => Promise<void>;
+}
+
 @Injectable()
 export class InvoiceService {
   constructor(
@@ -1698,7 +1709,11 @@ export class InvoiceService {
 
   // ==================== STATUS TRANSITIONS ====================
 
-  async confirm(tenantId: string, id: string) {
+  /**
+   * @param options.onConfirmed runs inside the confirmation transaction, after the invoice is
+   *   numbered and CONFIRMED: if it throws, the confirmation rolls back and the invoice stays DRAFT.
+   */
+  async confirm(tenantId: string, id: string, options: ConfirmInvoiceOptions = {}) {
     const invoice = await this.findForMutation(tenantId, id);
 
     if (invoice.invoiceType === 'proforma') {
@@ -1852,6 +1867,7 @@ export class InvoiceService {
           // CONFIRMED/SENT/PAID so that further payments or abonos can be registered.
         }
 
+        await options.onConfirmed?.(tx, updatedInvoice);
         return updatedInvoice;
       },
       { isolationLevel: 'Serializable' }
@@ -2707,6 +2723,7 @@ export class InvoiceService {
         WHERE tenant_id = ${tenantId}
           AND payment_date >= ${thisMonthStart}
           AND payment_date <  ${nextMonthStart}
+          AND payment_method IS DISTINCT FROM 'COMPENSATION'
       `),
       this.prisma.$queryRaw<OverdueRow[]>(Prisma.sql`
         SELECT

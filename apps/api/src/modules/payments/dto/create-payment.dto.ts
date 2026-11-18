@@ -4,11 +4,11 @@ import {
   IsDateString,
   IsOptional,
   IsString,
-  IsEnum,
   MaxLength,
+  IsIn,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PaymentMethod } from '@easyfactura/shared-types';
+import { PaymentMethod, SELECTABLE_PAYMENT_METHODS } from '@easyfactura/shared-types';
 
 export class CreatePaymentDto {
   @ApiProperty({
@@ -23,9 +23,12 @@ export class CreatePaymentDto {
   @IsDateString({}, { message: 'La fecha del cobro no es válida' })
   paymentDate!: string;
 
-  @ApiPropertyOptional({ enum: PaymentMethod, description: 'Método de pago utilizado' })
+  @ApiPropertyOptional({
+    enum: SELECTABLE_PAYMENT_METHODS,
+    description: 'Método de pago utilizado',
+  })
   @IsOptional()
-  @IsEnum(PaymentMethod)
+  @IsIn(SELECTABLE_PAYMENT_METHODS, { message: 'Método de pago no válido' })
   paymentMethod?: PaymentMethod;
 
   @ApiPropertyOptional({ description: 'Referencia del cobro (nº transferencia, etc.)' })

@@ -26,7 +26,10 @@ import {
 } from '@/components/ui/select';
 import { useCreatePayment } from '@/hooks/use-invoices';
 import { PaymentMethod, PaymentType } from '@easyfactura/shared-types';
-import { PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
+import {
+  PAYMENT_METHOD_LABELS,
+  SELECTABLE_PAYMENT_METHOD_LABELS,
+} from '@easyfactura/shared-constants';
 import { cn, formatCurrency } from '@/lib/utils';
 
 function buildPaymentSchema(isCreditNote: boolean) {
@@ -309,7 +312,7 @@ export function RegisterPaymentDialog({
                   <SelectValue placeholder="Seleccionar método" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+                  {Object.entries(SELECTABLE_PAYMENT_METHOD_LABELS).map(([value, label]) => (
                     <SelectItem key={value} value={value}>
                       {label}
                     </SelectItem>

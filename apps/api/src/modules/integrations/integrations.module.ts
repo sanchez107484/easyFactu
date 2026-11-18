@@ -30,6 +30,7 @@ import { IntegrationHealthService } from './services/integration-health.service'
 import { IntegrationInvoiceActionsService } from './services/integration-invoice-actions.service';
 import { IntegrationInvoicesService } from './services/integration-invoices.service';
 import { IntegrationRectificationsService } from './services/integration-rectifications.service';
+import { IntegrationSettlementService } from './services/integration-settlement.service';
 import { IntegrationSettingsService } from './services/integration-settings.service';
 import { IntegrationUrlsService } from './services/integration-urls.service';
 import { PriceWithTaxConverter } from './services/price-with-tax.converter';
@@ -74,6 +75,7 @@ export const INTEGRATION_CONTRACT_CONTROLLERS = [
     IntegrationInvoicesService,
     IntegrationInvoiceActionsService,
     IntegrationRectificationsService,
+    IntegrationSettlementService,
     IntegrationExchangesService,
     IntegrationCustomerInvoicesService,
     IntegrationSettingsService,

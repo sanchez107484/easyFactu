@@ -6,7 +6,6 @@ import {
   ArrayUnique,
   IsArray,
   IsDefined,
-  IsEnum,
   IsOptional,
   IsString,
   IsUUID,
@@ -14,8 +13,9 @@ import {
   MaxLength,
   MinLength,
   ValidateNested,
+  IsIn,
 } from 'class-validator';
-import { PaymentMethod } from '@easyfactura/shared-types';
+import { PaymentMethod, SELECTABLE_PAYMENT_METHODS } from '@easyfactura/shared-types';
 import { MAX_LINES_PER_INVOICE } from '../integrations.constants';
 import {
   EXTERNAL_ID_PATTERN,
@@ -23,6 +23,7 @@ import {
   ISO_DATE_PATTERN,
   IssueInvoiceLineDto,
 } from './issue-invoice.dto';
+import { RectificationSettlementDto } from './rectification-settlement.dto';
 
 export const MAX_EXCHANGED_INVOICES = 50;
 
@@ -69,6 +70,18 @@ export class RectifyIssuedInvoiceDto extends ReasonDto {
   @ValidateNested({ each: true })
   @Type(() => IssueInvoiceLineDto)
   lines!: IssueInvoiceLineDto[];
+
+  @ApiPropertyOptional({
+    type: RectificationSettlementDto,
+    description:
+      'Cómo se salda la devolución: reembolso (pago negativo de la rectificativa) y/o ' +
+      'compensación con lo pendiente de la factura original. La suma debe ser el total de la ' +
+      'rectificativa en positivo (422 FISCAL_RULE si no). Sin settlement, la rectificativa queda pendiente.',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => RectificationSettlementDto)
+  settlement?: RectificationSettlementDto;
 }
 
 /** Exchange (canje) of simplified invoices for one complete invoice (F3). */
@@ -97,9 +110,9 @@ export class ExchangeSimplifiedInvoicesDto {
   @Type(() => InvoicePayerDto)
   customer!: InvoicePayerDto;
 
-  @ApiPropertyOptional({ enum: PaymentMethod, example: PaymentMethod.CARD })
+  @ApiPropertyOptional({ enum: SELECTABLE_PAYMENT_METHODS, example: PaymentMethod.CARD })
   @IsOptional()
-  @IsEnum(PaymentMethod, { message: 'Método de pago no permitido' })
+  @IsIn(SELECTABLE_PAYMENT_METHODS, { message: 'Método de pago no permitido' })
   paymentMethod?: PaymentMethod;
 }
 

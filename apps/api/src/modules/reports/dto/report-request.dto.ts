@@ -21,6 +21,7 @@ import {
   ReportSortBy,
   ReportTimeGrouping,
   ReportType,
+  SELECTABLE_PAYMENT_METHODS,
 } from '@easyfactura/shared-types';
 import { REPORT_TOP_N_OPTIONS } from '@easyfactura/shared-constants';
 
@@ -121,9 +122,13 @@ export class ReportRequestDto implements ReportRequest {
   @IsUUID(undefined, { each: true, message: 'Proveedor no válido' })
   supplierIds?: string[];
 
-  @ApiPropertyOptional({ enum: PaymentMethod, isArray: true, description: 'Cobros: forma de pago' })
+  @ApiPropertyOptional({
+    enum: SELECTABLE_PAYMENT_METHODS,
+    isArray: true,
+    description: 'Cobros: forma de pago',
+  })
   @IsOptional()
   @IsArray()
-  @IsEnum(PaymentMethod, { each: true, message: 'Forma de pago no válida' })
+  @IsIn(SELECTABLE_PAYMENT_METHODS, { each: true, message: 'Forma de pago no válida' })
   paymentMethods?: PaymentMethod[];
 }

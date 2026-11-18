@@ -1058,6 +1058,8 @@ enum PaymentMethod {
   PAYPAL
   OTHER
   BIZUM
+  /// Only recorded by the system: a return offset against an invoice (HU-21F)
+  COMPENSATION
 }
 
 enum RelationTerminator {

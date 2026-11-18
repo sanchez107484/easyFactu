@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PaymentMethod } from '@easyfactura/shared-types';
+import { PaymentMethod, SELECTABLE_PAYMENT_METHODS } from '@easyfactura/shared-types';
 
 export const REGISTRATION_STATUSES = [
   'PENDING',
@@ -144,7 +144,7 @@ export class IntegrationPaymentResponse {
   @ApiProperty({ example: '8f0c3a52-2c7e-4f1e-9a51-0d6b1f0f9c11' }) invoiceId!: string;
   @ApiProperty({ example: '459.69' }) amount!: string;
   @ApiProperty({ example: '2026-11-08' }) paymentDate!: string;
-  @ApiProperty({ enum: PaymentMethod, nullable: true, example: PaymentMethod.CARD })
+  @ApiProperty({ enum: SELECTABLE_PAYMENT_METHODS, nullable: true, example: PaymentMethod.CARD })
   paymentMethod!: string | null;
   @ApiProperty({ nullable: true, example: 'COBRO-2026-000777' }) reference!: string | null;
   @ApiProperty({ enum: ['UNPAID', 'PARTIALLY_PAID', 'PAID'], example: 'PAID' })

@@ -467,3 +467,83 @@ describe('record types, payers without NIF and operation date (HU-21C)', () => {
     expectProblem(await call('GET', `/customers/unknown-${RUN_ID}/invoices`), 404, 'NOT_FOUND');
   });
 });
+
+describe('invoice notes and settlement of a return (HU-21F)', () => {
+  type SettledBody = InvoiceBody & { paymentStatus: string; amountPaid: string };
+
+  it('accepts notes up to 500 characters', async () => {
+    const issued = await issueTicket('NOTES', { notes: 'Paga el tutor: Juan Pérez' });
+    expect(issued.status).toBe(201);
+    const tooLong = await call('POST', '/invoices', {
+      body: {
+        externalRef: `T-NOTES-LONG-${RUN_ID}`,
+        invoiceType: 'simplified',
+        lines: [ticketLine],
+        notes: 'x'.repeat(501),
+      },
+    });
+    expectProblem(tooLong, 400, 'VALIDATION_ERROR');
+    expect(tooLong.body.errors).toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'notes' })])
+    );
+  });
+
+  it('settles a return with refund and compensation in one idempotent call', async () => {
+    // Ticket of 12.10 €, 10.00 € paid: 2.10 € still owed.
+    const ticket = await issueTicket('SETTLE', { customer: payer });
+    await call('POST', `/invoices/${ticket.body.id}/payments`, {
+      body: { amount: '10.00', paymentMethod: 'CARD' },
+    });
+    const rectify = (ref: string, settlement: Record<string, unknown>, idempotencyKey?: string) =>
+      call<SettledBody>('POST', `/invoices/${ticket.body.id}/rectifications`, {
+        body: {
+          externalRef: `${ref}-${RUN_ID}`,
+          reason: 'Devolución en tienda',
+          lines: [{ ...ticketLine, unitPriceWithTax: '5.00' }],
+          settlement,
+        },
+        idempotencyKey,
+      });
+
+    const notTheTotal = await rectify('SET-SUM', {
+      refund: { amount: '4.00', paymentMethod: 'CASH' },
+    });
+    expectProblem(notTheTotal, 422, 'FISCAL_RULE');
+    const aboveDue = await rectify('SET-DUE', { compensation: { amount: '5.00' } });
+    expectProblem(aboveDue, 422, 'FISCAL_RULE');
+
+    const settlement = {
+      refund: { amount: '3.00', paymentMethod: 'CASH', paymentDate: madridDate() },
+      compensation: { amount: '2.00' },
+    };
+    const idempotencyKey = randomUUID();
+    const settled = await rectify('SET-OK', settlement, idempotencyKey);
+    expect(settled.status).toBe(201);
+    expect(settled.body).toMatchObject({
+      recordType: 'R5',
+      totals: { total: '-5.00' },
+      paymentStatus: 'PAID',
+      amountPaid: '-5.00',
+    });
+
+    const replay = await rectify('SET-OK', settlement, idempotencyKey);
+    expect(replay.status).toBe(200);
+    expect(replay.body.id).toBe(settled.body.id);
+
+    const original = await call<SettledBody>('GET', `/invoices/${ticket.body.id}`);
+    expect(original.body).toMatchObject({ amountPaid: '12.00', paymentStatus: 'PARTIALLY_PAID' });
+  });
+
+  it('keeps a return without settlement unpaid, as before', async () => {
+    const ticket = await issueTicket('NOSETTLE', { customer: payer });
+    const plain = await call<SettledBody>('POST', `/invoices/${ticket.body.id}/rectifications`, {
+      body: {
+        externalRef: `SET-NONE-${RUN_ID}`,
+        reason: 'Devolución en tienda',
+        lines: [{ ...ticketLine, unitPriceWithTax: '5.00' }],
+      },
+    });
+    expect(plain.status).toBe(201);
+    expect(plain.body).toMatchObject({ paymentStatus: 'UNPAID', amountPaid: '0.00' });
+  });
+});

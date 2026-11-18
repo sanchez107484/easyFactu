@@ -3,6 +3,7 @@ import {
   CollectionMetrics,
   PaymentMethod,
   ReportAppliedFilters,
+  SELECTABLE_PAYMENT_METHODS,
   ReportDimension,
   ReportTimeGrouping,
 } from '@easyfactura/shared-types';
@@ -19,7 +20,7 @@ const PAYMENT_METHOD_SQL = Prisma.sql`COALESCE(p.payment_method::text, i.payment
 
 /** Spanish labels come from the shared constants, passed as parameters (never interpolated). */
 const PAYMENT_METHOD_LABEL_SQL = Prisma.sql`CASE ${PAYMENT_METHOD_SQL} ${Prisma.join(
-  Object.values(PaymentMethod).map(
+  SELECTABLE_PAYMENT_METHODS.map(
     (method) => Prisma.sql`WHEN ${method} THEN ${PAYMENT_METHOD_LABELS[method]}`
   ),
   ' '
@@ -47,7 +48,7 @@ function collectionsDimension(
   }
 }
 
-/** Payments received, dated by payment date (cash in, taxes included). */
+/** Payments received, dated by payment date (cash in, taxes included; compensations excluded). */
 export const COLLECTIONS_SOURCE: GroupedSource = {
   from: Prisma.sql`
     FROM payments p
@@ -70,6 +71,8 @@ export function buildCollectionsWhere(
     Prisma.sql`p.tenant_id = ${tenantId}`,
     Prisma.sql`p.payment_date >= ${from}`,
     Prisma.sql`p.payment_date <= ${to}`,
+    // A compensation offsets a return against an invoice: no money comes in.
+    Prisma.sql`p.payment_method IS DISTINCT FROM ${PaymentMethod.COMPENSATION}::"PaymentMethod"`,
   ];
   if (filters.customers) {
     conditions.push(

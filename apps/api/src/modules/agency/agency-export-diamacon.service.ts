@@ -266,6 +266,8 @@ export class AgencyExportDiamaconService {
         return 'PayPal';
       case 'BIZUM':
         return 'Bizum';
+      case 'COMPENSATION':
+        return 'Compensación';
       default:
         return 'Otro';
     }

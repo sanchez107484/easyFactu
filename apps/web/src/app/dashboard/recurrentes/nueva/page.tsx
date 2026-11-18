@@ -59,7 +59,11 @@ import {
   SharedPoolCustomer,
   TaxRegime,
 } from '@easyfactura/shared-types';
-import { FREQUENCY_OPTIONS, PAYMENT_METHOD_LABELS, EQUIVALENCE_SURCHARGE_RATES } from '@easyfactura/shared-constants';
+import {
+  FREQUENCY_OPTIONS,
+  EQUIVALENCE_SURCHARGE_RATES,
+  SELECTABLE_PAYMENT_METHOD_LABELS,
+} from '@easyfactura/shared-constants';
 import { cn, resolveUrl } from '@/lib/utils';
 
 // ==================== SCHEMA ====================
@@ -885,7 +889,7 @@ function RecurringInvoiceForm({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Sin especificar</SelectItem>
-                    {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+                    {Object.entries(SELECTABLE_PAYMENT_METHOD_LABELS).map(([value, label]) => (
                       <SelectItem key={value} value={value}>
                         {label}
                       </SelectItem>

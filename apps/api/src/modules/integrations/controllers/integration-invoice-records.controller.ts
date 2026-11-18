@@ -35,6 +35,7 @@ import {
   CANCEL_INVOICE_EXAMPLE,
   EXCHANGE_INVOICES_EXAMPLE,
   RECTIFY_INVOICE_EXAMPLE,
+  RECTIFY_INVOICE_SETTLED_EXAMPLE,
 } from '../openapi/integration-examples';
 import { IntegrationExchangesService } from '../services/integration-exchanges.service';
 import { IntegrationInvoiceActionsService } from '../services/integration-invoice-actions.service';
@@ -92,12 +93,22 @@ export class IntegrationInvoiceRecordsController {
     description:
       'Emite una rectificativa con importes negativos: R5 si la original es simplificada, R4 si es ' +
       'completa. Las líneas llevan el importe devuelto IVA incluido, en positivo. La suma de ' +
-      'devoluciones no puede superar el total de la factura original.',
+      'devoluciones no puede superar el total de la factura original. Con settlement, la ' +
+      'rectificativa nace saldada en la misma transacción: el reembolso es un pago negativo de la ' +
+      'rectificativa y la compensación reduce lo pendiente de la factura original. ' +
+      'refund + compensation = total de la rectificativa en positivo (422 FISCAL_RULE si no); la ' +
+      'compensación no puede superar lo pendiente de la original (422).',
   })
   @ApiIdempotentPost()
   @ApiBody({
     type: RectifyIssuedInvoiceDto,
-    examples: { devolucion: { value: RECTIFY_INVOICE_EXAMPLE } },
+    examples: {
+      devolucion: { value: RECTIFY_INVOICE_EXAMPLE },
+      devolucionSaldada: {
+        summary: 'Devolución saldada: reembolso con tarjeta + compensación',
+        value: RECTIFY_INVOICE_SETTLED_EXAMPLE,
+      },
+    },
   })
   @ApiCreatedResponse({ type: IntegrationInvoiceResponse, description: 'La rectificativa emitida' })
   @ApiOkResponse({ type: IntegrationInvoiceResponse, description: 'Reintento idempotente' })

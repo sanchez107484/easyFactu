@@ -1,3 +1,8 @@
+import { PaymentMethod } from '@easyfactura/shared-types';
+import { Prisma } from '@prisma/client';
+import { ConfirmInvoiceOptions } from '../../src/modules/invoices/invoice.service';
+import { PaymentService } from '../../src/modules/payments/payment.service';
+import { IntegrationSettlementService } from '../../src/modules/integrations/services/integration-settlement.service';
 import { InvoiceCalculationService } from '../../src/modules/invoices/invoice-calculation.service';
 import { InvoiceService } from '../../src/modules/invoices/invoice.service';
 import { IntegrationInvoiceResponse } from '../../src/modules/integrations/dto/integration-responses.dto';
@@ -186,7 +191,45 @@ describe('Integrations · issue rules (HU-21C)', () => {
     const { invoices } = setup();
     await expect(invoices.issue(TENANT, ticket({ operationDate }))).rejects.toMatchObject({ code });
   });
+
+  it.each([
+    [
+      'keeps the notes (trimmed) so the PDF prints them',
+      '  Garantía 2 años\nRecogida en tienda ',
+      'Garantía 2 años\nRecogida en tienda',
+    ],
+    ['ignores blank notes', '   ', undefined],
+    ['issues without notes', undefined, undefined],
+  ])('%s', async (_label, notes, expected) => {
+    const { invoices, invoiceService } = setup();
+    await invoices.issue(TENANT, ticket({ notes }));
+    const [, , createDto] = (invoiceService.create as jest.Mock).mock.calls[0];
+    expect(createDto.notes).toBe(expected);
+  });
 });
+
+function setupReturns() {
+  const context = setup();
+  const tx = { marker: 'confirmation-tx' };
+  const payments = { applyPayment: jest.fn(async () => ({})) } as unknown as PaymentService;
+  (context.invoiceService.confirm as jest.Mock).mockImplementation(
+    async (_tenantId: string, id: string, options?: ConfirmInvoiceOptions) => {
+      await options?.onConfirmed?.(tx as never, {
+        id,
+        number: 'R-2026-000001',
+        total: new Prisma.Decimal(-50),
+      });
+    }
+  );
+  const service = new IntegrationRectificationsService(
+    context.prisma,
+    context.invoiceService,
+    context.invoices,
+    context.converter,
+    new IntegrationSettlementService(payments)
+  );
+  return { ...context, service, payments, tx };
+}
 
 describe('Integrations · returns (rectificatives by differences)', () => {
   function refund(overrides: Partial<RectifyIssuedInvoiceDto> = {}): RectifyIssuedInvoiceDto {
@@ -196,17 +239,6 @@ describe('Integrations · returns (rectificatives by differences)', () => {
       lines: [{ description: 'Montura', quantity: '1', unitPriceWithTax: '50.00', taxRate: '21' }],
       ...overrides,
     };
-  }
-
-  function setupReturns() {
-    const context = setup();
-    const service = new IntegrationRectificationsService(
-      context.prisma,
-      context.invoiceService,
-      context.invoices,
-      context.converter
-    );
-    return { ...context, service };
   }
 
   it('issues negative lines and confirms only if the total is minus the refund', async () => {
@@ -247,6 +279,129 @@ describe('Integrations · returns (rectificatives by differences)', () => {
     await expect(service.rectify(TENANT, ORIGINAL_ID, refund())).rejects.toMatchObject({
       code: IntegrationErrorCode.INVALID_STATE,
     });
+  });
+});
+
+describe('Integrations · settlement of a return (HU-21F)', () => {
+  const RETURN_LINE = {
+    description: 'Montura',
+    quantity: '1',
+    unitPriceWithTax: '50.00',
+    taxRate: '21',
+  };
+
+  function settledReturn(
+    settlement: RectifyIssuedInvoiceDto['settlement']
+  ): RectifyIssuedInvoiceDto {
+    return {
+      externalRef: 'DEV-1',
+      reason: 'Devolución de la montura',
+      lines: [RETURN_LINE],
+      settlement,
+    };
+  }
+
+  it('records the refund as a negative payment and the compensation on both invoices, in the confirmation transaction', async () => {
+    const { service, payments, tx } = setupReturns();
+    await service.rectify(
+      TENANT,
+      ORIGINAL_ID,
+      settledReturn({
+        refund: {
+          amount: '30.00',
+          paymentMethod: PaymentMethod.CARD,
+          paymentDate: daysAgo(1),
+          reference: 'REEMB-1',
+        },
+        compensation: { amount: '20.00' },
+      })
+    );
+
+    const calls = (payments.applyPayment as jest.Mock).mock.calls;
+    expect(calls).toHaveLength(3);
+    expect(calls.every(([callTx, tenantId]) => callTx === tx && tenantId === TENANT)).toBe(true);
+    expect(calls[0][2]).toBe('draft-id');
+    expect(calls[0][3]).toMatchObject({
+      amount: -30,
+      paymentMethod: 'CARD',
+      paymentDate: daysAgo(1),
+      reference: 'REEMB-1',
+    });
+    expect(calls[1][2]).toBe(ISSUED.id);
+    expect(calls[1][3]).toMatchObject({
+      amount: 20,
+      notes: 'Compensación con la rectificativa R-2026-000001',
+      paymentMethod: PaymentMethod.COMPENSATION,
+    });
+    expect(calls[2][2]).toBe('draft-id');
+    expect(calls[2][3]).toMatchObject({
+      amount: -20,
+      notes: `Compensada con la factura ${ISSUED.number}`,
+      paymentMethod: PaymentMethod.COMPENSATION,
+    });
+  });
+
+  it('settles a return with the refund only, dated today by default', async () => {
+    const { service, payments } = setupReturns();
+    await service.rectify(
+      TENANT,
+      ORIGINAL_ID,
+      settledReturn({ refund: { amount: '50.00', paymentMethod: PaymentMethod.CASH } })
+    );
+    const calls = (payments.applyPayment as jest.Mock).mock.calls;
+    expect(calls).toHaveLength(1);
+    expect(calls[0][3]).toMatchObject({ amount: -50, paymentDate: todayInSpain() });
+  });
+
+  it('keeps the previous behaviour without settlement', async () => {
+    const { service, payments, invoiceService } = setupReturns();
+    await service.rectify(TENANT, ORIGINAL_ID, settledReturn(undefined));
+    expect(invoiceService.confirm).toHaveBeenCalledWith(TENANT, 'draft-id');
+    expect(payments.applyPayment).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      'refund + compensation is not the total',
+      { refund: { amount: '30.00', paymentMethod: PaymentMethod.CARD } },
+      'settlement',
+    ],
+    [
+      'the compensation exceeds what the original still owes',
+      { compensation: { amount: '50.00' } },
+      'settlement.compensation.amount',
+    ],
+    [
+      'the refund date is in the future',
+      { refund: { amount: '50.00', paymentMethod: PaymentMethod.CARD, paymentDate: daysAgo(-1) } },
+      'settlement.refund.paymentDate',
+    ],
+  ])('answers 422 before issuing anything when %s', async (_label, settlement, field) => {
+    const { service, invoices, invoiceService } = setupReturns();
+    (invoices.findOne as jest.Mock).mockResolvedValue({ ...ISSUED, amountPaid: '80.00' });
+    await expect(
+      service.rectify(TENANT, ORIGINAL_ID, settledReturn(settlement))
+    ).rejects.toMatchObject({
+      code: IntegrationErrorCode.FISCAL_RULE,
+      problem: { errors: [{ field }] },
+    });
+    expect(invoiceService.rectify).not.toHaveBeenCalled();
+  });
+
+  it('rejects an empty settlement', async () => {
+    const { service } = setupReturns();
+    await expect(service.rectify(TENANT, ORIGINAL_ID, settledReturn({}))).rejects.toMatchObject({
+      code: IntegrationErrorCode.VALIDATION_ERROR,
+    });
+  });
+
+  it('discards the draft when the settlement fails inside the transaction', async () => {
+    const { service, payments, invoiceService } = setupReturns();
+    (payments.applyPayment as jest.Mock).mockRejectedValueOnce(new Error('serialization failure'));
+    await expect(
+      service.rectify(TENANT, ORIGINAL_ID, settledReturn({ compensation: { amount: '50.00' } }))
+    ).rejects.toThrow('serialization failure');
+    expect(invoiceService.remove).toHaveBeenCalledWith(TENANT, 'draft-id');
   });
 });
 

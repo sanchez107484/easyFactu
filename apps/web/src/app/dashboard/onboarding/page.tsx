@@ -27,7 +27,7 @@ import { useCreateSeries, useUpdateSeries, useInvoiceSeries } from '@/hooks/use-
 import { useInvoiceDefaults, useUpdateInvoiceDefaults } from '@/hooks/use-invoice-defaults';
 import { useAuthStore } from '@/store/auth-store';
 import { AccountType, SeriesType, PaymentMethod, TaxRegime } from '@easyfactura/shared-types';
-import { PROVINCES, PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
+import { PROVINCES, SELECTABLE_PAYMENT_METHOD_LABELS } from '@easyfactura/shared-constants';
 import {
   ArrowRight,
   ArrowLeft,
@@ -682,7 +682,7 @@ function Step4InvoiceDefaults({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Sin predeterminado</SelectItem>
-                  {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+                  {Object.entries(SELECTABLE_PAYMENT_METHOD_LABELS).map(([value, label]) => (
                     <SelectItem key={value} value={value}>
                       {label}
                     </SelectItem>

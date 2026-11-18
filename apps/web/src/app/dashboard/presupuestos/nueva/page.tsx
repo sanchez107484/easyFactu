@@ -40,7 +40,10 @@ import {
   TaxRegime,
 } from '@easyfactura/shared-types';
 import { resolveUrl } from '@/lib/utils';
-import { PAYMENT_METHOD_LABELS, EQUIVALENCE_SURCHARGE_RATES } from '@easyfactura/shared-constants';
+import {
+  EQUIVALENCE_SURCHARGE_RATES,
+  SELECTABLE_PAYMENT_METHOD_LABELS,
+} from '@easyfactura/shared-constants';
 import { buildPreviewInvoice, buildCreateInput, calculateDueDate } from '@/lib/invoice-helpers';
 import { formatSeriesPreview } from '@easyfactura/shared-validators';
 import { DueDatePicker } from '@/components/facturas/DueDatePicker';
@@ -542,7 +545,7 @@ function QuoteForm({ defaultValues, editId }: QuoteFormProps) {
                         <SelectValue placeholder="Selecciona un método" />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+                        {Object.entries(SELECTABLE_PAYMENT_METHOD_LABELS).map(([value, label]) => (
                           <SelectItem key={value} value={value}>
                             {label}
                           </SelectItem>

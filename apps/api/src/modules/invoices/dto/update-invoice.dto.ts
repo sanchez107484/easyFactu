@@ -5,7 +5,6 @@ import {
   IsNumber,
   IsString,
   IsArray,
-  IsEnum,
   IsIn,
   IsObject,
   ValidateNested,
@@ -18,7 +17,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { PaymentMethod } from '@easyfactura/shared-types';
+import { PaymentMethod, SELECTABLE_PAYMENT_METHODS } from '@easyfactura/shared-types';
 import { CreateInvoiceLineDto, PaymentDetailsDto } from './create-invoice.dto';
 
 export class UpdateInvoiceDto {
@@ -70,9 +69,9 @@ export class UpdateInvoiceDto {
   @Max(100)
   compensacionPercent?: number;
 
-  @ApiPropertyOptional({ enum: PaymentMethod })
+  @ApiPropertyOptional({ enum: SELECTABLE_PAYMENT_METHODS })
   @IsOptional()
-  @IsEnum(PaymentMethod)
+  @IsIn(SELECTABLE_PAYMENT_METHODS, { message: 'Método de pago no válido' })
   paymentMethod?: PaymentMethod;
 
   @ApiPropertyOptional({ type: [CreateInvoiceLineDto] })

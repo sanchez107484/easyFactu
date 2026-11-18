@@ -5,7 +5,6 @@ import {
   ArrayMinSize,
   IsArray,
   IsEmail,
-  IsEnum,
   IsIn,
   IsObject,
   IsOptional,
@@ -16,7 +15,7 @@ import {
   IsDefined,
   ValidateNested,
 } from 'class-validator';
-import { PaymentMethod } from '@easyfactura/shared-types';
+import { PaymentMethod, SELECTABLE_PAYMENT_METHODS } from '@easyfactura/shared-types';
 import { IsValidNif } from '../../../common/validators/is-valid-nif.validator';
 import { MAX_LINES_PER_INVOICE } from '../integrations.constants';
 import { IntegrationAddressDto } from './integration-address.dto';
@@ -26,6 +25,8 @@ export type IssuableInvoiceType = (typeof ISSUABLE_INVOICE_TYPES)[number];
 
 export const EXTERNAL_ID_PATTERN = /^[A-Za-z0-9._:/-]{1,100}$/;
 export const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+/** Notes printed on the PDF (HU-21F). Shorter than the web app limit to fit the ERP note field. */
+export const INVOICE_NOTES_MAX_LENGTH = 500;
 
 export class InvoicePayerDto {
   @ApiProperty({
@@ -133,9 +134,9 @@ export class IssueInvoiceDto {
   @Matches(ISO_DATE_PATTERN, { message: 'Fecha con formato YYYY-MM-DD' })
   operationDate?: string;
 
-  @ApiPropertyOptional({ enum: PaymentMethod, example: PaymentMethod.CARD })
+  @ApiPropertyOptional({ enum: SELECTABLE_PAYMENT_METHODS, example: PaymentMethod.CARD })
   @IsOptional()
-  @IsEnum(PaymentMethod, { message: 'Método de pago no permitido' })
+  @IsIn(SELECTABLE_PAYMENT_METHODS, { message: 'Método de pago no permitido' })
   paymentMethod?: PaymentMethod;
 
   @ApiPropertyOptional({
@@ -157,6 +158,20 @@ export class IssueInvoiceDto {
   @ValidateNested({ each: true })
   @Type(() => IssueInvoiceLineDto)
   lines!: IssueInvoiceLineDto[];
+
+  @ApiPropertyOptional({
+    description:
+      'Observaciones que se imprimen en el PDF de la factura, en el apartado "Notas". ' +
+      `Texto libre (admite saltos de línea), máximo ${INVOICE_NOTES_MAX_LENGTH} caracteres. No se envía a la AEAT.`,
+    maxLength: INVOICE_NOTES_MAX_LENGTH,
+    example: 'Garantía de 2 años en monturas. Recogida en tienda.',
+  })
+  @IsOptional()
+  @IsString({ message: 'Debe ser texto' })
+  @MaxLength(INVOICE_NOTES_MAX_LENGTH, {
+    message: `Máximo ${INVOICE_NOTES_MAX_LENGTH} caracteres`,
+  })
+  notes?: string;
 
   @ApiPropertyOptional({
     description:

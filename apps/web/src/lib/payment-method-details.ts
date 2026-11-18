@@ -80,6 +80,8 @@ export const PAYMENT_METHOD_DETAILS: Record<PaymentMethod | 'BIZUM', PaymentDeta
       placeholder: '+34 612 345 678',
     },
   ],
+  // Recorded by the system when a return is offset against an invoice: nothing to fill in.
+  COMPENSATION: [],
 };
 
 export function getPaymentDetailFields(method: PaymentMethod | 'BIZUM') {

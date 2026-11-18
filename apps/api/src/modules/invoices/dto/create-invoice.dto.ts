@@ -21,7 +21,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PaymentMethod } from '@easyfactura/shared-types';
+import { PaymentMethod, SELECTABLE_PAYMENT_METHODS } from '@easyfactura/shared-types';
 import { VALID_TAX_RATES } from '@easyfactura/shared-constants';
 
 export class CreateInvoiceLineDto {
@@ -183,12 +183,12 @@ export class CreateInvoiceDto {
   compensacionPercent?: number;
 
   @ApiPropertyOptional({
-    enum: PaymentMethod,
+    enum: SELECTABLE_PAYMENT_METHODS,
     description: 'Método de pago (obligatorio para facturas, opcional para presupuestos)',
   })
   @ValidateIf((o) => o.invoiceType !== 'quote' || !!o.paymentMethod)
   @IsNotEmpty({ message: 'El método de pago es obligatorio' })
-  @IsEnum(PaymentMethod, { message: 'Método de pago no válido' })
+  @IsIn(SELECTABLE_PAYMENT_METHODS, { message: 'Método de pago no válido' })
   paymentMethod?: PaymentMethod;
 
   @ApiProperty({
