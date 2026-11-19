@@ -1,8 +1,13 @@
 /**
  * Minimal HTTP client for the black-box contract suite. It only knows the public contract:
- * BASE_URL (the apiUrl returned at provisioning) and API_KEY come from the environment.
+ * INTEGRATIONS_API_URL (the apiUrl returned at provisioning, from apps/api/.env) and API_KEY.
  */
 import { randomUUID } from 'crypto';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Same .env as the API: the suite calls the apiUrl the API returns to the ERP.
+config({ path: resolve(__dirname, '../../.env') });
 
 export interface ContractResponse<T = Record<string, unknown>> {
   status: number;
@@ -25,7 +30,7 @@ function requiredEnv(name: string): string {
   return value;
 }
 
-export const BASE_URL = requiredEnv('BASE_URL').replace(/\/+$/, '');
+export const BASE_URL = requiredEnv('INTEGRATIONS_API_URL').replace(/\/+$/, '');
 export const API_KEY = requiredEnv('API_KEY');
 export const RUN_ID = `${Date.now().toString(36)}-${randomUUID().slice(0, 6)}`;
 

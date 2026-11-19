@@ -2,7 +2,7 @@
  * Black-box contract suite of the integrations API v1. It must pass unchanged against the
  * NovaFactura and Nafactura sandboxes:
  *
- *   BASE_URL=https://<sandbox>/api/v1 API_KEY=nfk_test_… pnpm --filter @easyfactura/backend test:contract
+ *   API_KEY=nfk_test_… pnpm --filter @easyfactura/backend test:contract   (base URL: INTEGRATIONS_API_URL in apps/api/.env)
  *
  * It issues real invoices in the sandbox (Hacienda test environment). Never point it at production.
  */
