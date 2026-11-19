@@ -35,7 +35,4 @@ export const invoiceTemplateApi = {
 
   remove: (id: string): Promise<void> =>
     apiClient.delete(`/invoice-templates/${id}`).then(() => undefined),
-
-  getPreviewUrl: (id: string): string =>
-    `${apiClient.defaults.baseURL}/invoice-templates/${id}/preview`,
 };

@@ -3005,6 +3005,7 @@
           },
           "externalRef": {
             "type": "string",
+            "description": "Referencia de la venta en el ERP. En una sustitutiva emitida desde NovaFactura, la de la factura que sustituye",
             "example": "VENTA-2026-001234"
           },
           "number": {
@@ -3057,6 +3058,12 @@
             "type": "object",
             "nullable": true,
             "description": "Factura que rectifica (R4/R5)",
+            "example": null
+          },
+          "rectifiedByInvoiceId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Factura que sustituye a esta (status RECTIFIED). Se consulta y descarga con GET /invoices/{id} y /pdf",
             "example": null
           },
           "exchangedByInvoiceId": {
@@ -3149,6 +3156,7 @@
           "issueDate",
           "operationDate",
           "rectifiedInvoiceId",
+          "rectifiedByInvoiceId",
           "exchangedByInvoiceId",
           "replacedInvoiceIds",
           "cancellation",

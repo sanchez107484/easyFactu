@@ -9,6 +9,11 @@ import {
   TaxBreakdownResponse,
 } from '../dto/integration-responses.dto';
 import { formatMoney, toCents } from '../utils/decimal';
+import {
+  RECTIFIED_INVOICE_CHAIN_SELECT,
+  resolveSaleExternalRef,
+  SUBSTITUTED_BY_SELECT,
+} from './integration-invoice-visibility';
 
 /** Only the columns the contract exposes; never the customer NIF or other personal data. */
 export const INTEGRATION_INVOICE_SELECT = {
@@ -21,7 +26,8 @@ export const INTEGRATION_INVOICE_SELECT = {
   operationDate: true,
   isRectificative: true,
   rectifiedInvoiceId: true,
-  rectifiedInvoice: { select: { invoiceType: true } },
+  rectifiedInvoice: RECTIFIED_INVOICE_CHAIN_SELECT,
+  rectificativeInvoices: SUBSTITUTED_BY_SELECT,
   exchangedByInvoiceId: true,
   exchangedInvoices: { select: { id: true }, orderBy: { issueDate: 'asc' } },
   cancellation: { select: { reason: true, createdAt: true, verifactuStatus: true } },
@@ -109,7 +115,7 @@ export function toIntegrationInvoiceResponse(
   const issueDate = toIsoDate(invoice.issueDate);
   return {
     id: invoice.id,
-    externalRef: invoice.externalRef ?? '',
+    externalRef: resolveSaleExternalRef(invoice),
     number: invoice.number ?? '',
     invoiceType: invoice.invoiceType,
     recordType: resolveInvoiceRecordType({
@@ -122,6 +128,7 @@ export function toIntegrationInvoiceResponse(
     issueDate,
     operationDate: invoice.operationDate ? toIsoDate(invoice.operationDate) : issueDate,
     rectifiedInvoiceId: invoice.rectifiedInvoiceId,
+    rectifiedByInvoiceId: invoice.rectificativeInvoices[0]?.id ?? null,
     exchangedByInvoiceId: invoice.exchangedByInvoiceId,
     replacedInvoiceIds: invoice.exchangedInvoices.map((replaced) => replaced.id),
     cancellation: toCancellationResponse(invoice.cancellation),

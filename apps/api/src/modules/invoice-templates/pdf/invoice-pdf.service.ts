@@ -1,22 +1,17 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { join } from 'path';
-import { existsSync } from 'fs';
 import { createHash } from 'crypto';
-import * as QRCode from 'qrcode';
-import {
-  DEFAULT_INVOICE_LAYOUT,
-  Invoice,
-  InvoiceLayout,
-  LayoutOverride,
-  InvoiceTemplate,
-  Tenant,
-} from '@easyfactura/shared-types';
-import PDFDocument from 'pdfkit';
-import { readFileSync } from 'fs';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
 import { PdfStorageService } from './pdf-storage.service';
-import { formatCurrency } from '../../../common/utils/format';
+import { InvoicePdfRendererService } from './invoice-pdf-renderer.service';
+
+const CACHEABLE_STATUSES = new Set(['CONFIRMED', 'SENT', 'PAID']);
+
+interface PdfCacheInputs {
+  updatedAt: Date;
+  issuerSnapshotNif: string | null;
+  layoutOverride: unknown;
+  template: { updatedAt: Date } | null;
+}
 
 @Injectable()
 export class InvoicePdfService {
@@ -24,26 +19,34 @@ export class InvoicePdfService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly pdfStorage: PdfStorageService
+    private readonly pdfStorage: PdfStorageService,
+    private readonly renderer: InvoicePdfRendererService
   ) {}
 
   async generate(
     tenantId: string,
     invoiceId: string
   ): Promise<{ buffer: Buffer; filename: string }> {
-    // Fetch invoice and tenant in parallel to minimize round trips
     const [invoice, tenant] = await Promise.all([
       this.prisma.invoice.findFirst({
         where: { id: invoiceId, tenantId },
-        include: {
-          customer: true,
-          lines: { orderBy: { sortOrder: 'asc' } },
-          series: true,
-          template: true,
-          rectifiedInvoice: true,
+        select: {
+          number: true,
+          status: true,
+          invoiceType: true,
+          pdfUrl: true,
+          updatedAt: true,
+          issuerSnapshotNif: true,
+          layoutOverride: true,
+          customerSnapshotName: true,
+          customer: { select: { name: true } },
+          template: { select: { updatedAt: true } },
         },
       }),
-      this.prisma.tenant.findUnique({ where: { id: tenantId } }),
+      this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { updatedAt: true, logoUrl: true },
+      }),
     ]);
 
     if (!invoice) {
@@ -54,11 +57,7 @@ export class InvoicePdfService {
     }
 
     const filename = this.buildFilename(invoice);
-
-    // Cache hit: only confirmed invoices are cached (drafts change frequently)
-    const isCacheable =
-      invoice.status === 'CONFIRMED' || invoice.status === 'PAID' || invoice.status === 'SENT';
-
+    const isCacheable = CACHEABLE_STATUSES.has(invoice.status);
     const contentHash = this.computeContentHash(invoice, tenant);
     const expectedPath = this.pdfStorage.buildHashedPath(tenantId, invoiceId, contentHash);
 
@@ -70,93 +69,13 @@ export class InvoicePdfService {
       }
     }
 
-    const resolvedTemplate = invoice.template ?? {
-      id: 'default',
-      tenantId,
-      name: 'Plantilla predeterminada',
-      isDefault: true,
-      layout: DEFAULT_INVOICE_LAYOUT,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    const buffer = await this.renderer.render(tenantId, invoiceId);
 
-    const buffer = await this.renderPdf(
-      invoice as unknown as Invoice,
-      resolvedTemplate as unknown as InvoiceTemplate,
-      tenant as unknown as Tenant
-    );
-
-    // Store in cache for confirmed/paid/sent invoices (fire and forget)
     if (isCacheable && this.pdfStorage.isEnabled) {
-      // Delete stale cached version if path changed (e.g. tenant data updated)
-      const staleUrl = invoice.pdfUrl && invoice.pdfUrl !== expectedPath ? invoice.pdfUrl : null;
-
-      this.pdfStorage
-        .upload(tenantId, invoiceId, buffer, contentHash)
-        .then(async (storagePath) => {
-          if (staleUrl) {
-            await this.pdfStorage.delete(staleUrl).catch(() => {});
-          }
-          await this.prisma.invoice.update({
-            where: { id: invoiceId },
-            data: { pdfUrl: storagePath },
-          });
-        })
-        .catch((err: unknown) => {
-          const msg = err instanceof Error ? err.message : String(err);
-          this.logger.error(`Failed to cache PDF for invoice ${invoiceId}: ${msg}`);
-        });
+      this.storeInCache(tenantId, invoiceId, buffer, contentHash, invoice.pdfUrl, expectedPath);
     }
 
     return { buffer, filename };
-  }
-
-  /**
-   * Computes a short SHA-256 hash from the inputs that affect PDF content.
-   * When any of these change, the hash changes and the cache auto-invalidates.
-   *
-   * For confirmed invoices with an issuer snapshot, the rendered PDF uses the
-   * immutable snapshot fields — not live tenant data. In that case we use a
-   * stable marker (snapshot NIF) instead of tenant.updatedAt so that unrelated
-   * tenant changes (e.g. updating a phone number) do not bust the cache and
-   * trigger a re-render that would incorrectly overwrite the snapshot data.
-   */
-  private computeContentHash(
-    invoice: {
-      updatedAt: Date | string;
-      issuerSnapshotNif?: string | null;
-      template?: { updatedAt: Date | string } | null;
-      layoutOverride?: unknown;
-    },
-    tenant: { updatedAt: Date | string; logoUrl?: string | null }
-  ): string {
-    const issuerPart =
-      invoice.issuerSnapshotNif != null
-        ? `snapshot:${invoice.issuerSnapshotNif}`
-        : String(tenant.updatedAt);
-
-    const parts = [
-      String(invoice.updatedAt),
-      issuerPart,
-      tenant.logoUrl ?? '',
-      invoice.template ? String(invoice.template.updatedAt) : 'default',
-      invoice.layoutOverride ? JSON.stringify(invoice.layoutOverride) : '',
-    ];
-    return createHash('sha256').update(parts.join('|')).digest('hex').slice(0, 12);
-  }
-
-  private buildFilename(invoice: {
-    number: string | null;
-    invoiceType?: string | null;
-    customerSnapshotName?: string | null;
-    customer?: { name: string } | null;
-  }): string {
-    const typeLabel = this.resolveDocumentTypeLabel(invoice.invoiceType);
-    // Prefer snapshot name (immutable) over live customer name so the filename
-    // always matches the customer name printed inside the PDF.
-    const customerName = invoice.customerSnapshotName ?? invoice.customer?.name;
-    const raw = [invoice.number ?? typeLabel, customerName].filter(Boolean).join(' - ');
-    return raw.replace(/[/\\:*?"<>|]/g, '').trim() || 'documento';
   }
 
   /**
@@ -178,377 +97,83 @@ export class InvoicePdfService {
     ]);
   }
 
-  async generatePreview(tenantId: string, templateId: string): Promise<Buffer> {
-    const template = await this.prisma.invoiceTemplate.findFirst({
-      where: { id: templateId, tenantId },
-    });
+  /** Fire and forget: a failed upload only costs a re-render next time. */
+  private storeInCache(
+    tenantId: string,
+    invoiceId: string,
+    buffer: Buffer,
+    contentHash: string,
+    currentPdfUrl: string | null,
+    expectedPath: string
+  ): void {
+    const staleUrl = currentPdfUrl && currentPdfUrl !== expectedPath ? currentPdfUrl : null;
 
-    if (!template) {
-      throw new NotFoundException(`Plantilla con id ${templateId} no encontrada`);
-    }
-
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
-
-    if (!tenant) {
-      throw new NotFoundException(`Tenant ${tenantId} no encontrado`);
-    }
-
-    const exampleInvoice = this.buildExampleInvoice(tenantId);
-
-    return this.renderPdf(
-      exampleInvoice,
-      template as unknown as InvoiceTemplate,
-      tenant as unknown as Tenant
-    );
-  }
-
-  private async renderPdf(
-    invoice: Invoice,
-    template: InvoiceTemplate,
-    tenant: Tenant
-  ): Promise<Buffer> {
-    const logoBuffer = this.resolveLogo(tenant.logoUrl);
-    // Prefer snapshot name so the PDF metadata title is consistent with the rendered content.
-    const customerDisplayName = invoice.customerSnapshotName ?? invoice.customer?.name;
-    const pdfTitle = [invoice.number, customerDisplayName].filter(Boolean).join(' - ');
-    const doc: PDFKit.PDFDocument = new PDFDocument({
-      size: 'A4',
-      margin: 40,
-      info: { Title: pdfTitle },
-    });
-    const buffers: Buffer[] = [];
-    doc.on('data', buffers.push.bind(buffers));
-
-    // Resolve effective itemsTable config (template layout → invoice layoutOverride)
-    const templateItemsTable =
-      (template?.layout as InvoiceLayout)?.itemsTable ?? DEFAULT_INVOICE_LAYOUT.itemsTable;
-    const overrideItemsTable = (invoice.layoutOverride as LayoutOverride)?.itemsTable;
-    const tableConfig = {
-      ...DEFAULT_INVOICE_LAYOUT.itemsTable,
-      ...templateItemsTable,
-      ...overrideItemsTable,
-    };
-    const showUnitPrice = tableConfig.showUnitPrice ?? true;
-    const showTaxColumn = tableConfig.showTaxColumn ?? true;
-    const showLineTotal = tableConfig.showLineTotal ?? true;
-
-    // Logo
-    if (logoBuffer) {
-      try {
-        doc.image(logoBuffer, 40, 40, { width: 120 });
-      } catch (e) {
-        // Si el logo no se puede leer, lo ignoramos
-      }
-    }
-
-    // Cabecera empresa — prefer immutable issuer snapshot; fall back to live tenant data.
-    // Confirmed invoices always have snapshot fields; drafts/proformas fall back transparently.
-    const issuerName =
-      invoice.issuerSnapshotLegalName ??
-      invoice.issuerSnapshotName ??
-      tenant.legalName ??
-      tenant.businessName;
-    const issuerNif = invoice.issuerSnapshotNif ?? tenant.nif;
-    const issuerAddress = invoice.issuerSnapshotAddress ?? tenant.address;
-    const issuerPostalCode = invoice.issuerSnapshotPostalCode ?? tenant.postalCode;
-    const issuerCity = invoice.issuerSnapshotCity ?? tenant.city;
-    const issuerProvince = invoice.issuerSnapshotProvince ?? tenant.province;
-    const issuerCountry = invoice.issuerSnapshotCountry ?? tenant.country;
-    const issuerEmail = invoice.issuerSnapshotEmail ?? tenant.email;
-
-    doc.fontSize(16).text(issuerName || '', 200, 40, { align: 'right' });
-    doc.fontSize(10).text(issuerAddress || '', 200, 60, { align: 'right' });
-    doc.text(`${issuerPostalCode || ''} ${issuerCity || ''}`, 200, 75, { align: 'right' });
-    doc.text(`${issuerProvince || ''} (${issuerCountry || ''})`, 200, 90, { align: 'right' });
-    doc.text(`NIF: ${issuerNif || ''}`, 200, 105, { align: 'right' });
-    doc.text(`Email: ${issuerEmail || ''}`, 200, 120, { align: 'right' });
-
-    // Datos factura
-    const docTypeLabel = this.resolveDocumentTitle(invoice);
-    const docNumber = invoice.number ? `${docTypeLabel} Nº: ${invoice.number}` : docTypeLabel;
-    doc.moveDown(2);
-    doc.fontSize(14).text(docNumber, 40, undefined, { align: 'left' });
-    doc.fontSize(10).text(`Fecha emisión: ${invoice.issueDate?.toString().slice(0, 10) || ''}`);
-    const operationDate = invoice.operationDate
-      ? new Date(invoice.operationDate).toISOString().slice(0, 10)
-      : null;
-    if (operationDate && operationDate !== new Date(invoice.issueDate).toISOString().slice(0, 10)) {
-      doc.text(`Fecha de operación: ${operationDate}`);
-    }
-    if (invoice.dueDate) doc.text(`Fecha vencimiento: ${invoice.dueDate.toString().slice(0, 10)}`);
-
-    // Motivo de la rectificación (solo facturas rectificativas)
-    // Factura rectificada — referencia a la original (solo si es rectificativa)
-    if (invoice.isRectificative && invoice.rectifiedInvoice?.number) {
-      doc.text(`Factura rectificada: ${invoice.rectifiedInvoice.number}`);
-    }
-
-    // Motivo de la rectificación
-    if (invoice.isRectificative && invoice.rectificationReason) {
-      doc.moveDown(0.5);
-      doc
-        .fontSize(9)
-        .font('Helvetica-Bold')
-        .text('Motivo de la rectificación: ', 40, undefined, { continued: true });
-      doc.font('Helvetica').fontSize(10).text(invoice.rectificationReason);
-    }
-
-    // Cliente — prefer immutable snapshot fields; fall back to live customer relation.
-    // The snapshot name is always set on confirmation; the NIF may be null (simplified invoices).
-    const hasCustomerSnapshot = invoice.customerSnapshotName != null;
-    const custLegalName = hasCustomerSnapshot
-      ? (invoice.customerSnapshotLegalName ?? invoice.customerSnapshotName)
-      : invoice.customer?.legalName;
-    const custAddress = hasCustomerSnapshot
-      ? invoice.customerSnapshotAddress
-      : invoice.customer?.address;
-    const custPostalCode = hasCustomerSnapshot
-      ? invoice.customerSnapshotPostalCode
-      : invoice.customer?.postalCode;
-    const custCity = hasCustomerSnapshot ? invoice.customerSnapshotCity : invoice.customer?.city;
-    const custProvince = hasCustomerSnapshot
-      ? invoice.customerSnapshotProvince
-      : invoice.customer?.province;
-    const custCountry = hasCustomerSnapshot
-      ? invoice.customerSnapshotCountry
-      : invoice.customer?.country;
-    const custNif = hasCustomerSnapshot ? invoice.customerSnapshotNif : invoice.customer?.nif;
-    const custEmail = hasCustomerSnapshot ? invoice.customerSnapshotEmail : invoice.customer?.email;
-
-    doc.moveDown(1);
-    doc.fontSize(12).font('Helvetica-Bold').text('Cliente:', 40, undefined);
-    doc.fontSize(10).text(custLegalName || '');
-    doc.text(custAddress || '');
-    doc.text(`${custPostalCode || ''} ${custCity || ''}`);
-    doc.text(`${custProvince || ''} (${custCountry || ''})`);
-    if (custNif) doc.text(`NIF: ${custNif}`);
-    doc.text(`Email: ${custEmail || ''}`);
-
-    // Líneas de factura
-    doc.moveDown(1);
-    doc.fontSize(12).font('Helvetica-Bold').text('Conceptos:', 40, undefined);
-    doc.fontSize(10);
-    const headerParts = ['Descripción'.padEnd(25)];
-    headerParts.push('Cant.'.padStart(5));
-    if (showUnitPrice) headerParts.push('Precio'.padStart(8));
-    if (showTaxColumn) headerParts.push('IVA'.padStart(5));
-    if (showLineTotal) headerParts.push('Total'.padStart(8));
-    doc.text(headerParts.join('  '));
-    doc.moveDown(0.2);
-    if (Array.isArray(invoice.lines)) {
-      invoice.lines.forEach((line) => {
-        const rowParts = [(line.description || '').padEnd(25).slice(0, 25)];
-        rowParts.push((line.quantity?.toString() ?? '').padStart(5));
-        if (showUnitPrice) rowParts.push(formatCurrency(line.unitPrice).padStart(12));
-        if (showTaxColumn) rowParts.push(`${line.taxRate?.toFixed(0) ?? ''}%`.padStart(5));
-        if (showLineTotal) rowParts.push(formatCurrency(line.subtotal).padStart(12));
-        doc.text(rowParts.join('  '));
-      });
-    }
-
-    // Totales
-    doc.moveDown(1);
-    doc.fontSize(12).font('Helvetica-Bold').text('Totales:', 40, undefined);
-    doc.fontSize(10);
-    doc.text(`Subtotal: ${formatCurrency(invoice.subtotal)}`);
-    if (invoice.compensacionPercent != null) {
-      doc.text(
-        `Compensación agraria (${invoice.compensacionPercent}%): +${formatCurrency(Number(invoice.compensacionAmount ?? 0))}`
-      );
-    } else {
-      doc.text(`IVA: ${formatCurrency(invoice.taxTotal)}`);
-    }
-    if (invoice.surchargeTotal && Number(invoice.surchargeTotal) !== 0) {
-      const re = Number(invoice.surchargeTotal);
-      doc.text(`RE: ${re < 0 ? '' : '+'}${formatCurrency(re)}`);
-    }
-    if (invoice.irpfTotal) doc.text(`IRPF: ${formatCurrency(invoice.irpfTotal)}`);
-    if (invoice.discountAmount) doc.text(`Descuento: ${formatCurrency(invoice.discountAmount)}`);
-    doc.text(`Total: ${formatCurrency(invoice.total)}`);
-
-    // Notas
-    if (invoice.notes) {
-      doc.moveDown(1);
-      doc.fontSize(10).text(`Notas: ${invoice.notes}`);
-    }
-
-    // QR de verificación en el footer
-    const templateLayout = (template?.layout as InvoiceLayout) ?? DEFAULT_INVOICE_LAYOUT;
-    const overrideFooter = (invoice.layoutOverride as LayoutOverride | null)?.footer;
-    const showQr =
-      overrideFooter?.showVerifactuQr ?? templateLayout.footer?.showVerifactuQr ?? false;
-    const isConfirmedStatus =
-      invoice.status === 'CONFIRMED' || invoice.status === 'SENT' || invoice.status === 'PAID';
-
-    if (showQr && invoice.verifactuQr && isConfirmedStatus) {
-      try {
-        const qrBuffer = await QRCode.toBuffer(invoice.verifactuQr, {
-          errorCorrectionLevel: 'M',
-          margin: 1,
-          width: 80,
+    this.pdfStorage
+      .upload(tenantId, invoiceId, buffer, contentHash)
+      .then(async (storagePath) => {
+        if (staleUrl) {
+          await this.pdfStorage.delete(staleUrl).catch(() => {});
+        }
+        await this.prisma.invoice.update({
+          where: { id: invoiceId },
+          data: { pdfUrl: storagePath },
         });
-
-        doc.moveDown(1);
-        const qrSize = 60;
-        // Place QR on the right side of the page
-        const qrX = doc.page.width - doc.page.margins.right - qrSize;
-        const qrY = doc.y;
-
-        doc.image(qrBuffer, qrX, qrY, { width: qrSize, height: qrSize });
-        doc
-          .fontSize(6)
-          .fillColor('#888888')
-          .text('Verifica esta factura', qrX, qrY + qrSize + 2, {
-            width: qrSize,
-            align: 'center',
-          })
-          .fillColor('#000000');
-      } catch {
-        // QR rendering is non-critical — continue without it
-      }
-    }
-
-    doc.end();
-    return new Promise<Buffer>((resolve, reject) => {
-      doc.on('end', () => {
-        resolve(Buffer.concat(buffers));
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.error(`Failed to cache PDF for invoice ${invoiceId}: ${msg}`);
       });
-      doc.on('error', reject);
-    });
-  }
-
-  private resolveDocumentTypeLabel(invoiceType?: string | null): string {
-    if (invoiceType === 'proforma') return 'Proforma';
-    if (invoiceType === 'quote') return 'Presupuesto';
-    return 'Factura';
   }
 
   /**
-   * Igual que resolveDocumentTypeLabel, pero antepone "Rectificativa (SUSTITUCIÓN/DIFERENCIAS)"
-   * cuando la factura es rectificativa — coincide con el título mostrado en LiveInvoicePreview.
+   * Computes a short SHA-256 hash from the inputs that affect PDF content.
+   * When any of these change, the hash changes and the cache auto-invalidates.
+   *
+   * For confirmed invoices with an issuer snapshot, the rendered PDF uses the
+   * immutable snapshot fields — not live tenant data. In that case we use a
+   * stable marker (snapshot NIF) instead of tenant.updatedAt so that unrelated
+   * tenant changes (e.g. updating a phone number) do not bust the cache.
+   *
+   * The "web" marker separates these PDFs from the ones cached by the former
+   * pdfkit generator, so those are re-rendered with the web layout.
    */
-  private resolveDocumentTitle(invoice: {
-    isRectificative?: boolean;
-    rectificationType?: string | null;
-    invoiceType?: string | null;
+  private computeContentHash(
+    invoice: PdfCacheInputs,
+    tenant: { updatedAt: Date; logoUrl: string | null }
+  ): string {
+    const issuerPart =
+      invoice.issuerSnapshotNif != null
+        ? `snapshot:${invoice.issuerSnapshotNif}`
+        : String(tenant.updatedAt);
+
+    const parts = [
+      'web',
+      String(invoice.updatedAt),
+      issuerPart,
+      tenant.logoUrl ?? '',
+      invoice.template ? String(invoice.template.updatedAt) : 'default',
+      invoice.layoutOverride ? JSON.stringify(invoice.layoutOverride) : '',
+    ];
+    return createHash('sha256').update(parts.join('|')).digest('hex').slice(0, 12);
+  }
+
+  private buildFilename(invoice: {
+    number: string | null;
+    invoiceType: string | null;
+    customerSnapshotName: string | null;
+    customer: { name: string } | null;
   }): string {
-    if (invoice.isRectificative) {
-      const typeLabel = invoice.rectificationType === 'SUBSTITUTION' ? 'SUSTITUCIÓN' : 'ABONOS';
-      return `Factura Rectificativa (${typeLabel})`;
-    }
-    return this.resolveDocumentTypeLabel(invoice.invoiceType);
+    const typeLabel = this.resolveDocumentTypeLabel(invoice.invoiceType);
+    // Prefer snapshot name (immutable) over live customer name so the filename
+    // always matches the customer name printed inside the PDF.
+    const customerName = invoice.customerSnapshotName ?? invoice.customer?.name;
+    const raw = [invoice.number ?? typeLabel, customerName].filter(Boolean).join(' - ');
+    return raw.replace(/[/\\:*?"<>|]/g, '').trim() || 'documento';
   }
 
-  private resolveLogo(logoUrl: string | null): Buffer | undefined {
-    if (!logoUrl) return undefined;
-
-    // New format: data URL stored directly in the database
-    if (logoUrl.startsWith('data:')) {
-      const base64 = logoUrl.split(',')[1];
-      return base64 ? Buffer.from(base64, 'base64') : undefined;
-    }
-
-    // Legacy format: local filesystem path (development only)
-    const relativePath = logoUrl.replace(/^\/uploads\//, '');
-    const absolutePath = join(process.cwd(), 'uploads', relativePath);
-    return existsSync(absolutePath) ? readFileSync(absolutePath) : undefined;
-  }
-
-  private buildExampleInvoice(tenantId: string): Invoice {
-    const now = new Date().toISOString();
-    return {
-      id: 'preview',
-      tenantId,
-      seriesId: 'preview',
-      customerId: 'preview',
-      number: 'FAC-2024-0001',
-      issueDate: now,
-      dueDate: null,
-      status: 'CONFIRMED' as never,
-      subtotal: 1000,
-      discountPercent: null,
-      discountAmount: null,
-      taxTotal: 210,
-      irpfPercent: null,
-      irpfTotal: null,
-      compensacionPercent: null,
-      compensacionAmount: null,
-      total: 1210,
-      paymentMethod: null,
-      paymentDetails: null,
-      notes: 'Esta es una factura de ejemplo para previsualizar la plantilla.',
-      pdfUrl: null,
-      verifactuHash: null,
-      verifactuPrevHash: null,
-      verifactuStatus: null,
-      verifactuQr: null,
-      verifactuSentAt: null,
-      verifactuResponse: null,
-      isRectificative: false,
-      rectifiedInvoiceId: null,
-      rectificationReason: null,
-      rectificationType: null,
-      amountPaid: 0,
-      paymentStatus: 'UNPAID' as never,
-      createdAt: now,
-      updatedAt: now,
-      customer: {
-        id: 'preview',
-        tenantId,
-        type: 'COMPANY' as never,
-        name: 'Empresa Ejemplo S.L.',
-        legalName: 'Empresa Ejemplo Sociedad Limitada',
-        nif: 'B12345678',
-        email: 'contacto@ejemplo.com',
-        phone: '+34 912 345 678',
-        address: 'Calle Mayor 1',
-        postalCode: '28001',
-        city: 'Madrid',
-        province: 'Madrid',
-        country: 'ES',
-        notes: null,
-        isActive: true,
-        isReagyp: false,
-        hasEquivalenceSurcharge: false,
-        createdAt: now,
-        updatedAt: now,
-      },
-      lines: [
-        {
-          id: 'line1',
-          tenantId,
-          invoiceId: 'preview',
-          productId: null,
-          description: 'Servicio de consultoría',
-          quantity: 5,
-          unitPrice: 100,
-          subtotal: 500,
-          taxRate: 21,
-          taxAmount: 105,
-          lineTotal: 500,
-          hideQty: false,
-          sortOrder: 1,
-          createdAt: now,
-          updatedAt: now,
-        },
-        {
-          id: 'line2',
-          tenantId,
-          invoiceId: 'preview',
-          productId: null,
-          description: 'Desarrollo de software',
-          quantity: 10,
-          unitPrice: 50,
-          subtotal: 500,
-          taxRate: 21,
-          taxAmount: 105,
-          lineTotal: 500,
-          hideQty: false,
-          sortOrder: 2,
-          createdAt: now,
-          updatedAt: now,
-        },
-      ],
-    };
+  private resolveDocumentTypeLabel(invoiceType: string | null): string {
+    if (invoiceType === 'proforma') return 'Proforma';
+    if (invoiceType === 'quote') return 'Presupuesto';
+    return 'Factura';
   }
 }

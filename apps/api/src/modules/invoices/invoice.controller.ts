@@ -13,6 +13,8 @@ import {
   HttpStatus,
   Header,
   Res,
+  Req,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,10 +23,17 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiNoContentResponse,
+  ApiExcludeEndpoint,
 } from '@nestjs/swagger';
 import { Response } from 'express';
 import { InvoiceService } from './invoice.service';
 import { InvoicePdfService } from '../invoice-templates/pdf/invoice-pdf.service';
+import {
+  InvoicePrintTokenGuard,
+  RequestWithPrintScope,
+} from '../invoice-templates/pdf/invoice-print-token.service';
+import { InvoiceTemplateService } from '../invoice-templates/invoice-template.service';
+import { TenantService } from '../tenants/tenant.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { RectifyInvoiceDto } from './dto/rectify-invoice.dto';
@@ -45,6 +54,7 @@ class UpdateQuoteStatusDto {
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('invoices')
 @Controller('invoices')
@@ -53,7 +63,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 export class InvoiceController {
   constructor(
     private readonly invoiceService: InvoiceService,
-    private readonly pdfService: InvoicePdfService
+    private readonly pdfService: InvoicePdfService,
+    private readonly tenantService: TenantService,
+    private readonly templateService: InvoiceTemplateService
   ) {}
 
   @Post()
@@ -114,6 +126,27 @@ export class InvoiceController {
     const { buffer, filename } = await this.pdfService.generate(tenantId, id);
     res.setHeader('Content-Disposition', `inline; filename="${filename}.pdf"`);
     res.send(buffer);
+  }
+
+  /**
+   * Data for the web print page when the API asks it for the PDF (integrations API).
+   * No session: a print token scoped to this invoice; the tenant comes from the token.
+   */
+  @Get(':id/print-data')
+  @Public()
+  @UseGuards(InvoicePrintTokenGuard)
+  @ApiExcludeEndpoint()
+  async getPrintData(@Param('id') id: string, @Req() request: RequestWithPrintScope) {
+    if (!request.printScope) {
+      throw new UnauthorizedException('Token de impresión requerido');
+    }
+    const { tenantId } = request.printScope;
+    const [invoice, tenant] = await Promise.all([
+      this.invoiceService.findOne(tenantId, id),
+      this.tenantService.findOne(tenantId),
+    ]);
+    const template = await this.templateService.findForInvoice(tenantId, invoice.templateId);
+    return { invoice, tenant, template };
   }
 
   @Put(':id')

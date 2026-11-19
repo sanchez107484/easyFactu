@@ -40,6 +40,7 @@ const ISSUED: IntegrationInvoiceResponse = {
   issueDate: '2026-11-09',
   operationDate: '2026-11-09',
   rectifiedInvoiceId: null,
+  rectifiedByInvoiceId: null,
   exchangedByInvoiceId: null,
   replacedInvoiceIds: [],
   cancellation: null,

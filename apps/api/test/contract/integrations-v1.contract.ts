@@ -196,6 +196,10 @@ describe('issue, idempotency and lookup', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('application/pdf');
     expect(Buffer.from(response.raw).subarray(0, 4).toString()).toBe('%PDF');
+    // HU-21G: same generator as the NovaFactura web (Chromium), not the former pdfkit one.
+    const pdfText = Buffer.from(response.raw).toString('latin1');
+    expect(pdfText).toContain('Skia/PDF');
+    expect(pdfText).not.toContain('PDFKit');
   });
 
   it('registers the full payment', async () => {
@@ -287,6 +291,7 @@ type InvoiceBody = {
   operationDate: string;
   totals: { total: string };
   rectifiedInvoiceId: string | null;
+  rectifiedByInvoiceId: string | null;
   exchangedByInvoiceId: string | null;
   replacedInvoiceIds: string[];
   cancellation: { registrationStatus: string } | null;
@@ -401,6 +406,10 @@ describe('record types, payers without NIF and operation date (HU-21C)', () => {
       totals: { total: '-5.00' },
     });
     expectProblem(await refund('DEV2', '7.11'), 422, 'FISCAL_RULE');
+
+    // A return (by differences) does not substitute the original: it stays ISSUED.
+    const original = await call<InvoiceBody>('GET', `/invoices/${ticket.body.id}`);
+    expect(original.body).toMatchObject({ status: 'ISSUED', rectifiedByInvoiceId: null });
   });
 
   it('exchanges simplified invoices for a complete invoice (F3)', async () => {

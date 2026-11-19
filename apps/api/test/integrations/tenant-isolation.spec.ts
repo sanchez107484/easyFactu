@@ -6,6 +6,7 @@ import { IntegrationInvoiceActionsService } from '../../src/modules/integrations
 import { IntegrationInvoicesService } from '../../src/modules/integrations/services/integration-invoices.service';
 import { IntegrationUrlsService } from '../../src/modules/integrations/services/integration-urls.service';
 import { PriceWithTaxConverter } from '../../src/modules/integrations/services/price-with-tax.converter';
+import { apiVisibleInvoiceWhere } from '../../src/modules/integrations/services/integration-invoice-visibility';
 import { IntegrationCustomerInvoicesService } from '../../src/modules/integrations/services/integration-customer-invoices.service';
 import { PaymentService } from '../../src/modules/payments/payment.service';
 import { VerifactuCancellationService } from '../../src/modules/verifactu/services/verifactu-cancellation.service';
@@ -51,6 +52,7 @@ function issuedInvoice(tenantId: string, id: string, externalRef: string): Row {
     rectifiedInvoice: null,
     exchangedByInvoiceId: null,
     exchangedInvoices: [],
+    rectificativeInvoices: [],
     cancellation: null,
     lines: [{ taxRate: 21, subtotal: 10, taxAmount: 2.1 }],
   };
@@ -168,11 +170,11 @@ describe('Integrations API · tenant isolation', () => {
     expect(query.where).toMatchObject({ tenantId: TENANT_B, customerId: 'customer-b' });
   });
 
-  it('only exposes invoices issued through the API (with externalRef)', async () => {
+  it('only exposes invoices issued through the API (with externalRef) or their substitutes', async () => {
     const { prisma, invoicesService } = setup();
     await invoicesService.findOne(TENANT_B, INVOICE_B);
     const [[query]] = (prisma.invoice.findFirst as jest.Mock).mock.calls as [[{ where: Row }]];
-    expect(query.where).toMatchObject({ tenantId: TENANT_B, externalRef: { not: null } });
+    expect(query.where).toMatchObject({ tenantId: TENANT_B, ...apiVisibleInvoiceWhere() });
   });
 
   it("creates a new payer instead of reusing another tenant's customer with the same externalId and NIF", async () => {

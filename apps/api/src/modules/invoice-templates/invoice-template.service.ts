@@ -40,6 +40,17 @@ export class InvoiceTemplateService {
     });
   }
 
+  /** The invoice's own template, or the tenant default if it has none or it was deleted. */
+  async findForInvoice(tenantId: string, templateId: string | null): Promise<InvoiceTemplate> {
+    if (templateId) {
+      const template = await this.prisma.invoiceTemplate.findFirst({
+        where: { id: templateId, tenantId },
+      });
+      if (template) return template as unknown as InvoiceTemplate;
+    }
+    return this.findDefault(tenantId);
+  }
+
   async create(tenantId: string, dto: CreateInvoiceTemplateDto): Promise<InvoiceTemplate> {
     const name = dto.name ?? 'Plantilla predeterminada';
 

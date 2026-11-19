@@ -13,13 +13,14 @@ import {
   INTEGRATION_INVOICE_SELECT,
   toIntegrationInvoiceResponse,
 } from './integration-invoice.mapper';
+import { apiVisibleInvoiceWhere } from './integration-invoice-visibility';
 import { IntegrationUrlsService } from './integration-urls.service';
 
 function payerNotFound(): IntegrationException {
   return new IntegrationException(IntegrationErrorCode.NOT_FOUND, 'Cliente no encontrado');
 }
 
-/** Invoices issued through the API to one payer, newest first (returns, exchanges, cancellations). */
+/** Invoices issued through the API to one payer (and their substitutes), newest first (returns, exchanges, cancellations). */
 @Injectable()
 export class IntegrationCustomerInvoicesService {
   constructor(
@@ -44,8 +45,8 @@ export class IntegrationCustomerInvoicesService {
     const where = {
       tenantId,
       customerId: customer.id,
-      externalRef: { not: null },
       status: { not: InvoiceStatus.DRAFT },
+      ...apiVisibleInvoiceWhere(),
     };
     const [total, invoices] = await Promise.all([
       this.prisma.invoice.count({ where }),

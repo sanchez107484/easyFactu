@@ -22,6 +22,7 @@ import {
   UUID_PATTERN,
   validationError,
 } from './integration-invoice-rules';
+import { apiVisibleInvoiceWhere } from './integration-invoice-visibility';
 import { IntegrationUrlsService } from './integration-urls.service';
 import { PriceWithTaxConverter } from './price-with-tax.converter';
 
@@ -70,8 +71,8 @@ export class IntegrationInvoicesService {
       where: {
         id: invoiceId,
         tenantId,
-        externalRef: { not: null },
         status: { not: InvoiceStatus.DRAFT },
+        ...apiVisibleInvoiceWhere(),
       },
       select: INTEGRATION_INVOICE_SELECT,
     });
@@ -94,7 +95,10 @@ export class IntegrationInvoicesService {
     };
   }
 
-  /** Ensures the invoice exists for this tenant and was issued through the API before exposing it. */
+  /**
+   * Ensures the invoice exists for this tenant and was issued through the API (or substitutes
+   * one that was) before exposing it.
+   */
   async assertIssuedInvoice(
     tenantId: string,
     invoiceId: string

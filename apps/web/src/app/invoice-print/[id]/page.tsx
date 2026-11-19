@@ -18,6 +18,9 @@ import {
 
 // ==================== CONSTANTS ====================
 
+/** Header the NestJS API uses to ask for a PDF without a user session (InvoicePrintTokenService). */
+const PRINT_TOKEN_HEADER = 'x-print-token';
+
 const FONT_FAMILY_MAP: Record<string, string> = {
   helvetica: 'Helvetica, Arial, sans-serif',
   'times-roman': 'Times New Roman, Times, serif',
@@ -64,12 +67,9 @@ interface ApiResponse<T> {
   data: T;
 }
 
-async function fetchJson<T>(url: string, authHeader: string): Promise<T | null> {
+async function fetchJson<T>(url: string, headers: Record<string, string>): Promise<T | null> {
   try {
-    const res = await fetch(url, {
-      headers: { Authorization: authHeader },
-      cache: 'no-store',
-    });
+    const res = await fetch(url, { headers, cache: 'no-store' });
     if (!res.ok) return null;
     // The NestJS API wraps all responses via TransformInterceptor: { success, data, meta }
     const body = (await res.json()) as ApiResponse<T>;
@@ -79,14 +79,52 @@ async function fetchJson<T>(url: string, authHeader: string): Promise<T | null> 
   }
 }
 
+interface PrintData {
+  invoice: Invoice | null;
+  tenant: Tenant | null;
+  template: InvoiceTemplate | null;
+}
+
+/** User session (dashboard download): the same endpoints the dashboard uses. */
+async function loadWithSession(id: string, authHeader: string): Promise<PrintData> {
+  const apiUrl = buildApiUrl();
+  const headers = { Authorization: authHeader };
+  const [invoice, defaultTemplate, tenant] = await Promise.all([
+    fetchJson<Invoice>(`${apiUrl}/invoices/${id}`, headers),
+    fetchJson<InvoiceTemplate>(`${apiUrl}/invoice-templates/default`, headers),
+    fetchJson<Tenant>(`${apiUrl}/tenant`, headers),
+  ]);
+  const templateId = (invoice as (Invoice & { templateId?: string }) | null)?.templateId;
+  const specificTemplate = templateId
+    ? await fetchJson<InvoiceTemplate>(`${apiUrl}/invoice-templates/${templateId}`, headers)
+    : null;
+  return { invoice, tenant, template: specificTemplate ?? defaultTemplate };
+}
+
+/** Print token (PDF requested by the API): one call, tenant and template resolved by the API. */
+async function loadWithPrintToken(id: string, printToken: string): Promise<PrintData> {
+  const data = await fetchJson<PrintData>(`${buildApiUrl()}/invoices/${id}/print-data`, {
+    [PRINT_TOKEN_HEADER]: printToken,
+  });
+  return data ?? { invoice: null, tenant: null, template: null };
+}
+
+async function loadPrintData(id: string): Promise<PrintData | null> {
+  const headersList = await headers();
+  const printToken = headersList.get(PRINT_TOKEN_HEADER);
+  if (printToken) return loadWithPrintToken(id, printToken);
+  const authHeader = headersList.get('authorization');
+  if (authHeader) return loadWithSession(id, authHeader);
+  return null;
+}
+
 // ==================== PAGE ====================
 
 export default async function InvoicePrintPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const headersList = await headers();
-  const authHeader = headersList.get('authorization');
+  const printData = await loadPrintData(id);
 
-  if (!authHeader) {
+  if (!printData) {
     return (
       <div style={{ padding: '40px', fontFamily: 'sans-serif', color: '#ef4444' }}>
         No autorizado
@@ -94,13 +132,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
     );
   }
 
-  const apiUrl = buildApiUrl();
-
-  const [invoice, defaultTemplate, tenant] = await Promise.all([
-    fetchJson<Invoice>(`${apiUrl}/invoices/${id}`, authHeader),
-    fetchJson<InvoiceTemplate>(`${apiUrl}/invoice-templates/default`, authHeader),
-    fetchJson<Tenant>(`${apiUrl}/tenant`, authHeader),
-  ]);
+  const { invoice, tenant, template: baseTemplate } = printData;
 
   if (!invoice) {
     return (
@@ -118,16 +150,6 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
     );
   }
 
-  // Fetch the invoice's specific template if it has a templateId
-  const invoiceTemplateId = (invoice as Invoice & { templateId?: string }).templateId;
-  const specificTemplate = invoiceTemplateId
-    ? await fetchJson<InvoiceTemplate>(
-        `${apiUrl}/invoice-templates/${invoiceTemplateId}`,
-        authHeader,
-      )
-    : null;
-
-  const baseTemplate = specificTemplate ?? defaultTemplate;
   const baseLayout = (baseTemplate?.layout ?? DEFAULT_INVOICE_LAYOUT) as InvoiceLayout;
 
   // Apply per-invoice layoutOverride (e.g. simplifyTable toggle) on top of the template

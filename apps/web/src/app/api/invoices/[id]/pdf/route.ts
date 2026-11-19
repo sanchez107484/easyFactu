@@ -7,6 +7,9 @@ export const runtime = 'nodejs';
 // Allow up to 60 seconds for PDF generation
 export const maxDuration = 60;
 
+/** Header the NestJS API sends when it asks for a PDF (InvoicePrintTokenService). */
+const PRINT_TOKEN_HEADER = 'x-print-token';
+
 // ==================== BROWSER LAUNCH ====================
 // Fresh browser per request — isolates failures so a crash in one request
 // never takes down concurrent requests sharing the same process.
@@ -89,6 +92,21 @@ function buildSafeFilename(invoiceNumber: string, customerName: string): string 
   return `${number} - ${customer}.pdf`;
 }
 
+/**
+ * Dashboard users send their session (Authorization: Bearer). The NestJS API sends a
+ * print token scoped to one invoice when it needs a PDF (integrations API), so both
+ * get the PDF from this single generator.
+ */
+function resolveCredentialHeaders(request: NextRequest): Record<string, string> | null {
+  const printToken = request.headers.get(PRINT_TOKEN_HEADER);
+  if (printToken) return { [PRINT_TOKEN_HEADER]: printToken };
+
+  const authHeader = request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) return { authorization: authHeader };
+
+  return null;
+}
+
 // ==================== HANDLER ====================
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -107,8 +125,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
   }
 
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
+  const credentialHeaders = resolveCredentialHeaders(request);
+  if (!credentialHeaders) {
     return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
   }
 
@@ -118,8 +136,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     withFreshBrowser(async (context) => {
       const page = await context.newPage();
 
-      // Forward the bearer token so the server component can authenticate with the NestJS API
-      await page.setExtraHTTPHeaders({ authorization: authHeader });
+      // Forward the credential so the server component can authenticate with the NestJS API
+      await page.setExtraHTTPHeaders(credentialHeaders);
 
       // Aggressively block any request the PDF does not need:
       // - Web fonts: invoice uses system fonts only (Helvetica / Times / Courier).

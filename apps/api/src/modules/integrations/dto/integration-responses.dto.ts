@@ -48,7 +48,12 @@ export class InvoiceCancellationResponse {
 
 export class IntegrationInvoiceResponse {
   @ApiProperty({ example: '8f0c3a52-2c7e-4f1e-9a51-0d6b1f0f9c11' }) id!: string;
-  @ApiProperty({ example: 'VENTA-2026-001234' }) externalRef!: string;
+  @ApiProperty({
+    description:
+      'Referencia de la venta en el ERP. En una sustitutiva emitida desde NovaFactura, la de la factura que sustituye',
+    example: 'VENTA-2026-001234',
+  })
+  externalRef!: string;
   @ApiProperty({ example: 'T-2026-000318' }) number!: string;
   @ApiProperty({ enum: ['standard', 'simplified'], example: 'simplified' }) invoiceType!: string;
   @ApiProperty({
@@ -74,6 +79,14 @@ export class IntegrationInvoiceResponse {
   operationDate!: string;
   @ApiProperty({ nullable: true, description: 'Factura que rectifica (R4/R5)', example: null })
   rectifiedInvoiceId!: string | null;
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description:
+      'Factura que sustituye a esta (status RECTIFIED). Se consulta y descarga con GET /invoices/{id} y /pdf',
+    example: null,
+  })
+  rectifiedByInvoiceId!: string | null;
   @ApiProperty({
     nullable: true,
     description: 'Factura completa (F3) por la que se canjeó esta simplificada',
