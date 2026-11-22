@@ -280,7 +280,7 @@ const featureBlocks: FeatureBlock[] = [
         icon: Shield,
         title: 'VeriFactu',
         description:
-          'Cada factura lleva el hash encadenado y el código QR que exige el Reglamento, y el registro puede enviarse a la AEAT.',
+          'Cada factura lleva el hash encadenado y un código QR de verificación desde el primer día. El envío de los registros a la AEAT llegará incluido en tu plan, sin coste extra, antes de que VeriFactu sea obligatorio.',
         points: [
           'Hash encadenado SHA-256 y QR verificable',
           'Envío del registro a la AEAT (próximamente, incluido)',
@@ -331,7 +331,7 @@ const faqs = [
   },
   {
     q: '¿Qué incluye el acceso gratuito hasta el 30 de junio de 2027?',
-    a: 'Acceso completo sin restricciones: facturas, clientes y productos, presupuestos, proformas, recurrentes, control de cobros, panel de ingresos, PDF personalizable y VeriFactu. Sin límite de facturas ni funciones bloqueadas. El acceso gratuito es para las primeras plazas disponibles.',
+    a: 'Acceso completo sin restricciones: facturas, clientes y productos, presupuestos, proformas, recurrentes, control de cobros, panel de ingresos, PDF personalizable y VeriFactu. Sin límite de facturas ni funciones bloqueadas.',
   },
   {
     q: '¿Es posible configurar facturas recurrentes automáticas?',

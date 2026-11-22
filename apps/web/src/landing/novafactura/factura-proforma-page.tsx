@@ -171,7 +171,7 @@ const faqs = [
   },
   {
     q: '¿Una factura proforma puede convertirse en factura definitiva?',
-    a: 'Sí, y es una función muy útil del software de facturación. Una vez el cliente acepta la proforma y se produce la entrega o prestación del servicio, puedes convertirla en factura definitiva con un clic. La factura definitiva recibe su propio número correlativo, incluye el hash VeriFactu y se transmite a la AEAT. La proforma queda archivada como referencia del proceso comercial.',
+    a: 'Sí, y es una función muy útil del software de facturación. Una vez el cliente acepta la proforma y se produce la entrega o prestación del servicio, puedes convertirla en factura definitiva con un clic. La factura definitiva recibe su propio número correlativo, incluye su hash y su código QR VeriFactu. La proforma queda archivada como referencia del proceso comercial.',
   },
   {
     q: '¿La factura proforma necesita número de serie?',

@@ -49,7 +49,7 @@ const testimonials = [
     name: 'Carlos Martínez',
     role: 'Fontanero autónomo',
     location: 'Valencia',
-    text: `No entiendo de tecnología, pero esto lo maneja cualquiera. Las facturas se generan en segundos y van a Hacienda automáticamente con ${brandConfig.app.name}.`,
+    text: `No entiendo de tecnología, pero esto lo maneja cualquiera. Con ${brandConfig.app.name} las facturas salen en segundos, con el IVA y el IRPF bien calculados, y me olvido del papeleo.`,
     stars: 5,
     initials: 'CM',
   },

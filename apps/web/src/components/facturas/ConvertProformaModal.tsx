@@ -61,7 +61,7 @@ export function ConvertProformaModal({
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-3.5 w-3.5 text-secondary-500 shrink-0 mt-0.5" />
                     <span>
-                      Al confirmarla se enviará a la AEAT vía VeriFactu y tendrá validez legal.
+                      Al confirmarla recibirá su hash y su QR VeriFactu y tendrá validez legal.
                     </span>
                   </li>
                 </ul>

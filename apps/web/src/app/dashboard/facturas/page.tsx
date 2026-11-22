@@ -714,7 +714,7 @@ export default function FacturasPage() {
         <EmptyState
           icon={FileText}
           title="Crea tu primera factura"
-          description="Genera facturas profesionales en segundos. Cumple con VeriFactu automáticamente."
+          description="Genera facturas profesionales en segundos, con su hash y su QR VeriFactu."
           action={
             <Link href="/dashboard/facturas/nueva">
               <Button>
