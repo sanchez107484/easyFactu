@@ -1,6 +1,6 @@
 'use client';
 
-import { openCookieSettings } from './Analytics';
+import { openCookieSettings } from '@/lib/cookie-consent';
 
 interface CookieSettingsButtonProps {
   className?: string;

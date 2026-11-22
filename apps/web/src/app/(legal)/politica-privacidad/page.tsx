@@ -17,7 +17,7 @@ export default function PoliticaPrivacidadPage() {
       path="/politica-privacidad"
       title="Política de Privacidad"
       subtitle="Cómo recopilamos, usamos y protegemos tus datos personales."
-      lastUpdated="14 de abril de 2026"
+      lastUpdated="22 de noviembre de 2026"
     >
       <LegalSection number="1." heading="Responsable del tratamiento">
         <dl className="space-y-2 rounded-lg border border-slate-100 bg-slate-50 p-4 text-sm">
@@ -95,6 +95,10 @@ export default function PoliticaPrivacidadPage() {
           <li>enviar comunicaciones relacionadas con el servicio</li>
           <li>cumplir obligaciones legales</li>
           <li>mejorar la plataforma</li>
+          <li>
+            medir el uso de la web y la eficacia de nuestros anuncios, solo si acepta las cookies
+            de análisis o publicidad
+          </li>
         </ul>
       </LegalSection>
 
@@ -123,6 +127,15 @@ export default function PoliticaPrivacidadPage() {
           <li>proveedores tecnológicos necesarios para el funcionamiento del servicio</li>
           <li>administraciones públicas cuando exista obligación legal</li>
           <li>sistemas de cumplimiento fiscal cuando la normativa lo requiera</li>
+          <li>
+            Google Ireland Limited (Google Analytics y Google Ads), solo si acepta las cookies
+            correspondientes. Google puede tratar los datos en Estados Unidos al amparo del Marco
+            de Privacidad de Datos UE-EE. UU. Más detalle en la{' '}
+            <a href="/cookies" className="underline underline-offset-2">
+              política de cookies
+            </a>
+            .
+          </li>
         </ul>
         <p className="mt-3 font-medium text-slate-700">Los datos no serán vendidos a terceros.</p>
       </LegalSection>

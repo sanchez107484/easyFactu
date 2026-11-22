@@ -3,6 +3,7 @@ import { brandConfig } from '@easyfactura/brand-config';
 import { LegalPageWrapper } from '@/components/legal/LegalPageWrapper';
 import { LegalSection } from '@/components/legal/LegalSection';
 import { CookieSettingsButton } from '@/components/analytics/cookie-settings-button';
+import { CookieTable } from '@/components/legal/cookie-table';
 
 export const metadata: Metadata = {
   title: 'Política de Cookies',
@@ -18,7 +19,7 @@ export default function CookiesPage() {
       path="/cookies"
       title="Política de Cookies"
       subtitle="Información sobre el uso de cookies en nuestro sitio web."
-      lastUpdated="14 de abril de 2026"
+      lastUpdated="22 de noviembre de 2026"
     >
       <LegalSection number="1." heading="Qué son las cookies">
         <p>
@@ -42,22 +43,49 @@ export default function CookiesPage() {
           Estas cookies no requieren consentimiento del usuario.
         </p>
 
-        <h3 className="mt-5 font-semibold text-slate-700">Cookies de análisis</h3>
+        <h3 className="mt-5 font-semibold text-slate-700">Cookies de análisis (de terceros)</h3>
         <p>
-          Permiten analizar el comportamiento de los usuarios en la web para mejorar el servicio:
+          Usamos Google Analytics, un servicio de Google Ireland Limited, para analizar cómo se usa
+          la web y mejorar el servicio:
         </p>
         <ul className="ml-4 mt-2 list-inside list-disc space-y-1">
           <li>páginas visitadas</li>
           <li>tiempo de permanencia</li>
           <li>navegación dentro del sitio</li>
         </ul>
-        <p className="mt-2">
-          Estas cookies pueden utilizar herramientas como Google Analytics u otros sistemas de
-          análisis.
+        <p className="mt-2 text-xs text-slate-400">
+          Solo se instalan si las acepta en el banner de cookies.
+        </p>
+
+        <h3 className="mt-5 font-semibold text-slate-700">Cookies publicitarias (de terceros)</h3>
+        <p>
+          Usamos Google Ads, un servicio de Google Ireland Limited, para saber si un visitante llegó
+          desde uno de nuestros anuncios y si después se registró. Así medimos qué anuncios
+          funcionan y dejamos de invertir en los que no. No vendemos sus datos ni los usamos para
+          mostrarle publicidad de otras empresas.
+        </p>
+        <p className="mt-2 text-xs text-slate-400">
+          Solo se instalan si las acepta en el banner de cookies.
         </p>
 
         <h3 className="mt-5 font-semibold text-slate-700">Cookies de personalización</h3>
         <p>Permiten recordar preferencias del usuario, como idioma o configuración.</p>
+
+        <CookieTable />
+
+        <p className="mt-3">
+          Google puede tratar estos datos en Estados Unidos, al amparo del Marco de Privacidad de
+          Datos UE-EE. UU. Más información en{' '}
+          <a
+            href="https://policies.google.com/technologies/partner-sites"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2"
+          >
+            cómo usa Google los datos de los sitios que usan sus servicios
+          </a>
+          .
+        </p>
       </LegalSection>
 
       <LegalSection number="3." heading="Gestión de cookies">

@@ -11,6 +11,7 @@ import Analytics from '@/components/analytics/Analytics';
 import CookieBanner from '@/components/analytics/CookieBanner';
 import { SignupAttributionTracker } from '@/components/analytics/signup-attribution-tracker';
 import { CtaClickTracker } from '@/components/analytics/cta-click-tracker';
+import { CONSENT_STORAGE_KEY } from '@/lib/cookie-consent';
 import { NavigationProgress } from '@/components/navigation-progress';
 import { organizationJsonLd } from '@/lib/structured-data';
 import './globals.css';
@@ -39,19 +40,26 @@ const websiteJsonLd = {
 };
 
 // Consent Mode v2: set defaults synchronously before GTM loads.
-// For returning visitors, read localStorage so GA4 fires immediately.
+// For returning visitors, read localStorage so tags fire immediately.
+// Storage format is owned by lib/cookie-consent.ts: JSON {analytics, ads, version},
+// or the legacy "yes" which only granted analytics.
 const CONSENT_INIT_SCRIPT = `
   window.dataLayer=window.dataLayer||[];
   function gtag(){dataLayer.push(arguments);}
-  var _c='denied';
-  try{_c=localStorage.getItem('ef_consent')==='yes'?'granted':'denied';}catch(e){}
+  var _a='denied',_d='denied';
+  try{
+    var _r=localStorage.getItem('${CONSENT_STORAGE_KEY}');
+    if(_r==='yes'){_a='granted';}
+    else if(_r&&_r.charAt(0)==='{'){var _p=JSON.parse(_r);if(_p.analytics===true)_a='granted';if(_p.ads===true)_d='granted';}
+  }catch(e){}
   gtag('consent','default',{
-    analytics_storage:_c,
-    ad_storage:'denied',
-    ad_user_data:'denied',
-    ad_personalization:'denied',
-    wait_for_update:_c==='denied'?500:0
+    analytics_storage:_a,
+    ad_storage:_d,
+    ad_user_data:_d,
+    ad_personalization:_d,
+    wait_for_update:(_a==='denied'||_d==='denied')?500:0
   });
+  gtag('set','ads_data_redaction',_d==='denied');
 `;
 
 const inter = Inter({

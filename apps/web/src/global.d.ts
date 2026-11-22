@@ -5,12 +5,14 @@ declare module '*.css' {
 
 // Google Tag Manager / gtag.js
 interface Window {
-  gtag: (
-    command: 'consent' | 'config' | 'event' | 'js' | 'set',
-    target: string | Date,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    params?: Record<string, any>,
-  ) => void;
+  gtag: {
+    (
+      command: 'consent' | 'config' | 'event' | 'js',
+      target: string | Date,
+      params?: Record<string, unknown>,
+    ): void;
+    (command: 'set', field: string, value: unknown): void;
+  };
   dataLayer: unknown[];
 }
 
