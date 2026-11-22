@@ -246,7 +246,6 @@ export function NovafacturaPreciosPage({
   const statsRef = useRef<HTMLDivElement>(null);
   const hasAnimated = useRef(false);
 
-  const hours = useCounter(156, 1800, statsVisible);
   const months = useCounter(6, 1200, statsVisible);
 
   useEffect(() => {
@@ -534,11 +533,11 @@ export function NovafacturaPreciosPage({
                   </p>
                 </div>
                 <div>
-                  <div className="text-5xl font-black text-green-600 tabular-nums">{hours}h</div>
+                  <div className="text-5xl font-black text-green-600">∞</div>
                   <p className="mt-1.5 font-semibold text-slate-700">
-                    ahorradas al año por usuario
+                    facturas en los dos planes
                   </p>
-                  <p className="text-sm text-slate-400">Factura en 60 segundos, no en horas</p>
+                  <p className="text-sm text-slate-400">Sin límite en Básico ni en PRO</p>
                 </div>
               </div>
             </div>
@@ -890,7 +889,7 @@ export function NovafacturaPreciosPage({
                   href="/contacto"
                   className="font-semibold text-blue-600 underline underline-offset-2 hover:no-underline"
                 >
-                  Escríbenos y te respondemos en menos de 2 horas.
+                  Escríbenos y te respondemos en horario laboral.
                 </Link>
               </p>
               <div className="space-y-3">

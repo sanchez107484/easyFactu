@@ -150,7 +150,7 @@ export function ContactoForm() {
           Cuéntanos qué necesitas
         </h2>
         <p className="mt-2 text-slate-500">
-          Rellena el formulario y te respondemos en menos de 2 horas.
+          Rellena el formulario y te respondemos en horario laboral.
         </p>
       </div>
 
@@ -161,7 +161,7 @@ export function ContactoForm() {
           </div>
           <h3 className="mb-2 text-xl font-bold text-green-900">¡Mensaje enviado!</h3>
           <p className="mb-6 text-green-700">
-            Hemos recibido tu consulta. Te responderemos en menos de 2 horas en horario laboral.
+            Hemos recibido tu consulta. Te responderemos lo antes posible en horario laboral.
           </p>
           <div className="flex flex-col items-center gap-3 sm:flex-row">
             <button

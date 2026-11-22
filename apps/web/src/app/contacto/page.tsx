@@ -26,13 +26,13 @@ import { ContactoForm, ContactoFaqItems } from './contacto-client';
 // -----------------------------------------------------------------------------
 export const metadata: Metadata = {
   title: `Contacto – Soporte y atención al cliente | ${brandConfig.app.name}`,
-  description: `¿Tienes dudas sobre VeriFactu, planes o migración desde otro software? Nuestro equipo responde en menos de 2 horas en español. Escríbenos ahora.`,
+  description: `¿Tienes dudas sobre VeriFactu, planes o migración desde otro software? Nuestro equipo te responde en español en horario laboral. Escríbenos ahora.`,
   alternates: {
     canonical: `${brandConfig.app.url}/contacto`,
   },
   openGraph: {
     title: `Contacto – ${brandConfig.app.name}`,
-    description: `Soporte técnico, consultas sobre VeriFactu y migraciones. Respuesta en menos de 2 horas en español.`,
+    description: `Soporte técnico, consultas sobre VeriFactu y migraciones. Te respondemos en español de lunes a viernes.`,
     url: `${brandConfig.app.url}/contacto`,
     type: 'website',
     siteName: brandConfig.app.name,
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: `Contacto – ${brandConfig.app.name}`,
-    description: `Soporte en español. Respuesta en menos de 2 horas.`,
+    description: `Soporte en español de lunes a viernes.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };
@@ -79,16 +79,16 @@ const channels = [
 ];
 
 const stats = [
-  { value: '< 2h', label: 'Tiempo de respuesta medio', icon: Clock },
+  { value: 'L–V', label: 'Soporte de 9:00 a 18:00', icon: Clock },
   { value: '0 €', label: 'Gratis hasta junio de 2027', icon: Star },
-  { value: '98%', label: 'Incidencias resueltas en 24h', icon: CheckCircle2 },
+  { value: 'Gratis', label: 'Migración asistida', icon: CheckCircle2 },
   { value: 'ES', label: 'Soporte en español', icon: Headphones },
 ];
 
 const faqs = [
   {
     q: '¿Cuánto tarda en responderse un ticket de soporte?',
-    a: `Nuestro tiempo de respuesta medio es inferior a 2 horas en horario laboral (L-V 9:00-18:00). Puedes escribirnos a ${brandConfig.app.supportEmail} o usar el chat desde el panel.`,
+    a: `Respondemos en horario laboral, de lunes a viernes de 9:00 a 18:00. Puedes escribirnos a ${brandConfig.app.supportEmail} o usar el chat desde el panel.`,
   },
   {
     q: '¿Puedo solicitar una demo del software antes de registrarme?',
@@ -100,7 +100,7 @@ const faqs = [
   },
   {
     q: '¿Tenéis soporte telefónico?',
-    a: `El soporte de ${brandConfig.app.name} es por chat y email, con tiempo de respuesta inferior a 2 horas en horario laboral. Para migraciones complejas o consultas comerciales, puedes solicitar una llamada desde el formulario de contacto.`,
+    a: `El soporte de ${brandConfig.app.name} es por chat y email, en horario laboral. Para migraciones complejas o consultas comerciales, puedes solicitar una llamada desde el formulario de contacto.`,
   },
   {
     q: '¿Podéis ayudarme a entender si mi software actual cumple con VeriFactu?',
@@ -200,7 +200,7 @@ export default async function ContactoPage() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
               </span>
-              Soporte activo · Respuesta {'<'} 2 horas
+              Soporte en español · L–V 9:00–18:00
             </div>
 
             <h1 className="mb-4 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">

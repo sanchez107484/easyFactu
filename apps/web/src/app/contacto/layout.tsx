@@ -3,13 +3,13 @@ import { brandConfig } from '@easyfactura/brand-config';
 
 export const metadata: Metadata = {
   title: `Contacto — Habla con nuestro equipo de soporte`,
-  description: `¿Tienes dudas sobre ${brandConfig.app.name}? Contacta con nuestro equipo de soporte en español. Tiempo de respuesta inferior a 2 horas. Ayuda con VeriFactu, migraciones, planes y facturación electrónica.`,
+  description: `¿Tienes dudas sobre ${brandConfig.app.name}? Contacta con nuestro equipo de soporte en español. Te respondemos en horario laboral. Ayuda con VeriFactu, migraciones, planes y facturación electrónica.`,
   alternates: {
     canonical: `${brandConfig.app.url}/contacto`,
   },
   openGraph: {
     title: `Contacto — ${brandConfig.app.name}`,
-    description: `Contacta con el equipo de ${brandConfig.app.name}. Soporte en español con respuesta en menos de 2 horas. Te ayudamos con VeriFactu, migraciones y cualquier duda.`,
+    description: `Contacta con el equipo de ${brandConfig.app.name}. Soporte en español de lunes a viernes. Te ayudamos con VeriFactu, migraciones y cualquier duda.`,
     url: `${brandConfig.app.url}/contacto`,
     type: 'website',
     siteName: brandConfig.app.name,
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: `Contacto — ${brandConfig.app.name}`,
-    description: `¿Dudas sobre facturación o VeriFactu? Nuestro equipo responde en menos de 2 horas. Soporte en español.`,
+    description: `¿Dudas sobre facturación o VeriFactu? Nuestro equipo te responde en horario laboral. Soporte en español.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
 };

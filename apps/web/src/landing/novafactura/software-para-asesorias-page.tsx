@@ -212,7 +212,6 @@ const COMPARISON_DATA: {
   { label: 'Panel multi-cliente centralizado', novafactura: true, a3asesor: true, billin: true },
   { label: 'Facturación bajo el NIF de cada cliente', novafactura: true, a3asesor: true, billin: false },
   { label: 'Alta de clientes en lote (Excel/CSV)', novafactura: true, a3asesor: true, billin: false },
-  { label: 'VeriFactu: hash + QR', novafactura: true, a3asesor: false, billin: false },
   { label: 'Digitalización de facturas de clientes', novafactura: true, a3asesor: false, billin: false },
   {
     label: 'Exportación a Sage, A3CON, Cegid, Diamacon',

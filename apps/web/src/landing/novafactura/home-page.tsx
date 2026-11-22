@@ -49,7 +49,7 @@ const testimonials = [
     name: 'Carlos Martínez',
     role: 'Fontanero autónomo',
     location: 'Valencia',
-    text: `No entiendo de tecnología, pero esto lo maneja cualquiera. Con ${brandConfig.app.name} las facturas salen en segundos, con el IVA y el IRPF bien calculados, y me olvido del papeleo.`,
+    text: 'No entiendo de tecnología, pero esto lo maneja cualquiera. Las facturas se generan en segundos.',
     stars: 5,
     initials: 'CM',
   },
@@ -189,7 +189,7 @@ const homepageSoftwareJsonLd = softwareApplicationJsonLd({
     'Control de cobros y facturas vencidas',
     'Acceso multiplataforma (web, móvil, tablet)',
     'Importación de clientes y productos desde Excel y migración asistida bajo petición',
-    'Soporte en español en menos de 2 horas',
+    'Soporte en español de lunes a viernes',
     'Hash encadenado y QR VeriFactu en cada factura',
   ],
 });
