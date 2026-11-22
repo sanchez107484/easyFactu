@@ -31,7 +31,7 @@ import FaqSection from '@/components/FaqSection';
 import { VerifactuDeadlines } from '@/components/verifactu-deadlines';
 import { FreeOfferEndedNotice } from '@/components/marketing/free-slots-meter';
 import { VERIFACTU_ANNOUNCED_DEADLINE } from '@/lib/verifactu-deadlines';
-import { formatCount, freeSlotsLabel, getSignupSlots } from '@/lib/signup-slots';
+import { freeSlotsLabel, getSignupSlots } from '@/lib/signup-slots';
 import { PlanFeatureList } from '@/components/marketing/plan-feature-list';
 import { softwareApplicationJsonLd } from '@/lib/structured-data';
 import {
@@ -119,14 +119,14 @@ const features = [
   {
     icon: Shield,
     title: 'Preparado para VeriFactu',
-    description: 'Hash encadenado, QR y registro en la AEAT incluidos para cuando sea obligatorio.',
+    description: 'Hash encadenado y QR en cada factura. El envío a la AEAT llegará incluido antes de que sea obligatorio.',
   },
 ];
 
 const faqs = [
   {
     q: `¿${brandConfig.app.name} es un programa de facturación gratis de verdad?`,
-    a: `Sí. Las primeras ${formatCount(PRICING.freePeriodSlots)} altas tienen acceso completo y gratuito hasta el 30 de junio de 2027: facturas ilimitadas, presupuestos, recurrentes, control de cobros y VeriFactu. No pedimos tarjeta al registrarte y no hay permanencia.`,
+    a: `Sí. Tienes acceso completo y gratuito hasta el 30 de junio de 2027: facturas ilimitadas, presupuestos, recurrentes, control de cobros y VeriFactu. No pedimos tarjeta al registrarte y no hay permanencia.`,
   },
   {
     q: '¿Cuánto tiempo me ahorra frente a Excel o Word?',
@@ -154,7 +154,7 @@ const faqs = [
   },
   {
     q: `¿${brandConfig.app.name} está adaptado a VeriFactu?`,
-    a: `Sí. ${brandConfig.app.name} está adaptado a VeriFactu (declaración responsable del fabricante). La AEAT no homologa ni certifica programas: cada fabricante declara que su software cumple el Reglamento. Genera automáticamente el hash encadenado SHA-256, el código QR verificable y puede enviar cada registro a la AEAT.`,
+    a: `Casi, y preferimos decírtelo claro. ${brandConfig.app.name} ya genera en cada factura el hash encadenado SHA-256 y un código QR de verificación. Estamos terminando la firma y el envío automático de los registros a la AEAT, que llegarán incluidos en tu plan antes de que VeriFactu sea obligatorio (octubre de 2028, pendiente de BOE). Cuando estén listos publicaremos la declaración responsable del fabricante.`,
   },
 ];
 
@@ -190,7 +190,7 @@ const homepageSoftwareJsonLd = softwareApplicationJsonLd({
     'Acceso multiplataforma (web, móvil, tablet)',
     'Importación de clientes y productos desde Excel y migración asistida bajo petición',
     'Soporte en español en menos de 2 horas',
-    'Adaptado a VeriFactu: hash encadenado, QR y envío a la AEAT',
+    'Hash encadenado y QR VeriFactu en cada factura',
   ],
 });
 
@@ -417,15 +417,14 @@ export async function NovafacturaHomePage() {
               <div className="bg-gradient-to-br from-blue-50 via-white to-transparent p-8 text-center md:p-12">
                 <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800">
                   <Clock className="h-4 w-4" />
-                  Oferta limitada a {formatCount(PRICING.freePeriodSlots)} inscripciones
+                  Oferta de lanzamiento
                 </div>
                 <h2 className="mb-2 text-3xl font-extrabold text-slate-900 sm:text-4xl">
                   Gratis hasta el 30 de junio de 2027
                 </h2>
                 <p className="mb-2 text-lg font-bold text-blue-600">Sin tarjeta al registrarte</p>
                 <p className="mb-6 text-slate-500">
-                  Accede a todas las funcionalidades sin coste. Reservado para los primeros{' '}
-                  {formatCount(PRICING.freePeriodSlots)} profesionales.
+                  Accede a todas las funcionalidades sin coste.
                 </p>
                 {slots?.isSoldOut && (
                   <div className="mx-auto mb-8 max-w-md">
@@ -519,9 +518,7 @@ export async function NovafacturaHomePage() {
               </h2>
             </div>
             <p className="mx-auto mb-12 max-w-xl text-center text-slate-500">
-              {slots
-                ? `${formatCount(slots.occupied)} autónomos y pymes ya facturan con ${brandConfig.app.name}`
-                : `Autónomos y pymes de toda España ya facturan con ${brandConfig.app.name}`}
+              {`Lo que cuentan quienes ya facturan con ${brandConfig.app.name}`}
             </p>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {testimonials.map((t) => (
@@ -606,13 +603,6 @@ export async function NovafacturaHomePage() {
               Haz tu primera factura gratis hoy
             </h2>
             <p className="mb-8 text-lg text-slate-500">
-              {slots && !slots.isSoldOut && (
-                <>
-                  Únete a los {formatCount(slots.occupied)} profesionales que ya facturan con{' '}
-                  {brandConfig.app.name}.
-                  <br />
-                </>
-              )}
               Gratis hasta el 30 de junio de 2027. Sin tarjeta al registrarte. Sin compromiso.
             </p>
             <Link

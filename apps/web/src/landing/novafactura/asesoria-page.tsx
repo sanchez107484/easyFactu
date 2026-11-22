@@ -53,7 +53,7 @@ const faqs = [
   },
   {
     q: '¿NovaFactura está adaptado a VeriFactu?',
-    a: 'Sí. NovaFactura está adaptado a VeriFactu (declaración responsable del fabricante): la AEAT no homologa ni certifica programas, sino que cada fabricante declara que cumple el Reglamento (Real Decreto 1007/2023). El sistema funciona generando automáticamente el hash SHA-256, el código QR verificable y transmitiendo cada factura al registro de la AEAT en tiempo real.',
+    a: 'Casi, y preferimos decírtelo claro. NovaFactura ya genera en cada factura, bajo el NIF de cada cliente, el hash encadenado SHA-256 y un código QR de verificación. Estamos terminando la firma y el envío automático de los registros a la AEAT, que llegarán sin coste antes de que VeriFactu sea obligatorio (octubre de 2028, pendiente de BOE). Cuando estén listos publicaremos la declaración responsable del fabricante.',
   },
   {
     q: '¿Hay un límite de facturas que puedo emitir al mes?',
@@ -157,9 +157,9 @@ const FEATURES = [
   },
   {
     icon: Shield,
-    title: 'VeriFactu automático bajo cada NIF',
+    title: 'Cada factura bajo el NIF del cliente',
     description:
-      'Cada factura que emites queda registrada bajo el NIF del cliente, con su hash encadenado y su código QR verificable. Hacienda la ve como emitida por el cliente, no por ti.',
+      'Cada factura que emites queda registrada bajo el NIF del cliente, con su hash encadenado y su código QR verificable. Cuando se active el envío a la AEAT, Hacienda la recibirá como emitida por el cliente, no por ti.',
   },
   {
     icon: UserCheck,
@@ -350,7 +350,7 @@ export function NovafacturaAsesoriaPage() {
               </span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
-                Declaración responsable RD 254/2025
+                Hash y QR en cada factura
               </span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />

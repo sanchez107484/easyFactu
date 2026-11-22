@@ -106,7 +106,7 @@ const softwareJsonLd = softwareApplicationJsonLd({
     'Alta de clientes en lote desde Excel',
     'Digitalización de facturas de clientes',
     'Exportación a Sage, A3CON, Cegid y Diamacon',
-    'VeriFactu automático (hash, QR, AEAT)',
+    'VeriFactu: hash y QR (envío a la AEAT, próximamente)',
     'Gratis para asesorías',
   ],
 });
@@ -212,7 +212,7 @@ const COMPARISON_DATA: {
   { label: 'Panel multi-cliente centralizado', novafactura: true, a3asesor: true, billin: true },
   { label: 'Facturación bajo el NIF de cada cliente', novafactura: true, a3asesor: true, billin: false },
   { label: 'Alta de clientes en lote (Excel/CSV)', novafactura: true, a3asesor: true, billin: false },
-  { label: 'VeriFactu automático (hash + QR + AEAT)', novafactura: true, a3asesor: false, billin: false },
+  { label: 'VeriFactu: hash + QR', novafactura: true, a3asesor: false, billin: false },
   { label: 'Digitalización de facturas de clientes', novafactura: true, a3asesor: false, billin: false },
   {
     label: 'Exportación a Sage, A3CON, Cegid, Diamacon',
@@ -528,9 +528,10 @@ export function NovafacturaSoftwareParaAsesoriasPage() {
                   cartera.
                 </p>
                 <p className="mt-4 leading-relaxed text-gray-600 dark:text-gray-400">
-                  La AEAT registra cada factura como emitida por el cliente, con su número de serie
-                  y su cadena VeriFactu independiente. Tu despacho aparece solo en el registro
-                  interno de auditoría.
+                  Cada factura queda emitida bajo el NIF del cliente, con su número de serie y su
+                  cadena VeriFactu independiente. Cuando se active el envío, la AEAT la recibirá
+                  como emitida por el cliente. Tu despacho aparece solo en el registro interno de
+                  auditoría.
                 </p>
               </div>
             </div>
@@ -720,7 +721,7 @@ export function NovafacturaSoftwareParaAsesoriasPage() {
                 </span>
                 <span className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-indigo-300" />
-                  VeriFactu automático sin coste extra
+                  VeriFactu sin coste extra
                 </span>
               </div>
               <Link

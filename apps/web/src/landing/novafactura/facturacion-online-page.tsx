@@ -59,7 +59,7 @@ const faqs = [
   },
   {
     q: `¿${brandConfig.app.name} está adaptado a VeriFactu?`,
-    a: 'Sí, mediante declaración responsable del fabricante. Cada factura incluye el hash encadenado y el código QR, y el registro puede enviarse a la AEAT. Cuando VeriFactu sea obligatorio no tendrás que cambiar de programa.',
+    a: 'Casi. Cada factura ya incluye el hash encadenado y un código QR de verificación. El envío automático de los registros a la AEAT llegará incluido antes de que VeriFactu sea obligatorio, así que no tendrás que cambiar de programa.',
   },
 ];
 
@@ -101,7 +101,7 @@ const softwareJsonLd = {
     'Aviso de facturas vencidas',
     'Uso desde el móvil sin instalación',
     'Cálculo automático de IVA e IRPF',
-    'Adaptado a VeriFactu',
+    'Hash y QR VeriFactu en cada factura',
   ],
   offers: {
     '@type': 'Offer',
@@ -227,7 +227,7 @@ const professions = [
 const trustBadges = [
   { icon: CreditCard, text: 'Sin tarjeta al registrarte' },
   { icon: Clock, text: 'Activación inmediata' },
-  { icon: Shield, text: 'Adaptado a VeriFactu' },
+  { icon: Shield, text: 'Hash y QR VeriFactu' },
   { icon: Lock, text: 'RGPD compliant' },
 ];
 

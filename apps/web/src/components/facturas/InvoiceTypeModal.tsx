@@ -99,7 +99,7 @@ export function InvoiceTypeModal({ open, onSelect, onClose }: InvoiceTypeModalPr
           <TypeCard
             icon={<FileText className="h-5 w-5" />}
             title="Factura ordinaria"
-            description="La más común. Sujeta a IVA e IRPF. Se envía a la AEAT vía VeriFactu."
+            description="La más común. Sujeta a IVA e IRPF."
             onClick={() => handleTypeSelect('standard')}
           />
           <TypeCard

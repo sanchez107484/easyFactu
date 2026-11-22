@@ -9,7 +9,7 @@ const BRAND_INFO = {
   novafactura: {
     title: 'NovaFactura — Software de facturación VeriFactu',
     description:
-      'Software de facturación para autónomos y pymes. VeriFactu automático, envío a AEAT, exportación contable. Gratis hasta el 30 de junio de 2027.',
+      'Software de facturación para autónomos y pymes. Hash y QR VeriFactu en cada factura, exportación contable. Gratis hasta el 30 de junio de 2027.',
     siteUrl: 'https://novafactura.es',
     feedUrl: 'https://novafactura.es/feed.xml',
     language: 'es-ES',

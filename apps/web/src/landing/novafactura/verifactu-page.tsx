@@ -131,7 +131,7 @@ const faqJsonLd = {
       name: `¿Cómo puedo cumplir con VeriFactu sin complicaciones?`,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `Usando un software adaptado a VeriFactu (declaración responsable del fabricante) como ${brandConfig.app.name}. Genera automáticamente el hash encadenado, el código QR y puede enviar cada registro a la AEAT.`,
+        text: `Usando un software adaptado a VeriFactu. ${brandConfig.app.name} ya genera automáticamente el hash encadenado y el código QR, y el envío de cada registro a la AEAT llegará antes de que sea obligatorio.`,
       },
     },
   ],
@@ -300,7 +300,7 @@ const FAQS = [
   },
   {
     q: `¿${brandConfig.app.name} está adaptado a VeriFactu?`,
-    a: `Sí. ${brandConfig.app.name} está adaptado a VeriFactu (declaración responsable del fabricante). La AEAT no homologa ni certifica programas: cada fabricante declara que su software cumple el Reglamento. Genera automáticamente el hash encadenado SHA-256, el código QR verificable y puede enviar cada registro a la AEAT.`,
+    a: `Casi, y preferimos decírtelo claro. ${brandConfig.app.name} ya genera en cada factura el hash encadenado SHA-256 y un código QR de verificación. Estamos terminando la firma y el envío automático de los registros a la AEAT, que llegarán incluidos en tu plan antes de que VeriFactu sea obligatorio (octubre de 2028, pendiente de BOE). Cuando estén listos publicaremos la declaración responsable del fabricante.`,
   },
 ];
 
@@ -635,8 +635,8 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
                 },
                 {
                   icon: BadgeCheck,
-                  title: 'Adaptado a VeriFactu',
-                  desc: `${brandConfig.app.name} cumple el Reglamento VeriFactu (declaración responsable del fabricante).`,
+                  title: 'Hash y QR en cada factura',
+                  desc: `${brandConfig.app.name} ya genera el hash encadenado y el QR. El envío a la AEAT llegará incluido antes de la obligación.`,
                 },
               ].map(({ icon: Icon, title, desc }) => (
                 <div

@@ -58,7 +58,7 @@ export function AuthSidePanel({ variant = 'login' }: AuthSidePanelProps) {
         <div className="mt-6">
           <Badge className="border-white/20 bg-white/10 text-white hover:bg-white/20">
             <BadgeCheck className="mr-1.5 h-3.5 w-3.5" />
-            Adaptado a VeriFactu
+            Hash y QR VeriFactu
           </Badge>
         </div>
 
@@ -72,7 +72,7 @@ export function AuthSidePanel({ variant = 'login' }: AuthSidePanelProps) {
           <p className="mt-4 text-lg text-white/80">
             {variant === 'login'
               ? 'Accede a tu cuenta y continúa gestionando tu facturación de forma segura.'
-              : `Únete a más de 3.000 profesionales que ya cumplen con VeriFactu automáticamente con ${brandConfig.app.name}.`}
+              : `Crea tu cuenta gratis y factura con ${brandConfig.app.name}: hash encadenado y QR en cada factura desde el primer día.`}
           </p>
         </div>
 

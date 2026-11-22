@@ -342,7 +342,7 @@ export default async function BlogPostPage({ params }: PageProps) {
                   Factura sin complicaciones
                 </h2>
                 <p className="mt-2 text-muted-foreground">
-                  VeriFactu integrado, PDF automático y todo lo que necesitas como autónomo
+                  Hash y QR VeriFactu, PDF automático y todo lo que necesitas como autónomo
                   —&nbsp;sin pagar por lo que no usas.
                 </p>
                 <div className="mt-5 flex flex-col gap-3 sm:flex-row">

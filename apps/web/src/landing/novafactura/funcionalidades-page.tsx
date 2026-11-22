@@ -22,7 +22,7 @@ import {
   Wallet,
   FileX,
 } from 'lucide-react';
-import { brandConfig, PRICING } from '@easyfactura/brand-config';
+import { brandConfig } from '@easyfactura/brand-config';
 import { freeSlotsLabel, getSignupSlots } from '@/lib/signup-slots';
 import SiteHeader from '@/components/site-header';
 import FaqSection from '@/components/FaqSection';
@@ -283,8 +283,7 @@ const featureBlocks: FeatureBlock[] = [
           'Cada factura lleva el hash encadenado y el código QR que exige el Reglamento, y el registro puede enviarse a la AEAT.',
         points: [
           'Hash encadenado SHA-256 y QR verificable',
-          'Envío del registro a la AEAT',
-          'Adaptado mediante declaración responsable del fabricante',
+          'Envío del registro a la AEAT (próximamente, incluido)',
         ],
         guide: { href: '/verifactu', label: 'Guía completa de VeriFactu' },
       },
@@ -304,7 +303,7 @@ const softwareAppJsonLd = {
     '@type': 'Offer',
     price: '0',
     priceCurrency: 'EUR',
-    description: `Gratis hasta el 30 de junio de 2027 para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} inscripciones.`,
+    description: 'Gratis hasta el 30 de junio de 2027.',
     availability: 'https://schema.org/LimitedAvailability',
   },
   featureList: featureBlocks.flatMap((block) => block.features.map((feature) => feature.title)),
@@ -373,7 +372,7 @@ const faqJsonLd = {
 const trustBadges = [
   { icon: CreditCard, text: 'Sin tarjeta al registrarte' },
   { icon: Clock, text: 'Activación inmediata' },
-  { icon: Shield, text: 'Adaptado a VeriFactu' },
+  { icon: Shield, text: 'Hash y QR VeriFactu' },
   { icon: Lock, text: 'RGPD compliant' },
 ];
 

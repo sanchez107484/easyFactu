@@ -16,7 +16,7 @@ export const PLAN_DESCRIPTIONS = {
 } as const;
 
 export const BASIC_PLAN_FEATURES = [
-  'VeriFactu',
+  'VeriFactu: hash y QR (envío a la AEAT, próximamente)',
   'Facturas ilimitadas',
   'Clientes y productos ilimitados',
   'Presupuestos y proformas',
