@@ -7,7 +7,7 @@ export const novafacturaPreciosMetadata: Metadata = {
   alternates: { canonical: `${brandConfig.app.url}/precios` },
   openGraph: {
     title: `Precio programa VeriFactu: 0 € hasta junio 2027 | ${brandConfig.app.name}`,
-    description: `Gratis hasta el 30 de junio de 2027. Plan Starter desde ${formatPrice(PRICING.starter.monthly)}€/mes o Plan PRO desde ${formatPrice(PRICING.pro.monthly)}€/mes. VeriFactu incluido en todos los planes. Regístrate gratis hasta el 30 de junio de 2027 sin tarjeta.`,
+    description: `Gratis hasta el 30 de junio de 2027. Plan Básico desde ${formatPrice(PRICING.starter.annualMonthly)}€/mes y Plan PRO desde ${formatPrice(PRICING.pro.annualMonthly)}€/mes, los dos con facturas ilimitadas y VeriFactu incluido. Sin tarjeta y sin permanencia.`,
 
     url: `${brandConfig.app.url}/precios`,
     type: 'website',
@@ -18,7 +18,7 @@ export const novafacturaPreciosMetadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: `Precios | ${brandConfig.app.name}`,
-    description: `Software VeriFactu gratis hasta el 30 de junio de 2027. Desde ${formatPrice(PRICING.starter.monthly)}€/mes.`,
+    description: `Software VeriFactu gratis hasta el 30 de junio de 2027. Después, desde ${formatPrice(PRICING.starter.annualMonthly)}€/mes.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   robots: { index: true, follow: true },
