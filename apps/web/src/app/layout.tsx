@@ -10,11 +10,16 @@ import { brandConfig, themeConfig } from '@easyfactura/brand-config';
 import Analytics from '@/components/analytics/Analytics';
 import CookieBanner from '@/components/analytics/CookieBanner';
 import { SignupAttributionTracker } from '@/components/analytics/signup-attribution-tracker';
+import { CtaClickTracker } from '@/components/analytics/cta-click-tracker';
 import { NavigationProgress } from '@/components/navigation-progress';
 import { organizationJsonLd } from '@/lib/structured-data';
 import './globals.css';
 
-const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID ?? 'GTM-T8W799T4';
+// The hardcoded container belongs to NovaFactura only: another brand without its own
+// NEXT_PUBLIC_GTM_ID loads no GTM rather than mixing its traffic into NovaFactura's GA4.
+const NOVAFACTURA_GTM_ID = 'GTM-T8W799T4';
+const isNovafactura = (process.env.NEXT_PUBLIC_BRAND ?? 'novafactura') === 'novafactura';
+const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || (isNovafactura ? NOVAFACTURA_GTM_ID : undefined);
 
 // WebSite schema signals the canonical home URL and site name to the Knowledge Graph.
 // SpeakableSpecification tells LLMs which content is most important to cite.
@@ -176,14 +181,16 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
         {/* GTM noscript fallback */}
-        <noscript>
-          <iframe
-            src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
-            height="0"
-            width="0"
-            style={{ display: 'none', visibility: 'hidden' }}
-          />
-        </noscript>
+        {GTM_ID && (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+              height="0"
+              width="0"
+              style={{ display: 'none', visibility: 'hidden' }}
+            />
+          </noscript>
+        )}
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -198,14 +205,17 @@ export default function RootLayout({
             <Analytics />
             <CookieBanner />
             <SignupAttributionTracker />
+            <CtaClickTracker />
             <Toaster richColors position="top-right" />
           </QueryProvider>
         </ThemeProvider>
         {/* GTM loads when the browser is idle after onload so it never competes with
             LCP/INP. Consent Mode v2 defaults above still apply before it runs. */}
-        <Script id="gtm" strategy="lazyOnload">
-          {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${GTM_ID}');`}
-        </Script>
+        {GTM_ID && (
+          <Script id="gtm" strategy="lazyOnload">
+            {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${GTM_ID}');`}
+          </Script>
+        )}
       </body>
     </html>
   );

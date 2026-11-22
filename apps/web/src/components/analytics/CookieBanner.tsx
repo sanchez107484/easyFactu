@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { grantAnalyticsConsent, denyAnalyticsConsent } from './Analytics';
+import { grantAnalyticsConsent, denyAnalyticsConsent, onOpenCookieSettings } from './Analytics';
 
 type ConsentChoice = 'yes' | 'no' | null;
 
@@ -20,6 +20,7 @@ export default function CookieBanner() {
 
   useEffect(() => {
     if (getStoredConsent() === null) setVisible(true);
+    return onOpenCookieSettings(() => setVisible(true));
   }, []);
 
   if (!visible) return null;
@@ -42,8 +43,8 @@ export default function CookieBanner() {
     >
       <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          Usamos cookies analíticas propias para mejorar tu experiencia. No compartimos datos con
-          terceros con fines publicitarios.{' '}
+          Usamos cookies de análisis de Google Analytics para entender cómo se usa la web y
+          mejorarla. No las usamos con fines publicitarios.{' '}
           <a href="/politica-privacidad" className="underline underline-offset-2 hover:text-foreground">
             Política de privacidad
           </a>

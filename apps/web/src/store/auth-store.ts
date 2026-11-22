@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { apiClient, setAccessToken, setRefreshToken, clearTokens } from '@/lib/api-client';
 import { unwrapApiResponse } from '@/lib/api-response';
 import { readSignupAttribution } from '@/lib/signup-attribution';
+import { trackSignUp } from '@/lib/analytics';
 import type { User, Tenant, AccountType, AuthResponse } from '@easyfactura/shared-types';
 
 // Definir localmente hasta que se resuelva la cache de VSCode
@@ -90,6 +91,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     setAccessToken(authData.accessToken);
     setRefreshToken(authData.refreshToken);
+    trackSignUp(registerData.accountType);
 
     set({
       user: authData.user,

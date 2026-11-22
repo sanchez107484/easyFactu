@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { brandConfig } from '@easyfactura/brand-config';
 import { LegalPageWrapper } from '@/components/legal/LegalPageWrapper';
 import { LegalSection } from '@/components/legal/LegalSection';
+import { CookieSettingsButton } from '@/components/analytics/cookie-settings-button';
 
 export const metadata: Metadata = {
   title: 'Política de Cookies',
@@ -64,6 +65,10 @@ export default function CookiesPage() {
           El usuario puede aceptar, rechazar o configurar el uso de cookies a través del banner de
           cookies del sitio web. También puede eliminarlas o bloquearlas desde la configuración de
           su navegador.
+        </p>
+        <p className="mt-2">
+          Puede cambiar su elección en cualquier momento:{' '}
+          <CookieSettingsButton className="font-medium underline underline-offset-2" />
         </p>
       </LegalSection>
 

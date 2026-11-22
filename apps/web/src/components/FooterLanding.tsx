@@ -4,6 +4,7 @@ import React from 'react';
 import { brandConfig } from '@easyfactura/brand-config';
 import { Badge } from '@/components/ui/badge';
 import { BadgeCheck } from 'lucide-react';
+import { CookieSettingsButton } from '@/components/analytics/cookie-settings-button';
 
 const BRAND = process.env.NEXT_PUBLIC_BRAND ?? 'novafactura';
 
@@ -152,6 +153,7 @@ export default function FooterLanding(): JSX.Element {
               <Link href="/cookies" className="hover:text-foreground">
                 Cookies
               </Link>
+              <CookieSettingsButton className="hover:text-foreground" />
               <Link href="/tratamiento-datos" className="hover:text-foreground">
                 Tratamiento de datos
               </Link>
