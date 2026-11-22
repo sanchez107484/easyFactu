@@ -60,7 +60,7 @@ const faqs = [
   },
   {
     q: '¿Está preparado para la obligación de VeriFactu en 2028?',
-    a: `${brandConfig.app.name} está adaptado a los requisitos del Reglamento de VeriFactu (Real Decreto 1007/2023). Genera hash SHA-256 encadenado, código QR verificable y transmite cada factura al registro de la AEAT. Cuando sea obligatorio, tu asesoría ya estará lista.`,
+    a: `Sí. ${brandConfig.app.name} ya genera en cada factura el hash SHA-256 encadenado y un código QR de verificación, y el envío de los registros a la AEAT llegará incluido, sin coste, antes de que VeriFactu sea obligatorio (Real Decreto 1007/2023). Tu asesoría no tendrá que cambiar de programa ni migrar datos.`,
   },
 ];
 
@@ -775,9 +775,9 @@ export function NovafacturaSoftwareParaAsesoriasPage() {
                 <p className="mt-3 text-sm leading-relaxed text-amber-700 dark:text-amber-400">
                   Si tu despacho hace las facturas de sus clientes, eres responsable de que cada
                   factura cumpla la normativa. Con{' '}
-                  {brandConfig.app.name}, el cumplimiento es automático: cada
-                  factura se genera con hash encadenado, QR verificable y se transmite a la AEAT en
-                  tiempo real.
+                  {brandConfig.app.name}, cada factura se genera ya con hash
+                  encadenado y QR de verificación, y el envío a la AEAT llegará incluido antes de
+                  que sea obligatorio.
                 </p>
                 <Link
                   href="/verifactu"

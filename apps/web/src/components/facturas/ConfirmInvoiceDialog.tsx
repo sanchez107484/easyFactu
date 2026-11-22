@@ -89,8 +89,8 @@ export function ConfirmInvoiceDialog({
                 </p>
               ) : (
                 <p>
-                  Una vez confirmada, la factura se enviará a la <strong>AEAT vía VeriFactu</strong>{' '}
-                  y no podrá editarse.
+                  Una vez confirmada, la factura recibirá su número fiscal y su{' '}
+                  <strong>hash y QR VeriFactu</strong>, y no podrá editarse.
                 </p>
               )}
 

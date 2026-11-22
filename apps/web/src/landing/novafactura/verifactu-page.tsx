@@ -436,7 +436,7 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
                 {
                   icon: FileText,
                   title: 'Custodia de facturas en la AEAT',
-                  desc: 'Al estar registradas en la Agencia Tributaria, la AEAT las custodia por ti. Sin necesidad de guardarlas 4 años por tu cuenta.',
+                  desc: 'La AEAT guarda el registro de cada factura enviada. Tú sigues obligado a conservar tus facturas, pero con un programa en la nube las tienes siempre a mano.',
                 },
               ].map(({ icon: Icon, title, desc }) => (
                 <div
@@ -630,8 +630,8 @@ export function NovafacturaVerifactuPage(): React.JSX.Element {
                 },
                 {
                   icon: Send,
-                  title: 'Envío en tiempo real a la AEAT',
-                  desc: 'Cada factura se transmite automáticamente al registro de la Agencia Tributaria en el momento de su emisión.',
+                  title: 'Envío a la AEAT incluido',
+                  desc: 'Antes de que VeriFactu sea obligatorio, cada registro se enviará automáticamente a la Agencia Tributaria. Incluido en tu plan, sin coste extra.',
                 },
                 {
                   icon: BadgeCheck,

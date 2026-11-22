@@ -11,7 +11,7 @@ interface ExcelComparisonRow {
 export const EXCEL_COMPARISON_ROWS: ExcelComparisonRow[] = [
   {
     feature: 'Tiempo por factura',
-    excel: '5–10 minutos copiando la plantilla',
+    excel: 'Copiar la plantilla y rellenarla a mano',
     app: 'Menos de 60 segundos',
   },
   {

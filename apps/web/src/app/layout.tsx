@@ -108,7 +108,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: `${brandConfig.app.name} | Factura sin preocuparte de VeriFactu`,
-    description: `Gratis hasta el 30 de junio de 2027. Sin tarjeta. Cumplimiento automático con Hacienda.`,
+    description: `Gratis hasta el 30 de junio de 2027. Sin tarjeta. IVA e IRPF automáticos y VeriFactu incluido.`,
     images: [`${brandConfig.app.url}${brandConfig.app.ogImage}`],
   },
   icons: {

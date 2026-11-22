@@ -17,6 +17,7 @@ import {
   Repeat,
   Gift,
   ChevronRight,
+  BadgeCheck,
   FileSpreadsheet,
   Download,
   ArrowDownToLine,
@@ -168,10 +169,10 @@ const FEATURES = [
       'Define las empresas a las que factura tu autónomo una sola vez en su directorio. Se reutilizan en todas sus facturas sin volver a introducir los datos. Sin duplicados.',
   },
   {
-    icon: FileSpreadsheet,
-    title: 'Envío automático a la AEAT',
+    icon: BadgeCheck,
+    title: 'VeriFactu incluido, sin configurar nada',
     description:
-      'Cada factura se transmite en tiempo real al registro de la Agencia Tributaria. Sin configurar nada, sin trámites adicionales. El cumplimiento con VeriFactu es automático desde la primera factura.',
+      'Hash encadenado y código QR en cada factura desde la primera, sin trámites adicionales. El envío de los registros a la AEAT se activará incluido y sin coste antes de que VeriFactu sea obligatorio, sin que tus clientes tengan que hacer nada.',
   },
   {
     icon: TrendingUp,
@@ -183,7 +184,7 @@ const FEATURES = [
     icon: ClipboardCheck,
     title: 'Auditoría de acciones',
     description:
-      'Cada factura que emites en nombre de un cliente queda marcada con tu usuario de asesoría. Registro completo de quién emitió qué y cuándo, para cualquier revisión o inspección.',
+      'Cada factura que emites en nombre de un cliente queda marcada con tu usuario de asesoría y la fecha. Sabes siempre quién creó cada factura, para cualquier revisión.',
   },
   {
     icon: LayoutDashboard,
@@ -322,8 +323,8 @@ export function NovafacturaAsesoriaPage() {
             </h1>
 
             <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-              Gestiona la facturación de tus clientes, genera el QR y hash SHA-256 y transmite a la
-              AEAT automáticamente. Todo desde un panel gratuito para tu despacho.
+              Gestiona la facturación de tus clientes, con hash SHA-256 y QR en cada factura y VeriFactu
+              incluido. Todo desde un panel gratuito para tu despacho.
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
