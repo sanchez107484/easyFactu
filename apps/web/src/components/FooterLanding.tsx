@@ -108,10 +108,10 @@ export default function FooterLanding(): JSX.Element {
               </div>
               <Badge variant="outline" className="text-xs mb-3">
                 <BadgeCheck className="mr-1 h-3 w-3" />
-                Adaptado a VeriFactu
+                Hash y QR VeriFactu
               </Badge>
               <p className="text-xs text-muted-foreground leading-relaxed mt-2">
-                Software de facturación con VeriFactu automático para autónomos y pymes. Gratis
+                Software de facturación para autónomos y pymes, con hash y QR VeriFactu. Gratis
                 hasta el 30 de junio de 2027.
               </p>
             </div>
@@ -166,7 +166,7 @@ export default function FooterLanding(): JSX.Element {
           </div>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            Software de facturación adaptado a VeriFactu (declaración responsable del fabricante) ·
+            Software de facturación con hash y QR VeriFactu en cada factura ·
             Cumplimiento RGPD · Servidores en la Unión Europea
           </p>
         </div>

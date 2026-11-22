@@ -56,7 +56,7 @@ const faqs = [
   },
   {
     q: '¿Qué hago mientras tanto?',
-    a: `Nada urgente. Puedes seguir facturando como hasta ahora y planificar el cambio con calma. Si quieres adelantarte, ${brandConfig.app.name} ya está adaptado a VeriFactu (declaración responsable del fabricante), así que cuando llegue la obligación no tendrás que cambiar de programa.`,
+    a: `Nada urgente. Puedes seguir facturando como hasta ahora y planificar el cambio con calma. Si quieres adelantarte, ${brandConfig.app.name} ya genera el hash encadenado y el QR, y el envío a la AEAT llegará antes de la obligación, así que no tendrás que cambiar de programa.`,
   },
   {
     q: '¿Cómo sé si mi programa de facturación está adaptado a VeriFactu?',
@@ -255,8 +255,8 @@ function CuandoCta() {
       <div className="mx-auto max-w-3xl px-6 text-center">
         <h2 className="mb-3 text-3xl font-bold text-white">Prepárate con calma</h2>
         <p className="mb-8 text-blue-100">
-          {brandConfig.app.name} ya está adaptado a VeriFactu (declaración responsable del
-          fabricante). Compara los planes y elige el que encaja con tu volumen de facturas.
+          {brandConfig.app.name} ya genera el hash encadenado y el QR, y el envío a la AEAT
+          llegará antes de la obligación. Compara los planes y elige el que encaja con tu volumen de facturas.
         </p>
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           <Link

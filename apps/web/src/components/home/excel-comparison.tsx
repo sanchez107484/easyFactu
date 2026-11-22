@@ -42,7 +42,7 @@ export const EXCEL_COMPARISON_ROWS: ExcelComparisonRow[] = [
   {
     feature: 'VeriFactu',
     excel: 'No genera hash ni QR',
-    app: 'Hash, QR y registro en la AEAT incluidos',
+    app: 'Hash y QR en cada factura; envío a la AEAT antes de la obligación',
   },
 ];
 

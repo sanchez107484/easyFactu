@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { brandConfig, PRICING, formatPrice } from '@easyfactura/brand-config';
 import { FreeOfferEndedNotice } from '@/components/marketing/free-slots-meter';
-import { formatCount, type SignupSlots } from '@/lib/signup-slots';
+import { type SignupSlots } from '@/lib/signup-slots';
 import { PlanFeatureList } from '@/components/marketing/plan-feature-list';
 import {
   ALL_PLAN_FEATURES,
@@ -45,7 +45,7 @@ const comparisonRows = [
   { label: 'PDF profesional', starter: true, pro: true, excel: false, otros: true },
   { label: 'Presupuestos / proformas', starter: true, pro: true, excel: false, otros: '€€ extra' },
   { label: 'Facturas recurrentes', starter: true, pro: true, excel: false, otros: '€€ extra' },
-  { label: 'VeriFactu automático', starter: true, pro: true, excel: false, otros: false },
+  { label: 'VeriFactu: hash y QR (envío a la AEAT, próximamente)', starter: true, pro: true, excel: false, otros: false },
   { label: 'Hash encadenado + QR', starter: true, pro: true, excel: false, otros: '€€ extra' },
   { label: 'Envío AEAT integrado', starter: true, pro: true, excel: false, otros: '€€ extra' },
   ...PRO_ONLY_AVAILABLE_FEATURES.map((label) => ({
@@ -247,7 +247,6 @@ export function NovafacturaPreciosPage({
   const hasAnimated = useRef(false);
 
   const hours = useCounter(156, 1800, statsVisible);
-  const users = useCounter(slots?.occupied ?? 0, 1800, statsVisible);
   const months = useCounter(6, 1200, statsVisible);
 
   useEffect(() => {
@@ -360,7 +359,7 @@ export function NovafacturaPreciosPage({
                   { icon: CreditCard, text: 'Sin tarjeta al registrarte' },
                   { icon: Clock, text: 'Activación en 2 minutos' },
                   { icon: Lock, text: 'RGPD compliant' },
-                  { icon: BadgeCheck, text: 'Adaptado a VeriFactu' },
+                  { icon: BadgeCheck, text: 'Hash y QR VeriFactu' },
                 ].map(({ icon: Icon, text }) => (
                   <span key={text} className="flex items-center gap-1.5">
                     <Icon className="h-4 w-4 text-blue-500" />
@@ -524,27 +523,16 @@ export function NovafacturaPreciosPage({
           {/* STATS */}
           <section ref={statsRef} className="border-y border-slate-100 bg-slate-50 py-12">
             <div className="mx-auto max-w-4xl px-4">
-              <div className="grid gap-8 sm:grid-cols-3 text-center">
+              <div className="grid gap-8 sm:grid-cols-2 text-center">
                 <div>
                   <div className="text-5xl font-black text-blue-600 tabular-nums">2027</div>
                   <p className="mt-1.5 font-semibold text-slate-700">
                     Hasta el 30 de junio de 2027 completamente gratis
                   </p>
                   <p className="text-sm text-slate-400">
-                    Para las primeras {formatCount(PRICING.freePeriodSlots)} inscripciones
+                    Sin tarjeta y sin permanencia
                   </p>
                 </div>
-                {slots && (
-                  <div>
-                    <div className="text-5xl font-black text-slate-900 tabular-nums">
-                      {formatCount(users)}
-                    </div>
-                    <p className="mt-1.5 font-semibold text-slate-700">
-                      profesionales ya inscritos
-                    </p>
-                    <p className="text-sm text-slate-400">Autónomos y pymes de toda España</p>
-                  </div>
-                )}
                 <div>
                   <div className="text-5xl font-black text-green-600 tabular-nums">{hours}h</div>
                   <p className="mt-1.5 font-semibold text-slate-700">
@@ -849,9 +837,7 @@ export function NovafacturaPreciosPage({
                 Lo que dicen quienes ya lo usan
               </h2>
               <p className="mx-auto mb-12 max-w-xl text-center text-slate-500">
-                {slots
-                  ? `${formatCount(slots.occupied)} autónomos ya facturan con ${brandConfig.app.name}`
-                  : `Autónomos de toda España ya facturan con ${brandConfig.app.name}`}
+                {`Lo que cuentan quienes ya facturan con ${brandConfig.app.name}`}
               </p>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {testimonials.map((t) => (

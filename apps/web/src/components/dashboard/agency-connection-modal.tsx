@@ -21,7 +21,7 @@ interface AgencyConnectionModalProps {
 
 const COPY = {
   title: 'Conexión con asesorías',
-  description: `${brandConfig.app.name} permite que tu asesor contable acceda a tus facturas de forma segura y en tiempo real. Cumplimiento VeriFactu automático, sin enviar Excel ni PDFs.`,
+  description: `${brandConfig.app.name} permite que tu asesor contable acceda a tus facturas de forma segura y en tiempo real. Sin enviar Excel ni PDFs.`,
   benefitsTitle: 'Beneficios para ti',
   benefits: [
     {
@@ -40,7 +40,7 @@ const COPY = {
       label: 'Control total',
       text: 'Revoca el acceso de tu asesor en cualquier momento desde tu panel',
     },
-    { label: 'Cumplimiento total', text: 'VeriFactu automático bajo tu NIF, sin preocupaciones' },
+    { label: 'Bajo tu NIF', text: 'Tus facturas siguen emitidas con tu NIF, con su hash y su QR' },
   ],
   howItWorksTitle: '¿Cómo funciona?',
   howItWorks: [

@@ -126,8 +126,8 @@ function AgencySidePanel() {
             <span className="text-indigo-200">Gratis. Para siempre.</span>
           </h2>
           <p className="mt-3 text-indigo-100">
-            Gestiona la facturación de toda tu cartera de clientes desde un único panel con
-            VeriFactu integrado.
+            Gestiona la facturación de toda tu cartera de clientes desde un único panel, con
+            hash y QR VeriFactu en cada factura.
           </p>
         </div>
 

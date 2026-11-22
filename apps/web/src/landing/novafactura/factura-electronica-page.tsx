@@ -112,7 +112,7 @@ const faqs = [
   },
   {
     q: `¿${brandConfig.app.name} cumple con la factura electrónica y VeriFactu?`,
-    a: `${brandConfig.app.name} ya está adaptado a VeriFactu (hash encadenado, QR y envío a la AEAT). La emisión en formato estructurado para la factura electrónica B2B se activará cuando el reglamento sea definitivo, sin que tengas que cambiar de programa.`,
+    a: `${brandConfig.app.name} ya genera el hash encadenado y el QR de VeriFactu, y el envío a la AEAT llegará antes de que sea obligatorio. La emisión en formato estructurado para la factura electrónica B2B se activará cuando el reglamento sea definitivo, sin que tengas que cambiar de programa.`,
   },
 ];
 

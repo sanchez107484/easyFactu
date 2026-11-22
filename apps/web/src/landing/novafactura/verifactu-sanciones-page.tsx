@@ -191,10 +191,10 @@ function SancionesCta() {
       <div className="flex flex-col gap-4 px-6 sm:flex-row sm:items-center sm:justify-between md:px-0">
         <div>
           <p className="mb-1 font-bold text-slate-900">
-            {brandConfig.app.name} ya está adaptado a VeriFactu
+            {brandConfig.app.name} ya genera el hash y el QR de VeriFactu
           </p>
           <p className="text-sm text-slate-600">
-            Declaración responsable del fabricante. Compara los planes y elige sin prisas.
+            El envío a la AEAT llegará incluido antes de la obligación. Compara los planes y elige sin prisas.
           </p>
         </div>
         <Link

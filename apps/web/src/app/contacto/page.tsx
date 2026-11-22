@@ -15,8 +15,8 @@ import {
   FileText,
   Headphones,
 } from 'lucide-react';
-import { brandConfig, PRICING } from '@easyfactura/brand-config';
-import { formatCount, freeSlotsLabel, getSignupSlots } from '@/lib/signup-slots';
+import { brandConfig } from '@easyfactura/brand-config';
+import { freeSlotsLabel, getSignupSlots } from '@/lib/signup-slots';
 import SiteHeader from '@/components/site-header';
 import FooterLanding from '@/components/FooterLanding';
 import { ContactoForm, ContactoFaqItems } from './contacto-client';
@@ -80,7 +80,7 @@ const channels = [
 
 const stats = [
   { value: '< 2h', label: 'Tiempo de respuesta medio', icon: Clock },
-  { value: '4.9★', label: 'Valoración de soporte', icon: Star },
+  { value: '0 €', label: 'Gratis hasta junio de 2027', icon: Star },
   { value: '98%', label: 'Incidencias resueltas en 24h', icon: CheckCircle2 },
   { value: 'ES', label: 'Soporte en español', icon: Headphones },
 ];
@@ -379,9 +379,7 @@ export default async function ContactoPage() {
                   <h3 className="mb-3 font-bold text-slate-900">Por qué confiar en nosotros</h3>
                   <div className="space-y-2.5">
                     {[
-                      { icon: Shield, text: 'Adaptado a VeriFactu (declaración responsable)' },
-                      { icon: Star, text: '4.9/5 en valoraciones de clientes' },
-                      { icon: Users, text: '+2.500 autónomos y pymes activos' },
+                      { icon: Shield, text: 'Hash encadenado y QR en cada factura' },
                       { icon: CheckCircle2, text: 'RGPD compliant · Servidores UE' },
                     ].map(({ icon: Icon, text }) => (
                       <div key={text} className="flex items-center gap-2.5 text-sm text-slate-600">
@@ -425,8 +423,7 @@ export default async function ContactoPage() {
               ¿Prefieres probarlo directamente?
             </h2>
             <p className="mx-auto mb-8 max-w-lg text-lg text-slate-500">
-              Regístrate gratis y explora NovaFactura sin compromiso. Gratis hasta el 30 de junio de 2027 para los
-              primeros {formatCount(PRICING.freePeriodSlots)}.
+              Regístrate gratis y explora NovaFactura sin compromiso. Gratis hasta el 30 de junio de 2027.
             </p>
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link

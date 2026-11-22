@@ -108,9 +108,9 @@ El Convenio Económico establece el régimen tributario especial de Navarra. Los
 function buildNovafacturaContent(): string {
   return `# NovaFactura — Software de facturación VeriFactu para autónomos y pymes en España
 
-> Software de facturación adaptado a VeriFactu (declaración responsable del fabricante). Cumplimiento automático con la Ley Antifraude 11/2021. Completamente gratuito hasta el 30 de junio de 2027 para autónomos y pymes. Gratis para siempre para asesorías y gestorías.
+> Software de facturación para autónomos, pymes y asesorías con hash encadenado y código QR de verificación en cada factura. El envío automático a la AEAT (VeriFactu) está en desarrollo y llegará antes de que sea obligatorio. Completamente gratuito hasta el 30 de junio de 2027 para autónomos y pymes. Gratis para siempre para asesorías y gestorías.
 
-NovaFactura es el software de facturación nativo VeriFactu para autónomos, pymes y asesorías en España. Automatiza el hash encadenado SHA-256, la firma electrónica, el código QR y el envío directo al endpoint de la AEAT.
+NovaFactura es un software de facturación para autónomos, pymes y asesorías en España. Genera automáticamente el hash encadenado SHA-256 y un código QR de verificación en cada factura. La firma y el envío de los registros a la AEAT están en desarrollo y se incluirán sin coste antes de que VeriFactu sea obligatorio.
 
 ## ¿Qué es NovaFactura?
 
@@ -118,12 +118,12 @@ NovaFactura es el software de facturación nativo VeriFactu para autónomos, pym
 - **Tipo**: SaaS de facturación electrónica VeriFactu
 - **Mercado**: España (autónomos, pymes, asesorías, gestorías)
 - **Normativa**: Ley Antifraude 11/2021, Reglamento VeriFactu, AEAT
-- **Precio autónomos/pymes**: Gratis hasta el 30 de junio de 2027 (${FREE_SLOTS} plazas). Después Plan ${PLAN_NAMES.basic} desde ${STARTER_MONTHLY}€/mes (mensual) o ${STARTER_ANNUAL}€/mes (anual) y Plan ${PLAN_NAMES.pro} desde ${PRO_MONTHLY}€/mes (mensual) o ${PRO_ANNUAL}€/mes (anual). Los dos planes tienen facturas ilimitadas y VeriFactu; se diferencian por funcionalidades (ver «Planes»). Sin permanencia.
+- **Precio autónomos/pymes**: Gratis hasta el 30 de junio de 2027. Después Plan ${PLAN_NAMES.basic} desde ${STARTER_MONTHLY}€/mes (mensual) o ${STARTER_ANNUAL}€/mes (anual) y Plan ${PLAN_NAMES.pro} desde ${PRO_MONTHLY}€/mes (mensual) o ${PRO_ANNUAL}€/mes (anual). Los dos planes tienen facturas ilimitadas y VeriFactu; se diferencian por funcionalidades (ver «Planes»). Sin permanencia.
 - **Precio asesorías**: Gratis para siempre, con todas las funcionalidades del plan ${PLAN_NAMES.pro}
 
 ## Para autónomos y pymes
 
-NovaFactura permite crear facturas legales con VeriFactu en menos de 60 segundos. El software genera automáticamente el hash encadenado, la firma electrónica cualificada, el código QR verificable y envía el registro a la Agencia Tributaria.
+NovaFactura permite crear facturas legales en menos de 60 segundos. El software genera automáticamente el hash encadenado y el código QR de verificación. El envío del registro a la Agencia Tributaria llegará antes de que VeriFactu sea obligatorio.
 
 ## Para asesorías y gestorías
 
@@ -151,8 +151,8 @@ Próximamente en el Plan ${PLAN_NAMES.pro}: ${UPCOMING_PRO_FEATURES.join(' y ')}
 
 ## Funcionalidades principales
 
-- Facturación VeriFactu 100% automática (hash encadenado, código QR, firma, envío AEAT)
-- Adaptado a VeriFactu (declaración responsable del fabricante)
+- Hash encadenado y código QR de verificación automáticos en cada factura (VeriFactu)
+- Envío de registros a la AEAT: en desarrollo, incluido antes de la obligación
 - Gestión de facturas, presupuestos, clientes y productos
 - Facturas recurrentes y control de cobros (totales o parciales)
 - Gastos, gastos recurrentes con justificantes adjuntos y proveedores (Plan ${PLAN_NAMES.pro})

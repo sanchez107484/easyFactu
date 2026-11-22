@@ -1,6 +1,6 @@
 // ============================================================
 // NOVAFACTURA — Configuración de marca
-// Facturación para autónomos y PYMEs conectada a la AEAT (España)
+// Facturación para autónomos y PYMEs (España)
 // ============================================================
 
 export const novafacturaBrandConfig = {
@@ -12,8 +12,8 @@ export const novafacturaBrandConfig = {
   app: {
     name: 'NovaFactura',
     shortName: 'NovaFactura',
-    description: 'Facturación inteligente para autónomos y PYMEs con VeriFactu integrado',
-    tagline: 'Factura sin complicaciones. VeriFactu automático.',
+    description: 'Facturación inteligente para autónomos y PYMEs, con hash y QR VeriFactu en cada factura',
+    tagline: 'Factura sin complicaciones. Hash y QR VeriFactu.',
     url: 'https://www.novafactura.es',
     domain: 'www.novafactura.es',
     ogImage: '/brand/novafactura/og-image.png',
@@ -50,8 +50,8 @@ export const novafacturaBrandConfig = {
     benefits: [
       {
         iconName: 'Shield' as const,
-        title: 'VeriFactu automático',
-        description: 'Cumplimiento garantizado con Hacienda',
+        title: 'Hash y QR VeriFactu',
+        description: 'En cada factura, desde el primer día',
       },
       {
         iconName: 'Clock' as const,
@@ -65,8 +65,8 @@ export const novafacturaBrandConfig = {
       },
       {
         iconName: 'Users' as const,
-        title: '+3.000 profesionales',
-        description: 'Ya confían en nosotros',
+        title: 'Pensado para asesorías',
+        description: 'Tu gestor ve tus facturas al día',
       },
     ],
     testimonialCardBg: 'rgba(255, 255, 255, 0.10)',

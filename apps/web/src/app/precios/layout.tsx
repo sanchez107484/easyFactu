@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: `Precios de ${brandConfig.app.name}: gratis hasta junio de 2027`,
-    description: `Gratis hasta el 30 de junio de 2027 para las primeras ${PRICING.freePeriodSlots.toLocaleString('es-ES')} plazas. Plan Starter con VeriFactu ${formatPrice(PRICING.starter.monthly)}€/mes. Plan PRO con facturas ilimitadas ${formatPrice(PRICING.pro.monthly)}€/mes. Sin tarjeta. Sin permanencia.`,
+    description: `Gratis hasta el 30 de junio de 2027. Plan Starter con hash y QR VeriFactu ${formatPrice(PRICING.starter.monthly)}€/mes. Plan PRO con facturas ilimitadas ${formatPrice(PRICING.pro.monthly)}€/mes. Sin tarjeta. Sin permanencia.`,
     url: `${brandConfig.app.url}/precios`,
     type: 'website',
     siteName: brandConfig.app.name,

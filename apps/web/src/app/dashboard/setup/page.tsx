@@ -495,7 +495,7 @@ export default function SetupPage() {
                   <div>
                     <CardTitle>Certificado digital</CardTitle>
                     <CardDescription>
-                      Necesario para enviar facturas a Hacienda automáticamente
+                      Lo necesitarás para el envío a la AEAT con VeriFactu (próximamente)
                     </CardDescription>
                   </div>
                 </div>
