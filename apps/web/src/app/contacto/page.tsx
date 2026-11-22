@@ -92,7 +92,7 @@ const faqs = [
   },
   {
     q: '¿Puedo solicitar una demo del software antes de registrarme?',
-    a: 'Sí. Puedes solicitar una demo guiada en el formulario de contacto. También tienes acceso a una demo interactiva pública en nuestra web sin necesidad de registro.',
+    a: 'Sí. Escríbenos desde el formulario de contacto y te enseñamos el programa. También puedes registrarte gratis y probarlo tú mismo: no pedimos tarjeta.',
   },
   {
     q: '¿Ofrecéis ayuda para migrar desde Holded, Cegid u otros?',
